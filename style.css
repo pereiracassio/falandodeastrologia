@@ -59,14 +59,6 @@ body {
   color: var(--gold);
 }
 
-@media (max-width: 600px) {
-  .header {
-    flex-direction: column;
-    gap: 12px;
-    text-align: center;
-  }
-}
-
 /* Container Principal */
 .container {
   max-width: 1100px;
@@ -74,12 +66,32 @@ body {
   padding: 0 15px;
 }
 
-/* Cards e Banners com Borda Dourada (Principais) */
+/* Seção da Logo acima dos Banners */
+.logo-section {
+  text-align: center;
+  margin: 10px 0 25px 0;
+}
+
+.site-logo {
+  max-width: 300px;
+  width: 100%;
+  height: auto;
+  display: inline-block;
+}
+
+/* Grade Principal de 4 Colunas */
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 35px;
+}
+
+/* Banners com Borda Dourada (Ocupam exatamente 2 colunas) */
 .featured-banner {
+  grid-column: span 2;
   display: block;
   width: 100%;
-  max-width: 680px;
-  margin: 0 auto 20px auto;
   border-radius: 12px;
   border: 1.5px solid var(--gold);
   background-color: var(--white);
@@ -98,34 +110,9 @@ body {
   display: block;
 }
 
-/* Grade de Serviços (Secundários com Borda Azul) */
-.services-grid {
-  display: grid;
-  gap: 16px;
-  margin: 25px auto;
-  max-width: 1100px;
-}
-
-@media (min-width: 769px) {
-  .services-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .services-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .services-grid {
-    grid-template-columns: 1fr;
-    max-width: 320px;
-  }
-}
-
+/* Service Cards com Borda Azul (Ocupam 1 coluna cada) */
 .service-card {
+  grid-column: span 1;
   display: block;
   width: 100%;
   border-radius: 12px;
@@ -144,6 +131,21 @@ body {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* Ajuste Responsivo para telas de celular */
+@media (max-width: 768px) {
+  .main-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .featured-banner {
+    grid-column: span 2;
+  }
+
+  .service-card {
+    grid-column: span 1;
+  }
 }
 
 /* Ferramentas */
