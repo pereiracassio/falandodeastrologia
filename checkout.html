@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>Resumo do Atendimento - Mapa Natal Clássico</title>
 
   <!-- Importação da fonte Cinzel do Google Fonts -->
@@ -115,10 +116,6 @@
 </head>
 <body>
 
-<div style="max-width:480px; margin:0 auto 12px auto;">
-  <a href="index.html" id="back-link" style="color:#103b70; text-decoration:none; font-weight:600; font-size:14px;">&larr; Voltar</a>
-</div>
-
 <div class="card">
   <h2 id="service-title">Carregando...</h2>
 
@@ -161,51 +158,38 @@
     "mapa-natal": {
       titulo: "Mapa Natal Clássico",
       preco: "R$ 275,00",
-      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/Lr5VzNU3g9",
-      voltarPara: "mapa-natal.html",
-      voltarTexto: "Mapa Natal Clássico"
+      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/Lr5VzNU3g9"
     },
     "sinastria": {
       titulo: "Sinastria por Lotes Herméticos",
       preco: "R$ 348,00",
-      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/MNPXA0uDtz",
-      voltarPara: "sinastria.html",
-      voltarTexto: "Sinastria por Lotes Herméticos"
+      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/MNPXA0uDtz"
     },
     "previsoes": {
       titulo: "Previsões Astrológicas",
       preco: "R$ 335,00",
-      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/cM91wDKb7t",
-      voltarPara: "previsoes-astrologicas.html",
-      voltarTexto: "Previsões Astrológicas"
+      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/cM91wDKb7t"
     },
     "revolucao-solar": {
       titulo: "Revolução Solar Clássica e Profecção Anual",
       preco: "R$ 335,00",
-      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/6I2u5POpKN",
-      voltarPara: "revolucao-solar.html",
-      voltarTexto: "Revolução Solar"
+      linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/6I2u5POpKN"
     }
   };
 
   var params = new URLSearchParams(window.location.search);
   var servico = SERVICOS[params.get("servico")];
-  var voltarLink = document.getElementById("back-link");
 
   if (servico) {
     document.title = "Resumo do Atendimento - " + servico.titulo;
     document.getElementById("service-title").textContent = servico.titulo;
     document.getElementById("service-price").textContent = servico.preco;
     document.getElementById("pay-button").href = servico.linkPagamento;
-    voltarLink.href = servico.voltarPara;
-    voltarLink.textContent = "← Voltar para " + servico.voltarTexto;
   } else {
     document.getElementById("service-title").textContent = "Serviço não encontrado";
     document.getElementById("price-box").style.display = "none";
     document.getElementById("steps").style.display = "none";
     document.getElementById("pay-button").style.display = "none";
-    voltarLink.href = "index.html";
-    voltarLink.textContent = "← Voltar para a home";
   }
 </script>
 
