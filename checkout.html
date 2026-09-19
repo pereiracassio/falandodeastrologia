@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resumo do Atendimento - Mapa Natal Clássico</title>
+
+  <!-- Importação da fonte Cinzel do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: #f8fafc; 
+      color: #1e293b; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh; 
+      margin: 0; 
+      padding: 20px; 
+      box-sizing: border-box; 
+    }
+    .card { 
+      background: #ffffff; 
+      padding: 32px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+      width: 100%; 
+      max-width: 480px; 
+      border: 1px solid #e2e8f0; 
+    }
+    h2 { 
+      font-family: 'Cinzel', serif;
+      margin: 0 0 16px 0; 
+      font-size: 22px; 
+      color: #103b70; 
+      text-align: center; 
+    }
+    .price-box { 
+      background: #f1f5f9; 
+      padding: 16px; 
+      border-radius: 8px; 
+      text-align: center; 
+      margin-bottom: 24px; 
+      border: 1px solid #cbd5e1; 
+    }
+    .price-title { 
+      font-size: 13px; 
+      color: #64748b; 
+      text-transform: uppercase; 
+      font-weight: bold; 
+      margin-bottom: 4px; 
+    }
+    .price-value { 
+      font-size: 26px; 
+      color: #103b70; 
+      font-weight: bold; 
+    }
+    .steps { 
+      margin-bottom: 24px; 
+    }
+    .step-item { 
+      display: flex; 
+      gap: 12px; 
+      margin-bottom: 16px; 
+      align-items: flex-start; 
+    }
+    .step-number { 
+      background: #103b70; 
+      color: white; 
+      width: 24px; 
+      height: 24px; 
+      border-radius: 50%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 12px; 
+      font-weight: bold; 
+      flex-shrink: 0; 
+      margin-top: 2px; 
+    }
+    .step-text { 
+      font-size: 14px; 
+      line-height: 1.5; 
+      color: #334155; 
+    }
+    .highlight { 
+      background: #fef3c7; 
+      color: #92400e; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+      font-weight: 600; 
+    }
+    .btn-pay { 
+      display: block; 
+      width: 100%; 
+      background: #103b70; 
+      color: white; 
+      text-align: center; 
+      padding: 14px; 
+      border-radius: 6px; 
+      font-size: 16px; 
+      font-weight: bold; 
+      text-decoration: none; 
+      box-sizing: border-box; 
+      transition: background 0.2s ease;
+    }
+    .btn-pay:hover { 
+      background: #0c2b52; 
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Mapa Natal Clássico</h2>
+  
+  <div class="price-box">
+    <div class="price-title">Valor do Investimento</div>
+    <div class="price-value">R$ 275,00</div>
+  </div>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-number">1</div>
+      <div class="step-text">
+        <strong>Pagamento:</strong> Escolha entre <span class="highlight">Pix ou Cartão de Crédito</span> na próxima tela. Se optar por cartão, haverá acréscimo das taxas da operadora.
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">2</div>
+      <div class="step-text">
+        <strong>Preenchimento de Dados:</strong> Após a confirmação do pagamento, você preencherá o formulário. Insira obrigatoriamente um e-mail do <span class="highlight">Gmail</span> para garantir seu acesso à gravação da sessão.
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">3</div>
+      <div class="step-text">
+        <strong>Agendamento:</strong> Ao enviar o formulário, você será redirecionado para a agenda onde escolherá o melhor dia e horário para o atendimento.
+      </div>
+    </div>
+  </div>
+
+  <a href="https://checkout.infinitepay.io/cassiopereira_/Lr5VzNU3g9" class="btn-pay">Ir para o Pagamento</a>
+</div>
+
+</body>
+</html>
