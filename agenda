@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda de Consultas</title>
+  
+  <!-- Importação da fonte Cinzel do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px 10px;
+      background-color: #ffffff;
+      font-family: 'Cinzel', serif;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Regras do iframe do Google Agenda */
+    iframe {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* Altura no Computador e Tablet */
+    @media (min-width: 769px) {
+      iframe {
+        min-height: 950px;
+      }
+    }
+
+    /* Altura maior no Celular */
+    @media (max-width: 768px) {
+      iframe {
+        min-height: 1400px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <iframe src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ3W9Wr4CrL3HV4VYCuQM4lgwPDRaXrxiJtYzCLDhpzdFsfYf7GDS7E7ocj9Dcg_xW6--h3Urr8P"></iframe>
+  </div>
+
+</body>
+</html>
