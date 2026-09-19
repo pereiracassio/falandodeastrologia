@@ -74,6 +74,20 @@ body {
   padding: 0 15px;
 }
 
+/* Banners Principais lado a lado (Mentoria + Retificação) */
+.top-banners {
+  display: grid;
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto 20px auto;
+}
+
+@media (min-width: 700px) {
+  .top-banners {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* Cards e Banners com Borda Dourada (Principais) */
 .featured-banner {
   display: block;
@@ -86,6 +100,11 @@ body {
   overflow: hidden;
   text-decoration: none;
   transition: transform 0.2s ease;
+}
+
+.top-banners .featured-banner {
+  max-width: none;
+  margin: 0;
 }
 
 .featured-banner:hover {
