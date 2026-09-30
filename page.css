@@ -41,3 +41,20 @@ body>header a:first-child{color:#f6e7b4!important}
 .folha-pagina .portal-card p{color:#2b1d12}
 .folha-pagina .btn-classroom{background:#103B70;color:#f6e7b4}
 .folha-pagina .btn-classroom:hover{background:#0b2a52}
+
+/* Checkout: mesma identidade, mais calma e focada */
+.checkout{display:flex;justify-content:center;align-items:center}
+.checkout::before{opacity:.55}
+.checkout::after{animation:none;opacity:.6}
+.checkout .pagina{width:100%;margin:0}
+.pagina-estreita{max-width:540px}
+.pagina-estreita .folha-pagina{padding:30px 30px 34px}
+.checkout .card{background:none;border:none;box-shadow:none;padding:0;max-width:none}
+.checkout h2{color:#103B70}
+.checkout .price-box{background:rgba(255,250,232,.6);border:1px solid rgba(120,85,40,.4)}
+.checkout .price-title{color:#6b5a3a}
+.checkout .step-text{color:#2b1d12}
+.checkout .highlight{background:rgba(255,248,214,.85);color:#7a4a0a}
+.checkout .btn-pay{background:#103B70;color:#f6e7b4;padding:16px;box-shadow:0 3px 10px rgba(16,59,112,.35)}
+.checkout .btn-pay:hover{background:#0b2a52}
+@media(max-width:700px){.checkout{padding:14px 8px}.pagina-estreita .folha-pagina{padding:22px 18px 26px}}
