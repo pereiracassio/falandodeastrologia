@@ -83,10 +83,10 @@ body>*{position:relative;z-index:1}
 
 .container{width:100%;padding:0 4vw;margin:28px 0}
 .top-banners{display:grid;gap:4vw;margin:0 0 5vw}
-@media(min-width:700px){.top-banners{grid-template-columns:1fr 1fr}}
+@media(min-width:700px){.top-banners{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .services-grid{display:grid;gap:2.5vw;margin:0 0 30px}
-@media(min-width:900px){.services-grid{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:899px){.services-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:900px){.services-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:899px){.services-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.services-grid{gap:4vw}.papiro .folha{font-size:clamp(9px,2.9vw,13px);padding:0 5%}}
 
 
@@ -119,13 +119,13 @@ body>*{position:relative;z-index:1}
 .blog-access-card img{width:100%;height:auto;display:block}
 .footer{text-align:center;padding:20px;font-size:13px;color:#f1e6c6;border-top:2px solid var(--ouro);margin-top:40px}
 
-/* ilustração dentro do papiro */
-.papiro{aspect-ratio:1.1/1}
-.papiro .folha{flex-direction:column;gap:4%;padding:7% 7% 6%}
-.papiro .folha img{flex:1;min-height:0;width:100%;object-fit:contain;opacity:.92}
-.papiro .folha b{font-weight:700;flex:none}
+/* ilustração dentro do papiro: tudo posicionado por % (não depende do tamanho do SVG; igual em todo navegador) */
+.papiro{aspect-ratio:1.1/1;min-width:0;width:100%}
+.papiro .folha{display:block;position:relative;padding:0;min-width:0;text-align:center}
+.papiro .folha img{position:absolute;top:7%;left:10%;width:80%;height:66%;object-fit:contain;opacity:.92}
+.papiro .folha b{position:absolute;left:5%;right:5%;bottom:3%;height:21%;display:flex;align-items:center;justify-content:center;font-weight:700}
 .top-banners .papiro{aspect-ratio:2.4/1}
-.top-banners .papiro .folha{flex-direction:row;gap:5%;padding:4% 8%;text-align:left}
-.top-banners .papiro .folha img{flex:none;height:100%;width:auto;max-width:42%}
-.top-banners .papiro .folha b{flex:1;text-align:center}
+.top-banners .papiro .folha img{top:8%;bottom:8%;left:6%;width:38%;height:84%}
+.top-banners .papiro .folha b{left:48%;right:6%;top:0;bottom:0;height:auto}
 @media(max-width:699px){.top-banners .papiro{aspect-ratio:2.2/1}}
+html,body{max-width:100%;overflow-x:hidden}
