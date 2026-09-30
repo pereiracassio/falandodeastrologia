@@ -1,0 +1,131 @@
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--azul:#103B70;--ouro:#C59B27;--slate:#64748B}
+html{scroll-behavior:smooth;background:#0a1330;color:var(--azul);font-family:system-ui,-apple-system,sans-serif}
+/* céu do fim de tarde: mancha laranja só lá embaixo, sobe para azul-noite */
+body{min-height:100vh;position:relative;
+  background:
+    radial-gradient(ellipse 90% 380px at 50% 100%,rgba(232,112,44,.55) 0%,rgba(196,84,52,.28) 40%,transparent 100%),
+    linear-gradient(to top,#3a2f5e 0%,#23305f 14%,#15214a 40%,#0d1738 70%,#070d25 100%)}
+/* estrelas (CSS puro, sem imagem): concentradas no alto e esmaecendo para baixo, atrás dos papiros */
+body::before,body::after{content:"";position:absolute;left:0;right:0;top:0;height:min(100%,1500px);pointer-events:none;z-index:0;
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 30%,transparent 78%);mask-image:linear-gradient(to bottom,#000 0%,#000 30%,transparent 78%)}
+body::before{background-image:
+    radial-gradient(1.6px 1.6px at 59% 61%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.9px 1.9px at 26% 25%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.4px 1.4px at 82% 25%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 20% 13%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 83% 7%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 59% 22%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.3px 1.3px at 10% 9%,#fff 55%,transparent 62%),
+    radial-gradient(1.8px 1.8px at 78% 5%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 58% 27%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.3px 1.3px at 39% 65%,#fff 55%,transparent 62%),
+    radial-gradient(1.6px 1.6px at 60% 37%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.5px 1.5px at 12% 34%,#fff 55%,transparent 62%),
+    radial-gradient(1.3px 1.3px at 67% 38%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.4px 1.4px at 15% 53%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(2.0px 2.0px at 51% 10%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.4px 1.4px at 2% 29%,#fff 55%,transparent 62%),
+    radial-gradient(2.0px 2.0px at 62% 50%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 55% 11%,#fff 55%,transparent 62%),
+    radial-gradient(1.5px 1.5px at 88% 36%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(2.0px 2.0px at 44% 3%,#fff 55%,transparent 62%),
+    radial-gradient(1.8px 1.8px at 19% 33%,#fff 55%,transparent 62%),
+    radial-gradient(1.9px 1.9px at 9% 61%,#fff 55%,transparent 62%),
+    radial-gradient(1.6px 1.6px at 89% 26%,#fff 55%,transparent 62%),
+    radial-gradient(1.6px 1.6px at 95% 18%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.6px 1.6px at 16% 52%,#fff 55%,transparent 62%),
+    radial-gradient(1.9px 1.9px at 2% 36%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.4px 1.4px at 40% 4%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.3px 1.3px at 79% 14%,#fff 55%,transparent 62%),
+    radial-gradient(1.5px 1.5px at 29% 58%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.6px 1.6px at 44% 39%,#fff 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 13% 28%,#fff 55%,transparent 62%),
+    radial-gradient(1.6px 1.6px at 3% 49%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.9px 1.9px at 18% 63%,#fff 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 51% 25%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.8px 1.8px at 31% 33%,#fff 55%,transparent 62%),
+    radial-gradient(1.8px 1.8px at 96% 27%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.6px 1.6px at 63% 12%,#fff 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 15% 6%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.5px 1.5px at 32% 52%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 64% 39%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.5px 1.5px at 10% 18%,#dfe8ff 55%,transparent 62%),
+    radial-gradient(1.5px 1.5px at 85% 11%,#fff 55%,transparent 62%),
+    radial-gradient(1.3px 1.3px at 97% 4%,#f6e7b4 55%,transparent 62%),
+    radial-gradient(1.3px 1.3px at 59% 33%,#fff 55%,transparent 62%),
+    radial-gradient(1.7px 1.7px at 38% 49%,#fff 55%,transparent 62%),
+    radial-gradient(1.4px 1.4px at 13% 48%,#f6e7b4 55%,transparent 62%);
+  background-size:760px 620px;opacity:.9}
+body::after{background-image:
+    radial-gradient(3.1px 3.1px at 44% 44%,#fff6d0 55%,transparent 62%),
+    radial-gradient(3.3px 3.3px at 77% 4%,#ffffff 55%,transparent 62%),
+    radial-gradient(2.7px 2.7px at 47% 46%,#fff6d0 55%,transparent 62%),
+    radial-gradient(3.0px 3.0px at 4% 40%,#ffffff 55%,transparent 62%),
+    radial-gradient(2.7px 2.7px at 10% 48%,#fff6d0 55%,transparent 62%),
+    radial-gradient(2.9px 2.9px at 11% 6%,#ffffff 55%,transparent 62%),
+    radial-gradient(3.3px 3.3px at 96% 4%,#fff6d0 55%,transparent 62%),
+    radial-gradient(2.5px 2.5px at 45% 24%,#ffffff 55%,transparent 62%),
+    radial-gradient(3.3px 3.3px at 11% 57%,#fff6d0 55%,transparent 62%),
+    radial-gradient(2.4px 2.4px at 65% 38%,#ffffff 55%,transparent 62%),
+    radial-gradient(2.4px 2.4px at 50% 39%,#fff6d0 55%,transparent 62%),
+    radial-gradient(3.0px 3.0px at 12% 7%,#ffffff 55%,transparent 62%);
+  background-size:980px 760px;animation:brilho 5s ease-in-out infinite alternate}
+@keyframes brilho{from{opacity:.35}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){body::after{animation:none;opacity:.8}}
+body>*{position:relative;z-index:1}
+.header{display:flex;justify-content:space-between;align-items:center;padding:18px 4vw 18px 76px;border-bottom:1px solid rgba(227,196,106,.55)}
+.brand{font-family:'Cinzel',Georgia,serif;font-size:22px;font-weight:700;color:#f6e7b4;text-decoration:none;text-transform:uppercase;letter-spacing:2px}
+.nav-menu{display:flex;gap:28px}
+.nav-menu a{font-family:'Cinzel',Georgia,serif;color:#efe3c2;text-decoration:none;font-weight:600;font-size:14px;letter-spacing:.5px}
+.nav-menu a:hover{color:#E3C46A}
+@media(max-width:700px){.header{flex-direction:column;gap:10px;padding:18px 62px 14px;text-align:center}.brand{font-size:16px;letter-spacing:1.5px}.nav-menu{gap:16px;flex-wrap:wrap;justify-content:center}}
+
+.container{width:100%;padding:0 4vw;margin:28px 0}
+.top-banners{display:grid;gap:4vw;margin:0 0 5vw}
+@media(min-width:700px){.top-banners{grid-template-columns:1fr 1fr}}
+.services-grid{display:grid;gap:2.5vw;margin:0 0 30px}
+@media(min-width:900px){.services-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:899px){.services-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.services-grid{gap:4vw}.papiro .folha{font-size:clamp(9px,2.9vw,13px);padding:0 5%}}
+
+
+/* papiro aberto (CSS puro, a partir da referência do usuário) */
+.papiro{display:flex;align-items:stretch;aspect-ratio:2/1;text-decoration:none;transition:transform .25s ease,filter .25s ease;
+  filter:drop-shadow(0 6px 8px rgba(70,45,15,.28))}
+.top-banners .papiro{aspect-ratio:2.6/1}
+.papiro:hover{transform:translateY(-5px);filter:drop-shadow(0 12px 14px rgba(70,45,15,.34))}
+.papiro .rolo{display:none;flex:0 0 5.5%;background:linear-gradient(90deg,#8f6f3e 0%,#c9a768 38%,#ecd9a6 55%,#b48f53 100%);border-radius:999px/14% ;box-shadow:inset 0 0 0 1px rgba(90,60,25,.25)}
+.papiro .rolo.d{background:linear-gradient(90deg,#b48f53 0%,#ecd9a6 45%,#c9a768 62%,#8f6f3e 100%)}
+.papiro .folha{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8%;
+  font-family:'Cardo','GFS Didot',Georgia,serif;font-weight:700;color:#2b1d12;line-height:1.25;letter-spacing:.06em;text-transform:uppercase;
+  font-size:clamp(11px,1.3vw,19px);
+  background:
+    radial-gradient(ellipse at 15% 20%,rgba(255,240,200,.55) 0%,transparent 45%),
+    radial-gradient(ellipse at 88% 85%,rgba(110,70,30,.32) 0%,transparent 50%),
+    repeating-linear-gradient(0deg,rgba(120,85,40,.13) 0,rgba(120,85,40,.13) 1px,transparent 1px,transparent 5px),
+    repeating-linear-gradient(90deg,rgba(150,110,60,.08) 0,rgba(150,110,60,.08) 2px,transparent 2px,transparent 27px),
+    linear-gradient(180deg,#dcc48f 0%,#c9aa6e 100%);
+  clip-path:polygon(0 4%,4% 0,18% 2%,36% 0,55% 2.4%,74% 0,92% 2%,100% 4%,98.6% 24%,100% 42%,98.8% 62%,100% 80%,99% 96%,92% 100%,78% 97.6%,60% 100%,40% 97.8%,20% 100%,5% 98%,0 96%,1.4% 76%,0 56%,1.2% 34%,0 18%)}
+.top-banners .papiro .folha{font-size:clamp(14px,2vw,30px)}
+@media(max-width:899px){.papiro .folha{font-size:clamp(12px,3.2vw,18px)}}
+@media(max-width:699px){.top-banners .papiro .folha{font-size:clamp(14px,4.4vw,24px)}}
+
+.social-bar{display:flex;justify-content:center;align-items:center;gap:20px;margin:35px 0 25px}
+.social-bar a img,.social-bar a svg{width:44px;height:44px;display:block}
+.blog-access-section{text-align:center;margin:30px 0}
+.blog-access-label{font-size:14px;font-weight:700;letter-spacing:1px;color:#cbbf9f;text-transform:uppercase;margin-bottom:12px}
+.blog-access-card{display:inline-block;border-radius:12px;border:1px solid var(--slate);overflow:hidden;max-width:280px;width:100%}
+.blog-access-card img{width:100%;height:auto;display:block}
+.footer{text-align:center;padding:20px;font-size:13px;color:#f1e6c6;border-top:2px solid var(--ouro);margin-top:40px}
+
+/* ilustração dentro do papiro */
+.papiro{aspect-ratio:1.1/1}
+.papiro .folha{flex-direction:column;gap:4%;padding:7% 7% 6%}
+.papiro .folha img{flex:1;min-height:0;width:100%;object-fit:contain;opacity:.92}
+.papiro .folha b{font-weight:700;flex:none}
+.top-banners .papiro{aspect-ratio:2.4/1}
+.top-banners .papiro .folha{flex-direction:row;gap:5%;padding:4% 8%;text-align:left}
+.top-banners .papiro .folha img{flex:none;height:100%;width:auto;max-width:42%}
+.top-banners .papiro .folha b{flex:1;text-align:center}
+@media(max-width:699px){.top-banners .papiro{aspect-ratio:2.2/1}}
