@@ -13,8 +13,9 @@
 
   var style = document.createElement("style");
   style.textContent =
-    ".sidemenu-toggle{position:fixed;top:14px;left:14px;z-index:1001;width:42px;height:42px;border-radius:8px;border:1px solid #103B70;background:#FFFDF5;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}" +
-    ".sidemenu-toggle span,.sidemenu-toggle span::before,.sidemenu-toggle span::after{content:\"\";display:block;width:20px;height:2px;background:#103B70;position:relative}" +
+    ".sidemenu-toggle{position:fixed;top:14px;left:14px;z-index:1001;width:42px;height:42px;border-radius:10px;border:1px solid rgba(227,196,106,.65);background:rgba(10,19,48,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}" +
+    ".sidemenu-toggle:hover{border-color:#E3C46A;background:rgba(10,19,48,.88)}" +
+    ".sidemenu-toggle span,.sidemenu-toggle span::before,.sidemenu-toggle span::after{content:\"\";display:block;width:20px;height:2px;background:#f1e6c6;position:relative}" +
     ".sidemenu-toggle span::before{position:absolute;top:-6px}" +
     ".sidemenu-toggle span::after{position:absolute;top:6px}" +
     ".sidemenu-overlay{position:fixed;inset:0;background:rgba(16,59,112,.45);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:1002}" +
