@@ -17,7 +17,7 @@
 body{display:flow-root}
 /* contraste sobre o papiro */
 .folha-pagina h2[style*="B5852F"]{color:#8a6412!important}
-.folha-pagina a[style*="25d366"]{color:#0f6b34!important;border-color:#0f6b34!important}
+.folha-pagina a[style*="25d366"]{color:#4A7C59!important;border-color:#4A7C59!important}
 
 /* cabeçalho fica no céu, acima do papiro (igual à home) */
 body>header{max-width:860px;margin:0 auto!important;padding:18px 44px 14px!important;border-bottom:1px solid rgba(181,133,47,.55)!important}
