@@ -76,10 +76,13 @@ body::after{background-image:
 body>*{position:relative;z-index:1}
 .header{display:flex;justify-content:space-between;align-items:center;padding:18px 4vw 18px 76px;border-bottom:1px solid rgba(181,133,47,.55)}
 .brand{font-family:'Cinzel',Georgia,serif;font-size:22px;font-weight:700;color:#f6e7b4;text-decoration:none;text-transform:uppercase;letter-spacing:2px}
+.logo-home{text-align:center;padding:22px 4vw 0}
+.logo-home img{display:inline-block;width:min(520px,100%);height:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+.header{justify-content:center}
 .nav-menu{display:flex;gap:28px}
 .nav-menu a{font-family:'Cinzel',Georgia,serif;color:#efe3c2;text-decoration:none;font-weight:600;font-size:14px;letter-spacing:.5px}
 .nav-menu a:hover{color:#B5852F}
-@media(max-width:700px){.header{flex-direction:column;gap:10px;padding:18px 62px 14px;text-align:center}.brand{font-size:16px;letter-spacing:1.5px}.nav-menu{gap:16px;flex-wrap:wrap;justify-content:center}}
+@media(max-width:700px){.logo-home{padding-top:60px}.header{flex-direction:column;gap:10px;padding:18px 62px 14px;text-align:center}.brand{font-size:16px;letter-spacing:1.5px}.nav-menu{gap:16px;flex-wrap:wrap;justify-content:center}}
 
 .container{width:100%;padding:0 4vw;margin:28px 0}
 .top-banners{display:grid;gap:4vw;margin:0 0 5vw}

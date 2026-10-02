@@ -58,3 +58,8 @@ body>header a:first-child{color:#f6e7b4!important}
 .checkout .btn-pay{background:#1F5FA3;color:#f6e7b4;padding:16px;box-shadow:0 3px 10px rgba(31,95,163,.35)}
 .checkout .btn-pay:hover{background:#0b2a52}
 @media(max-width:700px){.checkout{padding:14px 8px}.pagina-estreita .folha-pagina{padding:22px 18px 26px}}
+
+/* marca compacta (Hermes + nome) no cabeçalho das páginas internas */
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.marca img{height:44px;width:auto;flex:none}
+@media(max-width:700px){.marca{justify-content:center;font-size:13px;letter-spacing:.5px;gap:8px}.marca img{height:38px}.marca span{white-space:nowrap}}
