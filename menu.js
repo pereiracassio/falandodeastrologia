@@ -35,8 +35,8 @@
     ".sidemenu-logo{display:block;text-align:center;margin:0 16px;padding:0 0 14px;border-bottom:1px solid rgba(31,95,163,.55)}.sidemenu-logo img{width:100%;height:auto;display:block}" +
     ".sidemenu-nav a{padding:14px 24px;color:#1a1410;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(95,65,30,.4)}" +
     ".sidemenu-nav a.is-sep{margin-top:14px;border-top:1px solid #B5852F}" +
-    ".sidemenu-nav a:hover{background:rgba(120,80,30,.14)}" +
-    ".sidemenu-nav a.is-current{color:#1F5FA3;background:rgba(120,80,30,.22);border-left:3px solid #1F5FA3;padding-left:21px}" +
+    ".sidemenu-nav a:hover{color:#1F5FA3}" +
+    ".sidemenu-nav a.is-current{color:#1F5FA3;border-left:3px solid #1F5FA3;padding-left:21px}" +
     "body.sidemenu-lock{overflow:hidden}";
   document.head.appendChild(style);
 
