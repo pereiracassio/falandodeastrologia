@@ -118,8 +118,9 @@ body>*{position:relative;z-index:1}
 .social-bar a img,.social-bar a svg{width:44px;height:44px;display:block}
 .blog-access-section{text-align:center;margin:30px 0}
 .blog-access-label{font-size:14px;font-weight:700;letter-spacing:1px;color:#cbbf9f;text-transform:uppercase;margin-bottom:12px}
-.blog-access-card{display:inline-block;border-radius:12px;border:1px solid var(--slate);overflow:hidden;max-width:280px;width:100%}
-.blog-access-card img{width:100%;height:auto;display:block}
+.blog-access-card{display:inline-block;max-width:340px;width:100%;transition:transform .25s ease}
+.blog-access-card:hover{transform:translateY(-4px)}
+.blog-access-card img{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
 .footer{text-align:center;padding:20px;font-size:13px;color:#f1e6c6;border-top:2px solid var(--ouro);margin-top:40px}
 
 /* ilustração dentro do papiro: tudo posicionado por % (não depende do tamanho do SVG; igual em todo navegador) */
