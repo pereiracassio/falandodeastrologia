@@ -20,25 +20,23 @@
     ".sidemenu-toggle span::after{position:absolute;top:6px}" +
     ".sidemenu-overlay{position:fixed;inset:0;background:rgba(5,9,25,.6);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:1002}" +
     ".sidemenu-overlay.is-open{opacity:1;pointer-events:auto}" +
-    ".sidemenu-panel{position:fixed;top:0;left:0;bottom:0;width:290px;max-width:84vw;transform:translateX(-100%);transition:transform .25s ease;z-index:1003;display:flex;flex-direction:column;padding:18px 0;font-family:'Cinzel',Georgia,serif;border-right:1px solid rgba(181,133,47,.45);box-shadow:2px 0 18px rgba(0,0,0,.5);" +
+    ".sidemenu-panel{position:fixed;top:0;left:0;bottom:0;width:290px;max-width:84vw;transform:translateX(-100%);transition:transform .25s ease;z-index:1003;display:flex;flex-direction:column;padding:10px 0 18px;font-family:'Cinzel',Georgia,serif;border-right:1px solid transparent;" +
       "background:" +
-        "radial-gradient(1.4px 1.4px at 18% 9%,#f6e7b4 55%,transparent 62%)," +
-        "radial-gradient(1px 1px at 72% 14%,#fff 55%,transparent 62%)," +
-        "radial-gradient(1.6px 1.6px at 40% 24%,#f6e7b4 55%,transparent 62%)," +
-        "radial-gradient(1px 1px at 86% 31%,#fff 55%,transparent 62%)," +
-        "radial-gradient(1.3px 1.3px at 12% 40%,#fff 55%,transparent 62%)," +
-        "radial-gradient(1px 1px at 58% 47%,#f6e7b4 55%,transparent 62%)," +
-        "radial-gradient(ellipse 120% 220px at 50% 100%,rgba(232,112,44,.4) 0%,transparent 100%)," +
-        "linear-gradient(to top,#3a2f5e 0%,#23305f 14%,#15214a 40%,#0d1738 70%,#070d25 100%)}" +
+        "radial-gradient(ellipse at 50% 50%,transparent 60%,rgba(80,48,20,.25) 100%)," +
+        "radial-gradient(ellipse at 15% 6%,rgba(240,222,180,.5) 0%,transparent 40%)," +
+        "repeating-linear-gradient(0deg,rgba(95,65,30,.10) 0px,rgba(95,65,30,.10) 1px,transparent 1px,transparent 5px)," +
+        "repeating-linear-gradient(90deg,rgba(110,78,40,.07) 0px,rgba(110,78,40,.07) 2px,transparent 2px,transparent 25px)," +
+        "linear-gradient(180deg,#d6bd92 0%,#c8a878 55%,#b98f5f 100%);" +
+      "clip-path:polygon(0 0, calc(100% - 3px) 0, calc(100% - 2px) 2.2%, calc(100% - 1px) 4.3%, calc(100% - 3px) 6.5%, calc(100% - 5px) 8.7%, calc(100% - 0px) 10.9%, calc(100% - 0px) 13.0%, calc(100% - 4px) 15.2%, calc(100% - 0px) 17.4%, calc(100% - 2px) 19.6%, calc(100% - 4px) 21.7%, calc(100% - 0px) 23.9%, calc(100% - 4px) 26.1%, calc(100% - 1px) 28.3%, calc(100% - 0px) 30.4%, calc(100% - 0px) 32.6%, calc(100% - 3px) 34.8%, calc(100% - 3px) 37.0%, calc(100% - 0px) 39.1%, calc(100% - 1px) 41.3%, calc(100% - 0px) 43.5%, calc(100% - 4px) 45.7%, calc(100% - 3px) 47.8%, calc(100% - 0px) 50.0%, calc(100% - 4px) 52.2%, calc(100% - 0px) 54.3%, calc(100% - 1px) 56.5%, calc(100% - 5px) 58.7%, calc(100% - 5px) 60.9%, calc(100% - 4px) 63.0%, calc(100% - 0px) 65.2%, calc(100% - 4px) 67.4%, calc(100% - 4px) 69.6%, calc(100% - 3px) 71.7%, calc(100% - 0px) 73.9%, calc(100% - 1px) 76.1%, calc(100% - 0px) 78.3%, calc(100% - 4px) 80.4%, calc(100% - 1px) 82.6%, calc(100% - 2px) 84.8%, calc(100% - 3px) 87.0%, calc(100% - 1px) 89.1%, calc(100% - 4px) 91.3%, calc(100% - 0px) 93.5%, calc(100% - 4px) 95.7%, calc(100% - 2px) 97.8%, calc(100% - 2px) 100%, 0 100%)}" +
     ".sidemenu-panel.is-open{transform:translateX(0)}" +
-    ".sidemenu-close{align-self:flex-end;margin:0 14px 10px auto;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#f1e6c6;cursor:pointer}" +
-    ".sidemenu-close:hover{color:#B5852F}" +
+    ".sidemenu-close{align-self:flex-end;margin:0 12px 0 auto;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#1a1410;cursor:pointer}" +
+    ".sidemenu-close:hover{color:#1F5FA3}" +
     ".sidemenu-nav{display:flex;flex-direction:column;overflow-y:auto}" +
-    ".sidemenu-logo{display:block;text-align:center;margin:2px 0 10px}.sidemenu-logo img{height:64px;width:64px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}" +
-    ".sidemenu-nav a{padding:14px 24px;color:#efe3c2;text-decoration:none;font-weight:600;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(181,133,47,.12)}" +
-    ".sidemenu-nav a.is-sep{margin-top:14px;border-top:1px solid rgba(181,133,47,.5)}" +
-    ".sidemenu-nav a:hover,.sidemenu-nav a.is-current{color:#B5852F;background:rgba(181,133,47,.08)}" +
-    ".sidemenu-nav a.is-current{border-left:3px solid #B5852F;padding-left:21px}" +
+    ".sidemenu-logo{display:block;text-align:center;margin:0 16px;padding:0 0 14px;border-bottom:1px solid rgba(31,95,163,.55)}.sidemenu-logo img{width:100%;height:auto;display:block}" +
+    ".sidemenu-nav a{padding:14px 24px;color:#1a1410;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(95,65,30,.4)}" +
+    ".sidemenu-nav a.is-sep{margin-top:14px;border-top:1px solid #B5852F}" +
+    ".sidemenu-nav a:hover{background:rgba(120,80,30,.14)}" +
+    ".sidemenu-nav a.is-current{color:#1F5FA3;background:rgba(120,80,30,.22);border-left:3px solid #1F5FA3;padding-left:21px}" +
     "body.sidemenu-lock{overflow:hidden}";
   document.head.appendChild(style);
 
@@ -77,7 +75,7 @@
   var logo = document.createElement("a");
   logo.className = "sidemenu-logo";
   logo.href = "index.html";
-  logo.innerHTML = '<img src="favicon.svg" alt="Falando de Astrologia Helenística">';
+  logo.innerHTML = '<img src="img/logo-menu.svg" alt="Falando de Astrologia Helenística" width="1140" height="340">';
 
   panel.appendChild(closeBtn);
   panel.appendChild(logo);
