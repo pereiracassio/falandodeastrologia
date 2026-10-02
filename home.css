@@ -1,5 +1,5 @@
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--azul:#1F5FA3;--ouro:#B5852F;--slate:#64748B}
+:root{--azul:#1F5FA3;--ouro:#B5852F;--terracota:#A03E25;--slate:#64748B}
 html{scroll-behavior:smooth;background:#0a1330;color:var(--azul);font-family:system-ui,-apple-system,sans-serif}
 /* céu do fim de tarde: mancha laranja só lá embaixo, sobe para azul-noite */
 body{min-height:100vh;position:relative;
@@ -127,7 +127,7 @@ body>*{position:relative;z-index:1}
 .papiro{aspect-ratio:1.1/1;min-width:0;width:100%}
 .papiro .folha{display:block;position:relative;padding:0;min-width:0;text-align:center}
 .papiro .folha img{position:absolute;top:7%;left:10%;width:80%;height:66%;object-fit:contain;opacity:.92}
-.papiro .folha b{position:absolute;left:5%;right:5%;bottom:3%;height:21%;display:flex;align-items:center;justify-content:center;font-weight:700}
+.papiro .folha b{color:var(--terracota);position:absolute;left:5%;right:5%;bottom:3%;height:21%;display:flex;align-items:center;justify-content:center;font-weight:700}
 .top-banners .papiro{aspect-ratio:2.4/1}
 .top-banners .papiro .folha img{top:8%;bottom:8%;left:6%;width:38%;height:84%}
 .top-banners .papiro .folha b{left:48%;right:6%;top:0;bottom:0;height:auto}
