@@ -63,3 +63,19 @@ body>header a:first-child{color:#f6e7b4!important}
 .marca{display:flex;align-items:center;gap:10px;text-decoration:none;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
 .marca img{height:40px;width:40px;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
 @media(max-width:700px){.marca{justify-content:center;font-size:13px;letter-spacing:.5px;gap:8px}.marca img{height:36px;width:36px}.marca span{white-space:nowrap}}
+
+/* Páginas de serviço: o que era azul vira terracota; preto/cinza vira azul-noite;
+   campos de fundo mais claro viram só uma linha azul (papiro não tem "cor mais clara") */
+.pagina-servico{--terracota:#A03E25;--azul:#1F5FA3;--azul-noite:#16233F}
+.pagina-servico .folha-pagina :is(h1,h2,h3,div,span,p,strong)[style*="color: #1F5FA3"],
+.pagina-servico .folha-pagina :is(h1,h2,h3,div,span,p,strong)[style*="color:#1F5FA3"]{color:var(--terracota)!important}
+.pagina-servico .folha-pagina [style*="border-bottom: 2px solid"]{border-bottom-color:var(--terracota)!important}
+.pagina-servico .folha-pagina p[style*="B5852F"]{color:var(--terracota)!important}
+.pagina-servico .folha-pagina,
+.pagina-servico .folha-pagina [style*="color: #222222"],
+.pagina-servico .folha-pagina [style*="color: #333333"],
+.pagina-servico .folha-pagina [style*="color: #444444"],
+.pagina-servico .folha-pagina [style*="color: #555555"],
+.pagina-servico .folha-pagina [style*="color: #666666"]{color:var(--azul-noite)!important}
+.pagina-servico .folha-pagina div[style*="f8f9fa"],
+.pagina-servico .folha-pagina div[style*="background-color: white"]{background:transparent!important;border:1px solid var(--azul)!important;box-shadow:none!important}
