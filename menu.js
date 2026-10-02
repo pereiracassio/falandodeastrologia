@@ -34,7 +34,7 @@
     ".sidemenu-close{align-self:flex-end;margin:0 14px 10px auto;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#f1e6c6;cursor:pointer}" +
     ".sidemenu-close:hover{color:#B5852F}" +
     ".sidemenu-nav{display:flex;flex-direction:column;overflow-y:auto}" +
-    ".sidemenu-logo{display:block;text-align:center;margin:2px 0 10px}.sidemenu-logo img{height:72px;width:auto}" +
+    ".sidemenu-logo{display:block;text-align:center;margin:2px 0 10px}.sidemenu-logo img{height:64px;width:64px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}" +
     ".sidemenu-nav a{padding:14px 24px;color:#efe3c2;text-decoration:none;font-weight:600;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(181,133,47,.12)}" +
     ".sidemenu-nav a.is-sep{margin-top:14px;border-top:1px solid rgba(181,133,47,.5)}" +
     ".sidemenu-nav a:hover,.sidemenu-nav a.is-current{color:#B5852F;background:rgba(181,133,47,.08)}" +
@@ -77,7 +77,7 @@
   var logo = document.createElement("a");
   logo.className = "sidemenu-logo";
   logo.href = "index.html";
-  logo.innerHTML = '<img src="img/hermes.svg" alt="Falando de Astrologia Helenística">';
+  logo.innerHTML = '<img src="favicon.svg" alt="Falando de Astrologia Helenística">';
 
   panel.appendChild(closeBtn);
   panel.appendChild(logo);
