@@ -16,7 +16,7 @@
 
 body{display:flow-root}
 /* contraste sobre o papiro */
-.folha-pagina h2[style*="B5852F"]{color:#8a6412!important}
+.folha-pagina h2[style*="B5852F"]{color:#1F5FA3!important}
 .folha-pagina a[style*="25d366"]{color:#4A7C59!important;border-color:#4A7C59!important}
 
 /* cabeçalho fica no céu, acima do papiro (igual à home) */
@@ -36,7 +36,7 @@ body>header a:first-child{color:#f6e7b4!important}
 /* Portal do Aluno: cartão escuro vira parte do papiro */
 .folha-pagina .portal-aluno-container{background:none;border:none;box-shadow:none;margin:0 auto;padding:10px 0 6px}
 .folha-pagina .portal-title{color:#1F5FA3}
-.folha-pagina .portal-subtitle{color:#8a6412}
+.folha-pagina .portal-subtitle{color:#1F5FA3}
 .folha-pagina .portal-card{background:rgba(255,250,232,.5);border-color:rgba(120,85,40,.35)}
 .folha-pagina .portal-card p{color:#2b1d12}
 .folha-pagina .btn-classroom{background:#1F5FA3;color:#f6e7b4}
