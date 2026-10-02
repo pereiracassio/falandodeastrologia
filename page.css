@@ -79,3 +79,13 @@ body>header a:first-child{color:#f6e7b4!important}
 .pagina-servico .folha-pagina [style*="color: #666666"]{color:var(--azul-noite)!important}
 .pagina-servico .folha-pagina div[style*="f8f9fa"],
 .pagina-servico .folha-pagina div[style*="background-color: white"]{background:transparent!important;border:1px solid var(--azul)!important;box-shadow:none!important}
+
+/* Mesmas mudanças do resto: azul vira terracota, texto em azul-noite, campos claros viram só linha azul */
+.folha-pagina .portal-title{color:#A03E25}
+.folha-pagina .portal-card{background:transparent;border:1px solid #1F5FA3}
+.folha-pagina .portal-card p{color:#16233F}
+.checkout h2,.checkout .price-value{color:#A03E25}
+.checkout .price-box{background:transparent;border:1px solid #1F5FA3}
+.checkout .price-title,.checkout .step-text{color:#16233F}
+.checkout .step-text strong{color:#16233F}
+.checkout .highlight{background:transparent;color:#A03E25;border:1px solid #1F5FA3;padding:1px 6px}
