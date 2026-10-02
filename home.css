@@ -1,5 +1,5 @@
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--azul:#103B70;--ouro:#C59B27;--slate:#64748B}
+:root{--azul:#1F5FA3;--ouro:#B5852F;--slate:#64748B}
 html{scroll-behavior:smooth;background:#0a1330;color:var(--azul);font-family:system-ui,-apple-system,sans-serif}
 /* céu do fim de tarde: mancha laranja só lá embaixo, sobe para azul-noite */
 body{min-height:100vh;position:relative;
@@ -74,11 +74,11 @@ body::after{background-image:
 @keyframes brilho{from{opacity:.35}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){body::after{animation:none;opacity:.8}}
 body>*{position:relative;z-index:1}
-.header{display:flex;justify-content:space-between;align-items:center;padding:18px 4vw 18px 76px;border-bottom:1px solid rgba(227,196,106,.55)}
+.header{display:flex;justify-content:space-between;align-items:center;padding:18px 4vw 18px 76px;border-bottom:1px solid rgba(181,133,47,.55)}
 .brand{font-family:'Cinzel',Georgia,serif;font-size:22px;font-weight:700;color:#f6e7b4;text-decoration:none;text-transform:uppercase;letter-spacing:2px}
 .nav-menu{display:flex;gap:28px}
 .nav-menu a{font-family:'Cinzel',Georgia,serif;color:#efe3c2;text-decoration:none;font-weight:600;font-size:14px;letter-spacing:.5px}
-.nav-menu a:hover{color:#E3C46A}
+.nav-menu a:hover{color:#B5852F}
 @media(max-width:700px){.header{flex-direction:column;gap:10px;padding:18px 62px 14px;text-align:center}.brand{font-size:16px;letter-spacing:1.5px}.nav-menu{gap:16px;flex-wrap:wrap;justify-content:center}}
 
 .container{width:100%;padding:0 4vw;margin:28px 0}

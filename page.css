@@ -16,11 +16,11 @@
 
 body{display:flow-root}
 /* contraste sobre o papiro */
-.folha-pagina h2[style*="c59b27"]{color:#8a6412!important}
+.folha-pagina h2[style*="B5852F"]{color:#8a6412!important}
 .folha-pagina a[style*="25d366"]{color:#0f6b34!important;border-color:#0f6b34!important}
 
 /* cabeçalho fica no céu, acima do papiro (igual à home) */
-body>header{max-width:860px;margin:0 auto!important;padding:18px 44px 14px!important;border-bottom:1px solid rgba(227,196,106,.55)!important}
+body>header{max-width:860px;margin:0 auto!important;padding:18px 44px 14px!important;border-bottom:1px solid rgba(181,133,47,.55)!important}
 body>header a{color:#efe3c2!important}
 body>header a:first-child{color:#f6e7b4!important}
 .pagina{margin-top:26px}
@@ -35,11 +35,11 @@ body>header a:first-child{color:#f6e7b4!important}
 .pagina-larga .folha-pagina{padding:22px 22px 26px}
 /* Portal do Aluno: cartão escuro vira parte do papiro */
 .folha-pagina .portal-aluno-container{background:none;border:none;box-shadow:none;margin:0 auto;padding:10px 0 6px}
-.folha-pagina .portal-title{color:#103B70}
+.folha-pagina .portal-title{color:#1F5FA3}
 .folha-pagina .portal-subtitle{color:#8a6412}
 .folha-pagina .portal-card{background:rgba(255,250,232,.5);border-color:rgba(120,85,40,.35)}
 .folha-pagina .portal-card p{color:#2b1d12}
-.folha-pagina .btn-classroom{background:#103B70;color:#f6e7b4}
+.folha-pagina .btn-classroom{background:#1F5FA3;color:#f6e7b4}
 .folha-pagina .btn-classroom:hover{background:#0b2a52}
 
 /* Checkout: mesma identidade, mais calma e focada */
@@ -50,11 +50,11 @@ body>header a:first-child{color:#f6e7b4!important}
 .pagina-estreita{max-width:540px}
 .pagina-estreita .folha-pagina{padding:30px 30px 34px}
 .checkout .card{background:none;border:none;box-shadow:none;padding:0;max-width:none}
-.checkout h2{color:#103B70}
+.checkout h2{color:#1F5FA3}
 .checkout .price-box{background:rgba(255,250,232,.6);border:1px solid rgba(120,85,40,.4)}
 .checkout .price-title{color:#6b5a3a}
 .checkout .step-text{color:#2b1d12}
 .checkout .highlight{background:rgba(255,248,214,.85);color:#7a4a0a}
-.checkout .btn-pay{background:#103B70;color:#f6e7b4;padding:16px;box-shadow:0 3px 10px rgba(16,59,112,.35)}
+.checkout .btn-pay{background:#1F5FA3;color:#f6e7b4;padding:16px;box-shadow:0 3px 10px rgba(31,95,163,.35)}
 .checkout .btn-pay:hover{background:#0b2a52}
 @media(max-width:700px){.checkout{padding:14px 8px}.pagina-estreita .folha-pagina{padding:22px 18px 26px}}
