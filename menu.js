@@ -21,12 +21,7 @@
     ".sidemenu-overlay{position:fixed;inset:0;background:rgba(5,9,25,.6);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:1002}" +
     ".sidemenu-overlay.is-open{opacity:1;pointer-events:auto}" +
     ".sidemenu-panel{position:fixed;top:0;left:0;bottom:0;width:290px;max-width:84vw;transform:translateX(-100%);transition:transform .25s ease;z-index:1003;display:flex;flex-direction:column;padding:10px 0 18px;font-family:'Cinzel',Georgia,serif;border-right:1px solid transparent;" +
-      "background:" +
-        "radial-gradient(ellipse at 50% 50%,transparent 60%,rgba(80,48,20,.25) 100%)," +
-        "radial-gradient(ellipse at 15% 6%,rgba(240,222,180,.5) 0%,transparent 40%)," +
-        "repeating-linear-gradient(0deg,rgba(95,65,30,.10) 0px,rgba(95,65,30,.10) 1px,transparent 1px,transparent 5px)," +
-        "repeating-linear-gradient(90deg,rgba(110,78,40,.07) 0px,rgba(110,78,40,.07) 2px,transparent 2px,transparent 25px)," +
-        "linear-gradient(180deg,#d6bd92 0%,#c8a878 55%,#b98f5f 100%);" +
+      "background:var(--papiro-fundo);" +
       "clip-path:polygon(0 0, calc(100% - 3px) 0, calc(100% - 2px) 2.2%, calc(100% - 1px) 4.3%, calc(100% - 3px) 6.5%, calc(100% - 5px) 8.7%, calc(100% - 0px) 10.9%, calc(100% - 0px) 13.0%, calc(100% - 4px) 15.2%, calc(100% - 0px) 17.4%, calc(100% - 2px) 19.6%, calc(100% - 4px) 21.7%, calc(100% - 0px) 23.9%, calc(100% - 4px) 26.1%, calc(100% - 1px) 28.3%, calc(100% - 0px) 30.4%, calc(100% - 0px) 32.6%, calc(100% - 3px) 34.8%, calc(100% - 3px) 37.0%, calc(100% - 0px) 39.1%, calc(100% - 1px) 41.3%, calc(100% - 0px) 43.5%, calc(100% - 4px) 45.7%, calc(100% - 3px) 47.8%, calc(100% - 0px) 50.0%, calc(100% - 4px) 52.2%, calc(100% - 0px) 54.3%, calc(100% - 1px) 56.5%, calc(100% - 5px) 58.7%, calc(100% - 5px) 60.9%, calc(100% - 4px) 63.0%, calc(100% - 0px) 65.2%, calc(100% - 4px) 67.4%, calc(100% - 4px) 69.6%, calc(100% - 3px) 71.7%, calc(100% - 0px) 73.9%, calc(100% - 1px) 76.1%, calc(100% - 0px) 78.3%, calc(100% - 4px) 80.4%, calc(100% - 1px) 82.6%, calc(100% - 2px) 84.8%, calc(100% - 3px) 87.0%, calc(100% - 1px) 89.1%, calc(100% - 4px) 91.3%, calc(100% - 0px) 93.5%, calc(100% - 4px) 95.7%, calc(100% - 2px) 97.8%, calc(100% - 2px) 100%, 0 100%)}" +
     ".sidemenu-panel.is-open{transform:translateX(0)}" +
     ".sidemenu-close{align-self:flex-end;margin:0 12px 0 auto;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#1a1410;cursor:pointer}" +

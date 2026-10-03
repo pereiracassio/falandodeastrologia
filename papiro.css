@@ -1,0 +1,22 @@
+/* PAPIRO GLOBAL — a ÚNICA definição das cores e camadas do papiro do site inteiro (folhas das páginas, banners
+   da home, bloco de redes sociais, menu lateral). Quem pinta algo de papiro usa estas variáveis, nunca um degradê
+   copiado. Pra mudar o papiro em todo lugar, é só mexer AQUI. Mesmo arquivo/valores do software Astro Hellenic. */
+:root {
+    --papiro-topo: #e6d3a0;
+    --papiro-meio: #dcc590;
+    --papiro-base: #d2b980;
+    --papiro-chapado: var(--papiro-meio);
+    --papiro-gradiente: linear-gradient(180deg, var(--papiro-topo) 0%, var(--papiro-meio) 50%, var(--papiro-base) 100%);
+    /* folhas grandes: luz no canto, sombra no canto oposto, fibras horizontais e verticais */
+    --papiro-fundo:
+        radial-gradient(ellipse at 12% 6%, rgba(255,244,210,0.6) 0%, transparent 40%),
+        radial-gradient(ellipse at 90% 96%, rgba(110,70,30,0.22) 0%, transparent 45%),
+        repeating-linear-gradient(0deg, rgba(120,85,40,0.07) 0px, rgba(120,85,40,0.07) 1px, transparent 1px, transparent 6px),
+        repeating-linear-gradient(90deg, rgba(150,110,60,0.05) 0px, rgba(150,110,60,0.05) 2px, transparent 2px, transparent 27px),
+        var(--papiro-gradiente);
+    /* peças pequenas (botões, janelinhas, menus): só um brilho leve e as fibras horizontais */
+    --papiro-fundo-simples:
+        radial-gradient(ellipse at 15% 20%, rgba(255,244,210,0.45) 0%, transparent 50%),
+        repeating-linear-gradient(0deg, rgba(120,85,40,0.07) 0px, rgba(120,85,40,0.07) 1px, transparent 1px, transparent 6px),
+        var(--papiro-gradiente);
+}
