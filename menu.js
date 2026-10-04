@@ -70,7 +70,7 @@
   var logo = document.createElement("a");
   logo.className = "sidemenu-logo";
   logo.href = "index.html";
-  logo.innerHTML = '<img src="img/logo-menu.svg" alt="Falando de Astrologia Helenística" width="1140" height="340">';
+  logo.innerHTML = '<img src="img/logo-menu.svg?v=2" alt="Falando de Astrologia Helenística" width="864" height="352">';
 
   panel.appendChild(closeBtn);
   panel.appendChild(logo);
