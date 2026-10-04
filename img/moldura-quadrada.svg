@@ -6,6 +6,6 @@
 <rect x="40" y="40" width="1020" height="920" stroke="#2B1D12" stroke-width="1.5"/>
 <rect x="47" y="47" width="1006" height="906" stroke="#B5852F" stroke-width="4"/>
 <rect x="54" y="54" width="992" height="892" stroke="#2B1D12" stroke-width="1.5"/>
-<svg x="84" y="70" width="932" height="32"><rect width="932" height="32" fill="url(#meandro)"/></svg>
-<svg x="84" y="898" width="932" height="32"><rect width="932" height="32" fill="url(#meandro)"/></svg>
+<svg x="94" y="70" width="912" height="32"><rect width="912" height="32" fill="url(#meandro)"/></svg>
+<svg x="94" y="898" width="912" height="32"><rect width="912" height="32" fill="url(#meandro)"/></svg>
 </svg>
