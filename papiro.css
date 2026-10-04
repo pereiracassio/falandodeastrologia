@@ -26,6 +26,6 @@
    (border-image), então serve pra qualquer altura. --moldura-m = escala; as variáveis de padding deixam o texto dentro. */
 :root{--moldura-m:.4;--moldura-pv:calc(130px*var(--moldura-m) + 22px);--moldura-ph:calc(80px*var(--moldura-m) + 20px)}
 @media(max-width:700px){:root{--moldura-m:.25;--moldura-pv:calc(130px*var(--moldura-m) + 16px);--moldura-ph:calc(80px*var(--moldura-m) + 10px)}}
-.papiro-moldura,.folha-pagina{position:relative}
+.folha-pagina{position:relative}  /* em outra folha com a classe papiro-moldura: ela precisa ser posicionada (relative/absolute/fixed) */
 .papiro-moldura::after,.folha-pagina::after{content:"";position:absolute;inset:0;pointer-events:none;border-style:solid;
   border-width:calc(130px*var(--moldura-m)) calc(80px*var(--moldura-m));border-image:url(img/moldura-redes.svg?v=2) 130 80 round}

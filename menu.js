@@ -20,18 +20,18 @@
     ".sidemenu-toggle span::after{position:absolute;top:6px}" +
     ".sidemenu-overlay{position:fixed;inset:0;background:rgba(5,9,25,.6);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:1002}" +
     ".sidemenu-overlay.is-open{opacity:1;pointer-events:auto}" +
-    ".sidemenu-panel{position:fixed;top:0;left:0;bottom:0;width:290px;max-width:84vw;transform:translateX(-100%);transition:transform .25s ease;z-index:1003;display:flex;flex-direction:column;padding:10px 0 18px;font-family:'Cinzel',Georgia,serif;border-right:1px solid transparent;" +
+    ".sidemenu-panel{position:fixed;top:0;left:0;bottom:0;width:290px;max-width:84vw;transform:translateX(-100%);transition:transform .25s ease;z-index:1003;display:flex;flex-direction:column;--moldura-m:.28;padding:calc(130px*var(--moldura-m) + 6px) calc(80px*var(--moldura-m) + 8px) calc(130px*var(--moldura-m) + 6px);font-family:'Cinzel',Georgia,serif;border-right:1px solid transparent;" +
       "background:var(--papiro-fundo);" +
       "clip-path:polygon(0 0, calc(100% - 3px) 0, calc(100% - 2px) 2.2%, calc(100% - 1px) 4.3%, calc(100% - 3px) 6.5%, calc(100% - 5px) 8.7%, calc(100% - 0px) 10.9%, calc(100% - 0px) 13.0%, calc(100% - 4px) 15.2%, calc(100% - 0px) 17.4%, calc(100% - 2px) 19.6%, calc(100% - 4px) 21.7%, calc(100% - 0px) 23.9%, calc(100% - 4px) 26.1%, calc(100% - 1px) 28.3%, calc(100% - 0px) 30.4%, calc(100% - 0px) 32.6%, calc(100% - 3px) 34.8%, calc(100% - 3px) 37.0%, calc(100% - 0px) 39.1%, calc(100% - 1px) 41.3%, calc(100% - 0px) 43.5%, calc(100% - 4px) 45.7%, calc(100% - 3px) 47.8%, calc(100% - 0px) 50.0%, calc(100% - 4px) 52.2%, calc(100% - 0px) 54.3%, calc(100% - 1px) 56.5%, calc(100% - 5px) 58.7%, calc(100% - 5px) 60.9%, calc(100% - 4px) 63.0%, calc(100% - 0px) 65.2%, calc(100% - 4px) 67.4%, calc(100% - 4px) 69.6%, calc(100% - 3px) 71.7%, calc(100% - 0px) 73.9%, calc(100% - 1px) 76.1%, calc(100% - 0px) 78.3%, calc(100% - 4px) 80.4%, calc(100% - 1px) 82.6%, calc(100% - 2px) 84.8%, calc(100% - 3px) 87.0%, calc(100% - 1px) 89.1%, calc(100% - 4px) 91.3%, calc(100% - 0px) 93.5%, calc(100% - 4px) 95.7%, calc(100% - 2px) 97.8%, calc(100% - 2px) 100%, 0 100%)}" +
     ".sidemenu-panel.is-open{transform:translateX(0)}" +
-    ".sidemenu-close{align-self:flex-end;margin:0 12px 0 auto;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#1a1410;cursor:pointer}" +
+    ".sidemenu-close{position:absolute;top:calc(130px*var(--moldura-m) - 10px);right:calc(80px*var(--moldura-m) + 4px);margin:0;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#1a1410;cursor:pointer}" +
     ".sidemenu-close:hover{color:#1F5FA3}" +
     ".sidemenu-nav{display:flex;flex-direction:column;overflow-y:auto}" +
-    ".sidemenu-logo{display:block;text-align:center;margin:0 16px;padding:0 0 14px;border-bottom:1px solid rgba(31,95,163,.55)}.sidemenu-logo img{width:100%;height:auto;display:block}" +
-    ".sidemenu-nav a{padding:14px 24px;color:#1a1410;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(95,65,30,.4)}" +
+    ".sidemenu-logo{display:block;text-align:center;margin:0;padding:10px 0 14px;border-bottom:1px solid rgba(31,95,163,.55)}.sidemenu-logo img{width:100%;height:auto;display:block}" +
+    ".sidemenu-nav a{padding:14px 8px;color:#1a1410;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(95,65,30,.4)}" +
     ".sidemenu-nav a.is-sep{margin-top:14px;border-top:1px solid #B5852F}" +
     ".sidemenu-nav a:hover{color:#1F5FA3}" +
-    ".sidemenu-nav a.is-current{color:#1F5FA3;border-left:3px solid #1F5FA3;padding-left:21px}" +
+    ".sidemenu-nav a.is-current{color:#1F5FA3;border-left:3px solid #1F5FA3;padding-left:5px}" +
     "body.sidemenu-lock{overflow:hidden}";
   document.head.appendChild(style);
 
@@ -45,7 +45,7 @@
   overlay.className = "sidemenu-overlay";
 
   var panel = document.createElement("div");
-  panel.className = "sidemenu-panel";
+  panel.className = "sidemenu-panel papiro-moldura";
 
   var closeBtn = document.createElement("button");
   closeBtn.className = "sidemenu-close";
@@ -70,7 +70,7 @@
   var logo = document.createElement("a");
   logo.className = "sidemenu-logo";
   logo.href = "index.html";
-  logo.innerHTML = '<img src="img/logo-menu.svg?v=2" alt="Falando de Astrologia Helenística" width="864" height="352">';
+  logo.innerHTML = '<img src="img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238">';
 
   panel.appendChild(closeBtn);
   panel.appendChild(logo);
