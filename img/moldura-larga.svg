@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="800" viewBox="0 0 1920 800" fill="none">
+<title>Moldura com meandros gregos (sem fundo, para pôr sobre o papiro)</title>
+<defs>
+<pattern id="meandro" width="48" height="32" patternUnits="userSpaceOnUse"><path d="M0 28 H 8 V 4 H 40 V 28 H 24 V 14 H 32 V 20" fill="none" stroke="#1F5FA3" stroke-width="3.4" stroke-linejoin="miter"/></pattern>
+</defs>
+<rect x="60" y="60" width="1800" height="680" stroke="#2B1D12" stroke-width="1.5"/>
+<rect x="67" y="67" width="1786" height="666" stroke="#B5852F" stroke-width="4"/>
+<rect x="74" y="74" width="1772" height="652" stroke="#2B1D12" stroke-width="1.5"/>
+<svg x="96" y="92" width="1728" height="32"><rect width="1728" height="32" fill="url(#meandro)"/></svg>
+<svg x="96" y="676" width="1728" height="32"><rect width="1728" height="32" fill="url(#meandro)"/></svg>
+</svg>

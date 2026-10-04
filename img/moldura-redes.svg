@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="496" height="360" viewBox="0 0 496 360" fill="none">
+<title>Moldura com meandros para bloco de altura livre (usada em border-image: cantos fixos, laterais repetem)</title>
+<defs>
+<pattern id="meandro" x="80" width="48" height="32" patternUnits="userSpaceOnUse"><path d="M0 28 H 8 V 4 H 40 V 28 H 24 V 14 H 32 V 20" fill="none" stroke="#1F5FA3" stroke-width="3.4" stroke-linejoin="miter"/></pattern>
+</defs>
+<rect x="60" y="60" width="376" height="240" stroke="#2B1D12" stroke-width="1.5"/>
+<rect x="67" y="67" width="362" height="226" stroke="#B5852F" stroke-width="4"/>
+<rect x="74" y="74" width="348" height="212" stroke="#2B1D12" stroke-width="1.5"/>
+<rect x="80" y="92" width="336" height="32" fill="url(#meandro)"/>
+<rect x="80" y="236" width="336" height="32" fill="url(#meandro)"/>
+</svg>

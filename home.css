@@ -139,3 +139,21 @@ html,body{max-width:100%;overflow-x:hidden}
 .redes-blog{display:block;text-decoration:none}
 .redes-blog-label{display:block;font-family:'Cardo','GFS Didot',Georgia,serif;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terracota);margin-bottom:10px}
 .redes-blog img{width:100%;height:auto;display:block}
+
+/* banner da Mentoria: Hermes Trismegisto (moldura + meandros + figura) sobre o papiro; título à esquerda */
+.top-banners .papiro.mentoria-hermes{aspect-ratio:2.4/1}
+.top-banners .papiro.mentoria-hermes .folha img{top:0;left:0;width:100%;height:100%;object-fit:contain;opacity:1}
+.top-banners .papiro.mentoria-hermes .folha b{left:8%;right:41%;top:0;bottom:0;height:auto}
+
+/* moldura com meandros (a mesma da Mentoria) nos demais banners, por cima do papiro */
+.top-banners .papiro:not(.mentoria-hermes) .folha::after,.services-grid .papiro .folha::after{content:"";position:absolute;inset:0;pointer-events:none;background:no-repeat center/100% 100%}
+.top-banners .papiro:not(.mentoria-hermes) .folha::after{background-image:url(img/moldura-larga.svg)}
+.services-grid .papiro .folha::after{background-image:url(img/moldura-quadrada.svg)}
+/* o conteúdo fica dentro dos meandros */
+.top-banners .papiro:not(.mentoria-hermes) .folha img{top:17%;height:66%;left:8%;width:36%}
+.services-grid .papiro .folha img{top:13%;height:53%}
+.services-grid .papiro .folha b{bottom:12%;height:19%}
+
+/* bloco de redes: mesma moldura com meandros; o logo do blog perdeu a moldura própria (img/logo-blog.svg) */
+.redes-folha{position:relative;padding:50px 9% 48px}
+.redes-folha::after{content:"";position:absolute;inset:0;pointer-events:none;border-style:solid;border-width:36px 22px;border-image:url(img/moldura-redes.svg) 130 80 / 36px 22px round}
