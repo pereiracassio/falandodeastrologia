@@ -20,3 +20,12 @@
         repeating-linear-gradient(0deg, rgba(120,85,40,0.07) 0px, rgba(120,85,40,0.07) 1px, transparent 1px, transparent 6px),
         var(--papiro-gradiente);
 }
+
+/* MOLDURA COM MEANDROS GREGOS — a única definição, para qualquer folha de papiro grande. Já vem ligada em toda
+   `.folha-pagina` (páginas do site); em outra folha, basta a classe `papiro-moldura`. Cantos fixos, lados repetem
+   (border-image), então serve pra qualquer altura. --moldura-m = escala; as variáveis de padding deixam o texto dentro. */
+:root{--moldura-m:.4;--moldura-pv:calc(130px*var(--moldura-m) + 22px);--moldura-ph:calc(80px*var(--moldura-m) + 20px)}
+@media(max-width:700px){:root{--moldura-m:.25;--moldura-pv:calc(130px*var(--moldura-m) + 16px);--moldura-ph:calc(80px*var(--moldura-m) + 10px)}}
+.papiro-moldura,.folha-pagina{position:relative}
+.papiro-moldura::after,.folha-pagina::after{content:"";position:absolute;inset:0;pointer-events:none;border-style:solid;
+  border-width:calc(130px*var(--moldura-m)) calc(80px*var(--moldura-m));border-image:url(img/moldura-redes.svg?v=2) 130 80 round}
