@@ -114,6 +114,12 @@
     .btn-pay:hover { 
       background: #0c2b52; 
     }
+    .dados { margin-bottom: 20px; }
+    .dados label { display: block; font-size: 13px; font-weight: bold; color: #6b5a3a; margin: 0 0 4px; }
+    .dados input { width: 100%; box-sizing: border-box; padding: 11px 12px; margin-bottom: 12px; border: 1px solid rgba(120,85,40,.5); border-radius: 6px; background: rgba(255,250,232,.7); font-size: 15px; color: #2b1d12; font-family: inherit; }
+    .dados .dica { font-size: 12px; color: #6b5a3a; margin: -8px 0 12px; }
+    .erro-dados { color: #a03e25; font-size: 13px; margin: 0 0 12px; display: none; }
+    .btn-pay.ocupado { opacity: .6; pointer-events: none; }
   </style>
   <link rel="stylesheet" href="papiro.css?v=3">
   <link rel="stylesheet" href="home.css?v=13">
@@ -141,7 +147,7 @@
     <div class="step-item">
       <div class="step-number">2</div>
       <div class="step-text">
-        <strong>Preenchimento de Dados:</strong> Após a confirmação do pagamento, você preencherá o formulário. Insira obrigatoriamente um e-mail do <span class="highlight">Gmail</span> para garantir seu acesso à gravação da sessão.
+        <strong>Preenchimento de Dados:</strong> Após a confirmação do pagamento, você completará o formulário com os dados de nascimento (seu nome, WhatsApp e e-mail já vão preenchidos). Use obrigatoriamente um e-mail do <span class="highlight">Gmail</span> para garantir seu acesso à gravação da sessão.
       </div>
     </div>
 
@@ -151,6 +157,17 @@
         <strong>Agendamento:</strong> Ao enviar o formulário, você será redirecionado para a agenda onde escolherá o melhor dia e horário para o atendimento.
       </div>
     </div>
+  </div>
+
+  <div class="dados" id="dados">
+    <label for="cli-nome">Nome completo</label>
+    <input type="text" id="cli-nome" autocomplete="name" placeholder="Seu nome completo">
+    <label for="cli-whatsapp">WhatsApp</label>
+    <input type="tel" inputmode="tel" id="cli-whatsapp" autocomplete="tel" placeholder="(11) 99999-9999">
+    <label for="cli-email">E-mail (Gmail)</label>
+    <input type="email" id="cli-email" autocomplete="email" placeholder="seu@gmail.com">
+    <p class="dica">Você só digita isso uma vez.</p>
+    <p class="erro-dados" id="erro-dados"></p>
   </div>
 
   <a href="#" id="pay-button" class="btn-pay">Ir para o Pagamento</a>
@@ -192,11 +209,70 @@
     document.getElementById("service-title").textContent = servico.titulo;
     document.getElementById("service-price").textContent = servico.preco;
     document.getElementById("pay-button").href = servico.linkPagamento;
+    iniciarPagamento(servico);
   } else {
+    document.getElementById("dados").style.display = "none";
     document.getElementById("service-title").textContent = "Serviço não encontrado";
     document.getElementById("price-box").style.display = "none";
     document.getElementById("steps").style.display = "none";
     document.getElementById("pay-button").style.display = "none";
+  }
+  // Link do formulário do Astro Hellenic (volta pra cá depois do pagamento, já com serviço, nome, WhatsApp e e-mail)
+  var FORM_URL = "https://astrohellenic.github.io/formulario.html?u=87101e7e-657c-4ca6-ab73-495e00af149f";
+  var INFINITEPAY_HANDLE = "cassiopereira_";
+  var INFINITEPAY_API = "https://api.checkout.infinitepay.io/links";
+
+  function iniciarPagamento(servico) {
+    var botao = document.getElementById("pay-button");
+    var erro = document.getElementById("erro-dados");
+    var centavos = Math.round(parseFloat(servico.preco.replace(/[^\d,]/g, "").replace(",", ".")) * 100);
+
+    function telefoneInternacional(t) {
+      var n = t.replace(/\D/g, "");
+      if (t.trim().charAt(0) === "+") return "+" + n;
+      if (n.length === 10 || n.length === 11) return "+55" + n;
+      return "+" + n;
+    }
+
+    botao.addEventListener("click", function (e) {
+      e.preventDefault();
+      var nome = document.getElementById("cli-nome").value.trim();
+      var whatsapp = document.getElementById("cli-whatsapp").value.trim();
+      var email = document.getElementById("cli-email").value.trim();
+      if (!nome || whatsapp.replace(/\D/g, "").length < 8 || email.indexOf("@") < 1) {
+        erro.textContent = "Preencha nome, WhatsApp e e-mail para continuar.";
+        erro.style.display = "block";
+        return;
+      }
+      erro.style.display = "none";
+      botao.classList.add("ocupado");
+      botao.textContent = "Abrindo o pagamento...";
+
+      var redirectUrl = FORM_URL + "&servico=" + encodeURIComponent(servico.titulo) +
+        "&nome=" + encodeURIComponent(nome) + "&whatsapp=" + encodeURIComponent(whatsapp) + "&email=" + encodeURIComponent(email);
+
+      // Se qualquer coisa falhar, cai no link fixo de antes (o pagamento nunca para de funcionar)
+      var reserva = function () { window.location.href = servico.linkPagamento; };
+      var controle = new AbortController();
+      var timer = setTimeout(function () { controle.abort(); }, 8000);
+
+      fetch(INFINITEPAY_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controle.signal,
+        body: JSON.stringify({
+          handle: INFINITEPAY_HANDLE,
+          order_nsu: "fda-" + Date.now(),
+          items: [{ quantity: 1, price: centavos, description: servico.titulo }],
+          redirect_url: redirectUrl,
+          customer: { name: nome, email: email, phone_number: telefoneInternacional(whatsapp) }
+        })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        clearTimeout(timer);
+        var url = j && (j.url || j.link || j.checkout_url || j.payment_url || (j.data && (j.data.url || j.data.link)));
+        if (url && /^https:\/\//.test(url)) { window.location.href = url; } else { reserva(); }
+      }).catch(function () { clearTimeout(timer); reserva(); });
+    });
   }
 </script>
 
