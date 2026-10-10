@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Horário Confirmado</title>
+
+  <!-- Importação da fonte Cinzel do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body.checkout { font-family: 'Cinzel', serif; }
+    .confirmado { text-align: center; color: #2b1d12; line-height: 1.6; }
+    .confirmado h1 { color: #1F5FA3; font-size: 26px; margin: 0 0 6px; }
+    .confirmado .ola { font-size: 17px; margin: 0 0 18px; }
+    .confirmado .horario { background: rgba(255,250,232,.6); border: 1px solid rgba(120,85,40,.4); border-radius: 8px; padding: 16px; margin: 0 0 22px; }
+    .confirmado .horario .data { font-size: 22px; font-weight: 700; color: #1F5FA3; }
+    .confirmado .horario .fuso { font-size: 13px; color: #6b5a3a; margin-top: 4px; }
+    .confirmado p { font-size: 16px; margin: 0 0 16px; }
+    .confirmado .botoes { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 22px; }
+    .confirmado .botoes a { box-sizing: border-box; display: inline-block; width: 100%; max-width: 320px; padding: 12px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; text-decoration: none; }
+    .confirmado .btn-wpp { border: 2px solid rgb(37, 211, 102); color: #25d366; }
+    .confirmado .btn-home { background: #1F5FA3; color: #f6e7b4; }
+  </style>
+
+  <link rel="stylesheet" href="papiro.css?v=3">
+  <link rel="stylesheet" href="home.css?v=13">
+  <link rel="stylesheet" href="page.css?v=17">
+</head>
+<body class="checkout">
+
+<div class="pagina pagina-estreita"><div class="folha-pagina">
+  <div class="confirmado">
+    <h1>Horário confirmado!</h1>
+    <p class="ola" id="ola"></p>
+
+    <div class="horario" id="horario" style="display:none">
+      <div class="data" id="data"></div>
+      <div class="fuso" id="fuso"></div>
+    </div>
+
+    <p>Seu horário está reservado. Se precisar remarcar ou tiver qualquer dúvida, é só me chamar no WhatsApp.</p>
+
+    <div class="botoes">
+      <a class="btn-wpp" href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Acabei%20de%20confirmar%20meu%20horário." target="_blank" rel="noopener">Falar pelo WhatsApp</a>
+      <a class="btn-home" href="index.html">Voltar ao site</a>
+    </div>
+  </div>
+</div></div>
+
+<script>
+  /* Os dados chegam pela URL, preenchidos pelo Astro Hellenic:
+     horario-confirmado.html?nome={NOME}&data={DATA}&hora={HORA}&fuso={FUSO} */
+  (function () {
+    var p = new URLSearchParams(window.location.search);
+    var nome = (p.get('nome') || '').trim();
+    var data = (p.get('data') || '').trim();
+    var hora = (p.get('hora') || '').trim();
+    var fuso = (p.get('fuso') || '').trim();
+
+    document.getElementById('ola').textContent = nome ? 'Olá, ' + nome + '!' : '';
+
+    /* só mostra o quadro do horário se vierem data e hora no formato esperado (evita texto estranho vindo da URL) */
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(data) && /^\d{2}:\d{2}$/.test(hora)) {
+      document.getElementById('data').textContent = data + ' às ' + hora;
+      if (/^[A-Za-z_]+\/[A-Za-z_\/-]+$/.test(fuso)) {
+        document.getElementById('fuso').textContent = 'horário de ' + fuso.split('/').pop().replace(/_/g, ' ');
+      }
+      document.getElementById('horario').style.display = '';
+    }
+  })();
+</script>
+</body>
+</html>
