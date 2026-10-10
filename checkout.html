@@ -194,6 +194,11 @@
       preco: "R$ 335,00",
       linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/cM91wDKb7t"
     },
+    "teste": {
+      titulo: "Teste de Pagamento",
+      preco: "R$ 1,00"
+      // sem linkPagamento de reserva de propósito: se a criação do link falhar, o teste mostra o erro em vez de esconder
+    },
     "revolucao-solar": {
       titulo: "Revolução Solar Clássica e Profecção Anual",
       preco: "R$ 335,00",
@@ -208,7 +213,7 @@
     document.title = "Resumo do Atendimento - " + servico.titulo;
     document.getElementById("service-title").textContent = servico.titulo;
     document.getElementById("service-price").textContent = servico.preco;
-    document.getElementById("pay-button").href = servico.linkPagamento;
+    if (servico.linkPagamento) document.getElementById("pay-button").href = servico.linkPagamento;
     iniciarPagamento(servico);
   } else {
     document.getElementById("dados").style.display = "none";
@@ -268,7 +273,13 @@
         "&nome=" + encodeURIComponent(nome) + "&whatsapp=" + encodeURIComponent(whatsapp) + "&email=" + encodeURIComponent(email);
 
       // Se qualquer coisa falhar, cai no link fixo de antes (o pagamento nunca para de funcionar)
-      var reserva = function () { window.location.href = servico.linkPagamento; };
+      var reserva = function () {
+        if (servico.linkPagamento) { window.location.href = servico.linkPagamento; return; }
+        botao.classList.remove("ocupado");
+        botao.textContent = "Ir para o Pagamento";
+        erro.textContent = "Não foi possível abrir o pagamento agora. Tente de novo em instantes.";
+        erro.style.display = "block";
+      };
       var controle = new AbortController();
       var timer = setTimeout(function () { controle.abort(); }, 8000);
 
