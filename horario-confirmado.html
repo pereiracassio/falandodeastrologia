@@ -19,6 +19,7 @@
     .confirmado h1 { color: #1F5FA3; font-size: 26px; margin: 0 0 6px; }
     .confirmado .ola { font-size: 17px; margin: 0 0 18px; }
     .confirmado .horario { background: rgba(255,250,232,.6); border: 1px solid rgba(120,85,40,.4); border-radius: 8px; padding: 16px; margin: 0 0 22px; }
+    .confirmado .horario .servico { font-size: 15px; color: #6b5a3a; margin-bottom: 6px; }
     .confirmado .horario .data { font-size: 22px; font-weight: 700; color: #1F5FA3; }
     .confirmado .horario .fuso { font-size: 13px; color: #6b5a3a; margin-top: 4px; }
     .confirmado p { font-size: 16px; margin: 0 0 16px; }
@@ -40,6 +41,7 @@
     <p class="ola" id="ola"></p>
 
     <div class="horario" id="horario" style="display:none">
+      <div class="servico" id="servico"></div>
       <div class="data" id="data"></div>
       <div class="fuso" id="fuso"></div>
     </div>
@@ -55,13 +57,14 @@
 
 <script>
   /* Os dados chegam pela URL, preenchidos pelo Astro Hellenic:
-     horario-confirmado.html?nome={NOME}&data={DATA}&hora={HORA}&fuso={FUSO} */
+     horario-confirmado.html?nome={NOME}&data={DATA}&hora={HORA}&fuso={FUSO}&servico={SERVICO} */
   (function () {
     var p = new URLSearchParams(window.location.search);
     var nome = (p.get('nome') || '').trim();
     var data = (p.get('data') || '').trim();
     var hora = (p.get('hora') || '').trim();
     var fuso = (p.get('fuso') || '').trim();
+    var servico = (p.get('servico') || '').trim().slice(0, 120);
 
     document.getElementById('ola').textContent = nome ? 'Olá, ' + nome + '!' : '';
 
@@ -71,6 +74,7 @@
       if (/^[A-Za-z_]+\/[A-Za-z_\/-]+$/.test(fuso)) {
         document.getElementById('fuso').textContent = 'horário de ' + fuso.split('/').pop().replace(/_/g, ' ');
       }
+      document.getElementById('servico').textContent = servico;
       document.getElementById('horario').style.display = '';
     }
   })();
