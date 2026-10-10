@@ -147,7 +147,7 @@
     <div class="step-item">
       <div class="step-number">2</div>
       <div class="step-text">
-        <strong>Preenchimento de Dados:</strong> Após a confirmação do pagamento, você completará o formulário com os dados de nascimento (seu nome, WhatsApp e e-mail já vão preenchidos). Use obrigatoriamente um e-mail do <span class="highlight">Gmail</span> para garantir seu acesso à gravação da sessão.
+        <strong>Preenchimento de Dados:</strong> Após a confirmação do pagamento, você completará o formulário com os dados de nascimento. Seu nome, WhatsApp e e-mail já vão preenchidos, e você pode corrigir se precisar.
       </div>
     </div>
 
@@ -164,9 +164,9 @@
     <input type="text" id="cli-nome" autocomplete="name" placeholder="Seu nome completo">
     <label for="cli-whatsapp">WhatsApp</label>
     <input type="tel" inputmode="tel" id="cli-whatsapp" autocomplete="tel" placeholder="(11) 99999-9999">
-    <label for="cli-email">E-mail (Gmail)</label>
+    <label for="cli-email">E-mail (precisa ser Gmail)</label>
     <input type="email" id="cli-email" autocomplete="email" placeholder="seu@gmail.com">
-    <p class="dica">Você só digita isso uma vez.</p>
+    <p class="dica">Use um Gmail: é por ele que você acessa a gravação da sessão.</p>
     <p class="erro-dados" id="erro-dados"></p>
   </div>
 
@@ -222,6 +222,17 @@
   var INFINITEPAY_HANDLE = "cassiopereira_";
   var INFINITEPAY_API = "https://api.checkout.infinitepay.io/links";
 
+  // Procura na resposta do InfinitePay (em qualquer campo, em qualquer nível) o endereço https do pagamento
+  function acharEnderecoPagamento(obj) {
+    var achados = [];
+    (function varrer(v) {
+      if (typeof v === "string") { if (/^https:\/\/[^\s]+$/.test(v)) achados.push(v); }
+      else if (v && typeof v === "object") { Object.keys(v).forEach(function (k) { varrer(v[k]); }); }
+    })(obj);
+    for (var i = 0; i < achados.length; i++) { if (/infinitepay/i.test(achados[i])) return achados[i]; }
+    return null;
+  }
+
   function iniciarPagamento(servico) {
     var botao = document.getElementById("pay-button");
     var erro = document.getElementById("erro-dados");
@@ -239,8 +250,13 @@
       var nome = document.getElementById("cli-nome").value.trim();
       var whatsapp = document.getElementById("cli-whatsapp").value.trim();
       var email = document.getElementById("cli-email").value.trim();
-      if (!nome || whatsapp.replace(/\D/g, "").length < 8 || email.indexOf("@") < 1) {
+      if (!nome || whatsapp.replace(/\D/g, "").length < 8 || !email) {
         erro.textContent = "Preencha nome, WhatsApp e e-mail para continuar.";
+        erro.style.display = "block";
+        return;
+      }
+      if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+        erro.textContent = "O e-mail precisa ser um Gmail (terminado em @gmail.com).";
         erro.style.display = "block";
         return;
       }
@@ -269,8 +285,8 @@
         })
       }).then(function (r) { return r.json(); }).then(function (j) {
         clearTimeout(timer);
-        var url = j && (j.url || j.link || j.checkout_url || j.payment_url || (j.data && (j.data.url || j.data.link)));
-        if (url && /^https:\/\//.test(url)) { window.location.href = url; } else { reserva(); }
+        var url = acharEnderecoPagamento(j);
+        if (url) { window.location.href = url; } else { reserva(); }
       }).catch(function () { clearTimeout(timer); reserva(); });
     });
   }
