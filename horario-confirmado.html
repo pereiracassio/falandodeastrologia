@@ -37,7 +37,7 @@
 
 <div class="pagina pagina-estreita"><div class="folha-pagina">
   <div class="confirmado">
-    <h1>Horário confirmado!</h1>
+    <h1 id="titulo">Horário confirmado!</h1>
     <p class="ola" id="ola"></p>
 
     <div class="horario" id="horario" style="display:none">
@@ -46,7 +46,7 @@
       <div class="fuso" id="fuso"></div>
     </div>
 
-    <p>Seu horário está reservado. Se precisar remarcar ou tiver qualquer dúvida, é só me chamar no WhatsApp.</p>
+    <p id="texto">Seu horário está reservado. Se precisar remarcar ou tiver qualquer dúvida, é só me chamar no WhatsApp.</p>
 
     <div class="botoes">
       <a class="btn-wpp" href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Acabei%20de%20confirmar%20meu%20horário." target="_blank" rel="noopener">Falar pelo WhatsApp</a>
@@ -57,7 +57,8 @@
 
 <script>
   /* Os dados chegam pela URL, preenchidos pelo Astro Hellenic:
-     horario-confirmado.html?nome={NOME}&data={DATA}&hora={HORA}&fuso={FUSO}&servico={SERVICO} */
+     horario-confirmado.html?nome={NOME}&data={DATA}&hora={HORA}&fuso={FUSO}&servico={SERVICO}
+     (sem data e hora, mostra "Dados recebidos!") */
   (function () {
     var p = new URLSearchParams(window.location.search);
     var nome = (p.get('nome') || '').trim();
@@ -76,6 +77,14 @@
       }
       document.getElementById('servico').textContent = servico;
       document.getElementById('horario').style.display = '';
+    } else {
+      /* sem horário (serviço sem agenda): confirma só o recebimento dos dados */
+      document.getElementById('titulo').textContent = 'Dados recebidos!';
+      document.getElementById('texto').textContent = 'Recebemos suas informações. Se tiver qualquer dúvida, é só me chamar no WhatsApp.';
+      if (servico) {
+        document.getElementById('servico').textContent = servico;
+        document.getElementById('horario').style.display = '';
+      }
     }
   })();
 </script>

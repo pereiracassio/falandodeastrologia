@@ -114,6 +114,12 @@
     .btn-pay:hover { 
       background: #0c2b52; 
     }
+    .opcoes { margin-bottom: 16px; }
+    .opcao { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; margin-bottom: 10px; border: 1px solid rgba(120,85,40,.45); border-radius: 8px; background: rgba(255,250,232,.6); cursor: pointer; }
+    .opcao.sel { border-color: #1F5FA3; box-shadow: 0 0 0 2px rgba(31,95,163,.35); }
+    .opcao input { margin-top: 4px; flex: none; }
+    .opcao .op-titulo { font-weight: bold; color: #2b1d12; font-size: 15px; }
+    .opcao .op-desc { font-size: 13px; color: #6b5a3a; margin-top: 2px; }
     .dados { margin-bottom: 20px; }
     .dados label { display: block; font-size: 13px; font-weight: bold; color: #6b5a3a; margin: 0 0 4px; }
     .dados input { width: 100%; box-sizing: border-box; padding: 11px 12px; margin-bottom: 12px; border: 1px solid rgba(120,85,40,.5); border-radius: 6px; background: rgba(255,250,232,.7); font-size: 15px; color: #2b1d12; font-family: inherit; }
@@ -130,6 +136,8 @@
 <div class="pagina pagina-estreita"><div class="folha-pagina">
 <div class="card">
   <h2 id="service-title">Carregando...</h2>
+
+  <div class="opcoes" id="opcoes" style="display:none"></div>
 
   <div class="price-box" id="price-box">
     <div class="price-title">Valor do Investimento</div>
@@ -154,7 +162,7 @@
     <div class="step-item">
       <div class="step-number">3</div>
       <div class="step-text">
-        <strong>Agendamento:</strong> Ao enviar o formulário, você será redirecionado para a agenda onde escolherá o melhor dia e horário para o atendimento.
+        <span id="passo3-texto"><strong>Agendamento:</strong> Ao enviar o formulário, você será redirecionado para a agenda onde escolherá o melhor dia e horário para o atendimento.</span>
       </div>
     </div>
   </div>
@@ -194,6 +202,14 @@
       preco: "R$ 335,00",
       linkPagamento: "https://checkout.infinitepay.io/cassiopereira_/cM91wDKb7t"
     },
+    "retificacao": {
+      titulo: "Retificação de Mapa Natal",
+      opcoes: [
+        { titulo: "Retificação de Mapa Avulsa", descricao: "Apenas o serviço de retificação.", preco: "R$ 335,00", agenda: false },
+        { titulo: "Combo: Retificação + Mapa Natal Clássico", descricao: "Economize R$ 71,00 no valor do Mapa Natal junto com a retificação.", preco: "R$ 539,00", agenda: true }
+      ]
+      // sem linkPagamento de reserva: não existe link fixo desse serviço
+    },
     "teste": {
       titulo: "Teste de Pagamento",
       preco: "R$ 1,00"
@@ -209,10 +225,42 @@
   var params = new URLSearchParams(window.location.search);
   var servico = SERVICOS[params.get("servico")];
 
+  var TEXTO_AGENDA = '<strong>Agendamento:</strong> Ao enviar o formulário, você será redirecionado para a agenda onde escolherá o melhor dia e horário para o atendimento.';
+  var TEXTO_SEM_AGENDA = '<strong>Retificação:</strong> Esta opção não tem agendamento. Depois de enviar o formulário, a retificação é feita por mensagem, sem chamada.';
+  var escolhido = servico; // o que está valendo agora (o próprio serviço ou a opção marcada)
+
+  function mostrarEscolhido() {
+    document.getElementById("service-price").textContent = escolhido.preco;
+    document.getElementById("passo3-texto").innerHTML = escolhido.agenda === false ? TEXTO_SEM_AGENDA : TEXTO_AGENDA;
+  }
+
   if (servico) {
     document.title = "Resumo do Atendimento - " + servico.titulo;
     document.getElementById("service-title").textContent = servico.titulo;
-    document.getElementById("service-price").textContent = servico.preco;
+    if (servico.opcoes) {
+      var caixa = document.getElementById("opcoes");
+      caixa.style.display = "";
+      servico.opcoes.forEach(function (o, i) {
+        var rotulo = document.createElement("label");
+        rotulo.className = "opcao" + (i === 0 ? " sel" : "");
+        var radio = document.createElement("input");
+        radio.type = "radio"; radio.name = "opcao"; radio.checked = i === 0;
+        var texto = document.createElement("div");
+        var t = document.createElement("div"); t.className = "op-titulo"; t.textContent = o.titulo;
+        var d = document.createElement("div"); d.className = "op-desc"; d.textContent = o.descricao;
+        texto.appendChild(t); texto.appendChild(d);
+        rotulo.appendChild(radio); rotulo.appendChild(texto);
+        radio.addEventListener("change", function () {
+          escolhido = o;
+          Array.prototype.forEach.call(caixa.children, function (c) { c.classList.remove("sel"); });
+          rotulo.classList.add("sel");
+          mostrarEscolhido();
+        });
+        caixa.appendChild(rotulo);
+      });
+      escolhido = servico.opcoes[0];
+    }
+    mostrarEscolhido();
     if (servico.linkPagamento) document.getElementById("pay-button").href = servico.linkPagamento;
     iniciarPagamento(servico);
   } else {
@@ -241,7 +289,6 @@
   function iniciarPagamento(servico) {
     var botao = document.getElementById("pay-button");
     var erro = document.getElementById("erro-dados");
-    var centavos = Math.round(parseFloat(servico.preco.replace(/[^\d,]/g, "").replace(",", ".")) * 100);
 
     function telefoneInternacional(t) {
       var n = t.replace(/\D/g, "");
@@ -269,7 +316,9 @@
       botao.classList.add("ocupado");
       botao.textContent = "Abrindo o pagamento...";
 
-      var redirectUrl = FORM_URL + "&servico=" + encodeURIComponent(servico.titulo) +
+      var item = escolhido;
+      var centavos = Math.round(parseFloat(item.preco.replace(/[^\d,]/g, "").replace(",", ".")) * 100);
+      var redirectUrl = FORM_URL + (item.agenda === false ? "&agenda=0" : "") + "&servico=" + encodeURIComponent(item.titulo) +
         "&nome=" + encodeURIComponent(nome) + "&whatsapp=" + encodeURIComponent(whatsapp) + "&email=" + encodeURIComponent(email);
 
       // Se qualquer coisa falhar, cai no link fixo de antes (o pagamento nunca para de funcionar)
@@ -290,7 +339,7 @@
         body: JSON.stringify({
           handle: INFINITEPAY_HANDLE,
           order_nsu: "fda-" + Date.now(),
-          items: [{ quantity: 1, price: centavos, description: servico.titulo }],
+          items: [{ quantity: 1, price: centavos, description: item.titulo }],
           redirect_url: redirectUrl,
           customer: { name: nome, email: email, phone_number: telefoneInternacional(whatsapp) }
         })
