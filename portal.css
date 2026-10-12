@@ -1,34 +1,37 @@
-/* Portal do Aluno — login, página do aluno e painel da administrador */
-.portal{max-width:760px;margin:0 auto;font-family:Arial,sans-serif;color:#e0e0e0}
-.portal-caixa{padding:30px 20px;background:linear-gradient(135deg,#0f2b48 0%,#1a4971 50%,#0d2035 100%);border:1px solid #c5a059;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.portal-titulo{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase;text-align:center;margin:0 0 6px}
-.portal-sub{font-family:'Cinzel',serif;font-size:14px;color:#e2c07d;text-align:center;margin:0 0 22px}
-.portal-cartao{background:rgba(255,255,255,.05);border:1px solid rgba(197,160,89,.3);border-radius:12px;padding:20px;margin-bottom:18px}
-.portal-cartao h2{font-family:'Cinzel',serif;font-size:16px;color:#e2c07d;margin:0 0 14px;letter-spacing:.5px}
-.portal-cartao p{font-size:15px;line-height:1.6;margin:0 0 14px}
-.portal label{display:block;font-size:13px;color:#e2c07d;margin:0 0 5px}
-.portal input,.portal select{width:100%;box-sizing:border-box;padding:12px;margin:0 0 14px;border-radius:8px;border:1px solid rgba(197,160,89,.5);background:#fff;color:#0d2035;font-size:16px}
-.portal-btn{display:inline-block;padding:12px 24px;background:#c5a059;color:#0d2035;font-weight:700;font-size:15px;text-decoration:none;border:0;border-radius:8px;cursor:pointer;transition:background .3s ease,transform .2s ease}
-.portal-btn:hover{background:#d4af37;transform:translateY(-2px)}
+/* Portal do Aluno — login, página do aluno e painel do administrador.
+   Parte do papiro (ver CLAUDE.md): nada de fundo próprio — caixas e campos são só contorno azul egípcio #1F5FA3,
+   título em terracota #A03E25, texto em azul-noite #16233F. */
+.portal{max-width:760px;margin:0 auto;font-family:Arial,sans-serif;color:#16233F}
+.portal-caixa{padding:10px 0 6px}
+.portal-titulo{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#A03E25;letter-spacing:1px;text-transform:uppercase;text-align:center;margin:0 0 6px}
+.portal-sub{font-family:'Cinzel',serif;font-size:14px;color:#A03E25;text-align:center;margin:0 0 22px}
+.portal-cartao{background:transparent;border:1px solid #1F5FA3;border-radius:12px;padding:20px;margin-bottom:18px}
+.portal-cartao h2{font-family:'Cinzel',serif;font-size:16px;color:#A03E25;margin:0 0 14px;letter-spacing:.5px}
+.portal-cartao p{font-size:15px;line-height:1.6;margin:0 0 14px;color:#16233F}
+.portal label{display:block;font-size:13px;color:#16233F;font-weight:700;margin:0 0 5px}
+.portal input,.portal select{width:100%;box-sizing:border-box;padding:12px;margin:0 0 14px;border-radius:8px;border:1px solid #1F5FA3;background:transparent;color:#16233F;font-size:16px}
+.portal input:focus,.portal select:focus{outline:none;border-width:3px;padding:10px}
+.portal-btn{display:inline-block;padding:12px 24px;background:#1F5FA3;color:#f6e7b4;font-weight:700;font-size:15px;text-decoration:none;border:0;border-radius:8px;cursor:pointer;transition:background .3s ease,transform .2s ease}
+.portal-btn:hover{background:#0b2a52;transform:translateY(-2px)}
 .portal-btn:disabled{opacity:.6;cursor:default;transform:none}
-.portal-btn-sec{background:transparent;color:#e2c07d;border:1px solid rgba(197,160,89,.6)}
-.portal-btn-sec:hover{background:rgba(197,160,89,.15)}
-.portal-btn-perigo{background:transparent;color:#ffb4a8;border:1px solid rgba(255,180,168,.5);padding:6px 12px;font-size:13px}
-.portal-btn-perigo:hover{background:rgba(255,120,100,.15)}
-.portal-link{background:none;border:0;color:#e2c07d;text-decoration:underline;cursor:pointer;font-size:14px;padding:0}
+.portal-btn-sec{background:transparent;color:#1F5FA3;border:1px solid #1F5FA3}
+.portal-btn-sec:hover{background:transparent;border-width:3px;padding:10px 22px}
+.portal-btn-perigo{background:transparent;color:#A03E25;border:1px solid #A03E25;padding:6px 12px;font-size:13px}
+.portal-btn-perigo:hover{background:transparent;border-width:3px;padding:4px 10px}
+.portal-link{background:none;border:0;color:#1F5FA3;text-decoration:underline;cursor:pointer;font-size:14px;padding:0}
 .portal-msg{font-size:14px;margin:0 0 14px;min-height:1px}
-.portal-msg.erro{color:#ffb4a8}
-.portal-msg.ok{color:#a7e3b1}
+.portal-msg.erro{color:#A03E25;font-weight:700}
+.portal-msg.ok{color:#1F5FA3;font-weight:700}
 .portal-topo{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .portal-topo span{font-size:15px}
-.portal-item{padding:12px 0;border-top:1px solid rgba(197,160,89,.2)}
+.portal-item{padding:12px 0;border-top:1px solid rgba(31,95,163,.35)}
 .portal-item:first-of-type{border-top:0;padding-top:0}
 .portal-item-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.portal-item-titulo{font-size:15px;color:#fff}
-.portal-item-data{font-size:13px;color:#e2c07d;display:block}
+.portal-item-titulo{font-size:15px;font-weight:700;color:#16233F}
+.portal-item-data{font-size:13px;color:#A03E25;display:block}
 .portal-video{margin-top:12px;position:relative;width:100%;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000}
 .portal-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.portal-vazio{font-size:14px;color:#b8c4d4;margin:0}
-.portal-sala{margin:18px 0 0;text-align:center;font-size:13px}
-.portal-sala a{color:#b8c4d4}
-@media(max-width:700px){.portal-caixa{padding:22px 14px}}
+.portal-vazio{font-size:14px;color:#16233F;margin:0}
+.portal-sala{margin:18px 0 0;text-align:center;font-size:13px;color:#16233F}
+.portal-sala a{color:#1F5FA3}
+@media(max-width:700px){.portal-cartao{padding:16px 14px}}
