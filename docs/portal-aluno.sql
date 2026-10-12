@@ -1,5 +1,5 @@
 -- Portal do Aluno (Falando de Astrologia) — rodar UMA vez no Supabase: SQL Editor -> New query -> colar tudo -> Run.
--- Antes de rodar, troque SEU_EMAIL_AQUI (última linha) pelo e-mail que você vai usar pra entrar como administradora.
+-- Antes de rodar, troque SEU_EMAIL_AQUI (última linha) pelo e-mail do administrador.
 
 create table public.admins (
   email text primary key
@@ -26,7 +26,7 @@ alter table public.admins enable row level security;
 alter table public.alunos enable row level security;
 alter table public.itens enable row level security;
 
--- "sou administradora?" — lê a tabela admins sem expô-la a ninguém
+-- "sou administrador?" — lê a tabela admins sem expô-la a ninguém
 create or replace function public.sou_admin()
 returns boolean
 language sql
@@ -42,7 +42,7 @@ grant execute on function public.sou_admin() to authenticated;
 
 grant select, insert, update, delete on public.alunos, public.itens to authenticated;
 
--- Aluno vê só a própria ficha e os próprios itens; a administradora vê e mexe em tudo.
+-- Aluno vê só a própria ficha e os próprios itens; a administrador vê e mexe em tudo.
 create policy alunos_ler on public.alunos for select to authenticated
   using (public.sou_admin() or lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')));
 create policy alunos_admin_inserir on public.alunos for insert to authenticated

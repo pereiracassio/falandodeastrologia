@@ -1,4 +1,4 @@
-/* Portal do Aluno — peças comuns à página do aluno (aluno.html) e ao painel da administradora (admin-alunos.html).
+/* Portal do Aluno — peças comuns à página do aluno (aluno.html) e ao painel da administrador (admin-alunos.html).
    Projeto Supabase PRÓPRIO do Falando de Astrologia (separado do Astro Hellenic). A chave "publishable" é pública
    por natureza: quem protege os dados são as regras de acesso (RLS) de docs/portal-aluno.sql. */
 (function () {
