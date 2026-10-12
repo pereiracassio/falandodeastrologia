@@ -86,12 +86,12 @@
   }
 
   /* tela de "criar nova senha" (quem chegou pelo link do e-mail) */
-  function montarNovaSenha(container, aoConcluir) {
+  function montarNovaSenha(container, aoConcluir, titulo) {
     var msg = el('p', { class: 'portal-msg' });
     var senha = el('input', { type: 'password', id: 'portalNova', autocomplete: 'new-password', minlength: '6', required: '' });
     var salvar = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar nova senha' });
     var form = el('form', { class: 'portal-cartao' }, [
-      el('h2', { text: 'Crie sua nova senha' }),
+      el('h2', { text: titulo || 'Crie sua nova senha' }),
       el('label', { for: 'portalNova', text: 'Nova senha (mínimo 6 caracteres)' }), senha, msg, salvar
     ]);
     form.addEventListener('submit', function (ev) {

@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=3">
   <link rel="stylesheet" href="home.css?v=13">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=2">
+  <link rel="stylesheet" href="portal.css?v=3">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -36,7 +36,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=1"></script>
+  <script src="portal.js?v=2"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -45,10 +45,29 @@
 
     function sair() { P.client.auth.signOut().then(mostrarLogin); }
 
-    function topo(texto, extra) {
-      var botoes = [extra, el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' })];
-      botoes[1].addEventListener('click', sair);
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, botoes.filter(Boolean))]);
+    var avisoSenha = false;
+
+    /* topo: saudação + botões (Trocar senha, Sair e, se houver, extras como o Painel) */
+    function topo(user, texto, extra) {
+      var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trocar senha' });
+      trocar.addEventListener('click', function () { trocarSenha(user); });
+      var sairBtn = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
+      sairBtn.addEventListener('click', sair);
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [extra, trocar, sairBtn].filter(Boolean))]);
+    }
+
+    function trocarSenha(user) {
+      limpar();
+      P.montarNovaSenha(app, function () { avisoSenha = true; mostrarPortal(user); }, 'Trocar senha');
+      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Voltar' });
+      voltar.addEventListener('click', function () { mostrarPortal(user); });
+      app.appendChild(voltar);
+    }
+
+    function avisoDeSenha() {
+      if (!avisoSenha) return;
+      avisoSenha = false;
+      app.appendChild(el('p', { class: 'portal-msg ok', text: 'Senha alterada.' }));
     }
 
     function mostrarLogin() {
@@ -102,18 +121,24 @@
       P.client.from('alunos').select('id,nome').eq('email', email).maybeSingle().then(function (r) {
         limpar();
         if (r.error) {
-          app.appendChild(topo(email));
+          app.appendChild(topo(user, email));
           app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' }));
           return;
         }
         if (!r.data) {
-          var admin = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Painel' });
-          app.appendChild(topo(email, admin));
-          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'O seu acesso ainda não foi liberado. Entre em contato pelo WhatsApp ou e-mail para liberar.' })]));
+          // sem ficha de aluno: se for o administrador, mostra o nome dele (tabela admins) e o botão do Painel
+          P.client.from('admins').select('nome').maybeSingle().then(function (ra) {
+            var admin = ra.data ? el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Painel' }) : null;
+            var saudacao = ra.data && ra.data.nome ? 'Olá, ' + ra.data.nome + '!' : email;
+            app.appendChild(topo(user, saudacao, admin));
+            avisoDeSenha();
+            app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: admin ? 'Este é o painel de quem administra. Os alunos veem uma página própria, com o nome deles.' : 'O seu acesso ainda não foi liberado. Entre em contato pelo WhatsApp ou e-mail para liberar.' })]));
+          });
           return;
         }
         var aluno = r.data;
-        app.appendChild(topo('Olá, ' + aluno.nome + '!'));
+        app.appendChild(topo(user, 'Olá, ' + aluno.nome + '!'));
+        avisoDeSenha();
         P.client.from('itens').select('bloco,titulo,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }

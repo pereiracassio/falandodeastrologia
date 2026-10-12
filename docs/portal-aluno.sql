@@ -68,3 +68,10 @@ create policy itens_admin_apagar on public.itens for delete to authenticated
   using (public.sou_admin());
 
 insert into public.admins (email) values (lower('SEU_EMAIL_AQUI'));
+
+-- (12/10) Nome do administrador na saudação: coluna nome + cada administrador lê só a própria linha.
+alter table public.admins add column if not exists nome text;
+grant select on public.admins to authenticated;
+create policy admins_ler_propria on public.admins for select to authenticated
+  using (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')));
+update public.admins set nome = 'Cássio' where email = 'cassio15pereira@gmail.com';
