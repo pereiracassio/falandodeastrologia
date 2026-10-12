@@ -12,75 +12,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    .portal-aluno-container {
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 30px 20px;
-      background: linear-gradient(135deg, #0f2b48 0%, #1a4971 50%, #0d2035 100%);
-      border: 1px solid #c5a059;
-      border-radius: 16px;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    }
-
-    .portal-title {
-      font-family: 'Cinzel', serif;
-      font-size: 22px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .portal-subtitle {
-      font-family: 'Cinzel', serif;
-      font-size: 14px;
-      color: #e2c07d;
-      margin-bottom: 25px;
-    }
-
-    .portal-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(197, 160, 89, 0.3);
-      border-radius: 12px;
-      padding: 25px;
-      margin-bottom: 25px;
-    }
-
-    .portal-card p {
-      color: #e0e0e0;
-      font-size: 15px;
-      line-height: 1.6;
-      margin: 0 0 20px 0;
-    }
-
-    .btn-classroom {
-      display: inline-block;
-      padding: 14px 28px;
-      background: #c5a059;
-      color: #0d2035;
-      font-weight: 700;
-      font-size: 15px;
-      text-decoration: none;
-      border-radius: 8px;
-      transition: background 0.3s ease, transform 0.2s ease;
-    }
-
-    .btn-classroom:hover {
-      background: #d4af37;
-      transform: translateY(-2px);
-    }
-  </style>
   <link rel="stylesheet" href="papiro.css?v=3">
   <link rel="stylesheet" href="home.css?v=13">
   <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=1">
+  <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
   <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
@@ -92,22 +28,112 @@
     </nav>
   </header>
 <div class="pagina pagina-servico"><div class="folha-pagina">
-
-
-  <div class="portal-aluno-container">
-    <div class="portal-title">Portal do Aluno</div>
-    <div class="portal-subtitle">Falando de Astrologia</div>
-
-    <div class="portal-card">
-      <p>Bem-vindo ao seu ambiente exclusivo de estudos. Clique no botão abaixo para acessar a sua sala de aula virtual no Google Classroom, visualizar os materiais e acompanhar as gravações dos encontros.</p>
-      
-      <a class="btn-classroom" href="https://classroom.google.com" rel="nofollow" target="_blank">
-        Acessar Sala de Aula Virtual
-      </a>
-    </div>
-  </div>
-
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Portal do Aluno</h1>
+    <p class="portal-sub">Falando de Astrologia</p>
+    <div id="app"></div>
+    <p class="portal-sala" id="salaClassroom">Ainda usa o Google Classroom? <a href="https://classroom.google.com" rel="nofollow" target="_blank">Acesse a sala de aula virtual</a>.</p>
+  </div></div>
 </div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=1"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, app = document.getElementById('app');
+
+    function limpar() { app.textContent = ''; }
+
+    function sair() { P.client.auth.signOut().then(mostrarLogin); }
+
+    function topo(texto, extra) {
+      var botoes = [extra, el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' })];
+      botoes[1].addEventListener('click', sair);
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, botoes.filter(Boolean))]);
+    }
+
+    function mostrarLogin() {
+      limpar();
+      document.getElementById('salaClassroom').style.display = '';
+      P.montarLogin(app, mostrarPortal);
+    }
+
+    function mostrarNovaSenha() {
+      limpar();
+      P.montarNovaSenha(app, mostrarPortal);
+    }
+
+    /* um item da lista: gravação do Drive toca aqui dentro; o resto abre em outra aba */
+    function itemDaLista(item, bloco) {
+      var embed = bloco === 'gravacoes' ? P.embedDrive(item.link) : null;
+      var seguro = P.linkSeguro(item.link);
+      var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: item.titulo })]);
+      if (item.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(item.data) }));
+      var linha = el('div', { class: 'portal-item-linha' }, [titulo]);
+      var caixa = el('div', { class: 'portal-item' }, [linha]);
+      if (embed) {
+        var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Assistir' });
+        var aberto = null;
+        botao.addEventListener('click', function () {
+          if (aberto) { aberto.remove(); aberto = null; botao.textContent = 'Assistir'; return; }
+          var quadro = el('iframe', { src: embed, allow: 'autoplay; fullscreen', allowfullscreen: '', title: item.titulo });
+          aberto = el('div', { class: 'portal-video' }, [quadro]);
+          caixa.appendChild(aberto);
+          botao.textContent = 'Fechar';
+        });
+        linha.appendChild(botao);
+      } else if (seguro) {
+        linha.appendChild(el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: bloco === 'caderno' ? 'Abrir caderno' : 'Abrir' }));
+      }
+      return caixa;
+    }
+
+    function blocoDaTela(titulo, itens, bloco, vazio) {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: titulo })]);
+      if (!itens.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: vazio }));
+      itens.forEach(function (i) { cartao.appendChild(itemDaLista(i, bloco)); });
+      return cartao;
+    }
+
+    function mostrarPortal(user) {
+      limpar();
+      document.getElementById('salaClassroom').style.display = 'none';
+      app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+      var email = String(user.email || '').toLowerCase();
+      P.client.from('alunos').select('id,nome').eq('email', email).maybeSingle().then(function (r) {
+        limpar();
+        if (r.error) {
+          app.appendChild(topo(email));
+          app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' }));
+          return;
+        }
+        if (!r.data) {
+          var admin = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Painel' });
+          app.appendChild(topo(email, admin));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'O seu acesso ainda não foi liberado. Entre em contato pelo WhatsApp ou e-mail para liberar.' })]));
+          return;
+        }
+        var aluno = r.data;
+        app.appendChild(topo('Olá, ' + aluno.nome + '!'));
+        P.client.from('itens').select('bloco,titulo,link,data,criado_em').eq('aluno_id', aluno.id)
+          .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
+            if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
+            var lista = ri.data || [];
+            function doBloco(b) { return lista.filter(function (i) { return i.bloco === b; }); }
+            app.appendChild(blocoDaTela('Caderno do aluno', doBloco('caderno'), 'caderno', 'O seu caderno ainda não foi disponibilizado.'));
+            app.appendChild(blocoDaTela('Gravações dos encontros', doBloco('gravacoes'), 'gravacoes', 'Nenhuma gravação ainda.'));
+            app.appendChild(blocoDaTela('Materiais', doBloco('materiais'), 'materiais', 'Nenhum material ainda.'));
+          });
+      });
+    }
+
+    P.client.auth.onAuthStateChange(function (ev) { if (ev === 'PASSWORD_RECOVERY') mostrarNovaSenha(); });
+    if (P.emRecuperacao) { mostrarNovaSenha(); return; }
+    P.client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) mostrarPortal(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
   <script src="menu.js?v=14" defer></script>
 </body>
 </html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel dos Alunos - Falando de Astrologia</title>
+  
+  <!-- Importação da fonte Cinzel do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="papiro.css?v=3">
+  <link rel="stylesheet" href="home.css?v=13">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=1">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Painel dos Alunos</h1>
+    <p class="portal-sub">Só para a administradora</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=1"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, app = document.getElementById('app');
+    var BLOCOS = { caderno: 'Caderno do aluno', gravacoes: 'Gravação do encontro', materiais: 'Material' };
+    var alunoAberto = null;
+
+    function limpar() { app.textContent = ''; }
+    function sair() { P.client.auth.signOut().then(mostrarLogin); }
+    function topo(texto) {
+      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
+      b.addEventListener('click', sair);
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), b]);
+    }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+
+    function iniciar(user) {
+      limpar();
+      P.client.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        listaDeAlunos(user);
+      });
+    }
+
+    function listaDeAlunos(user) {
+      limpar();
+      app.appendChild(topo(user.email));
+
+      /* novo aluno */
+      var msg = el('p', { class: 'portal-msg' });
+      var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
+      var email = el('input', { type: 'email', id: 'novoEmail', required: '' });
+      var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar aluno' });
+      var form = el('form', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Novo aluno' }),
+        el('p', { text: 'Antes, crie o acesso dele no Supabase: Authentication → Users → Add user (e-mail + senha, marcando "Auto Confirm User"). Depois, cadastre aqui o mesmo e-mail.' }),
+        el('label', { for: 'novoNome', text: 'Nome' }), nome,
+        el('label', { for: 'novoEmail', text: 'E-mail (o mesmo do acesso)' }), email, msg, add
+      ]);
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault(); add.disabled = true;
+        P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).then(function (r) {
+          add.disabled = false;
+          if (r.error) { P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um aluno com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
+          listaDeAlunos(user);
+        });
+      });
+      app.appendChild(form);
+
+      /* lista */
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos' })]);
+      app.appendChild(cartao);
+      P.client.from('alunos').select('id,nome,email').order('nome').then(function (r) {
+        if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
+        if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' }));
+        r.data.forEach(function (a) {
+          var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
+          abrir.addEventListener('click', function () { alunoAberto = a; paginaDoAluno(user, a); });
+          cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+            el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.nome }), el('span', { class: 'portal-item-data', text: a.email })]), abrir
+          ])]));
+        });
+      });
+    }
+
+    function paginaDoAluno(user, aluno) {
+      limpar();
+      app.appendChild(topo(user.email));
+      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os alunos' });
+      voltar.addEventListener('click', function () { listaDeAlunos(user); });
+      app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
+
+      /* novo item */
+      var msg = el('p', { class: 'portal-msg' });
+      var bloco = el('select', { id: 'itemBloco' }, Object.keys(BLOCOS).map(function (k) { return el('option', { value: k, text: BLOCOS[k] }); }));
+      var titulo = el('input', { type: 'text', id: 'itemTitulo', required: '' });
+      var data = el('input', { type: 'date', id: 'itemData' });
+      var link = el('input', { type: 'url', id: 'itemLink', placeholder: 'https://drive.google.com/...', required: '' });
+      var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
+      var form = el('form', { class: 'portal-cartao' }, [
+        el('h2', { text: aluno.nome }),
+        el('p', { text: 'Cole o link do Drive. Lembre de compartilhar o arquivo (ou a pasta) com o e-mail do aluno no próprio Drive.' }),
+        el('label', { for: 'itemBloco', text: 'Onde aparece' }), bloco,
+        el('label', { for: 'itemTitulo', text: 'Título' }), titulo,
+        el('label', { for: 'itemData', text: 'Data (opcional)' }), data,
+        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, msg, add
+      ]);
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var seguro = P.linkSeguro(link.value);
+        if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
+        add.disabled = true;
+        P.client.from('itens').insert({ aluno_id: aluno.id, bloco: bloco.value, titulo: titulo.value.trim(), link: seguro, data: data.value || null }).then(function (r) {
+          add.disabled = false;
+          if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+          paginaDoAluno(user, aluno);
+        });
+      });
+      app.appendChild(form);
+
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + aluno.nome + ' vê' })]);
+      app.appendChild(cartao);
+      P.client.from('itens').select('id,bloco,titulo,link,data').eq('aluno_id', aluno.id)
+        .order('bloco').order('data', { ascending: false, nullsFirst: false }).then(function (r) {
+          if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
+          if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nada cadastrado ainda.' }));
+          r.data.forEach(function (i) {
+            var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
+            apagar.addEventListener('click', function () {
+              if (!confirm('Apagar "' + i.titulo + '"? (O arquivo no Drive não é apagado.)')) return;
+              P.client.from('itens').delete().eq('id', i.id).then(function (d) {
+                if (d.error) alert('Não foi possível apagar.'); else paginaDoAluno(user, aluno);
+              });
+            });
+            cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: i.titulo }),
+                el('span', { class: 'portal-item-data', text: BLOCOS[i.bloco] + (i.data ? ' · ' + P.dataBR(i.data) : '') })]), apagar
+            ])]));
+          });
+        });
+
+      var remover = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Remover este aluno do portal' });
+      remover.addEventListener('click', function () {
+        if (!confirm('Remover ' + aluno.nome + ' do portal? Os itens dele também somem daqui (os arquivos do Drive ficam).')) return;
+        P.client.from('alunos').delete().eq('id', aluno.id).then(function (d) {
+          if (d.error) alert('Não foi possível remover.'); else listaDeAlunos(user);
+        });
+      });
+      app.appendChild(remover);
+    }
+
+    P.client.auth.onAuthStateChange(function (ev) { if (ev === 'PASSWORD_RECOVERY') { limpar(); P.montarNovaSenha(app, iniciar); } });
+    if (P.emRecuperacao) { limpar(); P.montarNovaSenha(app, iniciar); return; }
+    P.client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+  <script src="menu.js?v=14" defer></script>
+</body>
+</html>
