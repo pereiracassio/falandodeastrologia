@@ -156,4 +156,4 @@ html,body{max-width:100%;overflow-x:hidden}
 
 /* bloco de redes: mesma moldura com meandros; o logo do blog perdeu a moldura própria (img/logo-blog.svg) */
 .redes-folha{position:relative;padding:50px 9% 48px}
-.redes-folha::after{content:"";position:absolute;inset:0;pointer-events:none;border-style:solid;border-width:36px 22px;border-image:url(img/moldura-redes.svg?v=2) 130 80 / 36px 22px round}
+.redes-folha::after{content:"";position:absolute;inset:0;pointer-events:none;border-style:solid;border-width:36px 22px;border-image:url(img/moldura-redes.svg?v=3) 130 80 / 36px 22px round}
