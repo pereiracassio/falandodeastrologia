@@ -34,10 +34,6 @@
     <div id="app"></div>
   </div></div>
 </div></div>
-  <datalist id="listaServicos">
-    <option value="Mapa Natal Clássico"><option value="Revolução Solar"><option value="Previsões Astrológicas">
-    <option value="Sinastria Clássica"><option value="Retificação de Mapa">
-  </datalist>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=5"></script>
   <script>
@@ -170,7 +166,13 @@
       app.appendChild(formCod);
 
       var msg = el('p', { class: 'portal-msg' });
-      var servico = el('input', { type: 'text', id: 'entServico', list: 'listaServicos', required: '' });
+      var servico = el('input', { type: 'text', id: 'entServico', required: '', placeholder: 'Escreva o que quiser, ou toque num atalho abaixo' });
+      var atalhos = el('div', { class: 'portal-acoes', style: 'margin:-6px 0 14px' }, ['Mapa Natal Clássico', 'Revolução Solar', 'Previsões Astrológicas', 'Sinastria Clássica', 'Retificação de Mapa', 'Atendimento semanal'].map(function (nome) {
+        var b2 = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: nome });
+        b2.style.padding = '6px 10px'; b2.style.fontSize = '13px';
+        b2.addEventListener('click', function () { servico.value = nome; servico.focus(); });
+        return b2;
+      }));
       var data = el('input', { type: 'date', id: 'entData' });
       var pdf = el('input', { type: 'url', id: 'entPdf', placeholder: 'https://drive.google.com/...' });
       var gravacao = el('input', { type: 'url', id: 'entGravacao', placeholder: 'https://drive.google.com/...' });
@@ -181,7 +183,7 @@
       var form = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: (cliente.codigo ? cliente.codigo + ' · ' : '') + cliente.nome }),
         el('p', { text: 'Cole os links do Drive e lembre de compartilhar os arquivos com o Gmail do cliente (' + cliente.email + ') no próprio Drive.' }),
-        el('label', { for: 'entServico', text: 'Serviço' }), servico,
+        el('label', { for: 'entServico', text: 'Serviço' }), servico, atalhos,
         el('label', { for: 'entData', text: 'Data do serviço (opcional)' }), data,
         el('label', { for: 'entPdf', text: 'Link do PDF (opcional)' }), pdf,
         el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)' }), gravacao, msg,
