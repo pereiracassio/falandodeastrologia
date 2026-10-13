@@ -70,6 +70,29 @@
     document.getElementById('ola').textContent = nome ? 'Olá, ' + nome + '!' : '';
 
     /* só mostra o quadro do horário se vierem data e hora no formato esperado (evita texto estranho vindo da URL) */
+    /* vários serviços (carrinho): &horarios=serviço~dd/mm/aaaa~hh:mm|serviço~... — mostra todos os horários */
+    var lista = (p.get('horarios') || '').split('|').map(function (x) { return x.split('~'); }).filter(function (x) {
+      return x.length === 3 && /^\d{2}\/\d{2}\/\d{4}$/.test(x[1]) && /^\d{2}:\d{2}$/.test(x[2]);
+    }).slice(0, 10);
+    if (lista.length > 1) {
+      var caixa = document.getElementById('horario');
+      caixa.innerHTML = '';
+      lista.forEach(function (x, i) {
+        var bloco = document.createElement('div');
+        if (i) bloco.style.marginTop = '14px';
+        var s1 = document.createElement('div'); s1.className = 'servico'; s1.textContent = x[0].slice(0, 120);
+        var d1 = document.createElement('div'); d1.className = 'data'; d1.textContent = x[1] + ' às ' + x[2];
+        bloco.appendChild(s1); bloco.appendChild(d1); caixa.appendChild(bloco);
+      });
+      if (/^[A-Za-z_]+\/[A-Za-z_\/-]+$/.test(fuso)) {
+        var f1 = document.createElement('div'); f1.className = 'fuso'; f1.style.marginTop = '10px';
+        f1.textContent = 'horário de ' + fuso.split('/').pop().replace(/_/g, ' ');
+        caixa.appendChild(f1);
+      }
+      document.getElementById('titulo').textContent = 'Horários confirmados!';
+      document.getElementById('texto').textContent = 'Seus horários estão reservados. Se precisar remarcar ou tiver qualquer dúvida, é só me chamar no WhatsApp.';
+      caixa.style.display = '';
+    } else
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(data) && /^\d{2}:\d{2}$/.test(hora)) {
       document.getElementById('data').textContent = data + ' às ' + hora;
       if (/^[A-Za-z_]+\/[A-Za-z_\/-]+$/.test(fuso)) {
