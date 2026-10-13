@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=6">
+  <link rel="stylesheet" href="portal.css?v=7">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -169,6 +169,11 @@
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
             var lista = ri.data || [];
             abasDaTela(lista).forEach(function (e) { app.appendChild(e); });
+            // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
+            var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
+              el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
+            ]);
+            app.appendChild(el('div', { class: 'portal-whats' }, [whats]));
           });
       });
     }
