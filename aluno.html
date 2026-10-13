@@ -103,7 +103,7 @@
       return caixa;
     }
 
-    /* três abas na mesma página (Caderno, Gravações, Materiais); abre em Gravações, que é onde aparece coisa nova toda semana */
+    /* três abas na mesma página (Caderno, Gravações, Materiais); abre no Caderno, que é o que o aluno precisa fazer; as gravações são para rever quando tiver dúvida */
     var ABAS = [
       { chave: 'caderno', nome: 'Caderno', vazio: 'O seu caderno ainda não foi disponibilizado.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
@@ -133,7 +133,7 @@
         botoes[ab.chave] = b;
         barra.appendChild(b);
       });
-      mostrar('gravacoes');
+      mostrar('caderno');
       return [barra, conteudo];
     }
 
