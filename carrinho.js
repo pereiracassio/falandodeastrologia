@@ -12,6 +12,7 @@
     // Retificação: não aparece no site, só entra no carrinho pelo link que o astrólogo manda
     "retificacao-avulsa": { titulo: "Retificação de Mapa Avulsa", centavos: 33500, agenda: false, restrito: true },
     "retificacao-combo":  { titulo: "Combo: Retificação + Mapa Natal Clássico", centavos: 59900, agenda: true, restrito: true },
+    "teste2":        { titulo: "Teste de Desconto", centavos: 1200, agenda: true, restrito: true },
     "teste":         { titulo: "Teste de Pagamento", centavos: 100, agenda: true, semDesconto: true, restrito: true }
   };
   // Mapa Natal + Retificação avulsa no mesmo carrinho viram o combo
@@ -66,7 +67,8 @@
 
   // Itens com o preço final de cada um (centavos). Desconto de R$ 11 do 2º serviço em diante.
   function resumo() {
-    var lista = itens();
+    // o mais barato fica em primeiro (sem desconto); os demais levam o desconto (no total dá o mesmo, qualquer que seja a ordem)
+    var lista = itens().sort(function (a, b) { return CARRINHO_SERVICOS[a].centavos - CARRINHO_SERVICOS[b].centavos; });
     var total = 0, totalCheio = 0, ordem = 0;
     var linhas = lista.map(function (k) {
       var s = CARRINHO_SERVICOS[k];
