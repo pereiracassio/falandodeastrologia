@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=3">
+  <link rel="stylesheet" href="portal.css?v=4">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -35,12 +35,12 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=2"></script>
+  <script src="portal.js?v=3"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
     var BLOCOS = { caderno: 'Caderno do aluno', gravacoes: 'Gravação do encontro', materiais: 'Material' };
-    var alunoAberto = null;
+    var alunoAberto = null, nomeAdmin = '';
 
     function limpar() { app.textContent = ''; }
     function sair() { P.client.auth.signOut().then(mostrarLogin); }
@@ -59,13 +59,16 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
           return;
         }
-        listaDeAlunos(user);
+        P.client.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          listaDeAlunos(user);
+        });
       });
     }
 
     function listaDeAlunos(user) {
       limpar();
-      app.appendChild(topo(user.email));
+      app.appendChild(topo(nomeAdmin));
 
       /* novo aluno */
       var msg = el('p', { class: 'portal-msg' });
@@ -106,7 +109,7 @@
 
     function paginaDoAluno(user, aluno) {
       limpar();
-      app.appendChild(topo(user.email));
+      app.appendChild(topo(nomeAdmin));
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os alunos' });
       voltar.addEventListener('click', function () { listaDeAlunos(user); });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
@@ -118,20 +121,32 @@
       var data = el('input', { type: 'date', id: 'itemData' });
       var link = el('input', { type: 'url', id: 'itemLink', placeholder: 'https://drive.google.com/...', required: '' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
+      var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar edição' });
+      cancelar.style.display = 'none';
+      var editandoId = null;
       var form = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: aluno.nome }),
         el('p', { text: 'Cole o link do Drive. Lembre de compartilhar o arquivo (ou a pasta) com o e-mail do aluno no próprio Drive.' }),
         el('label', { for: 'itemBloco', text: 'Onde aparece' }), bloco,
         el('label', { for: 'itemTitulo', text: 'Título' }), titulo,
         el('label', { for: 'itemData', text: 'Data (opcional)' }), data,
-        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, msg, add
+        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, msg,
+        el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
+      function sairDaEdicao() {
+        editandoId = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, '');
+      }
+      cancelar.addEventListener('click', sairDaEdicao);
       form.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var seguro = P.linkSeguro(link.value);
         if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
         add.disabled = true;
-        P.client.from('itens').insert({ aluno_id: aluno.id, bloco: bloco.value, titulo: titulo.value.trim(), link: seguro, data: data.value || null }).then(function (r) {
+        var campos = { bloco: bloco.value, titulo: titulo.value.trim(), link: seguro, data: data.value || null };
+        var pedido = editandoId
+          ? P.client.from('itens').update(campos).eq('id', editandoId)
+          : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos));
+        pedido.then(function (r) {
           add.disabled = false;
           if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
           paginaDoAluno(user, aluno);
@@ -146,6 +161,13 @@
           if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
           if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nada cadastrado ainda.' }));
           r.data.forEach(function (i) {
+            var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
+            editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
+            editar.addEventListener('click', function () {
+              editandoId = i.id; bloco.value = i.bloco; titulo.value = i.titulo; data.value = i.data || ''; link.value = i.link;
+              add.textContent = 'Salvar alterações'; cancelar.style.display = ''; P.mensagem(msg, 'Editando: ' + i.titulo, 'ok');
+              form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
             var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
             apagar.addEventListener('click', function () {
               if (!confirm('Apagar "' + i.titulo + '"? (O arquivo no Drive não é apagado.)')) return;
@@ -155,7 +177,8 @@
             });
             cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
               el('div', {}, [el('span', { class: 'portal-item-titulo', text: i.titulo }),
-                el('span', { class: 'portal-item-data', text: BLOCOS[i.bloco] + (i.data ? ' · ' + P.dataBR(i.data) : '') })]), apagar
+                el('span', { class: 'portal-item-data', text: BLOCOS[i.bloco] + (i.data ? ' · ' + P.dataBR(i.data) : '') })]),
+              el('div', { class: 'portal-acoes' }, [editar, apagar])
             ])]));
           });
         });

@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=3">
+  <link rel="stylesheet" href="portal.css?v=4">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -36,7 +36,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=2"></script>
+  <script src="portal.js?v=3"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -87,29 +87,18 @@
       P.montarNovaSenha(app, mostrarPortal);
     }
 
-    /* um item da lista: gravação do Drive toca aqui dentro; o resto abre em outra aba */
+    /* um item da lista: sempre abre no Drive (em outra aba/app), como o caderno — o player embutido do Drive não
+       funciona em arquivo restrito dentro de outro site (o Safari bloqueia o login do Google dentro da página) */
     function itemDaLista(item, bloco) {
-      var embed = bloco === 'gravacoes' ? P.embedDrive(item.link) : null;
       var seguro = P.linkSeguro(item.link);
       var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: item.titulo })]);
       if (item.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(item.data) }));
       var linha = el('div', { class: 'portal-item-linha' }, [titulo]);
-      var caixa = el('div', { class: 'portal-item' }, [linha]);
-      if (embed) {
-        var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Assistir' });
-        var aberto = null;
-        botao.addEventListener('click', function () {
-          if (aberto) { aberto.remove(); aberto = null; botao.textContent = 'Assistir'; return; }
-          var quadro = el('iframe', { src: embed, allow: 'autoplay; fullscreen', allowfullscreen: '', title: item.titulo });
-          aberto = el('div', { class: 'portal-video' }, [quadro]);
-          caixa.appendChild(aberto);
-          botao.textContent = 'Fechar';
-        });
-        linha.appendChild(botao);
-      } else if (seguro) {
-        linha.appendChild(el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: bloco === 'caderno' ? 'Abrir caderno' : 'Abrir' }));
+      if (seguro) {
+        var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : 'Abrir';
+        linha.appendChild(el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto }));
       }
-      return caixa;
+      return el('div', { class: 'portal-item' }, [linha]);
     }
 
     function blocoDaTela(titulo, itens, bloco, vazio) {

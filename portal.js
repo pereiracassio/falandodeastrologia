@@ -27,14 +27,6 @@
     } catch (e) { return null; }
   }
 
-  /* link de arquivo do Drive -> endereço que toca/mostra dentro da página (null se não for arquivo do Drive) */
-  function embedDrive(url) {
-    var seguro = linkSeguro(url);
-    if (!seguro) return null;
-    var m = seguro.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || seguro.match(/drive\.google\.com\/open\?(?:[^#]*&)?id=([\w-]+)/);
-    return m ? 'https://drive.google.com/file/d/' + m[1] + '/preview' : null;
-  }
-
   function dataBR(iso) {
     var p = String(iso || '').split('-');
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : '';
@@ -110,7 +102,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, embedDrive: embedDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao
   };

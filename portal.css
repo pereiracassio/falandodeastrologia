@@ -11,6 +11,8 @@
 .portal label{display:block;font-size:13px;color:#16233F;font-weight:700;margin:0 0 5px}
 .portal input,.portal select{width:100%;box-sizing:border-box;padding:12px;margin:0 0 14px;border-radius:8px;border:1px solid #1F5FA3;background:transparent;color:#16233F;font-size:16px}
 .portal input:focus,.portal select:focus{outline:none;border-width:3px;padding:10px}
+.portal input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;min-height:50px}
+.portal-acoes{display:flex;gap:8px;flex-wrap:wrap}
 .portal-btn{display:inline-block;padding:12px 24px;background:#1F5FA3;color:#f6e7b4;font-weight:700;font-size:15px;text-decoration:none;border:0;border-radius:8px;cursor:pointer;transition:background .3s ease,transform .2s ease}
 .portal-btn:hover{background:#0b2a52;transform:translateY(-2px)}
 .portal-btn:disabled{opacity:.6;cursor:default;transform:none}
@@ -30,8 +32,6 @@
 .portal-item-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .portal-item-titulo{font-size:15px;font-weight:700;color:#16233F}
 .portal-item-data{font-size:13px;color:#A03E25;display:block}
-.portal-video{margin-top:12px;position:relative;width:100%;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000}
-.portal-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .portal-vazio{font-size:14px;color:#16233F;margin:0}
 .portal-sala{margin:18px 0 0;text-align:center;font-size:13px;color:#16233F}
 .portal-sala a{color:#1F5FA3}
