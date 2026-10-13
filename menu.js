@@ -8,8 +8,17 @@
     { label: "Revolução Solar", href: "revolucao-solar.html" },
     { label: "Previsões Astrológicas", href: "previsoes-astrologicas.html" },
     { label: "Sinastria Clássica", href: "sinastria.html" },
-    { label: "Área do Aluno", href: "aluno.html", sep: true }
+    { label: "Área do Aluno", href: "aluno.html", sep: true },
+    { label: "Meu Carrinho", href: "carrinho.html", carrinho: true }
   ];
+
+  // quantos serviços tem no carrinho (guardado no navegador, ver carrinho.js)
+  function contarCarrinho() {
+    try {
+      var l = JSON.parse(localStorage.getItem("fda_carrinho") || "[]");
+      return Array.isArray(l) ? l.length : 0;
+    } catch (e) { return 0; }
+  }
 
   var style = document.createElement("style");
   style.textContent =
@@ -62,6 +71,7 @@
     var a = document.createElement("a");
     a.href = link.href;
     a.textContent = link.label;
+    if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
     if (link.sep) a.classList.add("is-sep");
     if (link.href === currentPage) a.classList.add("is-current");
     nav.appendChild(a);
