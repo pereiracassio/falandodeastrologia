@@ -231,9 +231,11 @@
     botao.classList.add("ocupado");
     botao.textContent = "Abrindo o pagamento...";
 
-    var titulos = res.linhas.map(function (l) { return l.titulo; }).join(" + ");
+    // vários serviços vão separados por | (o combo já tem "+" no nome); &sa= = os que não usam agenda
+    var titulos = res.linhas.map(function (l) { return l.titulo; }).join(" | ");
+    var titulosSemAgenda = res.linhas.filter(function (l) { return !l.agenda; }).map(function (l) { return l.titulo; }).join(" | ");
     var semAgenda = !res.linhas.some(function (l) { return l.agenda; });
-    var redirectUrl = FORM_URL + (semAgenda ? "&agenda=0" : "") + "&servico=" + encodeURIComponent(titulos) +
+    var redirectUrl = FORM_URL + (semAgenda ? "&agenda=0" : "") + "&servico=" + encodeURIComponent(titulos) + (titulosSemAgenda && !semAgenda ? "&sa=" + encodeURIComponent(titulosSemAgenda) : "") +
       "&nome=" + encodeURIComponent(nome) + "&whatsapp=" + encodeURIComponent(whatsapp) + "&email=" + encodeURIComponent(email);
 
     // Se a criação do link falhar: com um serviço só e preço cheio, cai no link fixo de antes; senão mostra o erro
