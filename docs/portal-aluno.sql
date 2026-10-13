@@ -78,3 +78,6 @@ update public.admins set nome = 'Cássio' where email = 'cassio15pereira@gmail.c
 
 -- (13/10) Descrição opcional de cada item.
 alter table public.itens add column if not exists descricao text;
+
+-- (13/10) Link fixo do Google Meet de cada aluno.
+alter table public.alunos add column if not exists meet_link text;

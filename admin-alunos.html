@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=5">
+  <link rel="stylesheet" href="portal.css?v=8">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -94,7 +94,7 @@
       /* lista */
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos' })]);
       app.appendChild(cartao);
-      P.client.from('alunos').select('id,nome,email').order('nome').then(function (r) {
+      P.client.from('alunos').select('id,nome,email,meet_link').order('nome').then(function (r) {
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
         if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' }));
         r.data.forEach(function (a) {
@@ -113,6 +113,31 @@
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os alunos' });
       voltar.addEventListener('click', function () { listaDeAlunos(user); });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
+
+      /* link do Google Meet do aluno (fixo; dá pra trocar quando quiser) */
+      var msgMeet = el('p', { class: 'portal-msg' });
+      var meet = el('input', { type: 'url', id: 'alunoMeet', placeholder: 'https://meet.google.com/...' });
+      meet.value = aluno.meet_link || '';
+      var salvarMeet = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar link' });
+      var formMeet = el('form', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Link do Google Meet' }),
+        el('p', { text: 'O botão "Entrar no encontro" aparece na página do aluno. Pra tirar o botão, apague o link e salve.' }),
+        el('label', { for: 'alunoMeet', text: 'Link' }), meet, msgMeet, salvarMeet
+      ]);
+      formMeet.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var valor = meet.value.trim();
+        var seguro = valor ? P.linkSeguro(valor) : null;
+        if (valor && !seguro) { P.mensagem(msgMeet, 'O link precisa começar com https://', 'erro'); return; }
+        salvarMeet.disabled = true;
+        P.client.from('alunos').update({ meet_link: seguro }).eq('id', aluno.id).then(function (r) {
+          salvarMeet.disabled = false;
+          if (r.error) { P.mensagem(msgMeet, P.traduzErro(r.error.message), 'erro'); return; }
+          aluno.meet_link = seguro;
+          P.mensagem(msgMeet, seguro ? 'Link salvo.' : 'Link removido.', 'ok');
+        });
+      });
+      app.appendChild(formMeet);
 
       /* novo item */
       var msg = el('p', { class: 'portal-msg' });

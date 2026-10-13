@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=7">
+  <link rel="stylesheet" href="portal.css?v=8">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -142,7 +142,7 @@
       document.getElementById('salaClassroom').style.display = 'none';
       app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       var email = String(user.email || '').toLowerCase();
-      P.client.from('alunos').select('id,nome').eq('email', email).maybeSingle().then(function (r) {
+      P.client.from('alunos').select('id,nome,meet_link').eq('email', email).maybeSingle().then(function (r) {
         limpar();
         if (r.error) {
           app.appendChild(topo(user, email));
@@ -164,6 +164,9 @@
         titulos(true);
         app.appendChild(topo(user, 'Olá, ' + aluno.nome + '!'));
         avisoDeSenha();
+        // link fixo do encontro semanal (Google Meet), acima das abas
+        var meetLink = P.linkSeguro(aluno.meet_link);
+        if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-meet', href: meetLink, target: '_blank', rel: 'noopener', text: 'Entrar no encontro (Google Meet)' }));
         P.client.from('itens').select('bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }

@@ -19,6 +19,7 @@
 .portal-aba.ativa{border-width:3px;padding:8px 4px;color:#A03E25}
 .portal-whats{display:flex;justify-content:center;margin-top:6px}
 .portal-whats img{display:block;width:44px;height:44px}
+.portal-meet{display:block;text-align:center;margin:0 0 14px}
 .portal-acoes{display:flex;gap:8px;flex-wrap:wrap}
 .portal-btn{display:inline-block;padding:12px 24px;background:#1F5FA3;color:#f6e7b4;font-weight:700;font-size:15px;text-decoration:none;border:0;border-radius:8px;cursor:pointer;transition:background .3s ease,transform .2s ease}
 .portal-btn:hover{background:#0b2a52;transform:translateY(-2px)}
