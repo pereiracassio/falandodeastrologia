@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Área do Cliente - Falando de Astrologia</title>
+  
+  <!-- Importação da fonte Cinzel do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=9">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Área do Cliente</h1>
+    <p class="portal-sub">Falando de Astrologia</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=4"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, app = document.getElementById('app');
+    function limpar() { app.textContent = ''; }
+    function sair() { P.client.auth.signOut().then(mostrarLogin); }
+
+    function mostrarLogin() {
+      limpar();
+      var entrar = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
+      entrar.addEventListener('click', function () { P.entrarComGoogle('/cliente.html'); });
+      app.appendChild(el('div', { class: 'portal-cartao' }, [
+        el('p', { text: 'Aqui ficam os resultados dos serviços que você contratou. Entre com a mesma conta Google (Gmail) que você usou na contratação.' }),
+        entrar
+      ]));
+    }
+
+    function itemEntrega(e) {
+      var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico })]);
+      if (e.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(e.data) }));
+      var botoes = el('div', { class: 'portal-acoes' });
+      var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
+      if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
+      if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
+      return el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [titulo, botoes])]);
+    }
+
+    function mostrarPortal(user) {
+      limpar();
+      var email = String(user.email || '').toLowerCase();
+      var sairBtn = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
+      sairBtn.addEventListener('click', sair);
+      P.client.from('clientes').select('id,nome').eq('email', email).maybeSingle().then(function (r) {
+        var nome = r.data ? r.data.nome : (P.nomeDoGoogle(user) || email);
+        app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Olá, ' + nome + '!' }), sairBtn]));
+        if (r.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' })); return; }
+        if (!r.data) {
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
+          return;
+        }
+        app.appendChild(el('div', { class: 'portal-cartao' }, [
+          el('h2', { text: 'Importante' }),
+          el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
+          el('p', { text: 'Ao baixar a gravação, o Google pode avisar que não consegue verificar vírus por ser um arquivo grande. Toque em "Fazer o download mesmo assim".' })
+        ]));
+        P.client.from('entregas').select('servico,data,pdf_link,gravacao_link,criado_em').eq('cliente_id', r.data.id)
+          .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (re) {
+            var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Seus serviços' })]);
+            app.appendChild(cartao);
+            if (re.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus serviços agora.' })); return; }
+            if (!re.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum serviço entregue ainda.' }));
+            re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e)); });
+            var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20cliente%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
+              el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
+            ]);
+            app.appendChild(el('div', { class: 'portal-whats' }, [whats]));
+          });
+      });
+    }
+
+    P.client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) mostrarPortal(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+  <script src="menu.js?v=16" defer></script>
+</body>
+</html>

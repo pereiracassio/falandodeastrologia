@@ -40,6 +40,7 @@
     .dados { margin-bottom: 20px; }
     .dados label { display: block; font-size: 13px; font-weight: bold; color: #6b5a3a; margin: 0 0 4px; }
     .dados input { width: 100%; box-sizing: border-box; padding: 11px 12px; margin-bottom: 12px; border: 1px solid #1F5FA3; border-radius: 6px; background: transparent; font-size: 15px; color: #2b1d12; font-family: inherit; }
+    .btn-google { width: 100%; box-sizing: border-box; padding: 11px 12px; margin-bottom: 12px; border: 1px solid #1F5FA3; border-radius: 6px; background: transparent; color: #1F5FA3; font-weight: bold; font-size: 15px; cursor: pointer; }
     .dados .dica { font-size: 12px; color: #6b5a3a; margin: -8px 0 12px; }
     .erro-dados { color: #a03e25; font-size: 13px; margin: 0 0 12px; display: none; }
       body.checkout { flex-direction: column; }
@@ -100,6 +101,8 @@
   </div>
 
   <div class="dados" id="dados" style="display:none">
+    <button type="button" id="btn-google" class="btn-google">Entrar com o Google (preenche nome e e-mail)</button>
+    <p class="dica" id="google-info" style="margin-top:-4px"></p>
     <label for="cli-nome">Nome completo</label>
     <input type="text" id="cli-nome" autocomplete="name" placeholder="Seu nome completo">
     <label for="cli-whatsapp">WhatsApp</label>
@@ -115,6 +118,8 @@
 </div></div>
 
 <script src="carrinho.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="portal.js?v=4"></script>
 <script src="menu.js?v=16" defer></script>
 <script>
   var params = new URLSearchParams(window.location.search);
@@ -219,6 +224,23 @@
     if (n.length === 10 || n.length === 11) return "+55" + n;
     return "+" + n;
   }
+
+  // ---- Entrar com o Google (opcional): preenche nome e e-mail; o WhatsApp a pessoa digita ----
+  (function () {
+    var P = window.portal;
+    var btn = document.getElementById("btn-google"), info = document.getElementById("google-info");
+    if (!P) { btn.style.display = "none"; return; }
+    btn.addEventListener("click", function () { P.entrarComGoogle("/carrinho.html"); });
+    P.client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (!sessao) return;
+      var nomeEl = document.getElementById("cli-nome"), emailEl = document.getElementById("cli-email");
+      if (!nomeEl.value.trim()) nomeEl.value = P.nomeDoGoogle(sessao.user);
+      if (!emailEl.value.trim()) emailEl.value = sessao.user.email || "";
+      btn.style.display = "none";
+      info.textContent = "Conectado com o Google. Confira os dados abaixo.";
+    });
+  })();
 
   var botao = document.getElementById("pay-button");
   var erro = document.getElementById("erro-dados");

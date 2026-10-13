@@ -98,12 +98,21 @@
     container.appendChild(form);
   }
 
+  /* login com o Google: volta para o endereço dado (ex.: '/cliente.html'); esse endereço precisa estar em Redirect URLs no Supabase */
+  function entrarComGoogle(destino) {
+    return client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + destino } });
+  }
+  function nomeDoGoogle(user) {
+    var m = (user && user.user_metadata) || {};
+    return m.full_name || m.name || '';
+  }
+
   /* "entrou por link de recuperação de senha" — o Supabase limpa o # logo depois de ler, então decide já no carregamento */
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
     client: client, el: el, linkSeguro: linkSeguro, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
-    emRecuperacao: emRecuperacao
+    emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };
 })();

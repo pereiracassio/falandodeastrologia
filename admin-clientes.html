@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel dos Clientes - Falando de Astrologia</title>
+  
+  <!-- Importação da fonte Cinzel do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=9">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Painel dos Clientes</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <datalist id="listaServicos">
+    <option value="Mapa Natal Clássico"><option value="Revolução Solar"><option value="Previsões Astrológicas">
+    <option value="Sinastria Clássica"><option value="Retificação de Mapa">
+  </datalist>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=4"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, app = document.getElementById('app');
+    var nomeAdmin = '';
+
+    function limpar() { app.textContent = ''; }
+    function sair() { P.client.auth.signOut().then(mostrarLogin); }
+    function topo(texto) {
+      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
+      b.addEventListener('click', sair);
+      var alunos = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Alunos' });
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [alunos, b])]);
+    }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+
+    function iniciar(user) {
+      limpar();
+      P.client.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        P.client.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          listaDeClientes(user);
+        });
+      });
+    }
+
+    function listaDeClientes(user) {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+
+      var msg = el('p', { class: 'portal-msg' });
+      var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
+      var email = el('input', { type: 'email', id: 'novoEmail', required: '' });
+      var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar cliente' });
+      var form = el('form', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Novo cliente' }),
+        el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. Ele entra na Área do Cliente com o Google, sem senha. Não precisa criar acesso no Supabase.' }),
+        el('label', { for: 'novoNome', text: 'Nome' }), nome,
+        el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, add
+      ]);
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault(); add.disabled = true;
+        P.client.from('clientes').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).then(function (r) {
+          add.disabled = false;
+          if (r.error) { P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um cliente com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
+          listaDeClientes(user);
+        });
+      });
+      app.appendChild(form);
+
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Clientes' })]);
+      app.appendChild(cartao);
+      P.client.from('clientes').select('id,nome,email').order('nome').then(function (r) {
+        if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
+        if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum cliente ainda.' }));
+        r.data.forEach(function (c) {
+          var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
+          abrir.addEventListener('click', function () { paginaDoCliente(user, c); });
+          cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+            el('div', {}, [el('span', { class: 'portal-item-titulo', text: c.nome }), el('span', { class: 'portal-item-data', text: c.email })]), abrir
+          ])]));
+        });
+      });
+    }
+
+    function paginaDoCliente(user, cliente) {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os clientes' });
+      voltar.addEventListener('click', function () { listaDeClientes(user); });
+      app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
+
+      var msg = el('p', { class: 'portal-msg' });
+      var servico = el('input', { type: 'text', id: 'entServico', list: 'listaServicos', required: '' });
+      var data = el('input', { type: 'date', id: 'entData' });
+      var pdf = el('input', { type: 'url', id: 'entPdf', placeholder: 'https://drive.google.com/...' });
+      var gravacao = el('input', { type: 'url', id: 'entGravacao', placeholder: 'https://drive.google.com/...' });
+      var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
+      var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar edição' });
+      cancelar.style.display = 'none';
+      var editandoId = null;
+      var form = el('form', { class: 'portal-cartao' }, [
+        el('h2', { text: cliente.nome }),
+        el('p', { text: 'Cole os links do Drive e lembre de compartilhar os arquivos com o Gmail do cliente (' + cliente.email + ') no próprio Drive.' }),
+        el('label', { for: 'entServico', text: 'Serviço' }), servico,
+        el('label', { for: 'entData', text: 'Data do serviço (opcional)' }), data,
+        el('label', { for: 'entPdf', text: 'Link do PDF (opcional)' }), pdf,
+        el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)' }), gravacao, msg,
+        el('div', { class: 'portal-acoes' }, [add, cancelar])
+      ]);
+      function sairDaEdicao() { editandoId = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, ''); }
+      cancelar.addEventListener('click', sairDaEdicao);
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var seguroPdf = pdf.value.trim() ? P.linkSeguro(pdf.value) : null;
+        var seguroGrav = gravacao.value.trim() ? P.linkSeguro(gravacao.value) : null;
+        if ((pdf.value.trim() && !seguroPdf) || (gravacao.value.trim() && !seguroGrav)) { P.mensagem(msg, 'Os links precisam começar com https://', 'erro'); return; }
+        add.disabled = true;
+        var campos = { servico: servico.value.trim(), data: data.value || null, pdf_link: seguroPdf, gravacao_link: seguroGrav };
+        var pedido = editandoId
+          ? P.client.from('entregas').update(campos).eq('id', editandoId)
+          : P.client.from('entregas').insert(Object.assign({ cliente_id: cliente.id }, campos));
+        pedido.then(function (r) {
+          add.disabled = false;
+          if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+          paginaDoCliente(user, cliente);
+        });
+      });
+      app.appendChild(form);
+
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + cliente.nome + ' vê' })]);
+      app.appendChild(cartao);
+      P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link').eq('cliente_id', cliente.id)
+        .order('data', { ascending: false, nullsFirst: false }).then(function (r) {
+          if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
+          if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nada cadastrado ainda.' }));
+          r.data.forEach(function (e) {
+            var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
+            editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
+            editar.addEventListener('click', function () {
+              editandoId = e.id; servico.value = e.servico; data.value = e.data || ''; pdf.value = e.pdf_link || ''; gravacao.value = e.gravacao_link || '';
+              add.textContent = 'Salvar alterações'; cancelar.style.display = ''; P.mensagem(msg, 'Editando: ' + e.servico, 'ok');
+              form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
+            apagar.addEventListener('click', function () {
+              if (!confirm('Apagar "' + e.servico + '"? (Os arquivos no Drive não são apagados.)')) return;
+              P.client.from('entregas').delete().eq('id', e.id).then(function (d) {
+                if (d.error) alert('Não foi possível apagar.'); else paginaDoCliente(user, cliente);
+              });
+            });
+            var tem = [e.pdf_link ? 'PDF' : '', e.gravacao_link ? 'gravação' : ''].filter(Boolean).join(' + ');
+            cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico }),
+                el('span', { class: 'portal-item-data', text: (e.data ? P.dataBR(e.data) + ' · ' : '') + (tem || 'sem arquivos') })]),
+              el('div', { class: 'portal-acoes' }, [editar, apagar])
+            ])]));
+          });
+        });
+
+      var remover = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Remover este cliente' });
+      remover.addEventListener('click', function () {
+        if (!confirm('Remover ' + cliente.nome + '? Os serviços dele também somem daqui (os arquivos do Drive ficam).')) return;
+        P.client.from('clientes').delete().eq('id', cliente.id).then(function (d) {
+          if (d.error) alert('Não foi possível remover.'); else listaDeClientes(user);
+        });
+      });
+      app.appendChild(remover);
+    }
+
+    P.client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+  <script src="menu.js?v=16" defer></script>
+</body>
+</html>

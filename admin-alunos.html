@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=8">
+  <link rel="stylesheet" href="portal.css?v=9">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=3"></script>
+  <script src="portal.js?v=4"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -47,7 +47,8 @@
     function topo(texto) {
       var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       b.addEventListener('click', sair);
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), b]);
+      var clientes = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: 'Clientes' });
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [clientes, b])]);
     }
     function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
 
