@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=4">
+  <link rel="stylesheet" href="portal.css?v=5">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -119,6 +119,7 @@
       var bloco = el('select', { id: 'itemBloco' }, Object.keys(BLOCOS).map(function (k) { return el('option', { value: k, text: BLOCOS[k] }); }));
       var titulo = el('input', { type: 'text', id: 'itemTitulo', required: '' });
       var data = el('input', { type: 'date', id: 'itemData' });
+      var descricao = el('textarea', { id: 'itemDescricao', rows: '4', placeholder: 'Ex.: neste encontro falamos de...' });
       var link = el('input', { type: 'url', id: 'itemLink', placeholder: 'https://drive.google.com/...', required: '' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
       var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar edição' });
@@ -130,6 +131,7 @@
         el('label', { for: 'itemBloco', text: 'Onde aparece' }), bloco,
         el('label', { for: 'itemTitulo', text: 'Título' }), titulo,
         el('label', { for: 'itemData', text: 'Data (opcional)' }), data,
+        el('label', { for: 'itemDescricao', text: 'Descrição (opcional)' }), descricao,
         el('label', { for: 'itemLink', text: 'Link do Drive' }), link, msg,
         el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
@@ -142,7 +144,7 @@
         var seguro = P.linkSeguro(link.value);
         if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
         add.disabled = true;
-        var campos = { bloco: bloco.value, titulo: titulo.value.trim(), link: seguro, data: data.value || null };
+        var campos = { bloco: bloco.value, titulo: titulo.value.trim(), link: seguro, data: data.value || null, descricao: descricao.value.trim() || null };
         var pedido = editandoId
           ? P.client.from('itens').update(campos).eq('id', editandoId)
           : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos));
@@ -156,7 +158,7 @@
 
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + aluno.nome + ' vê' })]);
       app.appendChild(cartao);
-      P.client.from('itens').select('id,bloco,titulo,link,data').eq('aluno_id', aluno.id)
+      P.client.from('itens').select('id,bloco,titulo,descricao,link,data').eq('aluno_id', aluno.id)
         .order('bloco').order('data', { ascending: false, nullsFirst: false }).then(function (r) {
           if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
           if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nada cadastrado ainda.' }));
@@ -164,7 +166,7 @@
             var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
             editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
             editar.addEventListener('click', function () {
-              editandoId = i.id; bloco.value = i.bloco; titulo.value = i.titulo; data.value = i.data || ''; link.value = i.link;
+              editandoId = i.id; bloco.value = i.bloco; titulo.value = i.titulo; data.value = i.data || ''; descricao.value = i.descricao || ''; link.value = i.link;
               add.textContent = 'Salvar alterações'; cancelar.style.display = ''; P.mensagem(msg, 'Editando: ' + i.titulo, 'ok');
               form.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });

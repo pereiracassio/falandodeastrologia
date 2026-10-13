@@ -75,3 +75,6 @@ grant select on public.admins to authenticated;
 create policy admins_ler_propria on public.admins for select to authenticated
   using (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')));
 update public.admins set nome = 'Cássio' where email = 'cassio15pereira@gmail.com';
+
+-- (13/10) Descrição opcional de cada item.
+alter table public.itens add column if not exists descricao text;

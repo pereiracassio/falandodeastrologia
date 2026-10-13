@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=4">
+  <link rel="stylesheet" href="portal.css?v=5">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -98,7 +98,9 @@
         var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : 'Abrir';
         linha.appendChild(el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto }));
       }
-      return el('div', { class: 'portal-item' }, [linha]);
+      var caixa = el('div', { class: 'portal-item' }, [linha]);
+      if (item.descricao) caixa.appendChild(el('p', { class: 'portal-descricao', text: item.descricao }));
+      return caixa;
     }
 
     function blocoDaTela(titulo, itens, bloco, vazio) {
@@ -135,7 +137,7 @@
         titulos(true);
         app.appendChild(topo(user, 'Olá, ' + aluno.nome + '!'));
         avisoDeSenha();
-        P.client.from('itens').select('bloco,titulo,link,data,criado_em').eq('aluno_id', aluno.id)
+        P.client.from('itens').select('bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
             var lista = ri.data || [];

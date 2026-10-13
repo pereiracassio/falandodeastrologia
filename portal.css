@@ -9,9 +9,11 @@
 .portal-cartao h2{font-family:'Cinzel',serif;font-size:16px;color:#A03E25;margin:0 0 14px;letter-spacing:.5px}
 .portal-cartao p{font-size:15px;line-height:1.6;margin:0 0 14px;color:#16233F}
 .portal label{display:block;font-size:13px;color:#16233F;font-weight:700;margin:0 0 5px}
-.portal input,.portal select{width:100%;box-sizing:border-box;padding:12px;margin:0 0 14px;border-radius:8px;border:1px solid #1F5FA3;background:transparent;color:#16233F;font-size:16px}
-.portal input:focus,.portal select:focus{outline:none;border-width:3px;padding:10px}
+.portal input,.portal select,.portal textarea{width:100%;box-sizing:border-box;padding:12px;margin:0 0 14px;border-radius:8px;border:1px solid #1F5FA3;background:transparent;color:#16233F;font-size:16px}
+.portal input:focus,.portal select:focus,.portal textarea:focus{outline:none;border-width:3px;padding:10px}
 .portal input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;min-height:50px}
+.portal textarea{resize:vertical;min-height:90px;font-family:Arial,sans-serif}
+.portal-descricao{font-size:14px;line-height:1.5;color:#16233F;margin:8px 0 0;white-space:pre-line}
 .portal-acoes{display:flex;gap:8px;flex-wrap:wrap}
 .portal-btn{display:inline-block;padding:12px 24px;background:#1F5FA3;color:#f6e7b4;font-weight:700;font-size:15px;text-decoration:none;border:0;border-radius:8px;cursor:pointer;transition:background .3s ease,transform .2s ease}
 .portal-btn:hover{background:#0b2a52;transform:translateY(-2px)}
