@@ -47,3 +47,14 @@ create policy entregas_admin_editar on public.entregas for update to authenticat
   using (public.sou_admin()) with check (public.sou_admin());
 create policy entregas_admin_apagar on public.entregas for delete to authenticated
   using (public.sou_admin());
+
+-- (13/10) Código do cliente (o mesmo do Astro Hellenic). Fica numa tabela SÓ do administrador:
+-- sem policy pra quem não é admin, então o cliente não consegue ler o código nem pela API.
+create table public.cliente_codigos (
+  cliente_id uuid primary key references public.clientes(id) on delete cascade,
+  codigo text not null unique
+);
+alter table public.cliente_codigos enable row level security;
+grant select, insert, update, delete on public.cliente_codigos to authenticated;
+create policy codigos_so_admin on public.cliente_codigos for all to authenticated
+  using (public.sou_admin()) with check (public.sou_admin());

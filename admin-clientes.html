@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=9">
+  <link rel="stylesheet" href="portal.css?v=10">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -77,35 +77,62 @@
       var msg = el('p', { class: 'portal-msg' });
       var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
       var email = el('input', { type: 'email', id: 'novoEmail', required: '' });
+      var codigo = el('input', { type: 'text', id: 'novoCodigo', placeholder: 'Ex.: 0147' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar cliente' });
       var form = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: 'Novo cliente' }),
         el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. Ele entra na Área do Cliente com o Google, sem senha. Não precisa criar acesso no Supabase.' }),
+        el('label', { for: 'novoCodigo', text: 'Código do cliente (o mesmo do Astro Hellenic). Só você vê.' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, add
       ]);
       form.addEventListener('submit', function (ev) {
         ev.preventDefault(); add.disabled = true;
-        P.client.from('clientes').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).then(function (r) {
-          add.disabled = false;
-          if (r.error) { P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um cliente com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
-          listaDeClientes(user);
+        P.client.from('clientes').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single().then(function (r) {
+          if (r.error) { add.disabled = false; P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um cliente com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
+          var cod = codigo.value.trim();
+          if (!cod) { listaDeClientes(user); return; }
+          // o código fica numa tabela só do administrador: o cliente nunca consegue lê-lo
+          P.client.from('cliente_codigos').insert({ cliente_id: r.data.id, codigo: cod }).then(function (rc) {
+            add.disabled = false;
+            if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Cliente criado, mas esse código já é de outro cliente. Abra o cliente e corrija o código.' : 'Cliente criado, mas não foi possível salvar o código.', 'erro'); return; }
+            listaDeClientes(user);
+          });
         });
       });
       app.appendChild(form);
 
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Clientes' })]);
       app.appendChild(cartao);
-      P.client.from('clientes').select('id,nome,email').order('nome').then(function (r) {
+      Promise.all([
+        P.client.from('clientes').select('id,nome,email').order('nome'),
+        P.client.from('cliente_codigos').select('cliente_id,codigo')
+      ]).then(function (res) {
+        var r = res[0], rc = res[1];
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
-        if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum cliente ainda.' }));
-        r.data.forEach(function (c) {
-          var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
-          abrir.addEventListener('click', function () { paginaDoCliente(user, c); });
-          cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-            el('div', {}, [el('span', { class: 'portal-item-titulo', text: c.nome }), el('span', { class: 'portal-item-data', text: c.email })]), abrir
-          ])]));
-        });
+        var codigos = {};
+        (rc.data || []).forEach(function (c) { codigos[c.cliente_id] = c.codigo; });
+        var clientes = r.data.map(function (c) { c.codigo = codigos[c.id] || ''; return c; });
+        if (!clientes.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum cliente ainda.' })); return; }
+        var busca = el('input', { type: 'search', id: 'buscaCliente', placeholder: 'Buscar por código, nome ou e-mail' });
+        var lista = el('div');
+        cartao.appendChild(busca);
+        cartao.appendChild(lista);
+        function desenhar() {
+          var t = busca.value.trim().toLowerCase();
+          lista.textContent = '';
+          var achados = clientes.filter(function (c) { return !t || (c.codigo + ' ' + c.nome + ' ' + c.email).toLowerCase().indexOf(t) >= 0; });
+          if (!achados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum cliente encontrado.' }));
+          achados.forEach(function (c) {
+            var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
+            abrir.addEventListener('click', function () { paginaDoCliente(user, c); });
+            lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (c.codigo ? c.codigo + ' · ' : '') + c.nome }), el('span', { class: 'portal-item-data', text: c.email })]), abrir
+            ])]));
+          });
+        }
+        busca.addEventListener('input', desenhar);
+        desenhar();
       });
     }
 
@@ -115,6 +142,32 @@
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os clientes' });
       voltar.addEventListener('click', function () { listaDeClientes(user); });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
+
+      /* código do cliente (só o administrador vê) */
+      var msgCod = el('p', { class: 'portal-msg' });
+      var codInput = el('input', { type: 'text', id: 'clienteCodigo', placeholder: 'Ex.: 0147' });
+      codInput.value = cliente.codigo || '';
+      var salvarCod = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar código' });
+      var formCod = el('form', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Código do cliente' }),
+        el('p', { text: 'O mesmo código do Astro Hellenic. O cliente não vê este campo. Pra apagar o código, deixe em branco e salve.' }),
+        el('label', { for: 'clienteCodigo', text: 'Código' }), codInput, msgCod, salvarCod
+      ]);
+      formCod.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var valor = codInput.value.trim();
+        salvarCod.disabled = true;
+        var pedido = valor
+          ? P.client.from('cliente_codigos').upsert({ cliente_id: cliente.id, codigo: valor }, { onConflict: 'cliente_id' })
+          : P.client.from('cliente_codigos').delete().eq('cliente_id', cliente.id);
+        pedido.then(function (r) {
+          salvarCod.disabled = false;
+          if (r.error) { P.mensagem(msgCod, /duplicate|unique/i.test(r.error.message) ? 'Esse código já é de outro cliente.' : P.traduzErro(r.error.message), 'erro'); return; }
+          cliente.codigo = valor;
+          P.mensagem(msgCod, valor ? 'Código salvo.' : 'Código removido.', 'ok');
+        });
+      });
+      app.appendChild(formCod);
 
       var msg = el('p', { class: 'portal-msg' });
       var servico = el('input', { type: 'text', id: 'entServico', list: 'listaServicos', required: '' });
@@ -126,7 +179,7 @@
       cancelar.style.display = 'none';
       var editandoId = null;
       var form = el('form', { class: 'portal-cartao' }, [
-        el('h2', { text: cliente.nome }),
+        el('h2', { text: (cliente.codigo ? cliente.codigo + ' · ' : '') + cliente.nome }),
         el('p', { text: 'Cole os links do Drive e lembre de compartilhar os arquivos com o Gmail do cliente (' + cliente.email + ') no próprio Drive.' }),
         el('label', { for: 'entServico', text: 'Serviço' }), servico,
         el('label', { for: 'entData', text: 'Data do serviço (opcional)' }), data,
