@@ -12,8 +12,8 @@
     // Retificação: não aparece no site, só entra no carrinho pelo link que o astrólogo manda
     "retificacao-avulsa": { titulo: "Retificação de Mapa Avulsa", centavos: 33500, agenda: false, restrito: true },
     "retificacao-combo":  { titulo: "Combo: Retificação + Mapa Natal Clássico", centavos: 59900, agenda: true, restrito: true },
-    "teste2":        { titulo: "Teste de Desconto", centavos: 1200, agenda: true, restrito: true },
-    "teste":         { titulo: "Teste de Pagamento", centavos: 100, agenda: true, semDesconto: true, restrito: true }
+    "teste2":        { titulo: "Previsões Astrológicas", centavos: 1200, agenda: true, restrito: true },
+    "teste":         { titulo: "Mapa Natal Clássico", centavos: 100, agenda: true, semDesconto: true, restrito: true }
   };
   // Mapa Natal + Retificação avulsa no mesmo carrinho viram o combo
   var CARRINHO_RETIFICACAO_MAPA = ["mapa-natal", "retificacao-avulsa"];
