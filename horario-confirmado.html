@@ -24,6 +24,10 @@
     .confirmado .horario .data { font-size: 22px; font-weight: 700; color: #1F5FA3; }
     .confirmado .horario .fuso { font-size: 13px; color: #6b5a3a; margin-top: 4px; }
     .confirmado p { font-size: 16px; margin: 0 0 16px; }
+    .confirmado .material { background: transparent; border: 1px solid #1F5FA3; border-radius: 8px; padding: 16px; margin: 0 0 22px; }
+    .confirmado .material h2 { color: #A03E25; font-size: 17px; margin: 0 0 8px; }
+    .confirmado .material p { font-size: 15px; margin: 0 0 12px; color: #16233F; }
+    .confirmado .material a { display: inline-block; padding: 10px 20px; background: #1F5FA3; color: #f6e7b4; font-weight: 700; font-size: 15px; text-decoration: none; border-radius: 8px; }
     .confirmado .botoes { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 22px; }
     .confirmado .botoes a { box-sizing: border-box; display: inline-block; width: 100%; max-width: 320px; padding: 12px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; text-decoration: none; }
     .confirmado .btn-wpp { border: 2px solid #4A7C59; color: #4A7C59; }
@@ -57,6 +61,12 @@
     </div>
 
     <p id="texto">Seu horário está reservado. Se precisar remarcar ou tiver qualquer dúvida, é só me chamar no WhatsApp.</p>
+
+    <div class="material">
+      <h2>Seu material depois do atendimento</h2>
+      <p>Em até 3 dias após o atendimento, o seu material (PDF e gravação) estará disponível na Área do Cliente. Entre com o mesmo Gmail que você usou na contratação.</p>
+      <a href="cliente.html">Acessar a Área do Cliente</a>
+    </div>
 
     <div class="botoes">
       <a class="btn-wpp" href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Acabei%20de%20confirmar%20meu%20horário." target="_blank" rel="noopener">Falar pelo WhatsApp</a>
@@ -121,6 +131,6 @@
     }
   })();
 </script>
-<script src="menu.js?v=16" defer></script>
+<script src="menu.js?v=17" defer></script>
 </body>
 </html>

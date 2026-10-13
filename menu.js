@@ -9,6 +9,7 @@
     { label: "Previsões Astrológicas", href: "previsoes-astrologicas.html" },
     { label: "Sinastria Clássica", href: "sinastria.html" },
     { label: "Área do Aluno", href: "aluno.html", sep: true },
+    { label: "Área do Cliente", href: "cliente.html" },
     { label: "Meu Carrinho", href: "carrinho.html", carrinho: true }
   ];
 
