@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=5">
+  <link rel="stylesheet" href="portal.css?v=6">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -103,11 +103,38 @@
       return caixa;
     }
 
-    function blocoDaTela(titulo, itens, bloco, vazio) {
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: titulo })]);
-      if (!itens.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: vazio }));
-      itens.forEach(function (i) { cartao.appendChild(itemDaLista(i, bloco)); });
-      return cartao;
+    /* três abas na mesma página (Caderno, Gravações, Materiais); abre em Gravações, que é onde aparece coisa nova toda semana */
+    var ABAS = [
+      { chave: 'caderno', nome: 'Caderno', vazio: 'O seu caderno ainda não foi disponibilizado.' },
+      { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
+      { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' }
+    ];
+
+    function abasDaTela(lista) {
+      var barra = el('div', { class: 'portal-abas', role: 'tablist' });
+      var conteudo = el('div', { class: 'portal-cartao' });
+      var botoes = {};
+      function mostrar(chave) {
+        ABAS.forEach(function (ab) {
+          var ativa = ab.chave === chave;
+          botoes[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
+          botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
+        });
+        conteudo.textContent = '';
+        var itens = lista.filter(function (i) { return i.bloco === chave; });
+        var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
+        if (!itens.length) conteudo.appendChild(el('p', { class: 'portal-vazio', text: aba.vazio }));
+        itens.forEach(function (i) { conteudo.appendChild(itemDaLista(i, chave)); });
+      }
+      ABAS.forEach(function (ab) {
+        var qtd = lista.filter(function (i) { return i.bloco === ab.chave; }).length;
+        var b = el('button', { type: 'button', role: 'tab', text: ab.nome + (qtd ? ' (' + qtd + ')' : '') });
+        b.addEventListener('click', function () { mostrar(ab.chave); });
+        botoes[ab.chave] = b;
+        barra.appendChild(b);
+      });
+      mostrar('gravacoes');
+      return [barra, conteudo];
     }
 
     function mostrarPortal(user) {
@@ -141,10 +168,7 @@
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
             var lista = ri.data || [];
-            function doBloco(b) { return lista.filter(function (i) { return i.bloco === b; }); }
-            app.appendChild(blocoDaTela('Caderno do aluno', doBloco('caderno'), 'caderno', 'O seu caderno ainda não foi disponibilizado.'));
-            app.appendChild(blocoDaTela('Gravações dos encontros', doBloco('gravacoes'), 'gravacoes', 'Nenhuma gravação ainda.'));
-            app.appendChild(blocoDaTela('Materiais', doBloco('materiais'), 'materiais', 'Nenhum material ainda.'));
+            abasDaTela(lista).forEach(function (e) { app.appendChild(e); });
           });
       });
     }
