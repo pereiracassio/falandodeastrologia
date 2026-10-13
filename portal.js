@@ -100,6 +100,8 @@
 
   /* login com o Google: volta para o endereço dado (ex.: '/cliente.html'); esse endereço precisa estar em Redirect URLs no Supabase */
   function entrarComGoogle(destino) {
+    // guarda para onde voltar: se o Supabase devolver para a home, a home leva a pessoa pra cá (ver index.html)
+    try { localStorage.setItem('fda_pos_login', destino); } catch (e) { /* sem armazenamento */ }
     return client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + destino } });
   }
   function nomeDoGoogle(user) {

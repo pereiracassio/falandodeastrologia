@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script>
+  /* Volta do "Entrar com o Google": se o Supabase devolveu a pessoa para a home com o token no endereço, leva para a página
+     em que ela estava (guardada por portal.js em fda_pos_login). O token vai junto, e a página de destino conclui o login. */
+  (function () {
+    try {
+      if (/access_token=/.test(location.hash)) {
+        var destino = localStorage.getItem('fda_pos_login');
+        if (destino && /^\/[a-z0-9._-]+\.html$/i.test(destino)) location.replace(destino + location.hash);
+      }
+    } catch (e) { /* sem armazenamento: fica na home */ }
+  })();
+  </script>
+
   <meta charset="UTF-8">
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
