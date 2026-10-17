@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=5"></script>
+  <script src="portal.js?v=6"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -201,12 +201,12 @@
       var editandoId = null;
       var form = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: (aluno.codigo ? aluno.codigo + ' · ' : '') + aluno.nome }),
-        el('p', { text: 'Cole o link do Drive. Lembre de compartilhar o arquivo (ou a pasta) com o e-mail do aluno no próprio Drive.' }),
+        el('p', { text: 'Escolha o arquivo no Drive (ou cole o link). Lembre de compartilhar o arquivo (ou a pasta) com o e-mail do aluno no próprio Drive.' }),
         el('label', { for: 'itemBloco', text: 'Onde aparece' }), bloco,
         el('label', { for: 'itemTitulo', text: 'Título' }), titulo,
         el('label', { for: 'itemData', text: 'Data (opcional)' }), data,
         el('label', { for: 'itemDescricao', text: 'Descrição (opcional)' }), descricao,
-        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, msg,
+        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, P.botaoDrive(link, function (t) { P.mensagem(msg, t, 'erro'); }), msg,
         el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
       function sairDaEdicao() {

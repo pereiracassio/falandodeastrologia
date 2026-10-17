@@ -27,6 +27,72 @@
     } catch (e) { return null; }
   }
 
+  /* Escolher do Drive: abre a janela do Google Drive e devolve o link do que foi escolhido (arquivo ou pasta) */
+  var DRIVE_CLIENT_ID = '311357254380-sjbaui6hlfa9s7f10s1ip7699blk0rkb.apps.googleusercontent.com';
+  var DRIVE_API_KEY = 'AIzaSyD8suNhmGPLvtN85IQxoXO7GW-yRwX2028';
+  var DRIVE_APP_ID = '311357254380'; // número do projeto no Google Cloud
+  var driveCarregado = null, driveToken = null, driveTokenAte = 0;
+
+  function carregarScript(src) {
+    return new Promise(function (ok, erro) {
+      var s = document.createElement('script');
+      s.src = src; s.async = true; s.onload = ok; s.onerror = function () { erro(new Error('script')); };
+      document.head.appendChild(s);
+    });
+  }
+  function carregarDrive() {
+    if (!driveCarregado) {
+      driveCarregado = Promise.all([
+        carregarScript('https://apis.google.com/js/api.js').then(function () {
+          return new Promise(function (ok) { gapi.load('picker', ok); });
+        }),
+        carregarScript('https://accounts.google.com/gsi/client')
+      ]).catch(function (e) { driveCarregado = null; throw e; });
+    }
+    return driveCarregado;
+  }
+  function tokenDoDrive() {
+    return new Promise(function (ok, erro) {
+      if (driveToken && Date.now() < driveTokenAte) { ok(driveToken); return; }
+      var tc = google.accounts.oauth2.initTokenClient({
+        client_id: DRIVE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: function (r) {
+          if (r.error || !r.access_token) { erro(new Error(r.error || 'sem token')); return; }
+          driveToken = r.access_token; driveTokenAte = Date.now() + (Number(r.expires_in || 3000) - 60) * 1000;
+          ok(driveToken);
+        },
+        error_callback: function (e) { erro(new Error((e && e.type) || 'cancelado')); }
+      });
+      tc.requestAccessToken();
+    });
+  }
+  /* escolherDoDrive(function (url) { ... }, function (textoDeErro) { ... }) */
+  function escolherDoDrive(aoEscolher, aoErrar) {
+    carregarDrive().then(tokenDoDrive).then(function (token) {
+      var visao = new google.picker.DocsView(google.picker.ViewId.DOCS)
+        .setIncludeFolders(true).setSelectFolderEnabled(true);
+      new google.picker.PickerBuilder()
+        .addView(visao)
+        .setOAuthToken(token).setDeveloperKey(DRIVE_API_KEY).setAppId(DRIVE_APP_ID)
+        .setLocale('pt-BR')
+        .setCallback(function (d) {
+          if (d.action === google.picker.Action.PICKED && d.docs && d.docs[0]) aoEscolher(d.docs[0].url);
+        })
+        .build().setVisible(true);
+    }).catch(function (e) {
+      if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível abrir o Google Drive. Tente de novo.');
+    });
+  }
+  /* botão "Escolher do Drive" que preenche o campo de link */
+  function botaoDrive(campo, aoErrar) {
+    var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Escolher do Drive' });
+    b.addEventListener('click', function () {
+      escolherDoDrive(function (url) { campo.value = url; }, aoErrar);
+    });
+    return b;
+  }
+
   function dataBR(iso) {
     var p = String(iso || '').split('-');
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : '';
@@ -113,7 +179,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, botaoDrive: botaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };
