@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capa dos estudos - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=11">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Capa dos estudos</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="portal.js?v=19"></script>
+  <script src="capa.js?v=1"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, app = document.getElementById('app');
+    function limpar() { app.textContent = ''; }
+    function topo(texto) {
+      var sair = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
+      sair.addEventListener('click', function () { P.client.auth.signOut().then(mostrarLogin); });
+      var alunos = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Alunos' });
+      var clientes = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: 'Clientes' });
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [clientes, alunos, sair])]);
+    }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function iniciar(user) {
+      limpar();
+      P.client.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        montarGerador(user);
+      });
+    }
+
+    function opcaoBotao(texto, marcado, aoClicar) {
+      var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcado ? 'true' : 'false' });
+      b.style.cssText = 'background:transparent;color:#16233F;font:inherit;font-size:15px;cursor:pointer;border-radius:8px;margin:0 8px 8px 0;' +
+        (marcado ? 'border:3px solid #1F5FA3;padding:8px 14px' : 'border:1px solid #1F5FA3;padding:10px 16px');
+      b.addEventListener('click', aoClicar);
+      return b;
+    }
+
+    function montarGerador(user) {
+      limpar();
+      app.appendChild(topo('Capa em papiro, no estilo do Astro Hellenic'));
+      var estado = { tamanho: 'm', powered: true };
+      var titulo = el('textarea', { rows: '3', placeholder: 'Ex.: Estudo sobre as Casas' });
+      var subtitulo = el('input', { type: 'text', placeholder: 'Ex.: Mentoria em Astrologia Clássica' });
+      var nome = el('input', { type: 'text', placeholder: 'Ex.: nome do aluno' });
+      var areaTamanho = el('div'), areaPowered = el('div');
+      var visor = el('div'); visor.style.cssText = 'position:relative;width:100%;max-width:794px;margin:0 auto 14px;overflow:hidden;border:1px solid #1F5FA3;border-radius:6px';
+      var msg = el('p', { class: 'portal-msg' });
+
+      function desenharOpcoes() {
+        areaTamanho.textContent = '';
+        [['p', 'Pequeno'], ['m', 'Médio'], ['g', 'Grande']].forEach(function (o) {
+          areaTamanho.appendChild(opcaoBotao(o[1], estado.tamanho === o[0], function () { estado.tamanho = o[0]; desenharOpcoes(); atualizar(); }));
+        });
+        areaPowered.textContent = '';
+        areaPowered.appendChild(opcaoBotao('Com "powered by Astro Hellenic"', estado.powered, function () { estado.powered = true; desenharOpcoes(); atualizar(); }));
+        areaPowered.appendChild(opcaoBotao('Sem', !estado.powered, function () { estado.powered = false; desenharOpcoes(); atualizar(); }));
+      }
+      function opcoes() { return { titulo: titulo.value.trim(), subtitulo: subtitulo.value.trim(), nome: nome.value.trim(), tamanho: estado.tamanho, powered: estado.powered }; }
+
+      /* a prévia é a própria folha A4 reduzida na tela; o arquivo sai em tamanho real */
+      function atualizar() {
+        visor.textContent = '';
+        var escala = Math.min(1, visor.clientWidth / 794) || 1;
+        visor.style.height = Math.round(1123 * escala) + 'px';
+        var folha = window.capaFolha(opcoes());
+        folha.style.transformOrigin = '0 0'; folha.style.transform = 'scale(' + escala + ')';
+        visor.appendChild(folha);
+      }
+
+      function gerarCanvas() {
+        var palco = el('div'); palco.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1123px';
+        var folha = window.capaFolha(opcoes());
+        palco.appendChild(folha); document.body.appendChild(palco);
+        var pronto = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+        var imagens = Array.prototype.map.call(palco.querySelectorAll('img'), function (i) { return i.complete ? 1 : new Promise(function (ok) { i.onload = i.onerror = ok; }); });
+        return Promise.all([pronto].concat(imagens)).then(function () {
+          return document.fonts && document.fonts.load ? document.fonts.load('800 48px Cinzel') : null;
+        }).then(function () {
+          return window.html2canvas(folha, { scale: 2, useCORS: true, backgroundColor: null, width: 794, height: 1123, windowWidth: 794 });
+        }).then(function (c) { palco.remove(); return c; }, function (e) { palco.remove(); throw e; });
+      }
+      function nomeArquivo() {
+        var base = (titulo.value.trim() || 'capa').replace(/\s+/g, ' ').slice(0, 60).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\- ]+/g, '').trim().replace(/ /g, '-').toLowerCase();
+        return 'capa-' + (base || 'estudo');
+      }
+      function baixarPDF() {
+        if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título da capa.', 'erro'); return; }
+        P.mensagem(msg, 'Gerando o PDF...');
+        gerarCanvas().then(function (c) {
+          var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+          doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+          doc.save(nomeArquivo() + '.pdf');
+          P.mensagem(msg, 'PDF pronto. Procure em Arquivos (Downloads) e abra no GoodNotes.', 'ok');
+        }).catch(function () { P.mensagem(msg, 'Não foi possível gerar o PDF. Tente de novo.', 'erro'); });
+      }
+      function baixarPNG() {
+        if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título da capa.', 'erro'); return; }
+        P.mensagem(msg, 'Gerando a imagem...');
+        gerarCanvas().then(function (c) {
+          c.toBlob(function (blob) {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = nomeArquivo() + '.png';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+            P.mensagem(msg, 'Imagem pronta. Procure em Arquivos (Downloads).', 'ok');
+          }, 'image/png');
+        }).catch(function () { P.mensagem(msg, 'Não foi possível gerar a imagem. Tente de novo.', 'erro'); });
+      }
+
+      var pdf = el('button', { type: 'button', class: 'portal-btn', text: 'Baixar PDF' });
+      pdf.addEventListener('click', baixarPDF);
+      var png = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Baixar imagem (PNG)' });
+      png.addEventListener('click', baixarPNG);
+
+      var form = el('div', { class: 'portal-cartao' }, [
+        el('p', { text: 'Digite o título e baixe a capa em A4, pronta para colocar no começo dos seus PDFs (por exemplo, no GoodNotes).' }),
+        el('label', { text: 'Título da capa' }), titulo,
+        el('label', { text: 'Subtítulo (opcional)' }), subtitulo,
+        el('label', { text: 'Nome (opcional, aparece embaixo do título)' }), nome,
+        el('label', { text: 'Tamanho do título' }), areaTamanho,
+        el('label', { text: 'Rodapé' }), areaPowered
+      ]);
+      app.appendChild(form);
+      app.appendChild(visor);
+      app.appendChild(msg);
+      app.appendChild(el('div', { class: 'portal-acoes' }, [pdf, png]));
+      desenharOpcoes();
+      [titulo, subtitulo, nome].forEach(function (c) { c.addEventListener('input', atualizar); });
+      window.addEventListener('resize', atualizar);
+      atualizar();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(atualizar);
+    }
+
+    P.client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+  <script src="menu.js?v=17" defer></script>
+</body>
+</html>

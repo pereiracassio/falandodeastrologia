@@ -49,7 +49,7 @@
       var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       b.addEventListener('click', sair);
       var clientes = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: 'Clientes' });
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [clientes, b])]);
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [el('a', { class: 'portal-btn portal-btn-sec', href: 'capa.html', text: 'Capa' }), clientes, b])]);
     }
     function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
 
