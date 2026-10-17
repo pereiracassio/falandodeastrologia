@@ -77,18 +77,36 @@
         .setOAuthToken(token).setDeveloperKey(DRIVE_API_KEY).setAppId(DRIVE_APP_ID)
         .setLocale('pt-BR')
         .setCallback(function (d) {
-          if (d.action === google.picker.Action.PICKED && d.docs && d.docs[0]) aoEscolher(d.docs[0].url);
+          if (d.action === google.picker.Action.PICKED && d.docs && d.docs[0]) aoEscolher(d.docs[0].url, d.docs[0].id, token);
         })
         .build().setVisible(true);
     }).catch(function (e) {
       if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível abrir o Google Drive. Tente de novo.');
     });
   }
-  /* botão "Escolher do Drive" que preenche o campo de link */
-  function botaoDrive(campo, aoErrar) {
+  /* dá acesso de leitura ao e-mail da pessoa (o Drive não manda aviso; o aviso é do site) */
+  function compartilharNoDrive(arquivoId, token, email) {
+    return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(arquivoId) + '/permissions?sendNotificationEmail=false', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'user', role: 'reader', emailAddress: email })
+    }).then(function (r) { if (!r.ok) throw new Error('permissao'); });
+  }
+  /* botão "Escolher do Drive": preenche o campo de link e, se vier o e-mail, já compartilha o arquivo com a pessoa.
+     aviso(texto, 'ok' | 'erro') mostra a mensagem na tela */
+  function botaoDrive(campo, aviso, email) {
     var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Escolher do Drive' });
     b.addEventListener('click', function () {
-      escolherDoDrive(function (url) { campo.value = url; }, aoErrar);
+      escolherDoDrive(function (url, id, token) {
+        campo.value = url;
+        if (!email) { aviso('Link preenchido.', 'ok'); return; }
+        aviso('Link preenchido. Compartilhando com ' + email + '...', 'ok');
+        compartilharNoDrive(id, token, email).then(function () {
+          aviso('Link preenchido e arquivo compartilhado com ' + email + '.', 'ok');
+        }).catch(function () {
+          aviso('Link preenchido, mas não consegui compartilhar com ' + email + ' (o e-mail precisa ser uma conta Google). Compartilhe no Drive.', 'erro');
+        });
+      }, function (t) { aviso(t, 'erro'); });
     });
     return b;
   }
