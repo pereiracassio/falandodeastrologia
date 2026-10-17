@@ -188,6 +188,7 @@ module.exports = async (req, res) => {
     res.status(400).json({ erro: 'ação desconhecida' });
   } catch (e) {
     console.error('drive:', e.message);
-    res.status(500).json({ erro: 'erro no servidor' });
+    // só chega aqui quem já passou pela checagem de administrador (ou o retorno do Google), então mostrar o motivo é seguro e ajuda a achar o problema
+    res.status(500).json({ erro: 'erro no servidor', detalhe: String(e.message || e).slice(0, 200) });
   }
 };
