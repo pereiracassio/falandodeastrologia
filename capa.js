@@ -31,8 +31,8 @@
     var titulo = el('h1', 'align-self:stretch;margin:53px 0 0;padding:10px 0;border-top:4px double #1F5FA3;border-bottom:4px double #1F5FA3;font-family:Cinzel,serif;font-weight:800;color:#a03e25;text-transform:uppercase;letter-spacing:.03em;line-height:1.25;font-size:' + (TAMANHOS[op.tamanho] || TAMANHOS.m) + 'px;white-space:pre-line;overflow-wrap:anywhere', op.titulo || '');
     conteudo.appendChild(titulo);
     var centro = el('div', 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;align-self:stretch');
-    if (op.subtitulo) centro.appendChild(el('div', 'font-family:Cinzel,serif;font-weight:600;color:#a03e25;font-size:22px;letter-spacing:.06em;text-transform:uppercase;white-space:pre-line', op.subtitulo));
-    if (op.nome) centro.appendChild(el('div', 'font-family:Cinzel,serif;font-weight:700;color:#16233F;font-size:30px;letter-spacing:.04em;white-space:pre-line', op.nome));
+    if (op.subtitulo) centro.appendChild(el('div', 'font-family:Cinzel,serif;font-weight:700;color:#a03e25;font-size:34px;line-height:1.25;letter-spacing:.04em;text-transform:uppercase;white-space:pre-line', op.subtitulo));
+    if (op.nome) centro.appendChild(el('div', 'font-family:Cinzel,serif;font-weight:700;color:#16233F;font-size:24px;letter-spacing:.04em;white-space:pre-line', op.nome));
     conteudo.appendChild(centro);
     var rodape = el('div', 'display:flex;flex-direction:column;align-items:center;gap:8px');
     var logo = document.createElement('img');
