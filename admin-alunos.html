@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=15"></script>
+  <script src="portal.js?v=16"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -70,6 +70,8 @@
     function listaDeAlunos(user) {
       limpar();
       app.appendChild(topo(nomeAdmin));
+      var conexaoDrive = P.cartaoConexaoDrive();
+      if (conexaoDrive) app.appendChild(conexaoDrive);
       app.appendChild(P.cartaoPastaBase('alunos'));
 
       /* novo aluno */

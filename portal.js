@@ -31,6 +31,9 @@
      Devolve o link do que foi escolhido (arquivo ou pasta). */
   var DRIVE_CLIENT_ID = '311357254380-sjbaui6hlfa9s7f10s1ip7699blk0rkb.apps.googleusercontent.com';
   var DRIVE_ESCOPO = 'https://www.googleapis.com/auth/drive';
+  /* endereço do servidor (Vercel) que guarda a conexão permanente com o Drive: api/drive.js. Vazio = ainda sem servidor,
+     e o site usa só a autorização do navegador (vale 1 hora). */
+  var DRIVE_API_URL = '';
   var driveCarregado = null, driveToken = null, driveTokenAte = 0, driveDica = '';
 
   function carregarScript(src) {
@@ -48,15 +51,47 @@
     }
     return driveCarregado;
   }
+  /* chama o servidor da conexão permanente, sempre com o login do administrador */
+  function driveApi(acao, extra) {
+    return client.auth.getSession().then(function (r) {
+      var jwt = r.data && r.data.session ? r.data.session.access_token : '';
+      return fetch(DRIVE_API_URL + '?acao=' + acao + (extra || ''), { headers: { 'Authorization': 'Bearer ' + jwt } });
+    });
+  }
+  function guardarToken(token, expiraEmSeg) {
+    driveToken = token; driveTokenAte = Date.now() + (Number(expiraEmSeg || 3000) - 60) * 1000;
+    try { sessionStorage.setItem('fda_drive_token', JSON.stringify({ token: driveToken, ate: driveTokenAte })); } catch (e) { /* sem armazenamento */ }
+  }
+  /* devolve a chave do Drive: a que já está na memória, senão pede ao servidor (sem janela do Google); só cai na janela
+     do Google se o servidor não existir ou estiver fora do ar. Rejeita com 'desconectado' se o administrador ainda não conectou. */
   function tokenDoDrive() {
+    return tokenEmCache().then(function (t) {
+      if (t) return t;
+      if (!DRIVE_API_URL) return tokenPelaJanela();
+      return driveApi('token').then(function (r) {
+        if (r.status === 401) throw new Error('desconectado');
+        if (!r.ok) throw new Error('servidor');
+        return r.json();
+      }).then(function (d) { guardarToken(d.access_token, d.expires_in); return driveToken; }, function (e) {
+        if (e.message === 'desconectado') throw e;
+        return tokenPelaJanela(); // servidor fora do ar: usa a janela do Google (vale 1 hora)
+      });
+    });
+  }
+  function tokenEmCache() {
+    if (!driveToken) {
+      try {
+        var g = JSON.parse(sessionStorage.getItem('fda_drive_token') || 'null');
+        if (g && g.ate > Date.now()) { driveToken = g.token; driveTokenAte = g.ate; }
+      } catch (e) { /* sem armazenamento */ }
+    }
+    return Promise.resolve(driveToken && Date.now() < driveTokenAte ? driveToken : null);
+  }
+  function tokenPelaJanela() {
+    return carregarDrive().then(function () { return tokenPelaJanelaPronta(); });
+  }
+  function tokenPelaJanelaPronta() {
     return new Promise(function (ok, erro) {
-      if (!driveToken) { // lembra enquanto a aba estiver aberta (o token dura ~1 hora), pra não pedir o Google a cada tela
-        try {
-          var g = JSON.parse(sessionStorage.getItem('fda_drive_token') || 'null');
-          if (g && g.ate > Date.now()) { driveToken = g.token; driveTokenAte = g.ate; }
-        } catch (e) { /* sem armazenamento */ }
-      }
-      if (driveToken && Date.now() < driveTokenAte) { ok(driveToken); return; }
       var tc = google.accounts.oauth2.initTokenClient({
         client_id: DRIVE_CLIENT_ID,
         scope: DRIVE_ESCOPO,
@@ -191,7 +226,7 @@
 
   /* escolherDoDrive(function (url, id, token) { ... }, function (textoDeErro) { ... }, soPastas) */
   function escolherDoDrive(aoEscolher, aoErrar, soPastas, chavePasta) {
-    carregarDrive().then(tokenDoDrive).then(function (token) {
+    tokenDoDrive().then(function (token) {
       // se a pessoa (aluno/cliente) já tem pasta ligada, abre a lista direto dentro dela
       var inicial = chavePasta ? client.from('drive_pastas').select('pasta_id').eq('chave', chavePasta).maybeSingle().then(function (r) {
         var id = r.data && r.data.pasta_id;
@@ -201,7 +236,8 @@
       }).catch(function () { return null; }) : Promise.resolve(null);
       return inicial.then(function (ini) { abrirListaDoDrive(token, soPastas, aoEscolher, ini); });
     }).catch(function (e) {
-      if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível entrar no Google Drive. Tente de novo.');
+      if (aoErrar && e.message === 'desconectado') aoErrar('O Google Drive ainda não está conectado. Toque em "Conectar o Google Drive", no cartão "Google Drive" da lista.');
+      else if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível entrar no Google Drive. Tente de novo.');
     });
   }
   /* dá acesso de leitura ao e-mail da pessoa (o Drive não manda aviso; o aviso é do site) */
@@ -240,6 +276,41 @@
     var b = el('button', { type: 'button', class: 'portal-btn' + (sec ? ' portal-btn-sec' : ''), text: texto });
     b.addEventListener('click', function () { aoClicar(b); });
     return b;
+  }
+
+  /* cartão da lista: conexão permanente com o Google Drive (some se ainda não há servidor) */
+  function cartaoConexaoDrive() {
+    if (!DRIVE_API_URL) return null;
+    var msg = el('p', { class: 'portal-msg' });
+    var corpo = el('div');
+    var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Google Drive' }), corpo, msg]);
+    var retorno = (location.search.match(/[?&]drive=(\w+)/) || [])[1];
+    if (retorno) {
+      mensagem(msg, retorno === 'ok' ? 'Google Drive conectado.' : retorno === 'cancelado' ? 'A conexão foi cancelada.' : 'Não foi possível conectar. Tente de novo.', retorno === 'ok' ? 'ok' : 'erro');
+      try { history.replaceState(null, '', location.pathname); } catch (e) { /* sem histórico */ }
+    }
+    function desenhar() {
+      corpo.textContent = '';
+      driveApi('status').then(function (r) { if (!r.ok) throw new Error('status'); return r.json(); }).then(function (d) {
+        if (d.conectado) {
+          corpo.appendChild(el('p', { text: 'Conectado' + (d.email ? ' como ' + d.email : '') + '. Você não precisa autorizar de novo.' }));
+          corpo.appendChild(botaoPasta('Desconectar', function () {
+            if (!confirm('Desconectar o Google Drive? O site deixa de ver as suas pastas até você conectar de novo.')) return;
+            driveApi('desconectar').then(function () { driveToken = null; try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ } desenhar(); });
+          }, true));
+        } else {
+          corpo.appendChild(el('p', { text: 'Conecte uma vez e o site passa a usar o seu Drive sem pedir autorização de novo.' }));
+          corpo.appendChild(botaoPasta('Conectar o Google Drive', function (b) {
+            b.disabled = true;
+            driveApi('iniciar', '&volta=' + encodeURIComponent(location.pathname)).then(function (r) { if (!r.ok) throw new Error('iniciar'); return r.json(); })
+              .then(function (d) { location.href = d.url; })
+              .catch(function () { b.disabled = false; mensagem(msg, 'Não foi possível iniciar a conexão. Tente de novo.', 'erro'); });
+          }));
+        }
+      }).catch(function () { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar o Google Drive agora.' })); });
+    }
+    desenhar();
+    return cartao;
   }
 
   /* cartão da lista: "onde criar as pastas dos clientes/alunos" */
@@ -299,7 +370,7 @@
     }
     function criar(b, baseId) {
       b.disabled = true; aviso('Criando a pasta...', 'ok');
-      carregarDrive().then(tokenDoDrive).then(function (token) {
+      tokenDoDrive().then(function (token) {
         return fetch('https://www.googleapis.com/drive/v3/files', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -309,7 +380,8 @@
         });
       }).catch(function (e) {
         b.disabled = false;
-        if (!/popup_closed|access_denied|cancel/i.test(String(e.message))) aviso('Não foi possível criar a pasta. Confira a pasta dos ' + opcoes.plural + ' na lista e tente de novo.', 'erro');
+        if (e.message === 'desconectado') aviso('O Google Drive ainda não está conectado. Toque em "Conectar o Google Drive", no cartão "Google Drive" da lista.', 'erro');
+        else if (!/popup_closed|access_denied|cancel/i.test(String(e.message))) aviso('Não foi possível criar a pasta. Confira a pasta dos ' + opcoes.plural + ' na lista e tente de novo.', 'erro');
         else aviso('');
       });
     }
@@ -436,7 +508,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };
