@@ -32,7 +32,7 @@
     conteudo.appendChild(centro);
     var rodape = el('div', 'display:flex;flex-direction:column;align-items:center;gap:8px');
     var logo = document.createElement('img');
-    logo.src = 'img/logo-blog.png'; logo.alt = 'Falando de Astrologia Helenística'; logo.style.cssText = 'width:300px;height:auto;display:block'; /* sem fundo: o papiro da folha aparece por trás */
+    logo.src = 'img/logo-completa-sem-fundo.png'; logo.alt = 'Falando de Astrologia Helenística'; logo.style.cssText = 'width:260px;height:auto;display:block'; /* sem fundo: o papiro da folha aparece por trás */
     rodape.appendChild(logo);
     if (op.powered === true) rodape.appendChild(el('div', 'font-size:11px;font-weight:600;color:#1a1410;text-transform:uppercase;letter-spacing:.1em', 'powered by Falando de Astrologia'));
     conteudo.appendChild(rodape);
