@@ -291,7 +291,10 @@
     }
     function desenhar() {
       corpo.textContent = '';
-      driveApi('status').then(function (r) { if (!r.ok) throw new Error('status'); return r.json(); }).then(function (d) {
+      driveApi('status').then(function (r) {
+        if (r.ok) return r.json();
+        return r.text().then(function (t) { throw new Error('servidor respondeu ' + r.status + ': ' + t.slice(0, 120)); });
+      }).then(function (d) {
         if (d.conectado) {
           corpo.appendChild(el('p', { text: 'Conectado' + (d.email ? ' como ' + d.email : '') + '. Você não precisa autorizar de novo.' }));
           corpo.appendChild(botaoPasta('Desconectar', function () {
@@ -307,7 +310,7 @@
               .catch(function () { b.disabled = false; mensagem(msg, 'Não foi possível iniciar a conexão. Tente de novo.', 'erro'); });
           }));
         }
-      }).catch(function () { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar o Google Drive agora.' })); });
+      }).catch(function (e) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar o Google Drive agora (' + (e && e.message ? e.message : 'sem resposta') + ').' })); });
     }
     desenhar();
     return cartao;
