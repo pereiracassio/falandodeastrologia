@@ -68,11 +68,60 @@
       app.appendChild(topo('Capa em papiro, no estilo do Astro Hellenic'));
       var estado = { tamanho: 'm', powered: false, formato: 'a4' };
       var titulo = el('textarea', { rows: '3', placeholder: 'Ex.: Estudo sobre as Casas' });
-      var subtitulo = el('input', { type: 'text', placeholder: 'Ex.: Mentoria em Astrologia Clássica' });
-      var nome = el('input', { type: 'text', placeholder: 'Ex.: nome do aluno' });
+      var subtitulo = el('input', { type: 'text', placeholder: 'Ex.: Acompanhamento Prático Individual' });
+      var nome = el('input', { type: 'text', placeholder: 'Ex.: Mentoria em Astrologia Clássica' });
       var areaTamanho = el('div'), areaPowered = el('div'), areaFormato = el('div');
       var visor = el('div'); visor.style.cssText = 'position:relative;width:100%;max-width:794px;margin:0 auto 14px;overflow:hidden;border:1px solid #1F5FA3;border-radius:6px';
       var msg = el('p', { class: 'portal-msg' });
+      var areaModelos = el('div'), msgModelo = el('p', { class: 'portal-msg' });
+      var modelos = [], modeloAtual = null;
+
+      /* MODELOS (ficam no Supabase, valem em qualquer aparelho): guardam subtítulo, segunda linha, tamanho do título, folha e rodapé.
+         O título (nome do estudo ou do módulo) muda a cada documento e por isso não entra no modelo. */
+      function dadosDoModelo() { return { subtitulo: subtitulo.value.trim() || null, segunda_linha: nome.value.trim() || null, tamanho: estado.tamanho, formato: estado.formato, powered: estado.powered }; }
+      function aplicarModelo(m) {
+        modeloAtual = m;
+        subtitulo.value = m.subtitulo || ''; nome.value = m.segunda_linha || '';
+        estado.tamanho = m.tamanho || 'm'; estado.formato = m.formato || 'a4'; estado.powered = !!m.powered;
+        desenharOpcoes(); desenharModelos(); atualizar();
+      }
+      function desenharModelos() {
+        areaModelos.textContent = '';
+        modelos.forEach(function (m) { areaModelos.appendChild(opcaoBotao(m.nome, modeloAtual && modeloAtual.id === m.id, function () { P.mensagem(msgModelo, ''); aplicarModelo(m); })); });
+        if (!modelos.length) areaModelos.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum modelo salvo ainda.' }));
+        var acoes = el('div', { class: 'portal-acoes', style: 'margin-top:8px' });
+        if (modeloAtual) {
+          var salvarNele = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar neste modelo' });
+          salvarNele.addEventListener('click', function () {
+            salvarNele.disabled = true;
+            P.client.from('capa_modelos').update(dadosDoModelo()).eq('id', modeloAtual.id).then(function (r) {
+              salvarNele.disabled = false;
+              if (r.error) { P.mensagem(msgModelo, P.traduzErro(r.error.message), 'erro'); return; }
+              Object.assign(modeloAtual, dadosDoModelo()); P.mensagem(msgModelo, 'Modelo "' + modeloAtual.nome + '" atualizado.', 'ok');
+            });
+          });
+          var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar este modelo' });
+          apagar.addEventListener('click', function () {
+            if (!confirm('Apagar o modelo "' + modeloAtual.nome + '"?')) return;
+            P.client.from('capa_modelos').delete().eq('id', modeloAtual.id).then(function (r) {
+              if (r.error) { P.mensagem(msgModelo, P.traduzErro(r.error.message), 'erro'); return; }
+              modelos = modelos.filter(function (m) { return m.id !== modeloAtual.id; }); modeloAtual = null; desenharModelos(); P.mensagem(msgModelo, 'Modelo apagado.', 'ok');
+            });
+          });
+          acoes.appendChild(salvarNele); acoes.appendChild(apagar);
+        }
+        var novo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar como novo modelo' });
+        novo.addEventListener('click', function () {
+          var nomeModelo = (prompt('Nome do modelo:') || '').trim();
+          if (!nomeModelo) return;
+          P.client.from('capa_modelos').insert(Object.assign({ nome: nomeModelo }, dadosDoModelo())).select('*').single().then(function (r) {
+            if (r.error) { P.mensagem(msgModelo, P.traduzErro(r.error.message), 'erro'); return; }
+            modelos.push(r.data); modeloAtual = r.data; desenharModelos(); P.mensagem(msgModelo, 'Modelo "' + nomeModelo + '" salvo.', 'ok');
+          });
+        });
+        acoes.appendChild(novo);
+        areaModelos.appendChild(acoes);
+      }
 
       function desenharOpcoes() {
         areaFormato.textContent = '';
@@ -147,11 +196,17 @@
       var png = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Baixar imagem (PNG)' });
       png.addEventListener('click', baixarPNG);
 
+      var cartaoModelos = el('div', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Modelos' }),
+        el('p', { text: 'Escolha um modelo para preencher o subtítulo, a segunda linha, o tamanho e a folha. Depois é só digitar o título do documento.' }),
+        areaModelos, msgModelo
+      ]);
+      app.appendChild(cartaoModelos);
       var form = el('div', { class: 'portal-cartao' }, [
-        el('p', { text: 'Digite o título e baixe a capa em A4, pronta para colocar no começo dos seus PDFs (por exemplo, no GoodNotes).' }),
+        el('p', { text: 'Digite o título e baixe a capa, pronta para colocar no começo dos seus PDFs (por exemplo, no GoodNotes).' }),
         el('label', { text: 'Título da capa' }), titulo,
         el('label', { text: 'Subtítulo (opcional)' }), subtitulo,
-        el('label', { text: 'Nome (opcional, aparece embaixo do título)' }), nome,
+        el('label', { text: 'Segunda linha (opcional)' }), nome,
         el('label', { text: 'Tamanho da folha (o mesmo das páginas dos seus PDFs)' }), areaFormato,
         el('label', { text: 'Tamanho do título' }), areaTamanho,
         el('label', { text: 'Rodapé' }), areaPowered
@@ -160,7 +215,11 @@
       app.appendChild(visor);
       app.appendChild(msg);
       app.appendChild(el('div', { class: 'portal-acoes' }, [pdf, png]));
-      desenharOpcoes();
+      desenharOpcoes(); desenharModelos();
+      P.client.from('capa_modelos').select('*').order('criado_em').then(function (r) {
+        if (r.error) { P.mensagem(msgModelo, 'Não foi possível carregar os modelos.', 'erro'); return; }
+        modelos = r.data || []; desenharModelos();
+      });
       [titulo, subtitulo, nome].forEach(function (c) { c.addEventListener('input', atualizar); });
       window.addEventListener('resize', atualizar);
       atualizar();
