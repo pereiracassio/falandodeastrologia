@@ -79,6 +79,13 @@
     function mostrarLogin() {
       limpar();
       document.getElementById('salaClassroom').style.display = '';
+      var google = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
+      google.addEventListener('click', function () { P.entrarComGoogle('/aluno.html'); });
+      app.appendChild(el('div', { class: 'portal-cartao' }, [
+        el('p', { text: 'Entre com a conta Google (Gmail) que você informou na matrícula.' }),
+        google,
+        el('p', { class: 'portal-vazio', text: 'Ou, se você já tem senha, entre com e-mail e senha:' })
+      ]));
       P.montarLogin(app, mostrarPortal);
     }
 
