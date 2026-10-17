@@ -293,7 +293,7 @@
       corpo.textContent = '';
       driveApi('status').then(function (r) {
         if (r.ok) return r.json();
-        return r.text().then(function (t) { throw new Error('servidor respondeu ' + r.status + ': ' + t.slice(0, 120)); });
+        return r.text().then(function (t) { throw new Error('servidor respondeu ' + r.status + ': ' + t.slice(0, 260)); });
       }).then(function (d) {
         if (d.conectado) {
           corpo.appendChild(el('p', { text: 'Conectado' + (d.email ? ' como ' + d.email : '') + '. Você não precisa autorizar de novo.' }));
