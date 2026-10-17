@@ -27,10 +27,10 @@
     } catch (e) { return null; }
   }
 
-  /* Escolher do Drive: abre a janela do Google Drive e devolve o link do que foi escolhido (arquivo ou pasta) */
+  /* Escolher do Drive: lista de pastas e arquivos do Drive feita aqui no site (a janela do Google travava no iPad).
+     Devolve o link do que foi escolhido (arquivo ou pasta). */
   var DRIVE_CLIENT_ID = '311357254380-sjbaui6hlfa9s7f10s1ip7699blk0rkb.apps.googleusercontent.com';
-  var DRIVE_API_KEY = 'AIzaSyD8suNhmGPLvtN85IQxoXO7GW-yRwX2028';
-  var DRIVE_APP_ID = '311357254380'; // número do projeto no Google Cloud
+  var DRIVE_ESCOPO = 'https://www.googleapis.com/auth/drive';
   var driveCarregado = null, driveToken = null, driveTokenAte = 0;
 
   function carregarScript(src) {
@@ -41,32 +41,18 @@
     });
   }
   function carregarDrive() {
-    if (!driveCarregado) {
-      driveCarregado = Promise.all([
-        carregarScript('https://apis.google.com/js/api.js').then(function () {
-          return new Promise(function (ok) { gapi.load('picker', ok); });
-        }),
-        carregarScript('https://accounts.google.com/gsi/client')
-      ]).catch(function (e) { driveCarregado = null; throw e; });
-    }
+    if (!driveCarregado) driveCarregado = carregarScript('https://accounts.google.com/gsi/client').catch(function (e) { driveCarregado = null; throw e; });
     return driveCarregado;
   }
   function tokenDoDrive() {
     return new Promise(function (ok, erro) {
-      if (!driveToken) {
-        try {
-          var g = JSON.parse(sessionStorage.getItem('fda_drive_token') || 'null');
-          if (g && g.ate > Date.now()) { driveToken = g.token; driveTokenAte = g.ate; }
-        } catch (e) { /* sem armazenamento */ }
-      }
       if (driveToken && Date.now() < driveTokenAte) { ok(driveToken); return; }
       var tc = google.accounts.oauth2.initTokenClient({
         client_id: DRIVE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: DRIVE_ESCOPO,
         callback: function (r) {
           if (r.error || !r.access_token) { erro(new Error(r.error || 'sem token')); return; }
           driveToken = r.access_token; driveTokenAte = Date.now() + (Number(r.expires_in || 3000) - 60) * 1000;
-          try { sessionStorage.setItem('fda_drive_token', JSON.stringify({ token: driveToken, ate: driveTokenAte })); } catch (e) { /* sem armazenamento */ }
           ok(driveToken);
         },
         error_callback: function (e) { erro(new Error((e && e.type) || 'cancelado')); }
@@ -74,31 +60,125 @@
       tc.requestAccessToken();
     });
   }
-  /* escolherDoDrive(function (url) { ... }, function (textoDeErro) { ... }) */
+  function driveGet(token, consulta, pagina) {
+    var url = 'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(consulta) +
+      '&fields=' + encodeURIComponent('nextPageToken,files(id,name,mimeType,webViewLink)') +
+      '&orderBy=' + encodeURIComponent('folder,name') + '&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true' +
+      (pagina ? '&pageToken=' + encodeURIComponent(pagina) : '');
+    return fetch(url, { headers: { 'Authorization': 'Bearer ' + token } }).then(function (r) {
+      if (r.status === 401) { driveToken = null; }
+      if (!r.ok) throw new Error('lista');
+      return r.json();
+    });
+  }
+  var PASTA_MIME = 'application/vnd.google-apps.folder';
+
+  /* abre a lista; soPastas: só deixa escolher pasta */
+  function abrirListaDoDrive(token, soPastas, aoEscolher) {
+    var fundo = el('div');
+    fundo.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:100000;background:rgba(10,19,48,.7);display:flex;align-items:center;justify-content:center;padding:12px';
+    var painel = el('div');
+    painel.style.cssText = 'background:#f1e3bd;border:1px solid #1F5FA3;border-radius:12px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;color:#16233F;font-family:system-ui,-apple-system,sans-serif';
+    var topo = el('div'); topo.style.cssText = 'padding:14px 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+    var titulo = el('strong', { text: soPastas ? 'Escolha a pasta' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
+    var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+    topo.appendChild(titulo); topo.appendChild(fechar);
+    var caminho = el('div'); caminho.style.cssText = 'padding:0 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+    var busca = el('input', { type: 'search', placeholder: 'Buscar pelo nome' }); busca.style.cssText = 'margin:0 16px 8px;width:calc(100% - 32px)';
+    var lista = el('div'); lista.style.cssText = 'overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 14px;flex:1;min-height:120px';
+    painel.appendChild(topo); painel.appendChild(caminho); painel.appendChild(busca); painel.appendChild(lista);
+    fundo.appendChild(painel); document.body.appendChild(fundo);
+    var travado = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    function sair() { document.body.style.overflow = travado; if (fundo.parentNode) fundo.parentNode.removeChild(fundo); }
+    fechar.addEventListener('click', sair);
+
+    var pilha = [{ id: 'root', nome: 'Meu Drive' }]; // por onde a pessoa entrou
+    var aspas = function (t) { return String(t).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); };
+    function linha(texto, extras) {
+      var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.35)';
+      l.appendChild(texto); if (extras) l.appendChild(extras);
+      return l;
+    }
+    function escolher(item) {
+      sair();
+      aoEscolher(item.webViewLink || (item.mimeType === PASTA_MIME ? 'https://drive.google.com/drive/folders/' + item.id : 'https://drive.google.com/file/d/' + item.id + '/view'), item.id, token);
+    }
+    function desenhaCaminho() {
+      caminho.textContent = '';
+      var atual = pilha[pilha.length - 1];
+      if (pilha.length > 1) {
+        var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
+        voltar.addEventListener('click', function () { pilha.pop(); busca.value = ''; carregar(); });
+        caminho.appendChild(voltar);
+      }
+      var nome = el('span', { text: atual.nome }); nome.style.fontWeight = '700'; caminho.appendChild(nome);
+      if (soPastas && atual.id !== 'root' && atual.id !== 'compartilhados') {
+        var esta = el('button', { type: 'button', class: 'portal-btn', text: 'Escolher esta pasta' });
+        esta.addEventListener('click', function () { escolher({ id: atual.id, mimeType: PASTA_MIME }); });
+        caminho.appendChild(esta);
+      }
+    }
+    function itemDaLista(f) {
+      var ePasta = f.mimeType === PASTA_MIME;
+      var nome = el('button', { type: 'button', text: (ePasta ? '📁 ' : '📄 ') + f.name });
+      nome.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F;flex:1;word-break:break-word';
+      var botao = null;
+      if (ePasta) {
+        nome.addEventListener('click', function () { pilha.push({ id: f.id, nome: f.name }); busca.value = ''; carregar(); });
+        botao = el('button', { type: 'button', class: 'portal-btn', text: 'Escolher' });
+        botao.addEventListener('click', function () { escolher(f); });
+      } else if (!soPastas) {
+        nome.addEventListener('click', function () { escolher(f); });
+        botao = el('button', { type: 'button', class: 'portal-btn', text: 'Escolher' });
+        botao.addEventListener('click', function () { escolher(f); });
+      }
+      return linha(nome, botao);
+    }
+    var pedido = 0;
+    function carregar(pagina, anexar) {
+      var meu = ++pedido, atual = pilha[pilha.length - 1], termo = busca.value.trim();
+      desenhaCaminho();
+      if (!anexar) { lista.textContent = ''; lista.appendChild(el('p', { text: 'Carregando...' })); }
+      var consulta;
+      if (termo) consulta = "name contains '" + aspas(termo) + "' and trashed=false";
+      else if (atual.id === 'compartilhados') consulta = 'sharedWithMe=true and trashed=false';
+      else consulta = "'" + aspas(atual.id) + "' in parents and trashed=false";
+      if (soPastas) consulta += " and mimeType='" + PASTA_MIME + "'";
+      driveGet(token, consulta, pagina).then(function (r) {
+        if (meu !== pedido) return;
+        if (!anexar) lista.textContent = '';
+        else { var mais = lista.querySelector('[data-mais]'); if (mais) lista.removeChild(mais); }
+        if (!anexar && !termo && atual.id === 'root') {
+          var comp = el('button', { type: 'button', text: '👥 Compartilhados comigo' });
+          comp.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F';
+          comp.addEventListener('click', function () { pilha.push({ id: 'compartilhados', nome: 'Compartilhados comigo' }); carregar(); });
+          lista.appendChild(linha(comp));
+        }
+        if (!r.files.length && !anexar) lista.appendChild(el('p', { text: termo ? 'Nada encontrado.' : (soPastas ? 'Nenhuma pasta aqui.' : 'Nada aqui.') }));
+        r.files.forEach(function (f) { lista.appendChild(itemDaLista(f)); });
+        if (r.nextPageToken) {
+          var mais = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Mostrar mais' });
+          mais.setAttribute('data-mais', '1'); mais.style.marginTop = '10px';
+          mais.addEventListener('click', function () { carregar(r.nextPageToken, true); });
+          lista.appendChild(mais);
+        }
+      }).catch(function () {
+        if (meu !== pedido) return;
+        lista.textContent = '';
+        lista.appendChild(el('p', { text: 'Não foi possível carregar o Drive. Feche e tente de novo.' }));
+      });
+    }
+    var espera = null;
+    busca.addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(function () { carregar(); }, 400); });
+    carregar();
+  }
+
+  /* escolherDoDrive(function (url, id, token) { ... }, function (textoDeErro) { ... }, soPastas) */
   function escolherDoDrive(aoEscolher, aoErrar, soPastas) {
     carregarDrive().then(tokenDoDrive).then(function (token) {
-      var visao = soPastas
-        ? new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true).setMimeTypes('application/vnd.google-apps.folder')
-        : new google.picker.DocsView(google.picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(true);
-      var janela = null, abriu = false;
-      var espera = setTimeout(function () {
-        if (abriu) return;
-        try { janela.dispose(); } catch (e) { /* já fechada */ }
-        driveToken = null; try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ }
-        if (aoErrar) aoErrar('A janela do Drive não abriu (o Google não respondeu em 10 segundos). Tente de novo.');
-      }, 10000);
-      janela = new google.picker.PickerBuilder()
-        .addView(visao)
-        .setOAuthToken(token).setDeveloperKey(DRIVE_API_KEY).setAppId(DRIVE_APP_ID)
-        .setLocale('pt-BR')
-        .setCallback(function (d) {
-          abriu = true; clearTimeout(espera);
-          if (d.action === google.picker.Action.PICKED && d.docs && d.docs[0]) aoEscolher(d.docs[0].url, d.docs[0].id, token);
-        })
-        .build();
-      janela.setVisible(true);
+      abrirListaDoDrive(token, soPastas, aoEscolher);
     }).catch(function (e) {
-      if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível abrir o Google Drive. Tente de novo.');
+      if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível entrar no Google Drive. Tente de novo.');
     });
   }
   /* dá acesso de leitura ao e-mail da pessoa (o Drive não manda aviso; o aviso é do site) */
@@ -153,21 +233,6 @@
         });
       }, function (t) { aviso(t, 'erro'); }, true);
     }
-    function criarBase(b) {
-      b.disabled = true; aviso('Criando a pasta...', 'ok');
-      var nomeBase = (opcoes.plural === 'alunos' ? 'Alunos' : 'Clientes') + ' - Falando de Astrologia';
-      carregarDrive().then(tokenDoDrive).then(function (token) {
-        return fetch('https://www.googleapis.com/drive/v3/files', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: nomeBase, mimeType: 'application/vnd.google-apps.folder' })
-        }).then(function (r) { if (!r.ok) throw new Error('criar'); return r.json(); });
-      }).then(function (pasta) {
-        return guardar(chaveBase, pasta.id);
-      }).then(function () {
-        desenhar(); aviso('Pasta criada no seu Drive (na raiz). Se quiser, mova ela pra outra pasta no próprio Drive.', 'ok');
-      }).catch(function () { b.disabled = false; aviso('Não foi possível criar a pasta. Tente de novo.', 'erro'); });
-    }
     function criar(b, baseId) {
       b.disabled = true; aviso('Criando a pasta...', 'ok');
       carregarDrive().then(tokenDoDrive).then(function (token) {
@@ -199,8 +264,6 @@
         if (!m[chaveBase]) {
           corpo.appendChild(el('p', { text: 'Primeiro escolha a pasta do seu Drive onde ficarão as pastas dos ' + opcoes.plural + '. Só precisa fazer isso uma vez.' }));
           corpo.appendChild(botao('Escolher a pasta dos ' + opcoes.plural, escolherBase));
-          corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Ou deixe o site criar uma pasta nova pra isso (depois você pode mover ela no Drive):' }));
-          corpo.appendChild(botao('Criar a pasta dos ' + opcoes.plural + ' automaticamente', criarBase, true));
           return;
         }
         if (m[chaveItem]) {
