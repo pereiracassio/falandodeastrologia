@@ -18,3 +18,8 @@ fundo próprio (nada de `rgba(255,250,232,...)`, branco, bege): quebra a experi�
 - `portal.js`: lista de pastas e arquivos do Drive feita no site (a janela Google Picker travava no iPad: `home.css` tem `body>*{position:relative}`, que quebra janelas soltas no body). Escopo `drive` (completo) de propósito: precisa criar dentro de pasta escolhida e compartilhar. A pasta-mãe é configuração da lista (`cartaoPastaBase`); cada aluno/cliente liga uma pasta existente ou cria uma nova.
 - **Código do cliente** nasce no Astro Hellenic (função `registrar_cliente_formulario`): último código da pasta **Clientes** + 1. Já houve bug pegando o máximo de TODAS as pastas (veio 2026); corrigido. Sinastria chega como "0157 A": o servidor usa só "0157".
 - Servidor não consegue ser testado de dentro do Claude Code (rede bloqueada): testar com simulação em Node e pedir o teste real ao administrador. Erro 500 do `api/drive` mostra o motivo (`detalhe`) no cartão Google Drive.
+
+## Estudos e apostilas: sempre no padrão `estudo-pages/` (17/10/2026)
+
+Todo estudo novo (Artefatos) sai como `.docx` A4 editável no Pages + PDF, no padrão de `estudo-pages/` (ler o `LEIA-ME.md` e usar `gerar.js`/`numeros.py`).
+Regras do astrólogo: página 1 = título centralizado, sem rodapé; índice na página 2; rodapé "Falando de Astrologia Helenística" + número do índice em diante; frase de abertura do capítulo em negrito e não gigante; nunca refazer/mandar arquivo novo sem ele pedir.
