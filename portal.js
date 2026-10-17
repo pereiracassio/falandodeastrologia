@@ -74,7 +74,7 @@
   var PASTA_MIME = 'application/vnd.google-apps.folder';
 
   /* abre a lista; soPastas: só deixa escolher pasta */
-  function abrirListaDoDrive(token, soPastas, aoEscolher) {
+  function abrirListaDoDrive(token, soPastas, aoEscolher, inicial) {
     var fundo = el('div');
     fundo.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:100000;background:rgba(10,19,48,.7);display:flex;align-items:center;justify-content:center;padding:12px';
     var painel = el('div');
@@ -93,6 +93,8 @@
     fechar.addEventListener('click', sair);
 
     var pilha = [{ id: 'root', nome: 'Meu Drive' }]; // por onde a pessoa entrou
+    if (inicial) pilha.push(inicial); // já abre dentro da pasta do aluno/cliente
+    var carregouAlguma = false;
     var aspas = function (t) { return String(t).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); };
     function linha(texto, extras) {
       var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.35)';
@@ -146,6 +148,7 @@
       if (soPastas) consulta += " and mimeType='" + PASTA_MIME + "'";
       driveGet(token, consulta, pagina).then(function (r) {
         if (meu !== pedido) return;
+        carregouAlguma = true;
         if (!anexar) lista.textContent = '';
         else { var mais = lista.querySelector('[data-mais]'); if (mais) lista.removeChild(mais); }
         if (!anexar && !termo && atual.id === 'root') {
@@ -164,6 +167,7 @@
         }
       }).catch(function () {
         if (meu !== pedido) return;
+        if (!carregouAlguma && pilha.length > 1) { pilha.length = 1; carregar(); return; } // a pasta ligada sumiu: começa do Meu Drive
         lista.textContent = '';
         lista.appendChild(el('p', { text: 'Não foi possível carregar o Drive. Feche e tente de novo.' }));
       });
@@ -174,9 +178,16 @@
   }
 
   /* escolherDoDrive(function (url, id, token) { ... }, function (textoDeErro) { ... }, soPastas) */
-  function escolherDoDrive(aoEscolher, aoErrar, soPastas) {
+  function escolherDoDrive(aoEscolher, aoErrar, soPastas, chavePasta) {
     carregarDrive().then(tokenDoDrive).then(function (token) {
-      abrirListaDoDrive(token, soPastas, aoEscolher);
+      // se a pessoa (aluno/cliente) já tem pasta ligada, abre a lista direto dentro dela
+      var inicial = chavePasta ? client.from('drive_pastas').select('pasta_id').eq('chave', chavePasta).maybeSingle().then(function (r) {
+        var id = r.data && r.data.pasta_id;
+        if (!id) return null;
+        return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?fields=name&supportsAllDrives=true', { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(function (x) { return x.ok ? x.json() : { name: 'Pasta' }; }).then(function (f) { return { id: id, nome: f.name || 'Pasta' }; });
+      }).catch(function () { return null; }) : Promise.resolve(null);
+      return inicial.then(function (ini) { abrirListaDoDrive(token, soPastas, aoEscolher, ini); });
     }).catch(function (e) {
       if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível entrar no Google Drive. Tente de novo.');
     });
@@ -191,7 +202,7 @@
   }
   /* botão "Escolher do Drive": preenche o campo de link e, se vier o e-mail, já compartilha o arquivo com a pessoa.
      aviso(texto, 'ok' | 'erro') mostra a mensagem na tela */
-  function botaoDrive(campo, aviso, email) {
+  function botaoDrive(campo, aviso, email, chavePasta) {
     var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Escolher do Drive' });
     b.addEventListener('click', function () {
       escolherDoDrive(function (url, id, token) {
@@ -203,7 +214,7 @@
         }).catch(function () {
           aviso('Link preenchido, mas não consegui compartilhar com ' + email + ' (o e-mail precisa ser uma conta Google). Compartilhe no Drive.', 'erro');
         });
-      }, function (t) { aviso(t, 'erro'); });
+      }, function (t) { aviso(t, 'erro'); }, false, chavePasta);
     });
     return b;
   }

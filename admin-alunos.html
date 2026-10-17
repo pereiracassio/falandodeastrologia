@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=13"></script>
+  <script src="portal.js?v=14"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -222,7 +222,7 @@
         el('label', { for: 'itemTitulo', text: 'Título' }), titulo,
         el('label', { for: 'itemData', text: 'Data (opcional)' }), data,
         el('label', { for: 'itemDescricao', text: 'Descrição (opcional)' }), descricao,
-        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email), msg,
+        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email, 'aluno:' + aluno.id), msg,
         el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
       function sairDaEdicao() {

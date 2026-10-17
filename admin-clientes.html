@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=13"></script>
+  <script src="portal.js?v=14"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -188,8 +188,8 @@
         el('p', { text: 'Escolha os arquivos no Drive: o link entra sozinho e o arquivo já é compartilhado com o e-mail do cliente (' + cliente.email + '). Se colar o link à mão, compartilhe no próprio Drive.' }),
         el('label', { for: 'entServico', text: 'Serviço' }), servico, atalhos,
         el('label', { for: 'entData', text: 'Data do serviço (opcional)' }), data,
-        el('label', { for: 'entPdf', text: 'Link do PDF (opcional)' }), pdf, P.botaoDrive(pdf, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email),
-        el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)' }), gravacao, P.botaoDrive(gravacao, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email), msg,
+        el('label', { for: 'entPdf', text: 'Link do PDF (opcional)' }), pdf, P.botaoDrive(pdf, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id),
+        el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)' }), gravacao, P.botaoDrive(gravacao, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id), msg,
         el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
       function sairDaEdicao() { editandoId = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, ''); }
