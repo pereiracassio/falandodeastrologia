@@ -36,7 +36,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=19"></script>
-  <script src="atividades.js?v=2"></script>
+  <script src="atividades.js?v=3"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -107,7 +107,7 @@
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos' })]);
       app.appendChild(cartao);
       Promise.all([
-        P.client.from('alunos').select('id,nome,email,meet_link').order('nome'),
+        P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').order('nome'),
         P.client.from('aluno_codigos').select('aluno_id,codigo')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
@@ -153,12 +153,15 @@
       nomeInput.value = aluno.nome || '';
       var codInput = el('input', { type: 'text', id: 'alunoCodigo', placeholder: 'Ex.: 0147' });
       codInput.value = aluno.codigo || '';
+      var whatsInput = el('input', { type: 'tel', id: 'alunoWhats', placeholder: 'Ex.: 11 91234-5678' });
+      whatsInput.value = aluno.whatsapp || '';
       var salvarDados = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
       var formDados = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: 'Dados do aluno' }),
         el('p', { text: 'O código é o mesmo do Astro Hellenic. O aluno não vê este campo. Pra apagar o código, deixe em branco e salve.' }),
         el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
-        el('label', { for: 'alunoCodigo', text: 'Código' }), codInput, msgDados, salvarDados
+        el('label', { for: 'alunoCodigo', text: 'Código' }), codInput,
+        el('label', { for: 'alunoWhats', text: 'WhatsApp do aluno (opcional; usado só pra abrir a conversa quando você avisar)' }), whatsInput, msgDados, salvarDados
       ]);
       formDados.addEventListener('submit', function (ev) {
         ev.preventDefault();
@@ -166,7 +169,7 @@
         var valor = codInput.value.trim();
         if (!novoNome) { P.mensagem(msgDados, 'Escreva o nome.', 'erro'); return; }
         salvarDados.disabled = true;
-        P.client.from('alunos').update({ nome: novoNome }).eq('id', aluno.id).then(function (r1) {
+        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null }).eq('id', aluno.id).then(function (r1) {
           if (r1.error) { salvarDados.disabled = false; P.mensagem(msgDados, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('aluno_codigos').upsert({ aluno_id: aluno.id, codigo: valor }, { onConflict: 'aluno_id' })
@@ -174,7 +177,7 @@
           pedido.then(function (r2) {
             salvarDados.disabled = false;
             if (r2.error) { P.mensagem(msgDados, /duplicate|unique/i.test(r2.error.message) ? 'Nome salvo, mas esse código já é de outro aluno.' : P.traduzErro(r2.error.message), 'erro'); return; }
-            aluno.nome = novoNome; aluno.codigo = valor;
+            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null;
             paginaDoAluno(user, aluno);
           });
         });

@@ -12,6 +12,20 @@
     return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
+  /* WhatsApp: abre a conversa com a mensagem pronta; quem envia (e pode editar antes) é a própria pessoa, nada sai sozinho */
+  var SITE_ALUNO = 'https://falandodeastrologia.com.br/aluno.html';
+  var WHATS_ADMIN = '5511970404508';
+  function numeroWhats(n) {
+    var d = String(n || '').replace(/\D/g, '');
+    if (!d) return '';
+    return (d.length === 10 || d.length === 11) ? '55' + d : d; /* sem código do país: Brasil */
+  }
+  function botaoWhats(rotulo, numero, mensagem) {
+    var n = numeroWhats(numero);
+    return el('a', { class: 'portal-btn', href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(mensagem), target: '_blank', rel: 'noopener', text: rotulo });
+  }
+  var primeiroNome = function (nome) { return String(nome || '').trim().split(/\s+/)[0] || ''; };
+
   /* botão de opção (no lugar da bolinha nativa) */
   function botaoOpcao(texto, marcada, aoClicar) {
     var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
@@ -81,7 +95,15 @@
 
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: atividade.titulo })]);
       if (atividade.descricao) cab.appendChild(el('p', { text: atividade.descricao, class: 'portal-descricao' }));
-      if (!editavel) cab.appendChild(el('p', { class: 'portal-vazio', text: 'Enviada em ' + dataHoraBR(atividade.enviada_em) + '.' }));
+      if (!editavel) {
+        cab.appendChild(el('p', { class: 'portal-vazio', text: 'Enviada em ' + dataHoraBR(atividade.enviada_em) + '.' }));
+        var corrigida = Object.keys(d.correcoes).some(function (k) { return d.correcoes[k].situacao || d.correcoes[k].comentario; });
+        if (!corrigida) {
+          cab.appendChild(el('p', { class: 'portal-vazio', text: 'Quer avisar o Cássio que terminou? A mensagem já vai pronta no WhatsApp, e você pode mudar antes de enviar.' }));
+          cab.appendChild(botaoWhats('Avisar o Cássio no WhatsApp', WHATS_ADMIN,
+            'Oi Cássio! Terminei a atividade "' + atividade.titulo + '" e já enviei na área do aluno. Pode corrigir quando puder. ' + (atividade.alunoNome ? '(' + primeiroNome(atividade.alunoNome) + ')' : '')));
+        }
+      }
       corpo.appendChild(cab);
 
       d.perguntas.forEach(function (p, i) {
@@ -190,6 +212,21 @@
       });
     }
 
+    /* depois de salvar: oferece avisar o aluno no WhatsApp (mensagem pronta, você envia) */
+    function avisarNovaAtividade(tituloAtividade) {
+      corpo.textContent = '';
+      corpo.appendChild(el('p', { class: 'portal-msg ok', text: 'Atividade salva.' }));
+      corpo.appendChild(el('p', { text: 'Quer avisar ' + primeiroNome(aluno.nome) + ' no WhatsApp? A mensagem já vai pronta e você pode mudar antes de enviar.' }));
+      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Voltar às atividades' });
+      voltar.addEventListener('click', lista);
+      corpo.appendChild(el('div', { class: 'portal-acoes' }, [
+        botaoWhats('Avisar ' + primeiroNome(aluno.nome) + ' no WhatsApp', aluno.whatsapp,
+          'Oi ' + primeiroNome(aluno.nome) + '! Deixei uma atividade nova para você na área do aluno: "' + tituloAtividade + '". Quando terminar, é só enviar por lá. ' + SITE_ALUNO),
+        voltar
+      ]));
+      if (!aluno.whatsapp) corpo.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Dica: se você guardar o WhatsApp do aluno em "Dados do aluno", a conversa já abre direto com ele.' }));
+    }
+
     /* criar uma atividade nova */
     function construtor() {
       corpo.textContent = '';
@@ -260,7 +297,7 @@
           });
         }).then(function (rg) {
           if (rg && rg.error) throw rg.error;
-          lista();
+          avisarNovaAtividade(titulo.value.trim());
         }).catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
 
@@ -317,10 +354,16 @@
           });
           return C.from('atividade_correcoes').upsert(linhas, { onConflict: 'pergunta_id' }).then(function (r) { if (r.error) throw r.error; });
         }
+        var avisoCorrecao = el('div', { style: 'margin:10px 0' });
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar correção' });
         salvar.addEventListener('click', function () {
           salvar.disabled = true; P.mensagem(msg, 'Salvando...');
-          salvarCorrecao().then(function () { salvar.disabled = false; P.mensagem(msg, 'Correção salva. O aluno já vê.', 'ok'); })
+          salvarCorrecao().then(function () {
+            salvar.disabled = false; P.mensagem(msg, 'Correção salva. O aluno já vê.', 'ok');
+            avisoCorrecao.textContent = '';
+            avisoCorrecao.appendChild(botaoWhats('Avisar ' + primeiroNome(aluno.nome) + ' no WhatsApp', aluno.whatsapp,
+              'Oi ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade "' + a.titulo + '". Dá uma olhada na área do aluno: ' + SITE_ALUNO));
+          })
             .catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
         });
         var auto = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Corrigir a múltipla escolha sozinho' });
@@ -354,6 +397,7 @@
           });
         });
         area.appendChild(msg);
+        area.appendChild(avisoCorrecao);
         area.appendChild(acoes);
         area.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [apagar]));
       }).catch(function () {

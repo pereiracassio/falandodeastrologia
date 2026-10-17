@@ -37,7 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=19"></script>
-  <script src="atividades.js?v=2"></script>
+  <script src="atividades.js?v=3"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -194,6 +194,7 @@
             abasDaTela(lista).forEach(function (e) { app.appendChild(e); });
             // atividades (perguntas pra responder); o cartão só aparece se o aluno tiver alguma
             app.appendChild(window.atividades.cartaoDoAluno(aluno, function (a) {
+              a.alunoNome = aluno.nome;
               window.atividades.telaDaAtividadeAluno(app, a, function () { desenharPaginaDoAluno(user, aluno, previa); }, previa);
             }));
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
