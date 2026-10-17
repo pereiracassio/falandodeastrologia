@@ -37,6 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=19"></script>
+  <script src="atividades.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -179,6 +180,10 @@
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
             var lista = ri.data || [];
             abasDaTela(lista).forEach(function (e) { app.appendChild(e); });
+            // atividades (perguntas pra responder); o cartão só aparece se o aluno tiver alguma
+            app.appendChild(window.atividades.cartaoDoAluno(aluno, function (a) {
+              window.atividades.telaDaAtividadeAluno(app, a, function () { mostrarPortal(user); });
+            }));
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })

@@ -36,6 +36,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=19"></script>
+  <script src="atividades.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -205,6 +206,7 @@
         });
       });
       app.appendChild(formMeet);
+      app.appendChild(window.atividades.painelAdmin(aluno));
 
       /* novo item */
       var msg = el('p', { class: 'portal-msg' });
