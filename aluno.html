@@ -37,7 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=19"></script>
-  <script src="atividades.js?v=4"></script>
+  <script src="atividades.js?v=5"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -111,14 +111,15 @@
       return caixa;
     }
 
-    /* três abas na mesma página (Caderno, Gravações, Materiais); abre no Caderno, que é o que o aluno precisa fazer; as gravações são para rever quando tiver dúvida */
+    /* três abas na mesma página (Atividades, Gravações, Materiais); abre em Atividades, que é o que o aluno precisa fazer; as gravações são para rever quando tiver dúvida.
+       A chave interna 'caderno' continua a mesma (é o que está salvo no banco); só o nome na tela mudou. */
     var ABAS = [
-      { chave: 'caderno', nome: 'Caderno', vazio: 'O seu caderno ainda não foi disponibilizado.' },
+      { chave: 'caderno', nome: 'Atividades', vazio: 'Nenhuma atividade ainda.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
       { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' }
     ];
 
-    function abasDaTela(lista) {
+    function abasDaTela(lista, atividadesEl, avisarQuando) {
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       var conteudo = el('div', { class: 'portal-cartao' });
       var botoes = {};
@@ -131,13 +132,22 @@
         conteudo.textContent = '';
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
-        if (!itens.length) conteudo.appendChild(el('p', { class: 'portal-vazio', text: aba.vazio }));
+        vazioP = el('p', { class: 'portal-vazio', text: aba.vazio });
+        if (chave === 'caderno') conteudo.appendChild(atividadesEl);   /* as atividades do site ficam no começo da aba */
+        if (!itens.length && !(chave === 'caderno' && qtdAtividades > 0)) conteudo.appendChild(vazioP);
         itens.forEach(function (i) { conteudo.appendChild(itemDaLista(i, chave)); });
       }
+      var vazioP = null, qtdAtividades = 0, abaAtual = 'caderno';
+      avisarQuando(function (qtd) {
+        qtdAtividades = qtd;
+        var ab = ABAS[0], itensAba = lista.filter(function (i) { return i.bloco === ab.chave; }).length;
+        if (qtd) botoes[ab.chave].textContent = ab.nome + ' (' + (itensAba + qtd) + ')';
+        if (qtd && vazioP && vazioP.parentNode) vazioP.parentNode.removeChild(vazioP);
+      });
       ABAS.forEach(function (ab) {
         var qtd = lista.filter(function (i) { return i.bloco === ab.chave; }).length;
         var b = el('button', { type: 'button', role: 'tab', text: ab.nome + (qtd ? ' (' + qtd + ')' : '') });
-        b.addEventListener('click', function () { mostrar(ab.chave); });
+        b.addEventListener('click', function () { abaAtual = ab.chave; mostrar(ab.chave); });
         botoes[ab.chave] = b;
         barra.appendChild(b);
       });
@@ -191,12 +201,13 @@
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
             var lista = ri.data || [];
-            abasDaTela(lista).forEach(function (e) { app.appendChild(e); });
-            // atividades (perguntas pra responder); o cartão só aparece se o aluno tiver alguma
-            app.appendChild(window.atividades.cartaoDoAluno(aluno, function (a) {
+            // atividades (perguntas pra responder): ficam dentro da aba "Atividades", antes dos documentos do Drive
+            var avisar = function () {};
+            var atividadesEl = window.atividades.cartaoDoAluno(aluno, function (a) {
               a.alunoNome = aluno.nome;
               window.atividades.telaDaAtividadeAluno(app, a, function () { desenharPaginaDoAluno(user, aluno, previa); }, previa);
-            }));
+            }, { semMoldura: true, aoCarregar: function (qtd) { avisar(qtd); } });
+            abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }).forEach(function (e) { app.appendChild(e); });
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })

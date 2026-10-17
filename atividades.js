@@ -75,14 +75,18 @@
 
   /* ============ ALUNO ============ */
 
-  /* lista de atividades do aluno; aoAbrir(atividade) abre uma */
-  function cartaoDoAluno(aluno, aoAbrir) {
-    var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Atividades' })]);
-    cartao.style.display = 'none'; /* sem atividade o cartão nem aparece */
+  /* lista de atividades do aluno; aoAbrir(atividade) abre uma.
+     opcoes.semMoldura: sem cartão nem título (quando já está dentro da aba); opcoes.aoCarregar(qtd): avisa quantas atividades vieram */
+  function cartaoDoAluno(aluno, aoAbrir, opcoes) {
+    opcoes = opcoes || {};
+    var cartao = opcoes.semMoldura ? el('div') : el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Atividades' })]);
+    cartao.style.display = 'none'; /* sem atividade nem aparece */
     ordenar(C.from('atividades').select(COLUNAS).eq('aluno_id', aluno.id)).then(function (r) {
-      if (r.error || !r.data || !r.data.length) return;
+      var lista = (r.error || !r.data) ? [] : r.data;
+      if (opcoes.aoCarregar) opcoes.aoCarregar(lista.length);
+      if (!lista.length) return;
       cartao.style.display = '';
-      r.data.forEach(function (a) {
+      lista.forEach(function (a) {
         var abrir = el('button', { type: 'button', class: 'portal-btn', text: a.enviada_em ? 'Ver' : 'Responder' });
         abrir.addEventListener('click', function () { aoAbrir(a); });
         cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [

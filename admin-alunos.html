@@ -36,11 +36,11 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=19"></script>
-  <script src="atividades.js?v=4"></script>
+  <script src="atividades.js?v=5"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
-    var BLOCOS = { gravacoes: 'Gravação do encontro', materiais: 'Material', caderno: 'Caderno do aluno' }; // o primeiro é o que já vem marcado
+    var BLOCOS = { gravacoes: 'Gravação do encontro', materiais: 'Material', caderno: 'Atividades (documento do Drive)' }; // o primeiro é o que já vem marcado
     var alunoAberto = null, nomeAdmin = '';
 
     function limpar() { app.textContent = ''; }
