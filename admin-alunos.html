@@ -71,9 +71,9 @@
     function listaDeAlunos(user) {
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var conexaoDrive = P.cartaoConexaoDrive();
-      if (conexaoDrive) app.appendChild(conexaoDrive);
-      app.appendChild(P.cartaoPastaBase('alunos'));
+      /* ordem: alunos, novo aluno, pasta dos alunos, login com o Google */
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos' })]);
+      app.appendChild(cartao);
 
       /* novo aluno */
       var msg = el('p', { class: 'portal-msg' });
@@ -102,10 +102,11 @@
         });
       });
       app.appendChild(form);
+      app.appendChild(P.cartaoPastaBase('alunos'));
+      var conexaoDrive = P.cartaoConexaoDrive();
+      if (conexaoDrive) app.appendChild(conexaoDrive);
 
       /* lista */
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos' })]);
-      app.appendChild(cartao);
       Promise.all([
         P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').order('nome'),
         P.client.from('aluno_codigos').select('aluno_id,codigo')
