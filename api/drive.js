@@ -65,7 +65,8 @@ async function supa(caminho, opcoes = {}) {
   const chave = env('SUPABASE_SERVICE_ROLE_KEY');
   const resp = await fetch(SUPABASE_URL + caminho, {
     ...opcoes,
-    headers: { apikey: chave, Authorization: 'Bearer ' + chave, 'Content-Type': 'application/json', ...(opcoes.headers || {}) }
+    // chave nova ("sb_secret_...") não é um JWT: vai só em apikey; a antiga ("service_role", JWT) vai também em Authorization
+    headers: { apikey: chave, ...(chave.startsWith('sb_secret_') ? {} : { Authorization: 'Bearer ' + chave }), 'Content-Type': 'application/json', ...(opcoes.headers || {}) }
   });
   const texto = await resp.text();
   const dados = texto ? JSON.parse(texto) : null;
