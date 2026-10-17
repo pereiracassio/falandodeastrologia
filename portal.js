@@ -33,7 +33,7 @@
   var DRIVE_ESCOPO = 'https://www.googleapis.com/auth/drive';
   /* endereço do servidor (Vercel) que guarda a conexão permanente com o Drive: api/drive.js. Vazio = ainda sem servidor,
      e o site usa só a autorização do navegador (vale 1 hora). */
-  var DRIVE_API_URL = '';
+  var DRIVE_API_URL = 'https://falandodeastrologia.vercel.app/api/drive';
   var driveCarregado = null, driveToken = null, driveTokenAte = 0, driveDica = '';
 
   function carregarScript(src) {
