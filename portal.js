@@ -68,10 +68,11 @@
     });
   }
   /* escolherDoDrive(function (url) { ... }, function (textoDeErro) { ... }) */
-  function escolherDoDrive(aoEscolher, aoErrar) {
+  function escolherDoDrive(aoEscolher, aoErrar, soPastas) {
     carregarDrive().then(tokenDoDrive).then(function (token) {
-      var visao = new google.picker.DocsView(google.picker.ViewId.DOCS)
-        .setIncludeFolders(true).setSelectFolderEnabled(true);
+      var visao = soPastas
+        ? new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true).setMimeTypes('application/vnd.google-apps.folder')
+        : new google.picker.DocsView(google.picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(true);
       new google.picker.PickerBuilder()
         .addView(visao)
         .setOAuthToken(token).setDeveloperKey(DRIVE_API_KEY).setAppId(DRIVE_APP_ID)
@@ -109,6 +110,78 @@
       }, function (t) { aviso(t, 'erro'); });
     });
     return b;
+  }
+
+  /* Pasta no Drive: a pasta-mãe (dos alunos ou dos clientes) é escolhida uma vez e fica guardada no Supabase (tabela drive_pastas);
+     cada aluno/cliente ganha, dentro dela, uma pasta "código - nome" compartilhada com o e-mail dele.
+     opcoes: { plural: 'alunos'|'clientes', tipo: 'aluno'|'cliente', id, nome: function () { return 'código - nome'; }, email } */
+  function cartaoPastaDrive(opcoes) {
+    var chaveBase = 'base_' + opcoes.plural, chaveItem = opcoes.tipo + ':' + opcoes.id;
+    var msg = el('p', { class: 'portal-msg' });
+    var corpo = el('div');
+    var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Pasta no Drive' }), corpo, msg]);
+    var aviso = function (t, tipo) { mensagem(msg, t, tipo); };
+    var linkPasta = function (id) { return 'https://drive.google.com/drive/folders/' + encodeURIComponent(id); };
+    function guardar(chave, pastaId) { return client.from('drive_pastas').upsert({ chave: chave, pasta_id: pastaId }, { onConflict: 'chave' }); }
+    function botao(texto, aoClicar, sec) {
+      var b = el('button', { type: 'button', class: 'portal-btn' + (sec ? ' portal-btn-sec' : ''), text: texto });
+      b.addEventListener('click', function () { aoClicar(b); });
+      return b;
+    }
+    function escolherBase() {
+      escolherDoDrive(function (url, id) {
+        guardar(chaveBase, id).then(function (r) {
+          if (r.error) { aviso(traduzErro(r.error.message), 'erro'); return; }
+          desenhar();
+          aviso('Pasta escolhida.', 'ok');
+        });
+      }, function (t) { aviso(t, 'erro'); }, true);
+    }
+    function criar(b, baseId) {
+      b.disabled = true; aviso('Criando a pasta...', 'ok');
+      carregarDrive().then(tokenDoDrive).then(function (token) {
+        return fetch('https://www.googleapis.com/drive/v3/files', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: opcoes.nome(), mimeType: 'application/vnd.google-apps.folder', parents: [baseId] })
+        }).then(function (r) { if (!r.ok) throw new Error('criar'); return r.json(); }).then(function (pasta) {
+          return guardar(chaveItem, pasta.id).then(function () {
+            return compartilharNoDrive(pasta.id, token, opcoes.email).then(function () { return true; }, function () { return false; });
+          }).then(function (compartilhou) {
+            desenhar();
+            aviso(compartilhou ? 'Pasta criada e compartilhada com ' + opcoes.email + '.' : 'Pasta criada, mas não consegui compartilhar com ' + opcoes.email + ' (o e-mail precisa ser uma conta Google). Compartilhe no Drive.', compartilhou ? 'ok' : 'erro');
+          });
+        });
+      }).catch(function (e) {
+        b.disabled = false;
+        if (!/popup_closed|access_denied|cancel/i.test(String(e.message))) aviso('Não foi possível criar a pasta. Se a pasta escolhida foi apagada ou trocada, escolha de novo.', 'erro');
+        else aviso('');
+      });
+    }
+    function desenhar() {
+      corpo.textContent = '';
+      carregarDrive().catch(function () {});
+      client.from('drive_pastas').select('chave,pasta_id').in('chave', [chaveBase, chaveItem]).then(function (r) {
+        if (r.error) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a pasta do Drive.' })); return; }
+        var m = {};
+        (r.data || []).forEach(function (x) { m[x.chave] = x.pasta_id; });
+        if (!m[chaveBase]) {
+          corpo.appendChild(el('p', { text: 'Primeiro escolha a pasta do seu Drive onde ficarão as pastas dos ' + opcoes.plural + '. Só precisa fazer isso uma vez.' }));
+          corpo.appendChild(botao('Escolher a pasta dos ' + opcoes.plural, escolherBase));
+          return;
+        }
+        if (m[chaveItem]) {
+          corpo.appendChild(el('p', { text: 'A pasta já existe no seu Drive.' }));
+          corpo.appendChild(el('a', { class: 'portal-btn', href: linkPasta(m[chaveItem]), target: '_blank', rel: 'noopener', text: 'Abrir a pasta' }));
+        } else {
+          corpo.appendChild(el('p', { text: 'Cria a pasta "' + opcoes.nome() + '" dentro da pasta dos ' + opcoes.plural + ' e compartilha com ' + opcoes.email + '.' }));
+          corpo.appendChild(botao('Criar a pasta no Drive', function (b) { criar(b, m[chaveBase]); }));
+        }
+        corpo.appendChild(el('p', { class: 'portal-vazio' }, [botao('Trocar a pasta dos ' + opcoes.plural, escolherBase, true)]));
+      });
+    }
+    desenhar();
+    return cartao;
   }
 
   function dataBR(iso) {
@@ -197,7 +270,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, botaoDrive: botaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };

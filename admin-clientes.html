@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=7"></script>
+  <script src="portal.js?v=8"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -164,6 +164,8 @@
         });
       });
       app.appendChild(formCod);
+      app.appendChild(P.cartaoPastaDrive({ plural: 'clientes', tipo: 'cliente', id: cliente.id, email: cliente.email,
+        nome: function () { return (cliente.codigo ? cliente.codigo + ' - ' : '') + cliente.nome; } }));
 
       var msg = el('p', { class: 'portal-msg' });
       var servico = el('input', { type: 'text', id: 'entServico', required: '', placeholder: 'Escreva o que quiser, ou toque num atalho abaixo' });
