@@ -1,0 +1,84 @@
+/* Recebe o aviso (webhook) do Astro Hellenic quando um cliente envia o formulário e deixa tudo pronto aqui, sem fazer na unha:
+   1) cria o cliente (nome + e-mail) na área do cliente, se ainda não existir;
+   2) grava o código dele (o mesmo do Astro Hellenic);
+   3) cria a pasta "código - nome" dentro da pasta dos clientes no Drive e compartilha com o e-mail dele.
+
+   O endereço (com ?chave=...) fica só na configuração do Astro Hellenic (Configurações → Captação → URL do webhook).
+   Variáveis na Vercel: WEBHOOK_CHAVE, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SUPABASE_SERVICE_ROLE_KEY.
+   Pode chegar mais de uma vez pro mesmo cliente (formulário e depois agendamento): tudo aqui é "só cria o que falta". */
+
+const crypto = require('crypto');
+const { env, supa, lerConexao, tokenDeAcesso, criarPasta, compartilhar } = require('./_drive');
+
+const igual = (a, b) => {
+  const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+};
+const q = (v) => encodeURIComponent(v);
+
+/* Sinastria chega como "0157 A": a pasta e o código do cliente são o "0157" */
+const normalizarCodigo = (c) => {
+  const t = String(c || '').trim();
+  const m = t.match(/^(.*\d)\s*[AB]$/i);
+  return (m ? m[1] : t).trim();
+};
+
+module.exports = async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.method !== 'POST') { res.status(405).json({ erro: 'use POST' }); return; }
+  try {
+    if (!igual((req.query && req.query.chave) || '', env('WEBHOOK_CHAVE'))) { res.status(401).json({ erro: 'chave inválida' }); return; }
+
+    const corpo = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const c = corpo.cliente || {};
+    const email = String(c.email || '').trim().toLowerCase();
+    const nome = String(c.nome || '').trim();
+    const codigo = normalizarCodigo(c.codigo);
+    if (!email || !nome) { res.status(400).json({ erro: 'faltou nome ou e-mail' }); return; }
+
+    /* 1) cliente */
+    let linhas = await supa('/rest/v1/clientes?email=eq.' + q(email) + '&select=id,nome');
+    let cliente = linhas && linhas[0];
+    let criado = false;
+    if (!cliente) {
+      const novo = await supa('/rest/v1/clientes', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ email, nome }) });
+      cliente = novo[0]; criado = true;
+    }
+
+    /* 2) código (se já é de outro cliente, não mexe: o banco recusa duplicado) */
+    let codigoGravado = false;
+    if (codigo) {
+      try {
+        await supa('/rest/v1/cliente_codigos?on_conflict=cliente_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ cliente_id: cliente.id, codigo }) });
+        codigoGravado = true;
+      } catch (e) { console.error('novo-cliente código:', e.message); }
+    }
+
+    /* 3) pasta no Drive (falha aqui não desfaz o cliente: ele já está criado) */
+    let pasta = false, compartilhada = false, aviso = '';
+    try {
+      const conexao = await lerConexao();
+      const pastas = await supa('/rest/v1/drive_pastas?chave=in.(' + q('base_clientes') + ',' + q('cliente:' + cliente.id) + ')&select=chave,pasta_id');
+      const m = {};
+      (pastas || []).forEach((p) => { m[p.chave] = p.pasta_id; });
+      if (m['cliente:' + cliente.id]) { pasta = true; }
+      else if (!conexao) aviso = 'Google Drive não conectado';
+      else if (!m.base_clientes) aviso = 'pasta dos clientes não escolhida';
+      else {
+        const t = await tokenDeAcesso(conexao);
+        const id = await criarPasta(t.valor, (codigo ? codigo + ' - ' : '') + nome, m.base_clientes);
+        await supa('/rest/v1/drive_pastas?on_conflict=chave', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ chave: 'cliente:' + cliente.id, pasta_id: id }) });
+        pasta = true;
+        compartilhada = await compartilhar(t.valor, id, email);
+      }
+    } catch (e) {
+      console.error('novo-cliente drive:', e.message);
+      aviso = 'erro ao criar a pasta';
+    }
+
+    res.status(200).json({ ok: true, cliente_id: cliente.id, criado, codigo: codigoGravado, pasta, compartilhada, aviso });
+  } catch (e) {
+    console.error('novo-cliente:', e.message);
+    res.status(500).json({ erro: 'erro no servidor' });
+  }
+};
