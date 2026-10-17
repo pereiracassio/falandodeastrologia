@@ -45,3 +45,7 @@
 .portal-sala{margin:18px 0 0;text-align:center;font-size:13px;color:#16233F}
 .portal-sala a{color:#1F5FA3}
 @media(max-width:700px){.portal-cartao{padding:16px 14px}}
+
+/* Janela do Google Drive (Picker): o site força "body>*{position:relative}", o que jogava a janela pra baixo da página e travava a tela */
+body>.picker-dialog-bg{position:absolute!important;z-index:1000!important}
+body>.picker-dialog{position:absolute!important;z-index:1001!important}
