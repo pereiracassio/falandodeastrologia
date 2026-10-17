@@ -30,7 +30,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="portal.js?v=19"></script>
-  <script src="capa.js?v=4"></script>
+  <script src="capa.js?v=5"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -66,15 +66,19 @@
     function montarGerador(user) {
       limpar();
       app.appendChild(topo('Capa em papiro, no estilo do Astro Hellenic'));
-      var estado = { tamanho: 'm', powered: false };
+      var estado = { tamanho: 'm', powered: false, formato: 'a4' };
       var titulo = el('textarea', { rows: '3', placeholder: 'Ex.: Estudo sobre as Casas' });
       var subtitulo = el('input', { type: 'text', placeholder: 'Ex.: Mentoria em Astrologia Clássica' });
       var nome = el('input', { type: 'text', placeholder: 'Ex.: nome do aluno' });
-      var areaTamanho = el('div'), areaPowered = el('div');
+      var areaTamanho = el('div'), areaPowered = el('div'), areaFormato = el('div');
       var visor = el('div'); visor.style.cssText = 'position:relative;width:100%;max-width:794px;margin:0 auto 14px;overflow:hidden;border:1px solid #1F5FA3;border-radius:6px';
       var msg = el('p', { class: 'portal-msg' });
 
       function desenharOpcoes() {
+        areaFormato.textContent = '';
+        [['a4', 'A4 (210 × 297 mm)'], ['carta', 'Carta (21,6 × 27,9 cm)']].forEach(function (o) {
+          areaFormato.appendChild(opcaoBotao(o[1], estado.formato === o[0], function () { estado.formato = o[0]; desenharOpcoes(); atualizar(); }));
+        });
         areaTamanho.textContent = '';
         [['p', 'Pequeno'], ['m', 'Médio'], ['g', 'Grande']].forEach(function (o) {
           areaTamanho.appendChild(opcaoBotao(o[1], estado.tamanho === o[0], function () { estado.tamanho = o[0]; desenharOpcoes(); atualizar(); }));
@@ -83,20 +87,22 @@
         areaPowered.appendChild(opcaoBotao('Só o logo', !estado.powered, function () { estado.powered = false; desenharOpcoes(); atualizar(); }));
         areaPowered.appendChild(opcaoBotao('Logo e "powered by Falando de Astrologia"', estado.powered, function () { estado.powered = true; desenharOpcoes(); atualizar(); }));
       }
-      function opcoes() { return { titulo: titulo.value.trim(), subtitulo: subtitulo.value.trim(), nome: nome.value.trim(), tamanho: estado.tamanho, powered: estado.powered }; }
+      function opcoes() { return { titulo: titulo.value.trim(), subtitulo: subtitulo.value.trim(), nome: nome.value.trim(), tamanho: estado.tamanho, powered: estado.powered, formato: estado.formato }; }
 
       /* a prévia é a própria folha A4 reduzida na tela; o arquivo sai em tamanho real */
       function atualizar() {
         visor.textContent = '';
-        var escala = Math.min(1, visor.clientWidth / 794) || 1;
-        visor.style.height = Math.round(1123 * escala) + 'px';
+        var F = window.capaFormato(estado.formato);
+        var escala = Math.min(1, visor.clientWidth / F.w) || 1;
+        visor.style.height = Math.round(F.h * escala) + 'px';
         var folha = window.capaFolha(opcoes());
         folha.style.transformOrigin = '0 0'; folha.style.transform = 'scale(' + escala + ')';
         visor.appendChild(folha);
       }
 
       function gerarCanvas() {
-        var palco = el('div'); palco.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1123px';
+        var F = window.capaFormato(estado.formato);
+        var palco = el('div'); palco.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + F.w + 'px;height:' + F.h + 'px';
         var folha = window.capaFolha(opcoes());
         palco.appendChild(folha); document.body.appendChild(palco);
         var pronto = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
@@ -104,19 +110,20 @@
         return Promise.all([pronto].concat(imagens)).then(function () {
           return document.fonts && document.fonts.load ? document.fonts.load('800 48px Cinzel') : null;
         }).then(function () {
-          return window.html2canvas(folha, { scale: 2, useCORS: true, backgroundColor: null, width: 794, height: 1123, windowWidth: 794 });
+          return window.html2canvas(folha, { scale: 2, useCORS: true, backgroundColor: null, width: F.w, height: F.h, windowWidth: F.w });
         }).then(function (c) { palco.remove(); return c; }, function (e) { palco.remove(); throw e; });
       }
       function nomeArquivo() {
         var base = (titulo.value.trim() || 'capa').replace(/\s+/g, ' ').slice(0, 60).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\- ]+/g, '').trim().replace(/ /g, '-').toLowerCase();
-        return 'capa-' + (base || 'estudo');
+        return 'capa-' + (base || 'estudo') + '-' + estado.formato;
       }
       function baixarPDF() {
         if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título da capa.', 'erro'); return; }
         P.mensagem(msg, 'Gerando o PDF...');
         gerarCanvas().then(function (c) {
-          var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-          doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+          var F = window.capaFormato(estado.formato);
+          var doc = new window.jspdf.jsPDF({ unit: 'mm', format: [F.mmW, F.mmH], orientation: 'portrait' });
+          doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, F.mmW, F.mmH);
           doc.save(nomeArquivo() + '.pdf');
           P.mensagem(msg, 'PDF pronto. Procure em Arquivos (Downloads) e abra no GoodNotes.', 'ok');
         }).catch(function () { P.mensagem(msg, 'Não foi possível gerar o PDF. Tente de novo.', 'erro'); });
@@ -145,6 +152,7 @@
         el('label', { text: 'Título da capa' }), titulo,
         el('label', { text: 'Subtítulo (opcional)' }), subtitulo,
         el('label', { text: 'Nome (opcional, aparece embaixo do título)' }), nome,
+        el('label', { text: 'Tamanho da folha (o mesmo das páginas dos seus PDFs)' }), areaFormato,
         el('label', { text: 'Tamanho do título' }), areaTamanho,
         el('label', { text: 'Rodapé' }), areaPowered
       ]);

@@ -10,20 +10,24 @@
     if (texto != null) e.textContent = texto;
     return e;
   }
+  /* tamanhos da folha em px (96 por polegada): A4 = 210x297 mm, Carta (Letter) = 8,5x11 pol */
+  var FORMATOS = { a4: { w: 794, h: 1123, mmW: 210, mmH: 297 }, carta: { w: 816, h: 1056, mmW: 215.9, mmH: 279.4 } };
+  window.capaFormato = function (nome) { return FORMATOS[nome] || FORMATOS.a4; };
   window.capaFolha = function (op) {
     op = op || {};
-    var folha = el('div', 'position:relative;width:794px;height:1123px;overflow:hidden;background:#dcc590 url(img/papiro-folha.jpg) 0 0/100% 100% no-repeat;font-family:Arial,sans-serif;color:#16233F');
+    var F = window.capaFormato(op.formato), W = F.w, H = F.h;
+    var folha = el('div', 'position:relative;width:' + W + 'px;height:' + H + 'px;overflow:hidden;background:#dcc590 url(img/papiro-folha.jpg) 0 0/100% 100% no-repeat;font-family:Arial,sans-serif;color:#16233F');
     folha.className = 'capa-folha';
-    var moldura = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 794 1123" width="794" height="1123" style="position:absolute;left:0;top:0">' +
+    var moldura = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="position:absolute;left:0;top:0">' +
       '<defs><pattern id="capaMeandro" width="48" height="32" patternUnits="userSpaceOnUse"><path d="M0 28 H 8 V 4 H 40 V 28 H 24 V 14 H 32 V 20" fill="none" stroke="#1F5FA3" stroke-width="3.4" stroke-linejoin="miter"/></pattern></defs>' +
-      '<rect x="28" y="28" width="738" height="1067" fill="none" stroke="#2B1D12" stroke-width="1.5"/>' +
-      '<rect x="35" y="35" width="724" height="1053" fill="none" stroke="#B5852F" stroke-width="4"/>' +
-      '<rect x="42" y="42" width="710" height="1039" fill="none" stroke="#2B1D12" stroke-width="1.5"/>' +
-      '<svg x="64" y="58" width="666" height="32"><rect width="666" height="32" fill="url(#capaMeandro)"/></svg>' +
-      '<svg x="64" y="1033" width="666" height="32"><rect width="666" height="32" fill="url(#capaMeandro)"/></svg></svg>';
+      '<rect x="28" y="28" width="' + (W - 56) + '" height="' + (H - 56) + '" fill="none" stroke="#2B1D12" stroke-width="1.5"/>' +
+      '<rect x="35" y="35" width="' + (W - 70) + '" height="' + (H - 70) + '" fill="none" stroke="#B5852F" stroke-width="4"/>' +
+      '<rect x="42" y="42" width="' + (W - 84) + '" height="' + (H - 84) + '" fill="none" stroke="#2B1D12" stroke-width="1.5"/>' +
+      '<svg x="64" y="58" width="' + (W - 128) + '" height="32"><rect width="' + (W - 128) + '" height="32" fill="url(#capaMeandro)"/></svg>' +
+      '<svg x="64" y="' + (H - 90) + '" width="' + (W - 128) + '" height="32"><rect width="' + (W - 128) + '" height="32" fill="url(#capaMeandro)"/></svg></svg>';
     folha.insertAdjacentHTML('beforeend', moldura);
 
-    var conteudo = el('div', 'position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;padding:98px 91px;display:flex;flex-direction:column;align-items:center;text-align:center');
+    var conteudo = el('div', 'position:absolute;left:0;top:0;width:100%;height:100%;box-sizing:border-box;padding:98px ' + (91 + (W - 794) / 2) + 'px;display:flex;flex-direction:column;align-items:center;text-align:center');
     var titulo = el('h1', 'align-self:stretch;margin:53px 0 0;padding:10px 0;border-top:4px double #1F5FA3;border-bottom:4px double #1F5FA3;font-family:Cinzel,serif;font-weight:800;color:#a03e25;text-transform:uppercase;letter-spacing:.03em;line-height:1.25;font-size:' + (TAMANHOS[op.tamanho] || TAMANHOS.m) + 'px;white-space:pre-line;overflow-wrap:anywhere', op.titulo || '');
     conteudo.appendChild(titulo);
     var centro = el('div', 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;align-self:stretch');
