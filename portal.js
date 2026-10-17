@@ -53,6 +53,12 @@
   }
   function tokenDoDrive() {
     return new Promise(function (ok, erro) {
+      if (!driveToken) {
+        try {
+          var g = JSON.parse(sessionStorage.getItem('fda_drive_token') || 'null');
+          if (g && g.ate > Date.now()) { driveToken = g.token; driveTokenAte = g.ate; }
+        } catch (e) { /* sem armazenamento */ }
+      }
       if (driveToken && Date.now() < driveTokenAte) { ok(driveToken); return; }
       var tc = google.accounts.oauth2.initTokenClient({
         client_id: DRIVE_CLIENT_ID,
@@ -60,6 +66,7 @@
         callback: function (r) {
           if (r.error || !r.access_token) { erro(new Error(r.error || 'sem token')); return; }
           driveToken = r.access_token; driveTokenAte = Date.now() + (Number(r.expires_in || 3000) - 60) * 1000;
+          try { sessionStorage.setItem('fda_drive_token', JSON.stringify({ token: driveToken, ate: driveTokenAte })); } catch (e) { /* sem armazenamento */ }
           ok(driveToken);
         },
         error_callback: function (e) { erro(new Error((e && e.type) || 'cancelado')); }
@@ -73,14 +80,23 @@
       var visao = soPastas
         ? new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true).setMimeTypes('application/vnd.google-apps.folder')
         : new google.picker.DocsView(google.picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(true);
-      new google.picker.PickerBuilder()
+      var janela = null, abriu = false;
+      var espera = setTimeout(function () {
+        if (abriu) return;
+        try { janela.dispose(); } catch (e) { /* já fechada */ }
+        driveToken = null; try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ }
+        if (aoErrar) aoErrar('A janela do Drive não abriu (o Google não respondeu em 10 segundos). Tente de novo.');
+      }, 10000);
+      janela = new google.picker.PickerBuilder()
         .addView(visao)
         .setOAuthToken(token).setDeveloperKey(DRIVE_API_KEY).setAppId(DRIVE_APP_ID)
         .setLocale('pt-BR')
         .setCallback(function (d) {
+          abriu = true; clearTimeout(espera);
           if (d.action === google.picker.Action.PICKED && d.docs && d.docs[0]) aoEscolher(d.docs[0].url, d.docs[0].id, token);
         })
-        .build().setVisible(true);
+        .build();
+      janela.setVisible(true);
     }).catch(function (e) {
       if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível abrir o Google Drive. Tente de novo.');
     });
@@ -137,6 +153,21 @@
         });
       }, function (t) { aviso(t, 'erro'); }, true);
     }
+    function criarBase(b) {
+      b.disabled = true; aviso('Criando a pasta...', 'ok');
+      var nomeBase = (opcoes.plural === 'alunos' ? 'Alunos' : 'Clientes') + ' - Falando de Astrologia';
+      carregarDrive().then(tokenDoDrive).then(function (token) {
+        return fetch('https://www.googleapis.com/drive/v3/files', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: nomeBase, mimeType: 'application/vnd.google-apps.folder' })
+        }).then(function (r) { if (!r.ok) throw new Error('criar'); return r.json(); });
+      }).then(function (pasta) {
+        return guardar(chaveBase, pasta.id);
+      }).then(function () {
+        desenhar(); aviso('Pasta criada no seu Drive (na raiz). Se quiser, mova ela pra outra pasta no próprio Drive.', 'ok');
+      }).catch(function () { b.disabled = false; aviso('Não foi possível criar a pasta. Tente de novo.', 'erro'); });
+    }
     function criar(b, baseId) {
       b.disabled = true; aviso('Criando a pasta...', 'ok');
       carregarDrive().then(tokenDoDrive).then(function (token) {
@@ -168,6 +199,8 @@
         if (!m[chaveBase]) {
           corpo.appendChild(el('p', { text: 'Primeiro escolha a pasta do seu Drive onde ficarão as pastas dos ' + opcoes.plural + '. Só precisa fazer isso uma vez.' }));
           corpo.appendChild(botao('Escolher a pasta dos ' + opcoes.plural, escolherBase));
+          corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Ou deixe o site criar uma pasta nova pra isso (depois você pode mover ela no Drive):' }));
+          corpo.appendChild(botao('Criar a pasta dos ' + opcoes.plural + ' automaticamente', criarBase, true));
           return;
         }
         if (m[chaveItem]) {
