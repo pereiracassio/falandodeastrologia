@@ -315,6 +315,18 @@
     return cartao;
   }
 
+  /* do código maior pro menor (o mais novo primeiro); quem não tem código vai pro fim, por nome */
+  function ordenarPorCodigo(lista) {
+    return lista.sort(function (a, b) {
+      if (!a.codigo !== !b.codigo) return a.codigo ? -1 : 1;
+      if (a.codigo) {
+        var c = String(b.codigo).localeCompare(String(a.codigo), 'pt-BR', { numeric: true });
+        if (c) return c;
+      }
+      return String(a.nome).localeCompare(String(b.nome), 'pt-BR');
+    });
+  }
+
   function dataBR(iso) {
     var p = String(iso || '').split('-');
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : '';
@@ -401,7 +413,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };

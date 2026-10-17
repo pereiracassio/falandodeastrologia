@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=12"></script>
+  <script src="portal.js?v=13"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -112,14 +112,27 @@
         var codigos = {};
         (rc.data || []).forEach(function (c) { codigos[c.aluno_id] = c.codigo; });
         r.data.forEach(function (a) { a.codigo = codigos[a.id] || ''; });
-        if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' }));
-        r.data.forEach(function (a) {
-          var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
-          abrir.addEventListener('click', function () { alunoAberto = a; paginaDoAluno(user, a); });
-          cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-            el('div', {}, [el('span', { class: 'portal-item-titulo', text: (a.codigo ? a.codigo + ' · ' : '') + a.nome }), el('span', { class: 'portal-item-data', text: a.email })]), abrir
-          ])]));
-        });
+        var alunos = P.ordenarPorCodigo(r.data);
+        if (!alunos.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' })); return; }
+        var busca = el('input', { type: 'search', id: 'buscaAluno', placeholder: 'Buscar por código, nome ou e-mail' });
+        var lista = el('div');
+        cartao.appendChild(busca);
+        cartao.appendChild(lista);
+        function desenhar() {
+          var t = busca.value.trim().toLowerCase();
+          lista.textContent = '';
+          var achados = alunos.filter(function (a) { return !t || (a.codigo + ' ' + a.nome + ' ' + a.email).toLowerCase().indexOf(t) >= 0; });
+          if (!achados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno encontrado.' }));
+          achados.forEach(function (a) {
+            var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
+            abrir.addEventListener('click', function () { alunoAberto = a; paginaDoAluno(user, a); });
+            lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (a.codigo ? a.codigo + ' · ' : '') + a.nome }), el('span', { class: 'portal-item-data', text: a.email })]), abrir
+            ])]));
+          });
+        }
+        busca.addEventListener('input', desenhar);
+        desenhar();
       });
     }
 
