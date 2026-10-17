@@ -63,7 +63,7 @@
   }
 
   /* a atividade aberta: responder (se ainda não enviou) ou ver as respostas e a correção */
-  function telaDaAtividadeAluno(app, atividade, aoVoltar) {
+  function telaDaAtividadeAluno(app, atividade, aoVoltar, previa) {
     app.textContent = '';
     var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
     voltar.addEventListener('click', aoVoltar);
@@ -128,20 +128,23 @@
           sujo = {};
         });
       }
+      if (previa) cab.appendChild(el('p', { class: 'portal-msg erro', text: 'Prévia do administrador: nada do que for escrito aqui é salvo ou enviado.' }));
       var salvar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar e continuar depois' });
       var enviar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar para correção' });
       salvar.addEventListener('click', function () {
+        if (previa) { P.mensagem(msg, 'Isto é só uma prévia: nada foi salvo.', 'erro'); return; }
         salvar.disabled = true; P.mensagem(msg, 'Salvando...');
         salvarTudo().then(function () { salvar.disabled = false; P.mensagem(msg, 'Respostas salvas. Você pode voltar depois.', 'ok'); })
           .catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
       enviar.addEventListener('click', function () {
+        if (previa) { P.mensagem(msg, 'Isto é só uma prévia: nada foi enviado.', 'erro'); return; }
         if (!confirm('Enviar para correção? Depois de enviar você não consegue mais mudar as respostas.')) return;
         enviar.disabled = true; salvar.disabled = true; P.mensagem(msg, 'Enviando...');
         salvarTudo().then(function () { return C.rpc('enviar_atividade', { p_id: atividade.id }); }).then(function (r) {
           if (r && r.error) throw r.error;
           atividade.enviada_em = new Date().toISOString();
-          telaDaAtividadeAluno(app, atividade, aoVoltar);
+          telaDaAtividadeAluno(app, atividade, aoVoltar, previa);
         }).catch(function (e) { enviar.disabled = false; salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
       corpo.appendChild(msg);

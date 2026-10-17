@@ -37,7 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=19"></script>
-  <script src="atividades.js?v=1"></script>
+  <script src="atividades.js?v=2"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -168,10 +168,22 @@
           });
           return;
         }
-        var aluno = r.data;
+        desenharPaginaDoAluno(user, r.data, false);
+      });
+    }
+
+    /* a página do aluno em si. previa = o administrador vendo como o aluno vê (nada é salvo nem enviado) */
+    function desenharPaginaDoAluno(user, aluno, previa) {
+        limpar();
+        document.getElementById('salaClassroom').style.display = 'none';
         titulos(true);
-        app.appendChild(topo(user, 'Olá, ' + aluno.nome + '!'));
-        avisoDeSenha();
+        if (previa) {
+          var voltarPainel = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: '← Voltar ao painel' });
+          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + aluno.nome + ' vê (modo administrador)' }), el('div', {}, [voltarPainel])]));
+        } else {
+          app.appendChild(topo(user, 'Olá, ' + aluno.nome + '!'));
+          avisoDeSenha();
+        }
         // link fixo do encontro semanal (Google Meet), acima das abas
         var meetLink = P.linkSeguro(aluno.meet_link);
         if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-meet', href: meetLink, target: '_blank', rel: 'noopener', text: 'Entrar no encontro (Google Meet)' }));
@@ -182,7 +194,7 @@
             abasDaTela(lista).forEach(function (e) { app.appendChild(e); });
             // atividades (perguntas pra responder); o cartão só aparece se o aluno tiver alguma
             app.appendChild(window.atividades.cartaoDoAluno(aluno, function (a) {
-              window.atividades.telaDaAtividadeAluno(app, a, function () { mostrarPortal(user); });
+              window.atividades.telaDaAtividadeAluno(app, a, function () { desenharPaginaDoAluno(user, aluno, previa); }, previa);
             }));
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
@@ -190,6 +202,19 @@
             ]);
             app.appendChild(el('div', { class: 'portal-whats' }, [whats]));
           });
+    }
+
+    /* administrador abrindo a página de um aluno (aluno.html?ver=ID): vê o que o aluno vê */
+    function mostrarComoAluno(user, alunoId) {
+      limpar();
+      document.getElementById('salaClassroom').style.display = 'none';
+      app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+      P.client.rpc('sou_admin').then(function (ra) {
+        if (ra.error || ra.data !== true) { mostrarPortal(user); return; }
+        P.client.from('alunos').select('id,nome,meet_link').eq('id', alunoId).maybeSingle().then(function (r) {
+          if (r.error || !r.data) { limpar(); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Aluno não encontrado.' })); return; }
+          desenharPaginaDoAluno(user, r.data, true);
+        });
       });
     }
 
@@ -197,7 +222,9 @@
     if (P.emRecuperacao) { mostrarNovaSenha(); return; }
     P.client.auth.getSession().then(function (r) {
       var sessao = r.data && r.data.session;
-      if (sessao) mostrarPortal(sessao.user); else mostrarLogin();
+      var ver = new URLSearchParams(location.search).get('ver');
+      if (sessao && ver) mostrarComoAluno(sessao.user, ver);
+      else if (sessao) mostrarPortal(sessao.user); else mostrarLogin();
     });
   })();
   </script>
