@@ -30,7 +30,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="portal.js?v=19"></script>
-  <script src="capa.js?v=1"></script>
+  <script src="capa.js?v=2"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -80,7 +80,7 @@
           areaTamanho.appendChild(opcaoBotao(o[1], estado.tamanho === o[0], function () { estado.tamanho = o[0]; desenharOpcoes(); atualizar(); }));
         });
         areaPowered.textContent = '';
-        areaPowered.appendChild(opcaoBotao('Com "powered by Astro Hellenic"', estado.powered, function () { estado.powered = true; desenharOpcoes(); atualizar(); }));
+        areaPowered.appendChild(opcaoBotao('Com "powered by Falando de Astrologia"', estado.powered, function () { estado.powered = true; desenharOpcoes(); atualizar(); }));
         areaPowered.appendChild(opcaoBotao('Sem', !estado.powered, function () { estado.powered = false; desenharOpcoes(); atualizar(); }));
       }
       function opcoes() { return { titulo: titulo.value.trim(), subtitulo: subtitulo.value.trim(), nome: nome.value.trim(), tamanho: estado.tamanho, powered: estado.powered }; }

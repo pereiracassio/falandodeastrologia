@@ -34,7 +34,7 @@
     var logo = document.createElement('img');
     logo.src = 'img/logo-completa.png'; logo.alt = 'Falando de Astrologia Helenística'; logo.style.cssText = 'width:230px;height:auto;display:block';
     rodape.appendChild(logo);
-    if (op.powered !== false) rodape.appendChild(el('div', 'font-size:11px;font-weight:600;color:#1a1410;text-transform:uppercase;letter-spacing:.1em', 'powered by Astro Hellenic'));
+    if (op.powered !== false) rodape.appendChild(el('div', 'font-size:11px;font-weight:600;color:#1a1410;text-transform:uppercase;letter-spacing:.1em', 'powered by Falando de Astrologia'));
     conteudo.appendChild(rodape);
     folha.appendChild(conteudo);
     return folha;
