@@ -75,19 +75,26 @@
       var msg = el('p', { class: 'portal-msg' });
       var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
       var email = el('input', { type: 'email', id: 'novoEmail', required: '' });
+      var codigo = el('input', { type: 'text', id: 'novoCodigo', placeholder: 'Ex.: 0147' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar aluno' });
       var form = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: 'Novo aluno' }),
         el('p', { text: 'Antes, crie o acesso dele no Supabase: Authentication → Users → Add user (e-mail + senha, marcando "Auto Confirm User"). Depois, cadastre aqui o mesmo e-mail.' }),
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
-        el('label', { for: 'novoEmail', text: 'E-mail (o mesmo do acesso)' }), email, msg, add
+        el('label', { for: 'novoEmail', text: 'E-mail (o mesmo do acesso)' }), email,
+        el('label', { for: 'novoCodigo', text: 'Código do aluno (o mesmo do Astro Hellenic, opcional). Só você vê.' }), codigo, msg, add
       ]);
       form.addEventListener('submit', function (ev) {
         ev.preventDefault(); add.disabled = true;
-        P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).then(function (r) {
-          add.disabled = false;
-          if (r.error) { P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um aluno com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
-          listaDeAlunos(user);
+        P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single().then(function (r) {
+          if (r.error) { add.disabled = false; P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um aluno com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
+          var cod = codigo.value.trim();
+          if (!cod) { add.disabled = false; listaDeAlunos(user); return; }
+          P.client.from('aluno_codigos').insert({ aluno_id: r.data.id, codigo: cod }).then(function (rc) {
+            add.disabled = false;
+            if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Aluno criado, mas esse código já é de outro aluno. Abra o aluno e corrija o código.' : 'Aluno criado, mas não foi possível salvar o código.', 'erro'); return; }
+            listaDeAlunos(user);
+          });
         });
       });
       app.appendChild(form);
@@ -95,14 +102,21 @@
       /* lista */
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos' })]);
       app.appendChild(cartao);
-      P.client.from('alunos').select('id,nome,email,meet_link').order('nome').then(function (r) {
+      Promise.all([
+        P.client.from('alunos').select('id,nome,email,meet_link').order('nome'),
+        P.client.from('aluno_codigos').select('aluno_id,codigo')
+      ]).then(function (res) {
+        var r = res[0], rc = res[1];
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
+        var codigos = {};
+        (rc.data || []).forEach(function (c) { codigos[c.aluno_id] = c.codigo; });
+        r.data.forEach(function (a) { a.codigo = codigos[a.id] || ''; });
         if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' }));
         r.data.forEach(function (a) {
           var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
           abrir.addEventListener('click', function () { alunoAberto = a; paginaDoAluno(user, a); });
           cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-            el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.nome }), el('span', { class: 'portal-item-data', text: a.email })]), abrir
+            el('div', {}, [el('span', { class: 'portal-item-titulo', text: (a.codigo ? a.codigo + ' · ' : '') + a.nome }), el('span', { class: 'portal-item-data', text: a.email })]), abrir
           ])]));
         });
       });
@@ -114,6 +128,40 @@
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os alunos' });
       voltar.addEventListener('click', function () { listaDeAlunos(user); });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
+
+      /* nome e código do aluno (o código só o administrador vê) */
+      var msgDados = el('p', { class: 'portal-msg' });
+      var nomeInput = el('input', { type: 'text', id: 'alunoNome', required: '' });
+      nomeInput.value = aluno.nome || '';
+      var codInput = el('input', { type: 'text', id: 'alunoCodigo', placeholder: 'Ex.: 0147' });
+      codInput.value = aluno.codigo || '';
+      var salvarDados = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
+      var formDados = el('form', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Dados do aluno' }),
+        el('p', { text: 'O código é o mesmo do Astro Hellenic. O aluno não vê este campo. Pra apagar o código, deixe em branco e salve.' }),
+        el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
+        el('label', { for: 'alunoCodigo', text: 'Código' }), codInput, msgDados, salvarDados
+      ]);
+      formDados.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var novoNome = nomeInput.value.trim();
+        var valor = codInput.value.trim();
+        if (!novoNome) { P.mensagem(msgDados, 'Escreva o nome.', 'erro'); return; }
+        salvarDados.disabled = true;
+        P.client.from('alunos').update({ nome: novoNome }).eq('id', aluno.id).then(function (r1) {
+          if (r1.error) { salvarDados.disabled = false; P.mensagem(msgDados, P.traduzErro(r1.error.message), 'erro'); return; }
+          var pedido = valor
+            ? P.client.from('aluno_codigos').upsert({ aluno_id: aluno.id, codigo: valor }, { onConflict: 'aluno_id' })
+            : P.client.from('aluno_codigos').delete().eq('aluno_id', aluno.id);
+          pedido.then(function (r2) {
+            salvarDados.disabled = false;
+            if (r2.error) { P.mensagem(msgDados, /duplicate|unique/i.test(r2.error.message) ? 'Nome salvo, mas esse código já é de outro aluno.' : P.traduzErro(r2.error.message), 'erro'); return; }
+            aluno.nome = novoNome; aluno.codigo = valor;
+            paginaDoAluno(user, aluno);
+          });
+        });
+      });
+      app.appendChild(formDados);
 
       /* link do Google Meet do aluno (fixo; dá pra trocar quando quiser) */
       var msgMeet = el('p', { class: 'portal-msg' });
@@ -152,7 +200,7 @@
       cancelar.style.display = 'none';
       var editandoId = null;
       var form = el('form', { class: 'portal-cartao' }, [
-        el('h2', { text: aluno.nome }),
+        el('h2', { text: (aluno.codigo ? aluno.codigo + ' · ' : '') + aluno.nome }),
         el('p', { text: 'Cole o link do Drive. Lembre de compartilhar o arquivo (ou a pasta) com o e-mail do aluno no próprio Drive.' }),
         el('label', { for: 'itemBloco', text: 'Onde aparece' }), bloco,
         el('label', { for: 'itemTitulo', text: 'Título' }), titulo,
