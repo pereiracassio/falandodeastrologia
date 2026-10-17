@@ -12,6 +12,25 @@
     return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
+  /* datas: "AAAA-MM-DD" (campo de data) ou data com hora; nunca desloca o dia por fuso */
+  function dataCurta(v) {
+    if (!v) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(v))) { var p = String(v).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+    return new Date(v).toLocaleDateString('pt-BR');
+  }
+  var hojeISO = function () { return new Date().toLocaleDateString('sv-SE'); }; /* AAAA-MM-DD no dia do aparelho */
+  var diaDe = function (iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; };
+  var COLUNAS = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga';
+  var ordenar = function (q) { return q.order('data_atividade', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }); };
+  var dataPostagem = function (a) { return a.data_atividade || diaDe(a.criado_em); };
+  /* "Postada em 01/10/2026 · Respondida em 03/10/2026 · Corrigida em 05/10/2026" (só o que existe) */
+  function linhaDatas(a) {
+    var p = ['Postada em ' + dataCurta(dataPostagem(a))];
+    if (a.enviada_em) p.push('Respondida em ' + dataCurta(a.enviada_em));
+    if (a.corrigida_em) p.push('Corrigida em ' + dataCurta(a.corrigida_em));
+    return p.join(' · ');
+  }
+
   /* WhatsApp: abre a conversa com a mensagem pronta; quem envia (e pode editar antes) é a própria pessoa, nada sai sozinho */
   var SITE_ALUNO = 'https://falandodeastrologia.com.br/aluno.html';
   var WHATS_ADMIN = '5511970404508';
@@ -60,7 +79,7 @@
   function cartaoDoAluno(aluno, aoAbrir) {
     var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Atividades' })]);
     cartao.style.display = 'none'; /* sem atividade o cartão nem aparece */
-    C.from('atividades').select('id,titulo,descricao,criado_em,enviada_em').eq('aluno_id', aluno.id).order('criado_em', { ascending: false }).then(function (r) {
+    ordenar(C.from('atividades').select(COLUNAS).eq('aluno_id', aluno.id)).then(function (r) {
       if (r.error || !r.data || !r.data.length) return;
       cartao.style.display = '';
       r.data.forEach(function (a) {
@@ -68,7 +87,7 @@
         abrir.addEventListener('click', function () { aoAbrir(a); });
         cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
           el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }),
-            el('span', { class: 'portal-item-data', text: a.enviada_em ? 'Enviada em ' + dataHoraBR(a.enviada_em) : 'Para responder' })]),
+            el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · Para responder') })]),
           abrir
         ])]));
       });
@@ -95,10 +114,10 @@
 
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: atividade.titulo })]);
       if (atividade.descricao) cab.appendChild(el('p', { text: atividade.descricao, class: 'portal-descricao' }));
+      cab.appendChild(el('p', { class: 'portal-item-data', text: linhaDatas(atividade) }));
       if (!editavel) {
-        cab.appendChild(el('p', { class: 'portal-vazio', text: 'Enviada em ' + dataHoraBR(atividade.enviada_em) + '.' }));
         var corrigida = Object.keys(d.correcoes).some(function (k) { return d.correcoes[k].situacao || d.correcoes[k].comentario; });
-        if (!corrigida) {
+        if (!corrigida && !atividade.antiga) {
           cab.appendChild(el('p', { class: 'portal-vazio', text: 'Quer avisar o Cássio que terminou? A mensagem já vai pronta no WhatsApp, e você pode mudar antes de enviar.' }));
           cab.appendChild(botaoWhats('Avisar o Cássio no WhatsApp', WHATS_ADMIN,
             'Oi Cássio! Terminei a atividade "' + atividade.titulo + '" e já enviei na área do aluno. Pode corrigir quando puder. ' + (atividade.alunoNome ? '(' + primeiroNome(atividade.alunoNome) + ')' : '')));
@@ -194,7 +213,7 @@
     function lista() {
       corpo.textContent = '';
       corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
-      C.from('atividades').select('id,titulo,descricao,criado_em,enviada_em').eq('aluno_id', aluno.id).order('criado_em', { ascending: false }).then(function (r) {
+      ordenar(C.from('atividades').select(COLUNAS).eq('aluno_id', aluno.id)).then(function (r) {
         corpo.textContent = '';
         var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova atividade' });
         nova.addEventListener('click', function () { construtor(); });
@@ -203,7 +222,7 @@
         r.data.forEach(function (a) {
           var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: a.enviada_em ? 'Corrigir' : 'Abrir' });
           abrir.addEventListener('click', function () { telaDaAtividade(a); });
-          var info = el('span', { class: 'portal-item-data', text: a.enviada_em ? 'Enviada em ' + dataHoraBR(a.enviada_em) : 'O aluno ainda não enviou' });
+          var info = el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
           corpo.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
             el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }), info]), abrir
           ])]));
@@ -227,14 +246,42 @@
       if (!aluno.whatsapp) corpo.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Dica: se você guardar o WhatsApp do aluno em "Dados do aluno", a conversa já abre direto com ele.' }));
     }
 
-    /* criar uma atividade nova */
+    /* criar uma atividade: nova (o aluno vai responder) ou antiga (já feita: você cola as respostas e as correções) */
     function construtor() {
       corpo.textContent = '';
       var msg = el('p', { class: 'portal-msg' });
+      var antiga = false;
       var titulo = el('input', { type: 'text', placeholder: 'Ex.: Atividade sobre as casas' });
       var descricao = el('textarea', { rows: '3', placeholder: 'Instruções para o aluno (opcional)' });
+      var dAtividade = el('input', { type: 'date' });
+      var dResposta = el('input', { type: 'date' });
+      var dCorrecao = el('input', { type: 'date' });
       var blocos = [];
       var areaPerguntas = el('div');
+
+      /* escolha do tipo (botões, não campo nativo) */
+      var modo = el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' });
+      var areaDatasAntiga = el('div');
+      areaDatasAntiga.style.display = 'none';
+      areaDatasAntiga.appendChild(el('p', { class: 'portal-vazio', style: 'margin-bottom:10px', text: 'Atividade que o aluno já fez: preencha as datas de quando aconteceu e cole, em cada pergunta, a resposta dele e a sua correção. Ela já fica como enviada, e ele não consegue mexer.' }));
+      areaDatasAntiga.appendChild(el('label', { text: 'Data da atividade (quando foi passada)' })); areaDatasAntiga.appendChild(dAtividade);
+      areaDatasAntiga.appendChild(el('label', { text: 'Data em que o aluno respondeu (opcional)' })); areaDatasAntiga.appendChild(dResposta);
+      areaDatasAntiga.appendChild(el('label', { text: 'Data da correção (opcional; se não souber, deixe em branco)' })); areaDatasAntiga.appendChild(dCorrecao);
+      function desenharModo() {
+        modo.textContent = '';
+        var b1 = botaoOpcao('Atividade nova (o aluno vai responder)', !antiga, function () { antiga = false; aplicarModo(); });
+        var b2 = botaoOpcao('Atividade antiga (já feita)', antiga, function () { antiga = true; aplicarModo(); });
+        b1.style.margin = '0'; b2.style.margin = '0'; b1.style.width = b2.style.width = 'auto';
+        modo.appendChild(b1); modo.appendChild(b2);
+      }
+      function aplicarModo() {
+        desenharModo();
+        areaDatasAntiga.style.display = antiga ? '' : 'none';
+        descricao.style.display = antiga ? 'none' : '';
+        descricaoRotulo.style.display = antiga ? 'none' : '';
+        blocos.forEach(function (b) { b.areaAntiga.style.display = antiga ? '' : 'none'; });
+      }
+      var descricaoRotulo = el('label', { text: 'Instruções (opcional)' });
 
       function novaPergunta() {
         var tipo = el('select', {}, [el('option', { value: 'dissertativa', text: 'Dissertativa (o aluno escreve)' }), el('option', { value: 'multipla', text: 'Múltipla escolha' })]);
@@ -246,23 +293,42 @@
           el('label', { text: 'Alternativa certa (só você vê; serve para corrigir sozinho)' }), certa
         ]);
         areaOpcoes.style.display = 'none';
+        /* só na atividade antiga: o que o aluno respondeu e a sua correção */
+        var respTexto = el('textarea', { rows: '5', placeholder: 'Cole aqui a resposta do aluno' });
+        var respOpcao = el('select');
+        var sit = el('select', {}, [el('option', { value: '', text: 'Sem avaliação' })].concat(Object.keys(SITUACOES).map(function (k) { return el('option', { value: k, text: SITUACOES[k] }); })));
+        var com = el('textarea', { rows: '4', placeholder: 'Cole aqui a sua correção (opcional)' });
+        var rotuloResp = el('label', { text: 'Resposta do aluno' });
+        var areaAntiga = el('div', {}, [rotuloResp, respTexto, respOpcao, el('label', { text: 'Sua correção' }), sit, com]);
+        areaAntiga.style.display = 'none';
         var linhasOpcoes = function () { return opcoes.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean); };
         function atualizarCerta() {
-          var atual = certa.value;
-          certa.textContent = '';
+          var atual = certa.value, atualR = respOpcao.value;
+          certa.textContent = ''; respOpcao.textContent = '';
           certa.appendChild(el('option', { value: '', text: 'Sem gabarito (eu corrijo)' }));
-          linhasOpcoes().forEach(function (op, k) { certa.appendChild(el('option', { value: String(k), text: String.fromCharCode(65 + k) + ') ' + op })); });
-          certa.value = atual;
+          respOpcao.appendChild(el('option', { value: '', text: 'O aluno não respondeu' }));
+          linhasOpcoes().forEach(function (op, k) {
+            var txt = String.fromCharCode(65 + k) + ') ' + op;
+            certa.appendChild(el('option', { value: String(k), text: txt })); respOpcao.appendChild(el('option', { value: String(k), text: txt }));
+          });
+          certa.value = atual; respOpcao.value = atualR;
+        }
+        function mostrarTipo() {
+          var m = tipo.value === 'multipla';
+          areaOpcoes.style.display = m ? '' : 'none';
+          respTexto.style.display = m ? 'none' : '';
+          respOpcao.style.display = m ? '' : 'none';
         }
         opcoes.addEventListener('input', atualizarCerta);
-        tipo.addEventListener('change', function () { areaOpcoes.style.display = tipo.value === 'multipla' ? '' : 'none'; });
-        atualizarCerta();
+        tipo.addEventListener('change', mostrarTipo);
+        atualizarCerta(); mostrarTipo();
         var tirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar esta pergunta' });
         var titulo = el('strong');
-        var bloco = { tipo: tipo, enunciado: enunciado, linhasOpcoes: linhasOpcoes, certa: certa };
-        var cx = el('div', { class: 'portal-cartao' }, [titulo, el('label', { text: 'Tipo' }), tipo, el('label', { text: 'Pergunta' }), enunciado, areaOpcoes, tirar]);
+        var bloco = { tipo: tipo, enunciado: enunciado, linhasOpcoes: linhasOpcoes, certa: certa, respTexto: respTexto, respOpcao: respOpcao, sit: sit, com: com, areaAntiga: areaAntiga };
+        var cx = el('div', { class: 'portal-cartao' }, [titulo, el('label', { text: 'Tipo' }), tipo, el('label', { text: 'Pergunta' }), enunciado, areaOpcoes, areaAntiga, tirar]);
         tirar.addEventListener('click', function () { blocos.splice(blocos.indexOf(bloco), 1); cx.remove(); numerar(); });
         bloco.caixa = cx; bloco.rotulo = titulo;
+        areaAntiga.style.display = antiga ? '' : 'none';
         blocos.push(bloco); areaPerguntas.appendChild(cx); numerar();
       }
       function numerar() { blocos.forEach(function (b, i) { b.rotulo.textContent = 'Pergunta ' + (i + 1); }); }
@@ -274,6 +340,7 @@
       cancelar.addEventListener('click', lista);
       salvar.addEventListener('click', function () {
         if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título da atividade.', 'erro'); return; }
+        if (antiga && !dAtividade.value) { P.mensagem(msg, 'Escolha a data da atividade.', 'erro'); return; }
         if (!blocos.length) { P.mensagem(msg, 'Coloque pelo menos uma pergunta.', 'erro'); return; }
         for (var i = 0; i < blocos.length; i++) {
           var b = blocos[i];
@@ -281,28 +348,46 @@
           if (b.tipo.value === 'multipla' && b.linhasOpcoes().length < 2) { P.mensagem(msg, 'A pergunta ' + (i + 1) + ' precisa de pelo menos 2 alternativas.', 'erro'); return; }
         }
         salvar.disabled = true; P.mensagem(msg, 'Salvando...');
-        C.from('atividades').insert({ aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: descricao.value.trim() || null }).select('id').single().then(function (r) {
+        var registro = { aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: antiga ? null : (descricao.value.trim() || null), data_atividade: antiga ? dAtividade.value : hojeISO(), antiga: antiga };
+        if (antiga) {
+          registro.enviada_em = new Date((dResposta.value || dAtividade.value) + 'T12:00:00').toISOString(); /* já feita: entra como enviada */
+          registro.corrigida_em = dCorrecao.value || null;
+        }
+        C.from('atividades').insert(registro).select('id').single().then(function (r) {
           if (r.error) throw r.error;
           var linhas = blocos.map(function (b, i) {
             return { atividade_id: r.data.id, ordem: i, tipo: b.tipo.value, enunciado: b.enunciado.value.trim(), opcoes: b.tipo.value === 'multipla' ? b.linhasOpcoes() : null };
           });
           return C.from('atividade_perguntas').insert(linhas).select('id,ordem').then(function (rp) {
             if (rp.error) throw rp.error;
-            var gab = [];
+            var gab = [], resp = [], corr = [];
             rp.data.forEach(function (p) {
               var b = blocos[p.ordem];
-              if (b.tipo.value === 'multipla' && b.certa.value !== '') gab.push({ pergunta_id: p.id, correta: Number(b.certa.value) });
+              var multipla = b.tipo.value === 'multipla';
+              if (multipla && b.certa.value !== '') gab.push({ pergunta_id: p.id, correta: Number(b.certa.value) });
+              if (!antiga) return;
+              var texto = multipla ? '' : b.respTexto.value.trim();
+              var opcao = multipla && b.respOpcao.value !== '' ? Number(b.respOpcao.value) : null;
+              if (texto || opcao !== null) resp.push({ pergunta_id: p.id, texto: texto || null, opcao: opcao });
+              if (b.sit.value || b.com.value.trim()) corr.push({ pergunta_id: p.id, situacao: b.sit.value || null, comentario: b.com.value.trim() || null });
             });
-            return gab.length ? C.from('atividade_gabarito').insert(gab) : { error: null };
+            var passos = [];
+            if (gab.length) passos.push(C.from('atividade_gabarito').insert(gab));
+            if (resp.length) passos.push(C.from('atividade_respostas').insert(resp));
+            if (corr.length) passos.push(C.from('atividade_correcoes').insert(corr));
+            return Promise.all(passos).then(function (rs) { return { error: (rs.filter(function (x) { return x && x.error; })[0] || {}).error || null }; });
           });
         }).then(function (rg) {
           if (rg && rg.error) throw rg.error;
-          avisarNovaAtividade(titulo.value.trim());
+          if (antiga) lista(); else avisarNovaAtividade(titulo.value.trim());
         }).catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
 
+      corpo.appendChild(modo);
+      desenharModo();
       corpo.appendChild(el('label', { text: 'Título' })); corpo.appendChild(titulo);
-      corpo.appendChild(el('label', { text: 'Instruções (opcional)' })); corpo.appendChild(descricao);
+      corpo.appendChild(areaDatasAntiga);
+      corpo.appendChild(descricaoRotulo); corpo.appendChild(descricao);
       corpo.appendChild(areaPerguntas);
       novaPergunta();
       corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [maisUma]));
@@ -322,7 +407,30 @@
       carregar(a.id, true).then(function (d) {
         area.textContent = '';
         area.appendChild(el('p', { class: 'portal-item-titulo', text: a.titulo }));
-        area.appendChild(el('p', { class: 'portal-item-data', text: a.enviada_em ? 'Enviada em ' + dataHoraBR(a.enviada_em) : 'O aluno ainda não enviou (o que aparece abaixo é um rascunho)' }));
+        area.appendChild(el('p', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou (o que aparece abaixo é um rascunho)') }));
+
+        /* datas da atividade (dá pra acertar à mão, principalmente nas antigas) */
+        var dAt = el('input', { type: 'date' }); dAt.value = dataPostagem(a);
+        var dResp = el('input', { type: 'date' }); dResp.value = a.enviada_em ? diaDe(a.enviada_em) : '';
+        var dCorr = el('input', { type: 'date' }); dCorr.value = a.corrigida_em || '';
+        var msgDatas = el('p', { class: 'portal-msg' });
+        var salvarDatas = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar datas' });
+        salvarDatas.addEventListener('click', function () {
+          var campos = { data_atividade: dAt.value || null, corrigida_em: dCorr.value || null };
+          if (a.enviada_em && dResp.value) campos.enviada_em = new Date(dResp.value + 'T12:00:00').toISOString();
+          salvarDatas.disabled = true;
+          C.from('atividades').update(campos).eq('id', a.id).then(function (r) {
+            salvarDatas.disabled = false;
+            if (r.error) { P.mensagem(msgDatas, P.traduzErro(r.error.message), 'erro'); return; }
+            Object.assign(a, campos); P.mensagem(msgDatas, 'Datas salvas.', 'ok');
+          });
+        });
+        var cartaoDatas = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Datas' }),
+          el('label', { text: 'Data da atividade' }), dAt]);
+        if (a.enviada_em) { cartaoDatas.appendChild(el('label', { text: 'Data em que o aluno respondeu' })); cartaoDatas.appendChild(dResp); }
+        cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr);
+        cartaoDatas.appendChild(msgDatas); cartaoDatas.appendChild(salvarDatas);
+        area.appendChild(cartaoDatas);
         var campos = {}; /* pergunta_id -> { sit, com } */
         d.perguntas.forEach(function (p, i) {
           var r = d.respostas[p.id] || {};
@@ -352,7 +460,16 @@
           var linhas = Object.keys(campos).map(function (id) {
             return { pergunta_id: id, situacao: campos[id].sit.value || null, comentario: campos[id].com.value.trim() || null };
           });
-          return C.from('atividade_correcoes').upsert(linhas, { onConflict: 'pergunta_id' }).then(function (r) { if (r.error) throw r.error; });
+          return C.from('atividade_correcoes').upsert(linhas, { onConflict: 'pergunta_id' }).then(function (r) {
+            if (r.error) throw r.error;
+            /* atividade nova: a data da correção é a de hoje; antiga: só se você preencheu */
+            var quando = dCorr.value || (a.antiga ? null : (a.corrigida_em || hojeISO()));
+            if (!quando || quando === a.corrigida_em) return;
+            return C.from('atividades').update({ corrigida_em: quando }).eq('id', a.id).then(function (r2) {
+              if (r2.error) throw r2.error;
+              a.corrigida_em = quando; dCorr.value = quando;
+            });
+          });
         }
         var avisoCorrecao = el('div', { style: 'margin:10px 0' });
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar correção' });
