@@ -31,7 +31,7 @@
      Devolve o link do que foi escolhido (arquivo ou pasta). */
   var DRIVE_CLIENT_ID = '311357254380-sjbaui6hlfa9s7f10s1ip7699blk0rkb.apps.googleusercontent.com';
   var DRIVE_ESCOPO = 'https://www.googleapis.com/auth/drive';
-  var driveCarregado = null, driveToken = null, driveTokenAte = 0;
+  var driveCarregado = null, driveToken = null, driveTokenAte = 0, driveDica = '';
 
   function carregarScript(src) {
     return new Promise(function (ok, erro) {
@@ -41,18 +41,30 @@
     });
   }
   function carregarDrive() {
-    if (!driveCarregado) driveCarregado = carregarScript('https://accounts.google.com/gsi/client').catch(function (e) { driveCarregado = null; throw e; });
+    if (!driveCarregado) {
+      driveCarregado = carregarScript('https://accounts.google.com/gsi/client').catch(function (e) { driveCarregado = null; throw e; });
+      // guarda o e-mail do login pra o Google já sugerir a conta (precisa estar pronto antes do clique, senão o navegador bloqueia a janela)
+      client.auth.getSession().then(function (r) { driveDica = (r.data && r.data.session && r.data.session.user.email) || ''; });
+    }
     return driveCarregado;
   }
   function tokenDoDrive() {
     return new Promise(function (ok, erro) {
+      if (!driveToken) { // lembra enquanto a aba estiver aberta (o token dura ~1 hora), pra não pedir o Google a cada tela
+        try {
+          var g = JSON.parse(sessionStorage.getItem('fda_drive_token') || 'null');
+          if (g && g.ate > Date.now()) { driveToken = g.token; driveTokenAte = g.ate; }
+        } catch (e) { /* sem armazenamento */ }
+      }
       if (driveToken && Date.now() < driveTokenAte) { ok(driveToken); return; }
       var tc = google.accounts.oauth2.initTokenClient({
         client_id: DRIVE_CLIENT_ID,
         scope: DRIVE_ESCOPO,
+        login_hint: driveDica || undefined,
         callback: function (r) {
           if (r.error || !r.access_token) { erro(new Error(r.error || 'sem token')); return; }
           driveToken = r.access_token; driveTokenAte = Date.now() + (Number(r.expires_in || 3000) - 60) * 1000;
+          try { sessionStorage.setItem('fda_drive_token', JSON.stringify({ token: driveToken, ate: driveTokenAte })); } catch (e) { /* sem armazenamento */ }
           ok(driveToken);
         },
         error_callback: function (e) { erro(new Error((e && e.type) || 'cancelado')); }
@@ -66,7 +78,7 @@
       '&orderBy=' + encodeURIComponent('folder,name') + '&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true' +
       (pagina ? '&pageToken=' + encodeURIComponent(pagina) : '');
     return fetch(url, { headers: { 'Authorization': 'Bearer ' + token } }).then(function (r) {
-      if (r.status === 401) { driveToken = null; }
+      if (r.status === 401) { driveToken = null; try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ } }
       if (!r.ok) throw new Error('lista');
       return r.json();
     });
