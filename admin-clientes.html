@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=20"></script>
+  <script src="portal.js?v=21"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -151,6 +151,7 @@
       nomeInput.value = cliente.nome || '';
       var salvarCod = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
       var pastaDrive = P.cartaoPastaDrive({ plural: 'clientes', tipo: 'cliente', id: cliente.id, email: cliente.email, dentroDeOutroBloco: true,
+        codigo: function () { return cliente.codigo; },
         nome: function () { return (cliente.codigo ? cliente.codigo + ' - ' : '') + cliente.nome; } });
       var formCod = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: 'Dados do cliente' }),
