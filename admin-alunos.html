@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=30"></script>
+  <script src="portal.js?v=32"></script>
   <script src="atividades.js?v=18"></script>
   <script>
   (function () {
@@ -157,7 +157,10 @@
     function paginaDoAluno(user, aluno) {
       var h = P.estado.ler(); /* se veio de um recarregamento, "atividade" diz qual atividade estava aberta */
       var atividadeAberta = h.aluno === aluno.id ? h.atividade : '';
-      P.estado.gravar({ aluno: aluno.id });
+      /* seções abertas: as que você deixou abertas (guardadas no endereço); na primeira vez, só "Atividades" */
+      var abertas = (h.aluno === aluno.id && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : ['atividades'];
+      if (atividadeAberta && abertas.indexOf('atividades') < 0) abertas.push('atividades');
+      P.estado.gravar({ aluno: aluno.id, abertas: abertas.join(',') || '-' });
       limpar();
       app.appendChild(topo(nomeAdmin));
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os alunos' });
@@ -209,8 +212,8 @@
           });
         });
       });
-      app.appendChild(formDados);
-      app.appendChild(window.atividades.painelAdmin(aluno, atividadeAberta));
+      app.appendChild(P.sanfona(abertas, 'dados', 'Dados do aluno', [formDados]));
+      app.appendChild(P.sanfona(abertas, 'atividades', 'Atividades', [window.atividades.painelAdmin(aluno, atividadeAberta)]));
 
       /* novo item */
       var msg = el('p', { class: 'portal-msg' });
@@ -252,10 +255,10 @@
           paginaDoAluno(user, aluno);
         });
       });
-      app.appendChild(form);
+      app.appendChild(P.sanfona(abertas, 'material', 'Novo material (gravação, material, caderno)', [form]));
 
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + aluno.nome + ' vê' })]);
-      app.appendChild(cartao);
+      app.appendChild(P.sanfona(abertas, 've', 'O que ' + aluno.nome + ' vê', [cartao]));
       P.client.from('itens').select('id,bloco,titulo,descricao,link,data').eq('aluno_id', aluno.id)
         .order('bloco').order('data', { ascending: false, nullsFirst: false }).then(function (r) {
           if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }

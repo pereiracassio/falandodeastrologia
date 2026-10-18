@@ -366,6 +366,31 @@
     },
     mesclar: function (o) { var a = estado.ler(); Object.keys(o).forEach(function (k) { a[k] = o[k]; }); estado.gravar(a); }
   };
+  /* seção que abre e fecha (sanfona): a barra com o título aparece sempre; o conteúdo só quando aberta.
+     abertas = lista (compartilhada) das chaves abertas; o que está aberto fica guardado no endereço (#abertas=dados,atividades) e sobrevive ao recarregar. */
+  function sanfona(abertas, chave, titulo, filhos) {
+    filhos.forEach(function (f) { var h2 = f.querySelector && f.querySelector(':scope > h2'); if (h2) h2.remove(); }); /* o título agora é a barra */
+    var corpo = el('div', {}, filhos);
+    var sinal = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif' });
+    var barra = el('button', { type: 'button' }, [el('span', { text: titulo }), sinal]);
+    function pintar() {
+      var aberta = abertas.indexOf(chave) >= 0;
+      corpo.style.display = aberta ? '' : 'none';
+      sinal.textContent = aberta ? '−' : '+';
+      barra.setAttribute('aria-expanded', aberta ? 'true' : 'false');
+      barra.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;background:transparent;border-radius:12px;cursor:pointer;' +
+        'font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:#A03E25;margin:0 0 14px;' +
+        (aberta ? 'border:3px solid #1F5FA3;padding:12px 16px' : 'border:1px solid #1F5FA3;padding:14px 18px');
+    }
+    barra.addEventListener('click', function () {
+      var i = abertas.indexOf(chave);
+      if (i >= 0) abertas.splice(i, 1); else abertas.push(chave);
+      estado.mesclar({ abertas: abertas.join(',') || '-' }); /* "-" = tudo fechado (vazio voltaria pro padrão) */
+      pintar();
+    });
+    pintar();
+    return el('div', {}, [barra, corpo]);
+  }
   function guardarPasta(chave, pastaId) { return client.from('drive_pastas').upsert({ chave: chave, pasta_id: pastaId }, { onConflict: 'chave' }); }
   function botaoPasta(texto, aoClicar, sec) {
     var b = el('button', { type: 'button', class: 'portal-btn' + (sec ? ' portal-btn-sec' : ''), text: texto });
@@ -617,7 +642,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };
