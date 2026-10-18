@@ -213,7 +213,7 @@
         });
       });
       app.appendChild(P.sanfona(abertas, 'dados', 'Dados do aluno', [formDados]));
-      app.appendChild(P.sanfona(abertas, 'atividades', 'Atividades', [window.atividades.painelAdmin(aluno, atividadeAberta)]));
+      var secAtividades = P.sanfona(abertas, 'atividades', 'Atividades', [window.atividades.painelAdmin(aluno, atividadeAberta)]); /* entra na tela logo depois de "Novo material" */
 
       /* novo item */
       var msg = el('p', { class: 'portal-msg' });
@@ -255,15 +255,23 @@
           paginaDoAluno(user, aluno);
         });
       });
+      /* ordem na tela: Dados, Novo material (cadastrar), Atividades, Materiais adicionados, Gravações dos encontros */
       app.appendChild(P.sanfona(abertas, 'material', 'Novo material (gravação, material, caderno)', [form]));
+      app.appendChild(secAtividades);
 
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + aluno.nome + ' vê' })]);
-      app.appendChild(P.sanfona(abertas, 've', 'O que ' + aluno.nome + ' vê', [cartao]));
+      var cartaoMateriais = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Materiais adicionados' })]);
+      var cartaoGravacoes = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Gravações dos encontros' })]);
+      app.appendChild(P.sanfona(abertas, 'materiais', 'Materiais adicionados', [cartaoMateriais]));
+      app.appendChild(P.sanfona(abertas, 'gravacoes', 'Gravações dos encontros', [cartaoGravacoes]));
       P.client.from('itens').select('id,bloco,titulo,descricao,link,data').eq('aluno_id', aluno.id)
         .order('bloco').order('data', { ascending: false, nullsFirst: false }).then(function (r) {
-          if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
-          if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nada cadastrado ainda.' }));
+          if (r.error) { cartaoMateriais.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
+          var gravs = r.data.filter(function (i) { return i.bloco === 'gravacoes'; });
+          var mats = r.data.filter(function (i) { return i.bloco !== 'gravacoes'; }); /* materiais e o caderno em documento do Drive */
+          if (!mats.length) cartaoMateriais.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum material adicionado ainda.' }));
+          if (!gravs.length) cartaoGravacoes.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma gravação adicionada ainda.' }));
           r.data.forEach(function (i) {
+            var cartao = i.bloco === 'gravacoes' ? cartaoGravacoes : cartaoMateriais;
             var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
             editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
             editar.addEventListener('click', function () {
