@@ -306,13 +306,31 @@
       corpo.textContent = '';
       corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       atividadesDoAluno(aluno.id, true).then(function (r) {
+        if (r.error || !r.data) return { r: r, corrigidas: {} };
+        /* atividade antiga: só dá pra saber se já foi corrigida olhando as correções (a data da correção pode ficar em branco) */
+        var antigas = r.data.filter(function (a) { return a.antiga && !a.somente_leitura; }).map(function (a) { return a.id; });
+        if (!antigas.length) return { r: r, corrigidas: {} };
+        return C.from('atividade_perguntas').select('id,atividade_id').in('atividade_id', antigas).then(function (rp) {
+          var ids = ((rp && rp.data) || []).map(function (p) { return p.id; }), dona = {};
+          ((rp && rp.data) || []).forEach(function (p) { dona[p.id] = p.atividade_id; });
+          if (!ids.length) return { r: r, corrigidas: {} };
+          return C.from('atividade_correcoes').select('pergunta_id,situacao,comentario').in('pergunta_id', ids).then(function (rc) {
+            var corrigidas = {};
+            ((rc && rc.data) || []).forEach(function (c) { if (c.situacao || c.comentario) corrigidas[dona[c.pergunta_id]] = true; });
+            return { r: r, corrigidas: corrigidas };
+          });
+        });
+      }).then(function (x) {
+        var r = x.r;
         corpo.textContent = '';
         var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova atividade' });
         nova.addEventListener('click', function () { construtor(); });
         if (r.error) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as atividades.' })); return; }
         if (!r.data.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma atividade ainda.' }));
         r.data.forEach(function (a) {
-          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: a.enviada_em && !a.corrigida_em && !a.antiga && !a.somente_leitura ? 'Corrigir' : 'Abrir' }); /* "Corrigir" só enquanto falta corrigir; antiga e já corrigida = "Abrir" */
+          /* "Corrigir" só depois que o aluno enviou e enquanto falta corrigir (antiga: enquanto não tem nenhuma correção); senão "Abrir" */
+          var falta = a.enviada_em && !a.somente_leitura && (a.antiga ? !x.corrigidas[a.id] : !a.corrigida_em);
+          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: falta ? 'Corrigir' : 'Abrir' });
           abrir.addEventListener('click', function () { telaDaAtividade(a); });
           var info = el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
           corpo.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
