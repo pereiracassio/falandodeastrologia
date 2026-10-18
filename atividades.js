@@ -531,5 +531,16 @@
     return cartao;
   }
 
-  window.atividades = { cartaoDoAluno: cartaoDoAluno, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
+  /* tudo do aluno, em ordem de data, pro caderno em PDF (caderno.js): [{ atividade, perguntas, respostas, correcoes }] */
+  function dadosDoCaderno(aluno) {
+    return C.from('atividades').select(COLUNAS).eq('aluno_id', aluno.id).then(function (r) {
+      if (r.error) throw r.error;
+      var lista = (r.data || []).slice().sort(function (a, b) { return dataPostagem(a) < dataPostagem(b) ? -1 : dataPostagem(a) > dataPostagem(b) ? 1 : String(a.criado_em).localeCompare(String(b.criado_em)); });
+      return Promise.all(lista.map(function (a) {
+        return carregar(a.id, false).then(function (d) { return { atividade: a, datas: linhaDatas(a), perguntas: d.perguntas, respostas: d.respostas, correcoes: d.correcoes }; });
+      }));
+    });
+  }
+
+  window.atividades = { dadosDoCaderno: dadosDoCaderno, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
 })();

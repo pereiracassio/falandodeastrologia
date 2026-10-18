@@ -1,6 +1,6 @@
 /* Capa em papiro (A4, 794x1123 px): o mesmo desenho da capa do Astro Hellenic — folha de papiro, três filetes (tinta, ocre grosso, tinta),
    faixas de meandros gregos no alto e no pé, título em Cinzel terracota entre dois filetes duplos azuis e o logo no rodapé.
-   window.capaFolha({ titulo, subtitulo, nome, tamanho: 'p'|'m'|'g', powered: true }) devolve o elemento (tamanho A4 real; quem mostra
+   window.capaFolha({ titulo, subtitulo, nome, aluno, tamanho: 'p'|'m'|'g', powered: true }) devolve o elemento (tamanho A4 real; quem mostra
    na tela reduz com transform, e quem exporta usa em tamanho real). Fundo: img/papiro-folha.jpg (gerado do --papiro-fundo do papiro.css). */
 (function () {
   var TAMANHOS = { p: 36, m: 48, g: 60 };
@@ -35,6 +35,7 @@
     if (op.nome) centro.appendChild(el('div', 'font-family:Cinzel,serif;font-weight:700;color:#16233F;font-size:24px;letter-spacing:.04em;white-space:pre-line', op.nome));
     conteudo.appendChild(centro);
     var rodape = el('div', 'display:flex;flex-direction:column;align-items:center;gap:8px');
+    if (op.aluno) rodape.appendChild(el('div', 'font-family:Cinzel,serif;font-weight:700;color:#1F5FA3;font-size:26px;letter-spacing:.04em;line-height:1.25;margin-bottom:10px;white-space:pre-line;overflow-wrap:anywhere', op.aluno)); /* nome do aluno (caderno), acima do logo */
     var logo = document.createElement('img');
     logo.src = 'img/logo-completa-sem-fundo.png'; logo.alt = 'Falando de Astrologia Helenística'; logo.style.cssText = 'width:260px;height:auto;display:block'; /* sem fundo: o papiro da folha aparece por trás */
     rodape.appendChild(logo);

@@ -37,7 +37,8 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=25"></script>
-  <script src="atividades.js?v=6"></script>
+  <script src="atividades.js?v=7"></script>
+  <script src="caderno.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -208,8 +209,12 @@
             var atividadesEl = window.atividades.cartaoDoAluno(aluno, function (a) {
               a.alunoNome = aluno.nome;
               window.atividades.telaDaAtividadeAluno(app, a, function () { desenharPaginaDoAluno(user, aluno, previa); }, previa);
-            }, { semMoldura: true, aoCarregar: function (qtd) { avisar(qtd); } });
+            }, { semMoldura: true, aoCarregar: function (qtd) { avisar(qtd); caixaCaderno.style.display = qtd ? '' : 'none'; } });
             abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }).forEach(function (e) { app.appendChild(e); });
+            // "Baixar meu caderno": o PDF com a capa e tudo que o aluno já fez; só aparece quando há atividades
+            var caixaCaderno = window.caderno.botao(aluno);
+            caixaCaderno.style.display = 'none';
+            app.appendChild(caixaCaderno);
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
