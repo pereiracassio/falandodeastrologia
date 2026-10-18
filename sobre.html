@@ -37,7 +37,22 @@
 
     <!-- FOTO DE PERFIL -->
     <div style="text-align: center; margin-bottom: 30px;">
-      <img src="foto-perfil.jpg?v=3" alt="Cássio Pereira" style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
+      <img id="foto-sobre" src="foto-perfil.jpg?v=3" alt="Cássio Pereira" style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
+      <script>
+      /* a foto pode ser trocada no painel (Site → Foto do Sobre); a do arquivo é só a reserva se o endereço novo não vier */
+      (function () {
+        var img = document.getElementById('foto-sobre');
+        try { var guardada = localStorage.getItem('fda_foto_sobre'); if (guardada) img.src = guardada; } catch (e) { /* sem armazenamento */ }
+        fetch('https://wqkgsotfwkzjwaowenrb.supabase.co/rest/v1/site_config?chave=eq.foto_sobre&select=valor', { headers: { apikey: 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (l) {
+            var url = l && l[0] && l[0].valor;
+            if (!url) return;
+            if (img.getAttribute('src') !== url) img.src = url;
+            try { localStorage.setItem('fda_foto_sobre', url); } catch (e) { /* sem armazenamento */ }
+          }).catch(function () { /* fica a foto de reserva */ });
+      })();
+      </script>
     </div>
 
     <!-- TEXTO DE APRESENTAÇÃO -->
