@@ -340,7 +340,7 @@
   }
   /* barra de cima igual em TODAS as telas do painel (Aplicações, Alunos, Clientes, Capa, Sair): a aba em que você está fica destacada */
   function navAdmin(atual, texto, aoSair) {
-    var itens = [['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['capa', 'Capa', 'capa.html'], ['site', 'Site', 'admin-site.html']];
+    var itens = [['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['capa', 'Capa', 'capa.html'], ['site', 'Site', 'admin-site.html']];
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[1] });
       if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid #1F5FA3;padding:10px 22px;color:#A03E25'; }
@@ -348,7 +348,9 @@
     });
     var sair = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
     sair.addEventListener('click', aoSair);
-    return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, botoes.concat([sair]))]);
+    var grupo = el('div', {}, botoes.concat([sair]));
+    grupo.style.marginLeft = 'auto'; /* os botões ficam sempre no mesmo lugar (à direita), qualquer que seja o tamanho do texto da esquerda */
+    return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), grupo]);
   }
   /* onde você estava, guardado no endereço (#aluno=ID&atividade=ID): ao recarregar a página ela volta pro mesmo lugar */
   var estado = {

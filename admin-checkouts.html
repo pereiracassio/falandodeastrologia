@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkouts - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=12">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Checkouts</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=30"></script>
+  <script src="carrinho.js?v=3"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '';
+    var SITE = 'https://falandodeastrologia.com.br';
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('checkouts', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          tela();
+        });
+      });
+    }
+
+    /* copia o texto; se o aparelho não deixar, abre uma caixa pra copiar à mão */
+    function copiar(texto, msg) {
+      var ok = function () { P.mensagem(msg, 'Link copiado! É só colar no WhatsApp.', 'ok'); };
+      var plano = function () { window.prompt('Copie o link:', texto); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(ok, plano); else plano();
+    }
+
+    function tela() {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Links de pagamento' }),
+        el('p', { text: 'Copie o link do serviço e mande pro cliente no WhatsApp. Ele cai no carrinho do site, com o serviço já escolhido, e segue pro pagamento.' })]);
+      var msg = el('p', { class: 'portal-msg' });
+      var servicos = window.Carrinho.servicos;
+      Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).forEach(function (k) {
+        var s = servicos[k], link = SITE + '/carrinho.html?add=' + k;
+        var copia = el('button', { type: 'button', class: 'portal-btn', text: 'Copiar link' });
+        copia.addEventListener('click', function () { copiar(link, msg); });
+        var abre = el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Abrir' });
+        cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+          el('div', {}, [el('span', { class: 'portal-item-titulo', text: s.titulo }),
+            el('span', { class: 'portal-item-data', text: window.Carrinho.reais(s.centavos) + (s.restrito ? ' · só por este link (não aparece no site)' : '') })]),
+          el('div', { class: 'portal-acoes' }, [copia, abre])
+        ])]));
+      });
+      cartao.appendChild(msg);
+      app.appendChild(cartao);
+    }
+
+    C.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>
