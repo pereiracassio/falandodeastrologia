@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=12">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Site</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=29"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '';
+    var TAMANHO = 720; /* lado da foto em pixels (quadrada); na página ela aparece com 180 px, então dá de sobra até em tela retina */
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('site', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          tela();
+        });
+      });
+    }
+
+    /* corta a foto num quadrado (pelo centro) e reduz: o arquivo fica leve e sempre do mesmo formato */
+    function prepararFoto(arquivo) {
+      return new Promise(function (ok, erro) {
+        var url = URL.createObjectURL(arquivo), img = new Image();
+        img.onload = function () {
+          var lado = Math.min(img.naturalWidth, img.naturalHeight);
+          var c = document.createElement('canvas'); c.width = c.height = TAMANHO;
+          var g = c.getContext('2d');
+          g.fillStyle = '#fff'; g.fillRect(0, 0, TAMANHO, TAMANHO);
+          g.drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, TAMANHO, TAMANHO);
+          URL.revokeObjectURL(url);
+          c.toBlob(function (blob) { blob ? ok(blob) : erro(new Error('foto')); }, 'image/jpeg', 0.9);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); erro(new Error('foto')); };
+        img.src = url;
+      });
+    }
+    var caminhoDe = function (url) { var i = String(url || '').indexOf('/object/public/site/'); return i >= 0 ? decodeURIComponent(String(url).slice(i + '/object/public/site/'.length).split('?')[0]) : null; };
+
+    function tela() {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Foto da página Sobre' })]);
+      var foto = el('img', { alt: 'Foto atual', src: 'foto-perfil.jpg?v=3' });
+      foto.style.cssText = 'display:block;width:180px;height:180px;border-radius:50%;object-fit:cover;margin:0 auto 14px;border:1px solid #1F5FA3';
+      var msg = el('p', { class: 'portal-msg' });
+      var acoes = el('div', { class: 'portal-acoes', style: 'justify-content:center' });
+      var atual = null; /* endereço da foto guardada no Supabase */
+      C.from('site_config').select('valor').eq('chave', 'foto_sobre').maybeSingle().then(function (r) {
+        if (r.data && r.data.valor) { atual = r.data.valor; foto.src = atual; }
+      });
+
+      var escolher = el('input', { type: 'file', accept: 'image/*' }); escolher.style.display = 'none';
+      var botEscolher = el('button', { type: 'button', class: 'portal-btn', text: 'Escolher uma foto nova' });
+      botEscolher.addEventListener('click', function () { escolher.click(); });
+      acoes.appendChild(botEscolher); acoes.appendChild(escolher);
+
+      escolher.addEventListener('change', function () {
+        var arq = escolher.files && escolher.files[0]; escolher.value = '';
+        if (!arq) return;
+        P.mensagem(msg, 'Preparando a foto...');
+        prepararFoto(arq).then(function (blob) {
+          /* mostra como vai ficar e só troca quando você confirmar */
+          var previa = URL.createObjectURL(blob); foto.src = previa;
+          acoes.textContent = '';
+          var usar = el('button', { type: 'button', class: 'portal-btn', text: 'Usar esta foto' });
+          var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+          cancelar.addEventListener('click', function () { URL.revokeObjectURL(previa); tela(); });
+          usar.addEventListener('click', function () {
+            usar.disabled = cancelar.disabled = true; P.mensagem(msg, 'Enviando...');
+            var caminho = 'foto-sobre-' + Date.now() + '.jpg';
+            C.storage.from('site').upload(caminho, blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
+              if (r.error) throw r.error;
+              var url = C.storage.from('site').getPublicUrl(caminho).data.publicUrl;
+              return C.from('site_config').upsert({ chave: 'foto_sobre', valor: url, atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (r2) {
+                if (r2.error) throw r2.error;
+                var velha = caminhoDe(atual);
+                if (velha) C.storage.from('site').remove([velha]);
+                URL.revokeObjectURL(previa);
+                tela(); P.mensagem(document.querySelector('.portal-msg'), 'Foto trocada! Já aparece na página Sobre.', 'ok');
+              });
+            }).catch(function (e) { usar.disabled = cancelar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
+          });
+          acoes.appendChild(usar); acoes.appendChild(cancelar);
+          P.mensagem(msg, 'É assim que vai ficar. Se gostou, toque em "Usar esta foto".');
+        }).catch(function () { P.mensagem(msg, 'Não consegui ler essa imagem. Tente outra (JPEG ou PNG).', 'erro'); });
+      });
+
+      cartao.appendChild(foto); cartao.appendChild(msg); cartao.appendChild(acoes);
+      cartao.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:14px', text: 'A foto é cortada em quadrado, pelo centro, e aparece redonda na página Sobre. Escolha uma em que o rosto fique no meio.' }));
+      app.appendChild(cartao);
+    }
+
+    C.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>
