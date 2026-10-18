@@ -136,12 +136,27 @@
     var fio = el('div'), msg = el('p', { class: 'portal-msg' });
     var texto = el('textarea', { rows: '3', placeholder: souAluno ? 'Escreva aqui um comentário ou uma dúvida (opcional)' : 'Escreva a sua resposta ao aluno' });
     var enviar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: souAluno ? 'Enviar comentário' : 'Responder' });
+    var comoAluno = false; /* só o administrador: escrever o comentário em nome do aluno (pra registrar uma dúvida que ele fez por outro canal) */
     var nomeDe = function (c) { return c.autor === quem.euAutor ? 'Você' : (c.autor === 'admin' ? 'Cássio' : primeiroNome(quem.nomeAluno)); };
     function desenhar() {
       fio.textContent = '';
       lista.forEach(function (c) {
-        fio.appendChild(el('div', { class: 'portal-item' }, [el('span', { class: 'portal-item-titulo', text: nomeDe(c) }),
-          el('span', { class: 'portal-item-data', text: dataHoraBR(c.criado_em) }), el('p', { class: 'portal-descricao', text: c.texto })]));
+        var caixa = el('div', { class: 'portal-item' }, [el('span', { class: 'portal-item-titulo', text: nomeDe(c) }),
+          el('span', { class: 'portal-item-data', text: dataHoraBR(c.criado_em) }), el('p', { class: 'portal-descricao', text: c.texto })]);
+        if (!souAluno) { /* o administrador pode apagar qualquer comentário (o aluno não apaga) */
+          var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
+          apagar.style.marginTop = '8px';
+          apagar.addEventListener('click', function () {
+            if (!confirm('Apagar este comentário?')) return;
+            apagar.disabled = true;
+            C.from('atividade_comentarios').delete().eq('id', c.id).then(function (r) {
+              if (r.error) { apagar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+              lista.splice(lista.indexOf(c), 1); desenhar();
+            });
+          });
+          caixa.appendChild(apagar);
+        }
+        fio.appendChild(caixa);
       });
     }
     enviar.addEventListener('click', function () {
@@ -149,14 +164,27 @@
       if (!t) { P.mensagem(msg, 'Escreva alguma coisa antes de enviar.', 'erro'); return; }
       if (quem.previa) { P.mensagem(msg, 'Isto é só uma prévia: nada foi enviado.', 'erro'); return; }
       enviar.disabled = true; P.mensagem(msg, 'Enviando...');
-      C.from('atividade_comentarios').insert({ pergunta_id: perguntaId, autor: quem.euAutor, texto: t }).select('id,pergunta_id,autor,texto,criado_em').single().then(function (r) {
+      C.from('atividade_comentarios').insert({ pergunta_id: perguntaId, autor: comoAluno ? 'aluno' : quem.euAutor, texto: t }).select('id,pergunta_id,autor,texto,criado_em').single().then(function (r) {
         enviar.disabled = false;
         if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
         lista.push(r.data); texto.value = ''; P.mensagem(msg, ''); desenhar();
       });
     });
     desenhar();
-    return el('div', { style: 'margin-top:14px' }, [el('p', { class: 'portal-item-titulo', text: souAluno ? 'Comentários e dúvidas' : 'Conversa com o aluno' }), fio, texto, msg, el('div', { class: 'portal-acoes' }, [enviar])]);
+    var partes = [el('p', { class: 'portal-item-titulo', text: souAluno ? 'Comentários e dúvidas' : 'Conversa com o aluno' }), fio];
+    if (!souAluno) {
+      var escolha = el('div', { style: 'margin:10px 0' });
+      var pintar = function () {
+        escolha.textContent = '';
+        var b1 = botaoOpcao('Escrever como eu (Cássio)', !comoAluno, function () { comoAluno = false; pintar(); });
+        var b2 = botaoOpcao('Escrever como ' + primeiroNome(quem.nomeAluno), comoAluno, function () { comoAluno = true; pintar(); });
+        b1.style.display = b2.style.display = 'inline-block'; b1.style.width = b2.style.width = 'auto';
+        escolha.appendChild(b1); escolha.appendChild(b2);
+      };
+      pintar(); partes.push(escolha);
+    }
+    partes.push(texto, msg, el('div', { class: 'portal-acoes' }, [enviar]));
+    return el('div', { style: 'margin-top:14px' }, partes);
   }
 
   /* formulário de UMA pergunta (editar ou acrescentar numa atividade que já existe).
