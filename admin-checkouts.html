@@ -93,7 +93,7 @@
       var msg2 = el('p', { class: 'portal-msg' });
       var LINKS = [
         { chave: 'link_acompanhamento', nome: 'Acompanhamento Prático de Astrologia (cartão recorrente)', padrao: 'https://invoice.infinitepay.io/plans/cassiopereira_/TnbWjchMtJ', dica: 'Plano de assinatura criado no InfinitePay.' },
-        { chave: 'link_formulario_mapa', nome: 'Formulário de dados do mapa (Astro Hellenic)', padrao: '', dica: 'No Astro Hellenic: Configurações → Captação → link do formulário.' }
+        { chave: 'link_formulario_mapa', nome: 'Dados do mapa + agendamento do Acompanhamento (Astro Hellenic)', padrao: 'https://astrohellenic.github.io/formulario.html?u=87101e7e-657c-4ca6-ab73-495e00af149f&servico=Acompanhamento%20Pr%C3%A1tico%20de%20Astrologia', dica: 'No Astro Hellenic: Configurações → Captação → link do formulário.' }
       ];
       C.from('site_config').select('chave,valor').in('chave', LINKS.map(function (l) { return l.chave; })).then(function (r) {
         var guardados = {};
