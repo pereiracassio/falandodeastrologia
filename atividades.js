@@ -20,7 +20,13 @@
   }
   var hojeISO = function () { return new Date().toLocaleDateString('sv-SE'); }; /* AAAA-MM-DD no dia do aparelho */
   var diaDe = function (iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; };
-  var COLUNAS = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,imagem_caminho';
+  var COLUNAS_BASE = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga';
+  var COLUNAS = COLUNAS_BASE + ',imagem_caminho';
+  /* lista as atividades do aluno; se a coluna da imagem ainda não existe no banco, tenta de novo sem ela (nunca derruba a tela) */
+  function atividadesDoAluno(alunoId, ordem) {
+    var pedir = function (cols) { var q = C.from('atividades').select(cols).eq('aluno_id', alunoId); return ordem ? ordenar(q) : q; };
+    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
+  }
   var ordenar = function (q) { return q.order('data_atividade', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }); };
   var dataPostagem = function (a) { return a.data_atividade || diaDe(a.criado_em); };
   /* "Postada em 01/10/2026 · Respondida em 03/10/2026 · Corrigida em 05/10/2026" (só o que existe) */
@@ -160,7 +166,7 @@
     opcoes = opcoes || {};
     var cartao = opcoes.semMoldura ? el('div') : el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Atividades' })]);
     cartao.style.display = 'none'; /* sem atividade nem aparece */
-    ordenar(C.from('atividades').select(COLUNAS).eq('aluno_id', aluno.id)).then(function (r) {
+    atividadesDoAluno(aluno.id, true).then(function (r) {
       var lista = (r.error || !r.data) ? [] : r.data;
       if (opcoes.aoCarregar) opcoes.aoCarregar(lista.length);
       if (!lista.length) return;
@@ -298,7 +304,7 @@
     function lista() {
       corpo.textContent = '';
       corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
-      ordenar(C.from('atividades').select(COLUNAS).eq('aluno_id', aluno.id)).then(function (r) {
+      atividadesDoAluno(aluno.id, true).then(function (r) {
         corpo.textContent = '';
         var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova atividade' });
         nova.addEventListener('click', function () { construtor(); });
@@ -657,7 +663,7 @@
 
   /* tudo do aluno, em ordem de data, pro caderno em PDF (caderno.js): [{ atividade, perguntas, respostas, correcoes }] */
   function dadosDoCaderno(aluno) {
-    return C.from('atividades').select(COLUNAS).eq('aluno_id', aluno.id).then(function (r) {
+    return atividadesDoAluno(aluno.id, false).then(function (r) {
       if (r.error) throw r.error;
       var lista = (r.data || []).slice().sort(function (a, b) { return dataPostagem(a) < dataPostagem(b) ? -1 : dataPostagem(a) > dataPostagem(b) ? 1 : String(a.criado_em).localeCompare(String(b.criado_em)); });
       return Promise.all(lista.map(function (a) {
