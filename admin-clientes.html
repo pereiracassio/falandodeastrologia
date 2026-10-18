@@ -74,24 +74,30 @@
     }
 
     function listaDeClientes(user) {
-      P.estado.gravar({});
+      var h = P.estado.ler();
+      var abertas = (!h.cliente && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : ['clientes'];
+      P.estado.gravar({ abertas: abertas.join(',') || '-' });
       limpar();
       app.appendChild(topo(nomeAdmin));
-      /* ordem: clientes, novo cliente, pasta dos clientes, login com o Google */
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Clientes' })]);
-      app.appendChild(cartao);
+      /* ordem: Clientes (sanfona, com o botão de adicionar no topo e a busca), pasta dos clientes, login com o Google */
+      var novoCliente = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar novo cliente' });
+      var areaForm = el('div');
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Clientes' }), el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoCliente]), areaForm]);
+      app.appendChild(P.sanfona(abertas, 'clientes', 'Clientes', [cartao]));
 
       var msg = el('p', { class: 'portal-msg' });
       var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
       var email = el('input', { type: 'email', id: 'novoEmail', required: '' });
       var codigo = el('input', { type: 'text', id: 'novoCodigo', placeholder: 'Ex.: 0147' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar cliente' });
-      var form = el('form', { class: 'portal-cartao' }, [
-        el('h2', { text: 'Novo cliente' }),
+      var cancelarNovo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+      cancelarNovo.addEventListener('click', function () { areaForm.textContent = ''; });
+      var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
+        el('p', { class: 'portal-item-titulo', text: 'Novo cliente' }),
         el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. Ele entra na Área do Cliente com o Google, sem senha. Não precisa criar acesso no Supabase.' }),
         el('label', { for: 'novoCodigo', text: 'Código do cliente (o mesmo do Astro Hellenic). Só você vê.' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
-        el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, add
+        el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
         ev.preventDefault(); add.disabled = true;
@@ -107,7 +113,11 @@
           });
         });
       });
-      app.appendChild(form);
+      /* o cadastro só aparece quando você toca no botão (e tocar de novo não apaga o que já foi escrito) */
+      novoCliente.addEventListener('click', function () {
+        if (areaForm.firstChild) return;
+        areaForm.appendChild(form); form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
       app.appendChild(P.cartaoPastaBase('clientes'));
       var conexaoDrive = P.cartaoConexaoDrive();
       if (conexaoDrive) app.appendChild(conexaoDrive);
