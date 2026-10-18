@@ -330,6 +330,14 @@
     acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Abrir no Drive' }));
     return el('div', {}, [acoes, area]);
   }
+  /* botão "Aplicações" do painel, com o número de aplicações novas (completas e não concluídas) */
+  function linkAplicacoes() {
+    var a = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-aplicacoes.html', text: 'Aplicações' });
+    client.from('aplicacoes_mentoria').select('id', { count: 'exact', head: true }).eq('situacao', 'nova').then(function (r) {
+      if (!r.error && r.count) a.textContent = 'Aplicações (' + r.count + ')';
+    }, function () {});
+    return a;
+  }
   function guardarPasta(chave, pastaId) { return client.from('drive_pastas').upsert({ chave: chave, pasta_id: pastaId }, { onConflict: 'chave' }); }
   function botaoPasta(texto, aoClicar, sec) {
     var b = el('button', { type: 'button', class: 'portal-btn' + (sec ? ' portal-btn-sec' : ''), text: texto });
@@ -581,7 +589,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };
