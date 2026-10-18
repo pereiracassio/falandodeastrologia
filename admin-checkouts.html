@@ -86,6 +86,50 @@
       });
       cartao.appendChild(msg);
       app.appendChild(cartao);
+
+      /* links que não são do carrinho do site: ficam guardados no Supabase (site_config) e você troca quando precisar */
+      var meus = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Outros links' }),
+        el('p', { text: 'Links que você mesmo cria (InfinitePay, formulário do Astro Hellenic...). Cole o link uma vez e ele fica guardado aqui.' })]);
+      var msg2 = el('p', { class: 'portal-msg' });
+      var LINKS = [
+        { chave: 'link_acompanhamento', nome: 'Acompanhamento Prático de Astrologia (cartão recorrente)', padrao: 'https://invoice.infinitepay.io/plans/cassiopereira_/TnbWjchMtJ', dica: 'Plano de assinatura criado no InfinitePay.' },
+        { chave: 'link_formulario_mapa', nome: 'Dados do mapa + agendamento do Acompanhamento (Astro Hellenic)', padrao: 'https://astrohellenic.github.io/formulario.html?u=87101e7e-657c-4ca6-ab73-495e00af149f&servico=Acompanhamento%20Pr%C3%A1tico%20de%20Astrologia', dica: 'No Astro Hellenic: Configurações → Captação → link do formulário.' }
+      ];
+      C.from('site_config').select('chave,valor').in('chave', LINKS.map(function (l) { return l.chave; })).then(function (r) {
+        var guardados = {};
+        ((r && r.data) || []).forEach(function (x) { guardados[x.chave] = x.valor; });
+        LINKS.forEach(function (l) {
+          var caixa = el('div', { class: 'portal-item' });
+          function desenhar() {
+            caixa.textContent = '';
+            var url = guardados[l.chave] != null ? guardados[l.chave] : l.padrao;
+            var acoes = el('div', { class: 'portal-acoes' });
+            if (url) {
+              var copia = el('button', { type: 'button', class: 'portal-btn', text: 'Copiar link' });
+              copia.addEventListener('click', function () { copiar(url, msg2); });
+              acoes.appendChild(copia);
+              acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: url, target: '_blank', rel: 'noopener', text: 'Abrir' }));
+            }
+            var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: url ? 'Trocar o link' : 'Colar o link' });
+            trocar.addEventListener('click', function () {
+              var novo = window.prompt('Cole o link (https://...):', url || '');
+              if (novo == null) return;
+              novo = novo.trim();
+              if (novo && !P.linkSeguro(novo)) { P.mensagem(msg2, 'O link precisa começar com https://', 'erro'); return; }
+              C.from('site_config').upsert({ chave: l.chave, valor: novo, atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (rs) {
+                if (rs.error) { P.mensagem(msg2, P.traduzErro(rs.error.message), 'erro'); return; }
+                guardados[l.chave] = novo; desenhar(); P.mensagem(msg2, 'Link guardado.', 'ok');
+              });
+            });
+            acoes.appendChild(trocar);
+            caixa.appendChild(el('div', { class: 'portal-item-linha' }, [el('div', {}, [el('span', { class: 'portal-item-titulo', text: l.nome }),
+              el('span', { class: 'portal-item-data', text: url ? url : 'Ainda sem link. ' + l.dica })]), acoes]));
+          }
+          desenhar(); meus.appendChild(caixa);
+        });
+        meus.appendChild(msg2);
+        app.appendChild(meus);
+      });
     }
 
     C.auth.getSession().then(function (r) {

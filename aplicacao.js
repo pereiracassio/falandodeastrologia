@@ -1,4 +1,4 @@
-/* Aplicação para a mentoria (Acompanhamento Prático Individual), dentro da página mentoria.html, em páginas (passos).
+/* Aplicação para a mentoria (Acompanhamento Prático de Astrologia), dentro da página mentoria.html, em páginas (passos).
    Substitui o formulário do Tally. Sem login: o primeiro passo já salva o contato como "não concluída" (assim o administrador
    pode chamar quem abandonou), e cada passo seguinte atualiza a mesma aplicação; no fim ela vira "concluída".
    Tudo vai pelo Supabase (função aplicacao_salvar, docs/aplicacoes-mentoria.sql) e aparece em admin-aplicacoes.html.
@@ -99,7 +99,7 @@
 
   function agradecimento() {
     raiz.textContent = '';
-    var msgWhats = 'Oi, Cássio! Aqui é ' + primeiroNome() + '. Acabei de enviar a minha aplicação para o Acompanhamento Prático Individual, no seu site.';
+    var msgWhats = 'Oi, Cássio! Aqui é ' + primeiroNome() + '. Acabei de enviar a minha aplicação para o Acompanhamento Prático de Astrologia, no seu site.';
     var botao = el('a', { class: 'portal-btn portal-btn-whats', href: 'https://wa.me/' + WHATS + '?text=' + encodeURIComponent(msgWhats), target: '_blank', rel: 'noopener', text: 'Avisar o Cássio no WhatsApp' });
     raiz.appendChild(el('div', { class: 'portal-cartao' }, [
       el('h2', { text: 'Aplicação enviada com sucesso!' }),

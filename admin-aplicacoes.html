@@ -121,8 +121,8 @@
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Aplicações' });
       voltar.addEventListener('click', function () { lista(); });
       var texto = a.concluida
-        ? 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Recebi a sua aplicação para o Acompanhamento Prático Individual.'
-        : 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Vi que você começou a aplicação para o Acompanhamento Prático Individual e não terminou. Posso te ajudar com alguma dúvida?';
+        ? 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Recebi a sua aplicação para o Acompanhamento Prático de Astrologia.'
+        : 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Vi que você começou a aplicação para o Acompanhamento Prático de Astrologia e não terminou. Posso te ajudar com alguma dúvida?';
       var whats = el('a', { class: 'portal-btn portal-btn-whats', href: 'https://wa.me/' + numeroWhats(a.whatsapp) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', text: 'Chamar no WhatsApp' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, whats]));
 

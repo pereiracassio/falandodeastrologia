@@ -61,7 +61,7 @@
   function capaComoImagem(nomeAluno) {
     var F = window.capaFormato('a4');
     var palco = el('div'); palco.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + F.w + 'px;height:' + F.h + 'px';
-    palco.appendChild(window.capaFolha({ titulo: 'Caderno de Estudos', subtitulo: 'Acompanhamento Prático Individual', nome: 'Mentoria em Astrologia Clássica',
+    palco.appendChild(window.capaFolha({ titulo: 'Caderno de Estudos', subtitulo: 'Acompanhamento Prático de Astrologia', nome: 'Mentoria em Astrologia Clássica',
       aluno: nomeAluno, tamanho: 'm', powered: false, formato: 'a4' }));
     document.body.appendChild(palco);
     var pronto = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
