@@ -381,7 +381,6 @@
     var msg = el('p', { class: 'portal-msg' });
     var corpo = el('div');
     var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Pasta dos ' + plural + ' no Drive' }), corpo, msg]);
-    var tentouLigar = false;
     function desenhar() {
       corpo.textContent = '';
       carregarDrive().catch(function () {});
@@ -450,6 +449,7 @@
         else aviso('');
       });
     }
+    var tentouLigar = false;
     function desenhar() {
       corpo.textContent = '';
       carregarDrive().catch(function () {});
