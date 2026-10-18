@@ -58,10 +58,16 @@
       var botoes = el('div', { class: 'portal-acoes' });
       var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
       if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
-      var idGrav = P.idArquivoDrive(gravacao);
-      /* link de download direto do Drive (o link comum só abre o vídeo pra assistir) */
-      if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: idGrav ? 'https://drive.google.com/uc?export=download&id=' + idGrav : gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
-      var caixa = el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [titulo, botoes])]);
+      if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
+      var caixa = el('div', { class: 'portal-item' });
+      if (gravacao) {
+        /* a gravação abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
+        caixa.appendChild(titulo);
+        caixa.appendChild(el('p', { style: 'margin:8px 0', text: 'Ao tocar em baixar, o vídeo vai abrir no seu Drive. Você deve tocar nos três pontos e ir na opção de baixar o vídeo.' }));
+        caixa.appendChild(botoes);
+      } else {
+        caixa.appendChild(el('div', { class: 'portal-item-linha' }, [titulo, botoes]));
+      }
       return caixa;
     }
 
@@ -81,7 +87,6 @@
         app.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
-          el('p', { text: 'Ao baixar a gravação, o Google pode avisar que não consegue verificar vírus por ser um arquivo grande. Toque em "Fazer o download mesmo assim".' })
         ]));
         P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,criado_em').eq('cliente_id', r.data.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (re) {
