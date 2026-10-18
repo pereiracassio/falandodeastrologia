@@ -71,14 +71,22 @@
       return caixa;
     }
 
-    function mostrarPortal(user) {
+    /* verId = o administrador vendo como o cliente vê (cliente.html?ver=ID); nada é salvo nem enviado */
+    function mostrarPortal(user, verId) {
       limpar();
       var email = String(user.email || '').toLowerCase();
       var sairBtn = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       sairBtn.addEventListener('click', sair);
-      P.client.from('clientes').select('id,nome').eq('email', email).maybeSingle().then(function (r) {
+      var busca = verId ? P.client.from('clientes').select('id,nome,email').eq('id', verId).maybeSingle()
+                        : P.client.from('clientes').select('id,nome').eq('email', email).maybeSingle();
+      busca.then(function (r) {
         var nome = r.data ? r.data.nome : (P.nomeDoGoogle(user) || email);
-        app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Olá, ' + nome + '!' }), sairBtn]));
+        if (verId) {
+          var voltarPainel = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: '← Voltar ao painel' });
+          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + nome + ' vê (modo administrador)' }), el('div', {}, [voltarPainel])]));
+        } else {
+          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Olá, ' + nome + '!' }), sairBtn]));
+        }
         if (r.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' })); return; }
         if (!r.data) {
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
@@ -105,7 +113,13 @@
 
     P.client.auth.getSession().then(function (r) {
       var sessao = r.data && r.data.session;
-      if (sessao) mostrarPortal(sessao.user); else mostrarLogin();
+      var ver = new URLSearchParams(location.search).get('ver');
+      if (!sessao) { mostrarLogin(); return; }
+      if (!ver) { mostrarPortal(sessao.user); return; }
+      // só o administrador vê como outro cliente; qualquer outra pessoa cai na própria página
+      limpar();
+      app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+      P.client.rpc('sou_admin').then(function (ra) { mostrarPortal(sessao.user, ra.data === true ? ver : null); });
     });
   })();
   </script>
