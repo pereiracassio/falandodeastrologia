@@ -248,11 +248,21 @@
                 if (d.error) alert('Não foi possível apagar.'); else paginaDoCliente(user, cliente);
               });
             });
+            /* abre a conversa do WhatsApp com a mensagem pronta; quem envia (e pode editar antes) é o administrador, nada sai sozinho */
+            var dig = String(cliente.whatsapp || '').replace(/\D/g, '');
+            if (dig && (dig.length === 10 || dig.length === 11)) dig = '55' + dig;
+            var primeiro = String(cliente.nome || '').trim().split(/\s+/)[0];
+            var texto = 'Oi ' + primeiro + '! O seu material já está disponível: ' + e.servico + '.\n\n' +
+              'Para acessar, entre na Área do Cliente com o Gmail ' + cliente.email + ' (o mesmo da contratação):\n' +
+              'https://falandodeastrologia.com.br/cliente.html\n\n' +
+              'Qualquer dúvida, é só me chamar por aqui.';
+            var enviar = el('a', { class: 'portal-btn portal-btn-sec', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', text: 'Enviar' });
+            enviar.style.cssText = 'color:#4A7C59;border-color:#4A7C59';
             var tem = [e.pdf_link ? 'PDF' : '', e.gravacao_link ? 'gravação' : ''].filter(Boolean).join(' + ');
             cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
               el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico }),
                 el('span', { class: 'portal-item-data', text: (e.data ? P.dataBR(e.data) + ' · ' : '') + (tem || 'sem arquivos') })]),
-              el('div', { class: 'portal-acoes' }, [editar, apagar])
+              el('div', { class: 'portal-acoes' }, [enviar, editar, apagar])
             ])]));
           });
         });
