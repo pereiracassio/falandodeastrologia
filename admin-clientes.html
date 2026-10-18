@@ -141,7 +141,8 @@
       app.appendChild(topo(nomeAdmin));
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os clientes' });
       voltar.addEventListener('click', function () { listaDeClientes(user); });
-      app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
+      var verComoCliente = el('a', { class: 'portal-btn', href: 'cliente.html?ver=' + encodeURIComponent(cliente.id), target: '_blank', rel: 'noopener', text: 'Ver como cliente' });
+      app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoCliente]));
 
       /* dados do cliente: código, nome e pasta no Drive (o código só o administrador vê) */
       var msgCod = el('p', { class: 'portal-msg' });
