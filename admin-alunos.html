@@ -36,7 +36,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=32"></script>
-  <script src="atividades.js?v=18"></script>
+  <script src="atividades.js?v=19"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -213,78 +213,87 @@
         });
       });
       app.appendChild(P.sanfona(abertas, 'dados', 'Dados do aluno', [formDados]));
-      app.appendChild(P.sanfona(abertas, 'atividades', 'Atividades', [window.atividades.painelAdmin(aluno, atividadeAberta)]));
+      var secAtividades = P.sanfona(abertas, 'atividades', 'Atividades', [window.atividades.painelAdmin(aluno, atividadeAberta)]); /* entra na tela logo depois de "Novo material" */
 
-      /* novo item */
-      var msg = el('p', { class: 'portal-msg' });
-      var bloco = el('select', { id: 'itemBloco' }, Object.keys(BLOCOS).map(function (k) { return el('option', { value: k, text: BLOCOS[k] }); }));
-      var titulo = el('input', { type: 'text', id: 'itemTitulo', required: '' });
-      var data = el('input', { type: 'date', id: 'itemData' });
-      var descricao = el('textarea', { id: 'itemDescricao', rows: '4', placeholder: 'Ex.: neste encontro falamos de...' });
-      var link = el('input', { type: 'url', id: 'itemLink', placeholder: 'https://drive.google.com/...', required: '' });
-      var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
-      var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar edição' });
-      cancelar.style.display = 'none';
-      var editandoId = null;
-      var form = el('form', { class: 'portal-cartao' }, [
-        el('h2', { text: (aluno.codigo ? aluno.codigo + ' · ' : '') + aluno.nome }),
-        el('p', { text: 'Escolha o arquivo no Drive: o link entra sozinho e o arquivo (ou a pasta) já é compartilhado com o e-mail do aluno. Se colar o link à mão, compartilhe no próprio Drive.' }),
-        el('label', { for: 'itemBloco', text: 'Onde aparece' }), bloco,
-        el('label', { for: 'itemTitulo', text: 'Título' }), titulo,
-        el('label', { for: 'itemData', text: 'Data (opcional)' }), data,
-        el('label', { for: 'itemDescricao', text: 'Descrição (opcional)' }), descricao,
-        el('label', { for: 'itemLink', text: 'Link do Drive' }), link, P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email, 'aluno:' + aluno.id), msg,
-        el('div', { class: 'portal-acoes' }, [add, cancelar])
-      ]);
-      function sairDaEdicao() {
-        editandoId = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, '');
-      }
-      cancelar.addEventListener('click', sairDaEdicao);
-      form.addEventListener('submit', function (ev) {
-        ev.preventDefault();
-        var seguro = P.linkSeguro(link.value);
-        if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
-        add.disabled = true;
-        var campos = { bloco: bloco.value, titulo: titulo.value.trim(), link: seguro, data: data.value || null, descricao: descricao.value.trim() || null };
-        var pedido = editandoId
-          ? P.client.from('itens').update(campos).eq('id', editandoId)
-          : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos));
-        pedido.then(function (r) {
-          add.disabled = false;
-          if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
-          paginaDoAluno(user, aluno);
-        });
-      });
-      app.appendChild(P.sanfona(abertas, 'material', 'Novo material (gravação, material, caderno)', [form]));
+      /* seção de itens (materiais ou gravações): botão "Adicionar" no topo, que abre o cadastro (fecha ao salvar); embaixo, a lista dos que já estão cadastrados */
+      function secaoDeItens(o) {
+        var lista = el('div'), areaForm = el('div');
+        var novo = el('button', { type: 'button', class: 'portal-btn', text: o.rotuloNovo });
+        var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: o.titulo }), el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
 
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + aluno.nome + ' vê' })]);
-      app.appendChild(P.sanfona(abertas, 've', 'O que ' + aluno.nome + ' vê', [cartao]));
-      P.client.from('itens').select('id,bloco,titulo,descricao,link,data').eq('aluno_id', aluno.id)
-        .order('bloco').order('data', { ascending: false, nullsFirst: false }).then(function (r) {
-          if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
-          if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nada cadastrado ainda.' }));
-          r.data.forEach(function (i) {
-            var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
-            editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
-            editar.addEventListener('click', function () {
-              editandoId = i.id; bloco.value = i.bloco; titulo.value = i.titulo; data.value = i.data || ''; descricao.value = i.descricao || ''; link.value = i.link;
-              add.textContent = 'Salvar alterações'; cancelar.style.display = ''; P.mensagem(msg, 'Editando: ' + i.titulo, 'ok');
-              form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        function abrirForm(item) {
+          if (areaForm.firstChild && !item) return; /* já está aberto: tocar de novo não pode apagar o que você escreveu */
+          areaForm.textContent = '';
+          var msg = el('p', { class: 'portal-msg' });
+          var id = o.bloco + (item ? 'e' : 'n');
+          var titulo = el('input', { type: 'text', id: 'it' + id + 'T', required: '' });
+          var data = el('input', { type: 'date', id: 'it' + id + 'D' });
+          var descricao = el('textarea', { id: 'it' + id + 'S', rows: '4', placeholder: o.placeholder });
+          var link = el('input', { type: 'url', id: 'it' + id + 'L', placeholder: 'https://drive.google.com/...', required: '' });
+          if (item) { titulo.value = item.titulo; data.value = item.data || ''; descricao.value = item.descricao || ''; link.value = item.link; }
+          var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Salvar' });
+          var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+          cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
+          var form = el('form', { class: 'portal-cartao' }, [
+            el('p', { class: 'portal-item-titulo', text: item ? 'Editando: ' + item.titulo : o.rotuloNovo }),
+            el('p', { text: 'Escolha o arquivo no Drive: o link entra sozinho e o arquivo (ou a pasta) já é compartilhado com o e-mail do aluno. Se colar o link à mão, compartilhe no próprio Drive.' }),
+            el('label', { for: 'it' + id + 'T', text: 'Título' }), titulo,
+            el('label', { for: 'it' + id + 'D', text: 'Data (opcional)' }), data,
+            el('label', { for: 'it' + id + 'S', text: 'Descrição (opcional)' }), descricao,
+            el('label', { for: 'it' + id + 'L', text: 'Link do Drive' }), link, P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email, 'aluno:' + aluno.id), msg,
+            el('div', { class: 'portal-acoes' }, [salvar, cancelar])
+          ]);
+          form.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            var seguro = P.linkSeguro(link.value);
+            if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
+            salvar.disabled = true;
+            var campos = { bloco: item ? item.bloco : o.bloco, titulo: titulo.value.trim(), link: seguro, data: data.value || null, descricao: descricao.value.trim() || null };
+            var pedido = item ? P.client.from('itens').update(campos).eq('id', item.id) : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos));
+            pedido.then(function (r) {
+              salvar.disabled = false;
+              if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+              areaForm.textContent = ''; carregar(); /* salvou: o cadastro se fecha e a lista atualiza */
             });
-            var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
-            apagar.addEventListener('click', function () {
-              if (!confirm('Apagar "' + i.titulo + '"? (O arquivo no Drive não é apagado.)')) return;
-              P.client.from('itens').delete().eq('id', i.id).then(function (d) {
-                if (d.error) alert('Não foi possível apagar.'); else paginaDoAluno(user, aluno);
+          });
+          areaForm.appendChild(form);
+          form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        novo.addEventListener('click', function () { abrirForm(null); });
+
+        function carregar() {
+          lista.textContent = '';
+          P.client.from('itens').select('id,bloco,titulo,descricao,link,data').eq('aluno_id', aluno.id).in('bloco', o.blocos)
+            .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (r) {
+              if (r.error) { lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
+              if (!r.data.length) lista.appendChild(el('p', { class: 'portal-vazio', text: o.vazio }));
+              r.data.forEach(function (i) {
+                var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
+                editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
+                editar.addEventListener('click', function () { abrirForm(i); });
+                var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
+                apagar.addEventListener('click', function () {
+                  if (!confirm('Apagar "' + i.titulo + '"? (O arquivo no Drive não é apagado.)')) return;
+                  P.client.from('itens').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
+                });
+                var legenda = (i.bloco === 'caderno' ? BLOCOS.caderno : '') + (i.data ? (i.bloco === 'caderno' ? ' · ' : '') + P.dataBR(i.data) : '');
+                lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+                  el('div', {}, [el('span', { class: 'portal-item-titulo', text: i.titulo })].concat(legenda ? [el('span', { class: 'portal-item-data', text: legenda })] : [])),
+                  el('div', { class: 'portal-acoes' }, [editar, apagar])
+                ])]));
               });
             });
-            cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-              el('div', {}, [el('span', { class: 'portal-item-titulo', text: i.titulo }),
-                el('span', { class: 'portal-item-data', text: BLOCOS[i.bloco] + (i.data ? ' · ' + P.dataBR(i.data) : '') })]),
-              el('div', { class: 'portal-acoes' }, [editar, apagar])
-            ])]));
-          });
-        });
+        }
+        carregar();
+        return P.sanfona(abertas, o.chave, o.titulo, [cartao]);
+      }
+
+      /* ordem na tela: Dados do aluno, Atividades, Materiais, Gravações dos encontros */
+      app.appendChild(secAtividades);
+      app.appendChild(secaoDeItens({ chave: 'materiais', titulo: 'Materiais', bloco: 'materiais', blocos: ['materiais', 'caderno'], rotuloNovo: 'Adicionar novo material',
+        placeholder: 'Ex.: texto de apoio da aula', vazio: 'Nenhum material adicionado ainda.' }));
+      app.appendChild(secaoDeItens({ chave: 'gravacoes', titulo: 'Gravações dos encontros', bloco: 'gravacoes', blocos: ['gravacoes'], rotuloNovo: 'Adicionar nova gravação',
+        placeholder: 'Ex.: neste encontro falamos de...', vazio: 'Nenhuma gravação adicionada ainda.' }));
 
       var remover = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Remover este aluno do portal' });
       remover.addEventListener('click', function () {
