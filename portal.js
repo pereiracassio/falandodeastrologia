@@ -352,7 +352,9 @@
     var chaveBase = 'base_' + opcoes.plural, chaveItem = opcoes.tipo + ':' + opcoes.id;
     var msg = el('p', { class: 'portal-msg' });
     var corpo = el('div');
-    var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Pasta no Drive' }), corpo, msg]);
+    var cartao = opcoes.dentroDeOutroBloco
+      ? el('div', {}, [el('label', { text: 'Pasta no Drive' }), corpo, msg])
+      : el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Pasta no Drive' }), corpo, msg]);
     var aviso = function (t, tipo) { mensagem(msg, t, tipo); };
     function compartilhar(pastaId, token) {
       return compartilharNoDrive(pastaId, token, opcoes.email).then(function () { return true; }, function () { return false; });
@@ -397,11 +399,11 @@
         (r.data || []).forEach(function (x) { m[x.chave] = x.pasta_id; });
         var acoes = el('div', { class: 'portal-acoes' });
         if (m[chaveItem]) {
-          corpo.appendChild(el('p', { text: 'A pasta deste ' + opcoes.tipo + ' no seu Drive:' }));
+          if (!opcoes.dentroDeOutroBloco) corpo.appendChild(el('p', { text: 'A pasta deste ' + opcoes.tipo + ' no seu Drive:' }));
           acoes.appendChild(el('a', { class: 'portal-btn', href: linkPasta(m[chaveItem]), target: '_blank', rel: 'noopener', text: 'Abrir a pasta' }));
           acoes.appendChild(botaoPasta('Usar outra pasta', usarExistente, true));
         } else {
-          corpo.appendChild(el('p', { text: 'Este ' + opcoes.tipo + ' ainda não tem pasta ligada. Use uma pasta que já existe no seu Drive, ou crie uma nova.' }));
+          if (!opcoes.dentroDeOutroBloco) corpo.appendChild(el('p', { text: 'Este ' + opcoes.tipo + ' ainda não tem pasta ligada. Use uma pasta que já existe no seu Drive, ou crie uma nova.' }));
           acoes.appendChild(botaoPasta('Usar uma pasta que já existe', usarExistente));
           if (m[chaveBase]) acoes.appendChild(botaoPasta('Criar a pasta "' + opcoes.nome() + '"', function (b) { criar(b, m[chaveBase]); }, true));
           else corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Pra criar uma pasta nova, escolha antes a pasta dos ' + opcoes.plural + ' na lista de ' + opcoes.plural + '.' }));
