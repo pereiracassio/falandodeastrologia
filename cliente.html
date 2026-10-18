@@ -59,6 +59,8 @@
       var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
       if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
       if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
+      var idGrav = P.idArquivoDrive(gravacao);
+      if (idGrav) botoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: 'https://drive.google.com/file/d/' + idGrav + '/copy', target: '_blank', rel: 'noopener', text: 'Salvar no meu Drive' }));
       return el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [titulo, botoes])]);
     }
 
