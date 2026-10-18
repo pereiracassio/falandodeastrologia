@@ -312,7 +312,7 @@
         if (r.error) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as atividades.' })); return; }
         if (!r.data.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma atividade ainda.' }));
         r.data.forEach(function (a) {
-          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: a.enviada_em && !a.somente_leitura ? 'Corrigir' : 'Abrir' });
+          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: a.enviada_em && !a.corrigida_em && !a.antiga && !a.somente_leitura ? 'Corrigir' : 'Abrir' }); /* "Corrigir" só enquanto falta corrigir; antiga e já corrigida = "Abrir" */
           abrir.addEventListener('click', function () { telaDaAtividade(a); });
           var info = el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
           corpo.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
