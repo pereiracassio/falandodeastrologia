@@ -21,16 +21,17 @@
   var hojeISO = function () { return new Date().toLocaleDateString('sv-SE'); }; /* AAAA-MM-DD no dia do aparelho */
   var diaDe = function (iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; };
   var COLUNAS_BASE = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga';
-  var COLUNAS = COLUNAS_BASE + ',imagem_caminho';
+  var COLUNAS = COLUNAS_BASE + ',imagem_caminho,somente_leitura';
   /* lista as atividades do aluno; se a coluna da imagem ainda não existe no banco, tenta de novo sem ela (nunca derruba a tela) */
   function atividadesDoAluno(alunoId, ordem) {
     var pedir = function (cols) { var q = C.from('atividades').select(cols).eq('aluno_id', alunoId); return ordem ? ordenar(q) : q; };
-    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
+    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho|somente_leitura/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
   }
   var ordenar = function (q) { return q.order('data_atividade', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }); };
   var dataPostagem = function (a) { return a.data_atividade || diaDe(a.criado_em); };
   /* "Postada em 01/10/2026 · Respondida em 03/10/2026 · Corrigida em 05/10/2026" (só o que existe) */
   function linhaDatas(a) {
+    if (a.somente_leitura) return 'Texto para leitura · ' + dataCurta(dataPostagem(a));
     var p = ['Postada em ' + dataCurta(dataPostagem(a))];
     if (a.enviada_em) p.push('Respondida em ' + dataCurta(a.enviada_em));
     if (a.corrigida_em) p.push('Corrigida em ' + dataCurta(a.corrigida_em));
@@ -172,7 +173,7 @@
       if (!lista.length) return;
       cartao.style.display = '';
       lista.forEach(function (a) {
-        var abrir = el('button', { type: 'button', class: 'portal-btn', text: a.enviada_em ? 'Ver' : 'Responder' });
+        var abrir = el('button', { type: 'button', class: 'portal-btn', text: a.somente_leitura ? 'Ler' : a.enviada_em ? 'Ver' : 'Responder' });
         abrir.addEventListener('click', function () { aoAbrir(a); });
         cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
           el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }),
@@ -311,7 +312,7 @@
         if (r.error) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as atividades.' })); return; }
         if (!r.data.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma atividade ainda.' }));
         r.data.forEach(function (a) {
-          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: a.enviada_em ? 'Corrigir' : 'Abrir' });
+          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: a.enviada_em && !a.somente_leitura ? 'Corrigir' : 'Abrir' });
           abrir.addEventListener('click', function () { telaDaAtividade(a); });
           var info = el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
           corpo.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
@@ -341,7 +342,7 @@
     function construtor() {
       corpo.textContent = '';
       var msg = el('p', { class: 'portal-msg' });
-      var antiga = false;
+      var antiga = false, leitura = false;
       var titulo = el('input', { type: 'text', placeholder: 'Ex.: Atividade sobre as casas' });
       var descricao = el('textarea', { rows: '6', placeholder: 'Texto que aparece antes das perguntas (opcional)' });
       var dAtividade = el('input', { type: 'date' });
@@ -366,15 +367,24 @@
       areaDatasAntiga.appendChild(el('label', { text: 'Data da atividade (quando foi passada)' })); areaDatasAntiga.appendChild(dAtividade);
       areaDatasAntiga.appendChild(el('label', { text: 'Data em que o aluno respondeu (opcional)' })); areaDatasAntiga.appendChild(dResposta);
       areaDatasAntiga.appendChild(el('label', { text: 'Data da correção (opcional; se não souber, deixe em branco)' })); areaDatasAntiga.appendChild(dCorrecao);
+      /* texto para leitura: sem perguntas, só título, data, texto (e imagem, se quiser); entra no caderno na ordem da data */
+      var dLeitura = el('input', { type: 'date' });
+      var areaDataLeitura = el('div', {}, [el('label', { text: 'Data do texto' }), dLeitura]);
+      areaDataLeitura.style.display = 'none';
       function desenharModo() {
         modo.textContent = '';
-        var b1 = botaoOpcao('Atividade nova (o aluno vai responder)', !antiga, function () { antiga = false; aplicarModo(); });
-        var b2 = botaoOpcao('Atividade antiga (já feita)', antiga, function () { antiga = true; aplicarModo(); });
-        b1.style.margin = '0'; b2.style.margin = '0'; b1.style.width = b2.style.width = 'auto';
-        modo.appendChild(b1); modo.appendChild(b2);
+        var b1 = botaoOpcao('Atividade nova (o aluno vai responder)', !antiga && !leitura, function () { antiga = false; leitura = false; aplicarModo(); });
+        var b2 = botaoOpcao('Atividade antiga (já feita)', antiga, function () { antiga = true; leitura = false; aplicarModo(); });
+        var b3 = botaoOpcao('Texto para leitura (sem perguntas)', leitura, function () { antiga = false; leitura = true; aplicarModo(); });
+        b1.style.margin = b2.style.margin = b3.style.margin = '0'; b1.style.width = b2.style.width = b3.style.width = 'auto';
+        modo.appendChild(b1); modo.appendChild(b2); modo.appendChild(b3);
       }
       function aplicarModo() {
         desenharModo();
+        areaDataLeitura.style.display = leitura ? '' : 'none';
+        areaPerguntas.style.display = leitura ? 'none' : '';
+        areaMais.style.display = leitura ? 'none' : '';
+        descricaoRotulo.textContent = leitura ? 'Texto (o que o aluno vai ler)' : 'Texto antes das perguntas (opcional)';
         areaDatasAntiga.style.display = antiga ? '' : 'none';
         blocos.forEach(function (b) { b.areaAntiga.style.display = antiga ? '' : 'none'; });
       }
@@ -438,15 +448,17 @@
       salvar.addEventListener('click', function () {
         if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título da atividade.', 'erro'); return; }
         if (antiga && !dAtividade.value) { P.mensagem(msg, 'Escolha a data da atividade.', 'erro'); return; }
-        if (!blocos.length) { P.mensagem(msg, 'Coloque pelo menos uma pergunta.', 'erro'); return; }
-        for (var i = 0; i < blocos.length; i++) {
+        if (leitura && !descricao.value.trim() && !imagemEscolhida) { P.mensagem(msg, 'Escreva o texto (ou escolha uma imagem).', 'erro'); return; }
+        if (!leitura && !blocos.length) { P.mensagem(msg, 'Coloque pelo menos uma pergunta.', 'erro'); return; }
+        for (var i = 0; !leitura && i < blocos.length; i++) {
           var b = blocos[i];
           if (!b.enunciado.value.trim()) { P.mensagem(msg, 'A pergunta ' + (i + 1) + ' está sem texto.', 'erro'); return; }
           if (b.tipo.value === 'multipla' && b.linhasOpcoes().length < 2) { P.mensagem(msg, 'A pergunta ' + (i + 1) + ' precisa de pelo menos 2 alternativas.', 'erro'); return; }
         }
         salvar.disabled = true; P.mensagem(msg, 'Salvando...');
         var idNova = null;
-        var registro = { aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: descricao.value.trim() || null, data_atividade: antiga ? dAtividade.value : hojeISO(), antiga: antiga };
+        var registro = { aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: descricao.value.trim() || null, data_atividade: antiga ? dAtividade.value : (leitura && dLeitura.value ? dLeitura.value : hojeISO()), antiga: antiga || leitura };
+        if (leitura) { registro.somente_leitura = true; registro.enviada_em = new Date().toISOString(); } /* sem perguntas: já nasce "enviada" (nada pra responder nem corrigir) */
         if (antiga) {
           registro.enviada_em = new Date((dResposta.value || dAtividade.value) + 'T12:00:00').toISOString(); /* já feita: entra como enviada */
           registro.corrigida_em = dCorrecao.value || null;
@@ -454,6 +466,7 @@
         C.from('atividades').insert(registro).select('id').single().then(function (r) {
           if (r.error) throw r.error;
           idNova = r.data.id;
+          if (leitura) return { error: null };
           var linhas = blocos.map(function (b, i) {
             return { atividade_id: r.data.id, ordem: i, tipo: b.tipo.value, enunciado: b.enunciado.value.trim(), opcoes: b.tipo.value === 'multipla' ? b.linhasOpcoes() : null };
           });
@@ -482,7 +495,7 @@
           return imagemEscolhida ? enviarImagem(idNova, imagemEscolhida, null).then(function () { return null; }, function () { return 'imagem'; }) : null;
         }).then(function (falhou) {
           if (falhou === 'imagem') { alert('A atividade foi salva, mas a imagem não subiu. Abra a atividade e anexe a imagem de novo.'); lista(); return; }
-          if (antiga) lista(); else avisarNovaAtividade(titulo.value.trim());
+          if (antiga || leitura) lista(); else avisarNovaAtividade(titulo.value.trim());
         }).catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
 
@@ -490,11 +503,13 @@
       desenharModo();
       corpo.appendChild(el('label', { text: 'Título' })); corpo.appendChild(titulo);
       corpo.appendChild(areaDatasAntiga);
+      corpo.appendChild(areaDataLeitura);
       corpo.appendChild(descricaoRotulo); corpo.appendChild(descricao);
       corpo.appendChild(areaImagem);
       corpo.appendChild(areaPerguntas);
       novaPergunta();
-      corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [maisUma]));
+      var areaMais = el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [maisUma]);
+      corpo.appendChild(areaMais);
       corpo.appendChild(msg);
       corpo.appendChild(el('div', { class: 'portal-acoes' }, [salvar, cancelar]));
     }
@@ -531,8 +546,8 @@
         });
         var cartaoDatas = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Datas' }),
           el('label', { text: 'Data da atividade' }), dAt]);
-        if (a.enviada_em) { cartaoDatas.appendChild(el('label', { text: 'Data em que o aluno respondeu' })); cartaoDatas.appendChild(dResp); }
-        cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr);
+        if (a.enviada_em && !a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data em que o aluno respondeu' })); cartaoDatas.appendChild(dResp); }
+        if (!a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr); }
         cartaoDatas.appendChild(msgDatas); cartaoDatas.appendChild(salvarDatas);
         area.appendChild(cartaoDatas);
 
@@ -578,6 +593,18 @@
         }
         desenharImagem();
         area.appendChild(cartaoImagem);
+        if (a.somente_leitura) { /* texto para leitura: não tem perguntas nem correção */
+          var apagarTexto = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar este texto' });
+          apagarTexto.addEventListener('click', function () {
+            if (!confirm('Apagar o texto "' + a.titulo + '"?')) return;
+            C.from('atividades').delete().eq('id', a.id).then(function (r) {
+              if (r.error) { alert(P.traduzErro(r.error.message)); return; }
+              lista();
+            });
+          });
+          area.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [apagarTexto]));
+          return;
+        }
         var campos = {}; /* pergunta_id -> { sit, com } */
         d.perguntas.forEach(function (p, i) {
           var r = d.respostas[p.id] || {};
