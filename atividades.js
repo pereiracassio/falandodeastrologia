@@ -168,7 +168,7 @@
     cartao.style.display = 'none'; /* sem atividade nem aparece */
     atividadesDoAluno(aluno.id, true).then(function (r) {
       var lista = (r.error || !r.data) ? [] : r.data;
-      if (opcoes.aoCarregar) opcoes.aoCarregar(lista.length);
+      if (opcoes.aoCarregar) opcoes.aoCarregar(lista.length, lista.filter(function (a) { return !a.enviada_em; }).length);
       if (!lista.length) return;
       cartao.style.display = '';
       lista.forEach(function (a) {
