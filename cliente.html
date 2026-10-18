@@ -60,10 +60,10 @@
       if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
       if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
       var caixa = el('div', { class: 'portal-item' });
-      if (gravacao) {
-        /* a gravação abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
+      if (gravacao || pdf) {
+        /* o arquivo abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
         caixa.appendChild(titulo);
-        caixa.appendChild(el('p', { style: 'margin:8px 0', text: 'Ao tocar em baixar, o vídeo vai abrir no seu Drive. Você deve tocar nos três pontos e ir na opção de baixar o vídeo.' }));
+        caixa.appendChild(el('p', { style: 'margin:8px 0', text: 'Ao tocar em baixar, o arquivo vai abrir no seu Drive. Você deve tocar nos três pontos e ir na opção de baixar o arquivo.' }));
         caixa.appendChild(botoes);
       } else {
         caixa.appendChild(el('div', { class: 'portal-item-linha' }, [titulo, botoes]));
