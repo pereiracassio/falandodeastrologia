@@ -23,3 +23,7 @@ fundo próprio (nada de `rgba(255,250,232,...)`, branco, bege): quebra a experi�
 
 Todo estudo novo (Artefatos) sai como `.docx` A4 editável no Pages + PDF, no padrão de `estudo-pages/` (ler o `LEIA-ME.md` e usar `gerar.js`/`numeros.py`).
 Regras do astrólogo: página 1 = título centralizado, sem rodapé; índice na página 2; rodapé "Falando de Astrologia Helenística" + número do índice em diante; frase de abertura do capítulo em negrito e não gigante; nunca refazer/mandar arquivo novo sem ele pedir.
+
+## Caderno de estudos do aluno em PDF (18/10/2026)
+
+Botão "Baixar meu caderno" na aba Atividades da página do aluno (`caderno.js`, só aparece se há atividades). O PDF é montado no navegador com jsPDF: capa fixa no código (`capa.js`, opção `aluno` = nome do aluno em azul acima do logo; título "Caderno de Estudos", subtítulo "Acompanhamento Prático Individual", "Mentoria em Astrologia Clássica") + todas as atividades em ordem de data (perguntas, respostas, correções), fundo branco, no visual do documento A4 dos estudos (`estudo-pages/`). A capa NÃO entra na contagem: página 1 = folha de rosto (só o título), página 2 = índice (só o título das atividades, com número de página; duas passadas pra os números saírem certos), atividades depois. Capa e folha de rosto sem rodapé. Fontes em `fonts/` (Cinzel e Carlito, subconjunto latino, licença OFL), baixadas só na hora de gerar. Papiro só na capa (ruim de imprimir nas outras páginas).
