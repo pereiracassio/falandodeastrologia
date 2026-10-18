@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=26"></script>
+  <script src="portal.js?v=27"></script>
   <script src="atividades.js?v=17"></script>
   <script>
   (function () {
@@ -45,12 +45,7 @@
 
     function limpar() { app.textContent = ''; }
     function sair() { P.client.auth.signOut().then(mostrarLogin); }
-    function topo(texto) {
-      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
-      b.addEventListener('click', sair);
-      var clientes = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: 'Clientes' });
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [P.linkAplicacoes(), el('a', { class: 'portal-btn portal-btn-sec', href: 'capa.html', text: 'Capa' }), clientes, b])]);
-    }
+    function topo(texto) { return P.navAdmin('alunos', texto, sair); }
     function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
 
     function iniciar(user) {
