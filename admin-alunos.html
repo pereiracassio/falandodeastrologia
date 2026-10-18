@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=20"></script>
+  <script src="portal.js?v=21"></script>
   <script src="atividades.js?v=5"></script>
   <script>
   (function () {
@@ -160,6 +160,7 @@
       meet.value = aluno.meet_link || '';
       var salvarDados = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
       var pastaDrive = P.cartaoPastaDrive({ plural: 'alunos', tipo: 'aluno', id: aluno.id, email: aluno.email, dentroDeOutroBloco: true,
+        codigo: function () { return aluno.codigo; },
         nome: function () { return (aluno.codigo ? aluno.codigo + ' - ' : '') + aluno.nome; } });
       var formDados = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: 'Dados do aluno' }),

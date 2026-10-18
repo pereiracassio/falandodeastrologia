@@ -271,6 +271,35 @@
      lista (cartaoPastaBase) e guardada no Supabase (tabela drive_pastas). Cada aluno/cliente pode ter a pasta criada
      dentro dela ou usar uma pasta que já existe no Drive (cartaoPastaDrive). */
   var linkPasta = function (id) { return 'https://drive.google.com/drive/folders/' + encodeURIComponent(id); };
+  /* chave do Drive sem nunca abrir janela do Google: a da memória ou a do servidor; null se não der */
+  function tokenSemJanela() {
+    return tokenEmCache().then(function (t) {
+      if (t) return t;
+      if (!DRIVE_API_URL) return null;
+      return driveApi('token').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+        if (!d) return null;
+        guardarToken(d.access_token, d.expires_in); return driveToken;
+      });
+    }).catch(function () { return null; });
+  }
+  /* acha dentro da pasta-mãe a pasta que começa com o código (ex.: "0147 - Maria"); só liga se achar UMA */
+  function acharPastaPeloCodigo(baseId, codigo) {
+    if (!baseId || !codigo) return Promise.resolve(null);
+    return tokenSemJanela().then(function (token) {
+      if (!token) return null;
+      var q = "'" + baseId + "' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false and name contains '" + String(codigo).replace(/['\\]/g, '') + "'";
+      return fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=50&fields=files(id,name)&q=' + encodeURIComponent(q),
+        { headers: { 'Authorization': 'Bearer ' + token } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+        if (!d || !d.files) return null;
+        var cod = String(codigo).trim().toLowerCase();
+        var certas = d.files.filter(function (f) {
+          var n = String(f.name).trim().toLowerCase();
+          return n === cod || n.indexOf(cod) === 0 && !/[0-9a-z]/.test(n.charAt(cod.length));
+        });
+        return certas.length === 1 ? certas[0].id : null;
+      });
+    }).catch(function () { return null; });
+  }
   function guardarPasta(chave, pastaId) { return client.from('drive_pastas').upsert({ chave: chave, pasta_id: pastaId }, { onConflict: 'chave' }); }
   function botaoPasta(texto, aoClicar, sec) {
     var b = el('button', { type: 'button', class: 'portal-btn' + (sec ? ' portal-btn-sec' : ''), text: texto });
@@ -322,6 +351,7 @@
     var msg = el('p', { class: 'portal-msg' });
     var corpo = el('div');
     var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Pasta dos ' + plural + ' no Drive' }), corpo, msg]);
+    var tentouLigar = false;
     function desenhar() {
       corpo.textContent = '';
       carregarDrive().catch(function () {});
@@ -402,6 +432,14 @@
           if (!opcoes.dentroDeOutroBloco) corpo.appendChild(el('p', { text: 'A pasta deste ' + opcoes.tipo + ' no seu Drive:' }));
           acoes.appendChild(el('a', { class: 'portal-btn', href: linkPasta(m[chaveItem]), target: '_blank', rel: 'noopener', text: 'Abrir a pasta' }));
           acoes.appendChild(botaoPasta('Usar outra pasta', usarExistente, true));
+        } else if (!tentouLigar && m[chaveBase] && opcoes.codigo && opcoes.codigo()) {
+          tentouLigar = true;
+          corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando a pasta...' }));
+          acharPastaPeloCodigo(m[chaveBase], opcoes.codigo()).then(function (id) {
+            if (!id) { desenhar(); return; }
+            guardarPasta(chaveItem, id).then(function () { desenhar(); });
+          });
+          return;
         } else {
           if (!opcoes.dentroDeOutroBloco) corpo.appendChild(el('p', { text: 'Este ' + opcoes.tipo + ' ainda não tem pasta ligada. Use uma pasta que já existe no seu Drive, ou crie uma nova.' }));
           acoes.appendChild(botaoPasta('Usar uma pasta que já existe', usarExistente));
