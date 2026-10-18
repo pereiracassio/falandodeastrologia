@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=19"></script>
+  <script src="portal.js?v=20"></script>
   <script src="atividades.js?v=5"></script>
   <script>
   (function () {
@@ -148,29 +148,37 @@
       var verComoAluno = el('a', { class: 'portal-btn', href: 'aluno.html?ver=' + encodeURIComponent(aluno.id), target: '_blank', rel: 'noopener', text: 'Ver como aluno' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoAluno]));
 
-      /* nome e código do aluno (o código só o administrador vê) */
+      /* dados do aluno: código, nome, WhatsApp, link do Meet e pasta no Drive (o código só o administrador vê) */
       var msgDados = el('p', { class: 'portal-msg' });
-      var nomeInput = el('input', { type: 'text', id: 'alunoNome', required: '' });
-      nomeInput.value = aluno.nome || '';
       var codInput = el('input', { type: 'text', id: 'alunoCodigo', placeholder: 'Ex.: 0147' });
       codInput.value = aluno.codigo || '';
+      var nomeInput = el('input', { type: 'text', id: 'alunoNome', required: '' });
+      nomeInput.value = aluno.nome || '';
       var whatsInput = el('input', { type: 'tel', id: 'alunoWhats', placeholder: 'Ex.: 11 91234-5678' });
       whatsInput.value = aluno.whatsapp || '';
+      var meet = el('input', { type: 'url', id: 'alunoMeet', placeholder: 'https://meet.google.com/...' });
+      meet.value = aluno.meet_link || '';
       var salvarDados = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
+      var pastaDrive = P.cartaoPastaDrive({ plural: 'alunos', tipo: 'aluno', id: aluno.id, email: aluno.email, dentroDeOutroBloco: true,
+        nome: function () { return (aluno.codigo ? aluno.codigo + ' - ' : '') + aluno.nome; } });
       var formDados = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: 'Dados do aluno' }),
-        el('p', { text: 'O código é o mesmo do Astro Hellenic. O aluno não vê este campo. Pra apagar o código, deixe em branco e salve.' }),
-        el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
         el('label', { for: 'alunoCodigo', text: 'Código' }), codInput,
-        el('label', { for: 'alunoWhats', text: 'WhatsApp do aluno (opcional; usado só pra abrir a conversa quando você avisar)' }), whatsInput, msgDados, salvarDados
+        el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
+        el('label', { for: 'alunoWhats', text: 'WhatsApp' }), whatsInput,
+        el('label', { for: 'alunoMeet', text: 'Link do Meet' }), meet,
+        pastaDrive, msgDados, salvarDados
       ]);
       formDados.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var novoNome = nomeInput.value.trim();
         var valor = codInput.value.trim();
+        var linkMeet = meet.value.trim();
+        var seguro = linkMeet ? P.linkSeguro(linkMeet) : null;
         if (!novoNome) { P.mensagem(msgDados, 'Escreva o nome.', 'erro'); return; }
+        if (linkMeet && !seguro) { P.mensagem(msgDados, 'O link do Meet precisa começar com https://', 'erro'); return; }
         salvarDados.disabled = true;
-        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null }).eq('id', aluno.id).then(function (r1) {
+        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null, meet_link: seguro }).eq('id', aluno.id).then(function (r1) {
           if (r1.error) { salvarDados.disabled = false; P.mensagem(msgDados, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('aluno_codigos').upsert({ aluno_id: aluno.id, codigo: valor }, { onConflict: 'aluno_id' })
@@ -178,39 +186,12 @@
           pedido.then(function (r2) {
             salvarDados.disabled = false;
             if (r2.error) { P.mensagem(msgDados, /duplicate|unique/i.test(r2.error.message) ? 'Nome salvo, mas esse código já é de outro aluno.' : P.traduzErro(r2.error.message), 'erro'); return; }
-            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null;
+            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.meet_link = seguro;
             paginaDoAluno(user, aluno);
           });
         });
       });
       app.appendChild(formDados);
-      app.appendChild(P.cartaoPastaDrive({ plural: 'alunos', tipo: 'aluno', id: aluno.id, email: aluno.email,
-        nome: function () { return (aluno.codigo ? aluno.codigo + ' - ' : '') + aluno.nome; } }));
-
-      /* link do Google Meet do aluno (fixo; dá pra trocar quando quiser) */
-      var msgMeet = el('p', { class: 'portal-msg' });
-      var meet = el('input', { type: 'url', id: 'alunoMeet', placeholder: 'https://meet.google.com/...' });
-      meet.value = aluno.meet_link || '';
-      var salvarMeet = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar link' });
-      var formMeet = el('form', { class: 'portal-cartao' }, [
-        el('h2', { text: 'Link do Google Meet' }),
-        el('p', { text: 'O botão "Entrar no encontro" aparece na página do aluno. Pra tirar o botão, apague o link e salve.' }),
-        el('label', { for: 'alunoMeet', text: 'Link' }), meet, msgMeet, salvarMeet
-      ]);
-      formMeet.addEventListener('submit', function (ev) {
-        ev.preventDefault();
-        var valor = meet.value.trim();
-        var seguro = valor ? P.linkSeguro(valor) : null;
-        if (valor && !seguro) { P.mensagem(msgMeet, 'O link precisa começar com https://', 'erro'); return; }
-        salvarMeet.disabled = true;
-        P.client.from('alunos').update({ meet_link: seguro }).eq('id', aluno.id).then(function (r) {
-          salvarMeet.disabled = false;
-          if (r.error) { P.mensagem(msgMeet, P.traduzErro(r.error.message), 'erro'); return; }
-          aluno.meet_link = seguro;
-          P.mensagem(msgMeet, seguro ? 'Link salvo.' : 'Link removido.', 'ok');
-        });
-      });
-      app.appendChild(formMeet);
       app.appendChild(window.atividades.painelAdmin(aluno));
 
       /* novo item */
