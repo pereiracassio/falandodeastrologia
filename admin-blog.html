@@ -81,9 +81,26 @@
       });
     }
 
-    function lista() {
+    /* pede ao servidor para gerar a página própria de cada postagem (para o Google) e o sitemap; o texto já está no ar sem isso */
+    var GERAR_URL = 'https://falandodeastrologia.vercel.app/api/blog-publicar';
+    function gerarPaginas() {
+      return C.auth.getSession().then(function (r) {
+        var jwt = r.data && r.data.session && r.data.session.access_token;
+        return fetch(GERAR_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + jwt } });
+      }).then(function (resp) { return resp.ok; }).catch(function () { return false; });
+    }
+    function listaAposGravar() {
+      lista('Salvo. Preparando a página para o Google...');
+      gerarPaginas().then(function (ok) {
+        var m = document.querySelector('.portal-aviso-blog');
+        if (m) P.mensagem(m, ok ? 'Pronto! A página para o Google foi preparada.' : 'Salvo, e o texto já está no site. A página para o Google ainda não foi preparada (falta uma configuração).', ok ? 'ok' : 'erro');
+      });
+    }
+
+    function lista(aviso) {
       limpar();
       app.appendChild(topo(nomeAdmin));
+      if (aviso) { var av = el('p', { class: 'portal-msg portal-aviso-blog' }); app.appendChild(av); P.mensagem(av, aviso, 'ok'); }
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Postagens' })]);
       var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova postagem' });
       nova.addEventListener('click', function () { editor(null); });
@@ -127,6 +144,7 @@
         var msg = el('p', { class: 'portal-msg' });
         var titulo = el('input', { type: 'text', placeholder: 'Título', maxlength: '160' }); titulo.value = post.titulo || '';
         var resumo = el('textarea', { rows: '2', placeholder: 'Resumo para o Google e para a lista (opcional; se vazio, usa o começo do texto)' }); resumo.value = post.resumo || '';
+        var video = el('input', { type: 'url', placeholder: 'Link do vídeo no YouTube (opcional; aparece no fim da postagem)' }); video.value = post.video_url || '';
         var corpo = el('textarea', { rows: '16', placeholder: 'Escreva o texto. Uma linha em branco separa os parágrafos.' }); corpo.value = post.corpo || '';
         corpo.style.minHeight = '260px';
 
@@ -171,6 +189,7 @@
           var t = titulo.value.trim(), c = corpo.value.trim();
           if (!t) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
           if (publicar && !c) { P.mensagem(msg, 'Escreva o texto antes de publicar.', 'erro'); return; }
+          if (video.value.trim() && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(video.value.trim())) { P.mensagem(msg, 'O link do vídeo precisa ser do YouTube.', 'erro'); return; }
           travar(true); P.mensagem(msg, imagemNova ? 'Enviando a imagem...' : 'Salvando...');
           var enviada = null;
           var subir = imagemNova
@@ -185,7 +204,7 @@
           subir.then(function () {
             var agora = new Date().toISOString();
             var dados = {
-              titulo: t, resumo: resumo.value.trim() || null, corpo: c, imagem_url: imagemUrl || null,
+              titulo: t, resumo: resumo.value.trim() || null, video_url: video.value.trim() || null, corpo: c, imagem_url: imagemUrl || null,
               publicado: publicar, atualizado_em: agora
             };
             if (publicar && !post.publicado_em) dados.publicado_em = agora;
@@ -203,7 +222,7 @@
             return inserir();
           }).then(function () {
             if (imagemAntiga && imagemAntiga !== imagemUrl) { var velha = caminhoDe(imagemAntiga); if (velha) C.storage.from('site').remove([velha]); }
-            lista();
+            listaAposGravar();
           }).catch(function (e) {
             if (enviada) C.storage.from('site').remove([enviada]);
             travar(false); P.mensagem(msg, P.traduzErro(e.message), 'erro');
@@ -229,7 +248,7 @@
             C.from('blog_posts').delete().eq('id', id).then(function (r) {
               if (r.error) { travar(false); P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
               var velha = caminhoDe(imagemAntiga); if (velha) C.storage.from('site').remove([velha]);
-              lista();
+              listaAposGravar();
             });
           });
           botoes.appendChild(excluir);
@@ -239,6 +258,7 @@
         cartao.appendChild(previa); cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [botImg, botTirar, escolher]));
         cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:8px' }, [botSub]));
         cartao.appendChild(corpo);
+        cartao.appendChild(video);
         cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Subtítulo: clique na linha e toque em "Subtítulo". O visual (cores e fonte) é sempre o do site.' }));
         if (post.publicado && post.slug) {
           cartao.appendChild(el('p', { class: 'portal-vazio' }, [el('a', { href: 'postagem.html?p=' + encodeURIComponent(post.slug), target: '_blank', rel: 'noopener', text: 'Ver no site' })]));

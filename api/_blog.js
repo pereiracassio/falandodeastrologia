@@ -1,0 +1,123 @@
+/* Páginas do blog: transforma uma postagem do Supabase numa página HTML pronta (uma por postagem) e monta o sitemap.
+   Usado por api/blog-publicar.js. O "_" no começo do nome faz a Vercel NÃO tratar este arquivo como um endpoint. */
+
+const SITE = 'https://falandodeastrologia.com.br';
+const PAGINAS_FIXAS = ['', 'sobre.html', 'mentoria.html', 'retificacao.html', 'mapa-natal.html', 'revolucao-solar.html', 'previsoes-astrologicas.html', 'sinastria.html', 'blog.html'];
+
+const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const dataExtenso = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.getUTCDate() + ' de ' + MESES[d.getUTCMonth()] + ' de ' + d.getUTCFullYear(); };
+
+/* mesmas regras do blog.js do navegador: parágrafos separados por linha em branco, "## " no começo da linha = subtítulo */
+function corpoHtml(corpo) {
+  const saida = [];
+  String(corpo || '').replace(/\r\n?/g, '\n').split(/\n{2,}/).forEach((bloco) => {
+    bloco = bloco.trim();
+    if (!bloco) return;
+    let paragrafo = [];
+    const fechar = () => { if (paragrafo.length) { saida.push('<p class="blog-p">' + paragrafo.map(esc).join('<br>') + '</p>'); paragrafo = []; } };
+    bloco.split('\n').forEach((l) => {
+      const m = /^##\s+(.+)$/.exec(l.trim());
+      if (m) { fechar(); saida.push('<h2 class="blog-h2">' + esc(m[1]) + '</h2>'); }
+      else if (l.trim()) paragrafo.push(l.trim());
+    });
+    fechar();
+  });
+  return saida.join('\n');
+}
+
+function resumoDe(p) {
+  if (p.resumo) return p.resumo;
+  const t = String(p.corpo || '').replace(/^##\s+/gm, '').replace(/\s+/g, ' ').trim();
+  return t.length > 155 ? t.slice(0, 155).replace(/\s+\S*$/, '') + '…' : t;
+}
+
+/* id do vídeo a partir do link do YouTube (watch?v=, youtu.be/, shorts/, embed/); null se não for um link do YouTube */
+function idYoutube(url) {
+  try {
+    const u = new URL(String(url || '').trim());
+    const host = u.hostname.replace(/^www\.|^m\./, '');
+    let id = null;
+    if (host === 'youtu.be') id = u.pathname.slice(1).split('/')[0];
+    else if (host === 'youtube.com') {
+      if (u.pathname === '/watch') id = u.searchParams.get('v');
+      else { const m = /^\/(shorts|embed|live)\/([^/]+)/.exec(u.pathname); if (m) id = m[2]; }
+    }
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch (e) { return null; }
+}
+
+function videoHtml(url) {
+  const id = idYoutube(url);
+  if (!id) return '';
+  return '<div class="blog-video"><iframe src="https://www.youtube.com/embed/' + id + '" title="Vídeo no YouTube" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe></div>\n' +
+    '<p class="blog-p" style="text-align:center"><a class="blog-voltar" style="margin:0" href="https://www.youtube.com/watch?v=' + id + '" target="_blank" rel="noopener">Assistir no YouTube</a></p>';
+}
+
+const enderecoPost = (slug) => SITE + '/blog/' + slug + '.html';
+
+function paginaPost(p) {
+  const url = enderecoPost(p.slug), resumo = resumoDe(p), id = idYoutube(p.video_url);
+  const ld = {
+    '@context': 'https://schema.org', '@type': 'BlogPosting', headline: p.titulo, description: resumo,
+    datePublished: p.publicado_em, dateModified: p.atualizado_em || p.publicado_em, mainEntityOfPage: url,
+    author: { '@type': 'Person', name: 'Cássio Pereira' }
+  };
+  if (p.imagem_url) ld.image = p.imagem_url;
+  const ldJson = JSON.stringify(ld).replace(/</g, '\\u003c');
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${esc(p.titulo)} - Falando de Astrologia</title>
+  <meta name="description" content="${esc(resumo)}">
+  <link rel="canonical" href="${esc(url)}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="${esc(p.titulo)}">
+  <meta property="og:description" content="${esc(resumo)}">
+  <meta property="og:url" content="${esc(url)}">${p.imagem_url ? '\n  <meta property="og:image" content="' + esc(p.imagem_url) + '">' : ''}
+  <script type="application/ld+json">${ldJson}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/papiro.css?v=4">
+  <link rel="stylesheet" href="/home.css?v=18">
+  <link rel="stylesheet" href="/page.css?v=17">
+  <link rel="stylesheet" href="/blog.css?v=2">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="/index.html" class="marca"><img src="/favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="/index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="/mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="/sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+      <a href="/blog.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Blog</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <article class="blog" id="post">
+    <h1>${esc(p.titulo)}</h1>
+    ${p.publicado_em ? '<p class="blog-data" style="text-align:center;margin-bottom:20px">' + esc(dataExtenso(p.publicado_em)) + '</p>' : ''}
+    ${p.imagem_url ? '<img class="blog-capa" src="' + esc(p.imagem_url) + '" alt="' + esc(p.titulo) + '">' : ''}
+${corpoHtml(p.corpo)}
+${id ? videoHtml(p.video_url) : ''}
+    <a class="blog-voltar" href="/blog.html">← Ver todos os textos</a>
+  </article>
+</div></div>
+  <script src="/menu.js?v=18" defer></script>
+</body>
+</html>
+`;
+}
+
+function sitemap(posts) {
+  const itens = PAGINAS_FIXAS.map((c) => '  <url><loc>' + SITE + '/' + c + '</loc></url>')
+    .concat(posts.map((p) => '  <url><loc>' + esc(enderecoPost(p.slug)) + '</loc><lastmod>' + esc(String(p.atualizado_em || p.publicado_em || '').slice(0, 10)) + '</lastmod></url>'));
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + itens.join('\n') + '\n</urlset>\n';
+}
+
+module.exports = { paginaPost, sitemap, idYoutube, SITE };

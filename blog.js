@@ -4,6 +4,8 @@
   var SUPABASE_URL = 'https://wqkgsotfwkzjwaowenrb.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt';
   var SITE = 'https://falandodeastrologia.com.br';
+  /* true quando cada postagem já tem a sua página própria (blog/<endereço>.html, gerada por api/blog-publicar.js) */
+  var PAGINAS_PROPRIAS = false;
 
   function buscar(filtro) {
     return fetch(SUPABASE_URL + '/rest/v1/blog_posts?' + filtro, { headers: { apikey: SUPABASE_KEY } })
@@ -59,7 +61,30 @@
   }
 
   /* endereço de uma postagem */
-  function enderecoDe(slug) { return 'postagem.html?p=' + encodeURIComponent(slug); }
+  function enderecoDe(slug) { return PAGINAS_PROPRIAS ? 'blog/' + slug + '.html' : 'postagem.html?p=' + encodeURIComponent(slug); }
+
+  /* id do vídeo a partir do link do YouTube; null se não for um link do YouTube */
+  function idYoutube(url) {
+    try {
+      var u = new URL(String(url || '').trim()), host = u.hostname.replace(/^www\.|^m\./, ''), id = null, m;
+      if (host === 'youtu.be') id = u.pathname.slice(1).split('/')[0];
+      else if (host === 'youtube.com') {
+        if (u.pathname === '/watch') id = u.searchParams.get('v');
+        else if ((m = /^\/(shorts|embed|live)\/([^/]+)/.exec(u.pathname))) id = m[2];
+      }
+      return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    } catch (e) { return null; }
+  }
+  /* o vídeo no fim da postagem: toca ali mesmo e tem o link pro YouTube */
+  function renderizarVideo(url) {
+    var id = idYoutube(url), saida = document.createDocumentFragment();
+    if (!id) return saida;
+    var moldura = el('div', { class: 'blog-video' });
+    moldura.appendChild(el('iframe', { src: 'https://www.youtube.com/embed/' + id, title: 'Vídeo no YouTube', loading: 'lazy', allowfullscreen: '', allow: 'accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen' }));
+    saida.appendChild(moldura);
+    saida.appendChild(el('p', { class: 'blog-p', style: 'text-align:center' }, [el('a', { class: 'blog-voltar', style: 'margin:0', href: 'https://www.youtube.com/watch?v=' + id, target: '_blank', rel: 'noopener', text: 'Assistir no YouTube' })]));
+    return saida;
+  }
 
   function definirMeta(seletor, atributo, valor) {
     var m = document.head.querySelector(seletor);
@@ -71,6 +96,6 @@
 
   window.blog = {
     buscar: buscar, el: el, dataExtenso: dataExtenso, renderizarCorpo: renderizarCorpo, resumoDe: resumoDe,
-    enderecoDe: enderecoDe, definirMeta: definirMeta, SITE: SITE
+    enderecoDe: enderecoDe, idYoutube: idYoutube, renderizarVideo: renderizarVideo, definirMeta: definirMeta, SITE: SITE
   };
 })();

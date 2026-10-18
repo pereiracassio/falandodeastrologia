@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="blog.css?v=1">
+  <link rel="stylesheet" href="blog.css?v=2">
 </head>
 <body>
   <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
@@ -27,7 +27,7 @@
 <div class="pagina pagina-servico"><div class="folha-pagina">
   <div class="blog" id="post"><p class="blog-vazio">Carregando...</p></div>
 </div></div>
-  <script src="blog.js?v=1"></script>
+  <script src="blog.js?v=2"></script>
   <script>
   (function () {
     var B = window.blog, el = B.el, area = document.getElementById('post');
@@ -68,6 +68,7 @@
       if (p.publicado_em) area.appendChild(el('p', { class: 'blog-data', style: 'text-align:center;margin-bottom:20px', text: B.dataExtenso(p.publicado_em) }));
       if (p.imagem_url) area.appendChild(el('img', { class: 'blog-capa', src: p.imagem_url, alt: p.titulo }));
       area.appendChild(B.renderizarCorpo(p.corpo));
+      area.appendChild(B.renderizarVideo(p.video_url));
       area.appendChild(el('a', { class: 'blog-voltar', href: 'blog.html', text: '← Ver todos os textos' }));
     }).catch(function () {
       area.textContent = '';
