@@ -41,7 +41,7 @@
   }
   function botaoWhats(rotulo, numero, mensagem) {
     var n = numeroWhats(numero);
-    return el('a', { class: 'portal-btn', href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(mensagem), target: '_blank', rel: 'noopener', text: rotulo });
+    return el('a', { class: 'portal-btn portal-btn-whats', href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(mensagem), target: '_blank', rel: 'noopener', text: rotulo });
   }
   var primeiroNome = function (nome) { return String(nome || '').trim().split(/\s+/)[0] || ''; };
 

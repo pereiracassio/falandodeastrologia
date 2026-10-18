@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="portal.css?v=11">
+  <link rel="stylesheet" href="portal.css?v=12">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -37,7 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=25"></script>
-  <script src="atividades.js?v=5"></script>
+  <script src="atividades.js?v=6"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -198,7 +198,7 @@
         }
         // link fixo do encontro semanal (Google Meet), acima das abas
         var meetLink = P.linkSeguro(aluno.meet_link);
-        if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-meet', href: meetLink, target: '_blank', rel: 'noopener', text: 'Entrar no encontro (Google Meet)' }));
+        if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetLink, target: '_blank', rel: 'noopener', text: 'Entrar no encontro (Google Meet)' }));
         P.client.from('itens').select('bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
