@@ -73,11 +73,11 @@
         P.client.auth.getSession().then(function (r) {
           var jwt = r.data && r.data.session ? r.data.session.access_token : '';
           return fetch('https://falandodeastrologia.vercel.app/api/transferir', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt }, body: JSON.stringify({ entrega_id: e.id }) });
-        }).then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { return { ok: resp.ok, d: d }; }); }).then(function (x) {
+        }).then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { return { ok: resp.ok, d: d, status: resp.status }; }); }).then(function (x) {
           if (x.ok) { P.mensagem(msg, 'Pronto! Enviamos um e-mail do Google Drive para ' + x.d.email + '. Abra o e-mail e aceite a transferência.', 'ok'); return; }
           botao.disabled = false;
-          P.mensagem(msg, x.d.codigo === 'ja_transferido' ? 'Esse vídeo já foi passado pra você. Procure no seu Drive ou no e-mail do Google Drive.' : 'Não foi possível passar o vídeo agora. Use "Baixar a gravação".', 'erro');
-        }).catch(function () { botao.disabled = false; P.mensagem(msg, 'Não foi possível passar o vídeo agora. Use "Baixar a gravação".', 'erro'); });
+          P.mensagem(msg, x.d.codigo === 'ja_transferido' ? 'Esse vídeo já foi passado pra você. Procure no seu Drive ou no e-mail do Google Drive.' : 'Não foi possível passar o vídeo agora. Use "Baixar a gravação". (' + (x.d.detalhe || x.d.erro || x.d.codigo || 'erro ' + x.status) + ')', 'erro');
+        }).catch(function (err) { botao.disabled = false; P.mensagem(msg, 'Não foi possível passar o vídeo agora. Use "Baixar a gravação". (sem resposta do servidor: ' + (err && err.message ? err.message : '') + ')', 'erro'); });
       });
       return el('div', { style: 'margin-top:12px' }, [
         el('p', { text: 'Você vai receber um e-mail do Google Drive. Abra o e-mail e aceite a transferência: depois disso o vídeo passa a ser seu, no seu Drive.' }),
