@@ -703,7 +703,7 @@
           var botEditar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar a pergunta' });
           var botTirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar esta pergunta' });
           botEditar.addEventListener('click', function () {
-            if (areaEdicao.firstChild) { areaEdicao.textContent = ''; return; }
+            if (areaEdicao.firstChild) return; /* já está aberto: só "Cancelar" fecha (tocar de novo não pode apagar o que você escreveu) */
             var f = formularioPergunta({ tipoFixo: true, tipo: p.tipo, enunciado: p.enunciado, opcoes: p.opcoes, certa: certa, comResposta: !!a.antiga, resposta: { texto: r.texto, opcao: r.opcao } });
             var msgE = el('p', { class: 'portal-msg' });
             var gravar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar a pergunta' });
@@ -743,40 +743,66 @@
           area.appendChild(cx);
         });
 
-        /* acrescentar uma pergunta numa atividade que já existe */
+        /* acrescentar perguntas numa atividade que já existe: dá pra montar várias de uma vez e salvar tudo junto;
+           nada some sem você mandar (só "Tirar esta" e "Descartar" apagam o que está na tela) */
         var cartaoMais = el('div', { class: 'portal-cartao' });
+        var listaNovas = el('div');
+        var novas = []; /* { f, caixa } */
+        var msgM = el('p', { class: 'portal-msg' });
         var botMais = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Acrescentar uma pergunta' });
-        var areaMais = el('div');
+        var gravarNovas = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar as perguntas novas' });
+        var descartar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Descartar' });
+        function atualizarNovas() {
+          gravarNovas.style.display = descartar.style.display = novas.length ? '' : 'none';
+          novas.forEach(function (n, i) { n.titulo.textContent = 'Pergunta nova ' + (i + 1); });
+        }
         botMais.addEventListener('click', function () {
-          if (areaMais.firstChild) { areaMais.textContent = ''; return; }
           var f = formularioPergunta({ comResposta: !!a.antiga, comCorrecao: !!a.antiga });
-          var msgM = el('p', { class: 'portal-msg' });
-          var gravar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar a pergunta' });
-          var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
-          fechar.addEventListener('click', function () { areaMais.textContent = ''; });
-          gravar.addEventListener('click', function () {
-            var v = f.ler(); if (v.erro) { P.mensagem(msgM, v.erro, 'erro'); return; }
-            gravar.disabled = true; P.mensagem(msgM, 'Salvando...');
-            var ordem = d.perguntas.reduce(function (m, q) { return Math.max(m, q.ordem); }, -1) + 1;
-            C.from('atividade_perguntas').insert({ atividade_id: a.id, ordem: ordem, tipo: v.tipo, enunciado: v.enunciado, opcoes: v.opcoes }).select('id').single().then(function (r1) {
-              if (r1.error) throw r1.error;
-              var id = r1.data.id, passos = [];
-              if (v.tipo === 'multipla' && v.certa != null) passos.push(C.from('atividade_gabarito').insert({ pergunta_id: id, correta: v.certa }));
-              if (a.antiga) {
-                if (v.respTexto || v.respOpcao != null) passos.push(C.from('atividade_respostas').insert({ pergunta_id: id, texto: v.respTexto || null, opcao: v.respOpcao }));
-                if (v.sit || v.com) passos.push(C.from('atividade_correcoes').insert({ pergunta_id: id, situacao: v.sit, comentario: v.com }));
-              }
-              return Promise.all(passos);
-            }).then(function (rs) {
-              var falha = rs.filter(function (x) { return x && x.error; })[0];
-              if (falha) throw falha.error;
-              telaDaAtividade(a);
-            }).catch(function (e) { gravar.disabled = false; P.mensagem(msgM, P.traduzErro(e.message), 'erro'); });
-          });
-          areaMais.appendChild(f.caixa); areaMais.appendChild(msgM);
-          areaMais.appendChild(el('div', { class: 'portal-acoes' }, [gravar, fechar]));
+          var titulo = el('p', { class: 'portal-item-titulo' });
+          var tirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar esta' });
+          var caixa = el('div', { class: 'portal-item' }, [titulo, f.caixa, el('div', { class: 'portal-acoes', style: 'margin-top:10px' }, [tirar])]);
+          var item = { f: f, caixa: caixa, titulo: titulo };
+          tirar.addEventListener('click', function () { novas.splice(novas.indexOf(item), 1); caixa.remove(); atualizarNovas(); });
+          novas.push(item); listaNovas.appendChild(caixa); atualizarNovas();
+          caixa.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
-        cartaoMais.appendChild(el('div', { class: 'portal-acoes' }, [botMais])); cartaoMais.appendChild(areaMais);
+        descartar.addEventListener('click', function () {
+          if (!confirm('Descartar as perguntas novas que ainda não foram salvas?')) return;
+          novas = []; listaNovas.textContent = ''; atualizarNovas(); P.mensagem(msgM, '');
+        });
+        gravarNovas.addEventListener('click', function () {
+          var valores = [];
+          for (var i = 0; i < novas.length; i++) {
+            var v = novas[i].f.ler();
+            if (v.erro) { P.mensagem(msgM, 'Pergunta nova ' + (i + 1) + ': ' + v.erro, 'erro'); return; }
+            valores.push(v);
+          }
+          gravarNovas.disabled = true; P.mensagem(msgM, 'Salvando...');
+          var ordem0 = d.perguntas.reduce(function (m, q) { return Math.max(m, q.ordem); }, -1) + 1;
+          var linhas = valores.map(function (v, i) { return { atividade_id: a.id, ordem: ordem0 + i, tipo: v.tipo, enunciado: v.enunciado, opcoes: v.opcoes }; });
+          C.from('atividade_perguntas').insert(linhas).select('id,ordem').then(function (r1) {
+            if (r1.error) throw r1.error;
+            var passos = [];
+            r1.data.forEach(function (p) {
+              var v = valores[p.ordem - ordem0];
+              if (v.tipo === 'multipla' && v.certa != null) passos.push(C.from('atividade_gabarito').insert({ pergunta_id: p.id, correta: v.certa }));
+              if (a.antiga) {
+                if (v.respTexto || v.respOpcao != null) passos.push(C.from('atividade_respostas').insert({ pergunta_id: p.id, texto: v.respTexto || null, opcao: v.respOpcao }));
+                if (v.sit || v.com) passos.push(C.from('atividade_correcoes').insert({ pergunta_id: p.id, situacao: v.sit, comentario: v.com }));
+              }
+            });
+            return Promise.all(passos);
+          }).then(function (rs) {
+            var falha = rs.filter(function (x) { return x && x.error; })[0];
+            if (falha) throw falha.error;
+            telaDaAtividade(a);
+          }).catch(function (e) { gravarNovas.disabled = false; P.mensagem(msgM, P.traduzErro(e.message), 'erro'); });
+        });
+        cartaoMais.appendChild(listaNovas);
+        cartaoMais.appendChild(msgM);
+        /* o botão fica EMBAIXO das perguntas novas: cada toque acrescenta mais uma, embaixo da última */
+        cartaoMais.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:10px' }, [botMais, gravarNovas, descartar]));
+        atualizarNovas();
         area.appendChild(cartaoMais);
 
         var msg = el('p', { class: 'portal-msg' });
