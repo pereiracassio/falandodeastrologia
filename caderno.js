@@ -142,7 +142,7 @@
         doc.addImage(b.mapa.dados, b.mapa.tipo, M + (LARGURA - iw) / 2, y, iw, ih);
         y += ih + 12;
       }
-      if (!b.perguntas.length) texto('Esta atividade não tem perguntas.', { estilo: 'italic' });
+      if (!b.perguntas.length && !b.atividade.somente_leitura) texto('Esta atividade não tem perguntas.', { estilo: 'italic' });
       b.perguntas.forEach(function (q, n) {
         var r = b.respostas[q.id] || {}, c = b.correcoes[q.id] || {};
         y += 6;
