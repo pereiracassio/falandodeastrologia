@@ -36,7 +36,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=25"></script>
-  <script src="atividades.js?v=9"></script>
+  <script src="atividades.js?v=10"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -109,9 +109,13 @@
       /* lista */
       Promise.all([
         P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').order('nome'),
-        P.client.from('aluno_codigos').select('aluno_id,codigo')
+        P.client.from('aluno_codigos').select('aluno_id,codigo'),
+        /* atividades que o aluno já enviou e que ainda esperam a sua correção */
+        P.client.from('atividades').select('aluno_id').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false)
       ]).then(function (res) {
         var r = res[0], rc = res[1];
+        var paraCorrigir = {}, totalParaCorrigir = 0;
+        ((res[2] && res[2].data) || []).forEach(function (x) { paraCorrigir[x.aluno_id] = (paraCorrigir[x.aluno_id] || 0) + 1; totalParaCorrigir++; });
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
         var codigos = {};
         (rc.data || []).forEach(function (c) { codigos[c.aluno_id] = c.codigo; });
@@ -120,6 +124,7 @@
         if (!alunos.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' })); return; }
         var busca = el('input', { type: 'search', id: 'buscaAluno', placeholder: 'Buscar por código, nome ou e-mail' });
         var lista = el('div');
+        if (totalParaCorrigir) cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 12px', text: totalParaCorrigir === 1 ? '1 atividade esperando a sua correção' : totalParaCorrigir + ' atividades esperando a sua correção' }));
         cartao.appendChild(busca);
         cartao.appendChild(lista);
         function desenhar() {
@@ -131,7 +136,8 @@
             var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
             abrir.addEventListener('click', function () { alunoAberto = a; paginaDoAluno(user, a); });
             lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (a.codigo ? a.codigo + ' · ' : '') + a.nome }), el('span', { class: 'portal-item-data', text: a.email })]), abrir
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (a.codigo ? a.codigo + ' · ' : '') + a.nome }), el('span', { class: 'portal-item-data', text: a.email })].concat(
+                paraCorrigir[a.id] ? [el('span', { class: 'portal-item-data', style: 'font-weight:700', text: paraCorrigir[a.id] === 1 ? '1 atividade para corrigir' : paraCorrigir[a.id] + ' atividades para corrigir' })] : [])), abrir
             ])]));
           });
         }

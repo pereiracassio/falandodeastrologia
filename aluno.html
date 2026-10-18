@@ -37,7 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=25"></script>
-  <script src="atividades.js?v=9"></script>
+  <script src="atividades.js?v=10"></script>
   <script src="caderno.js?v=3"></script>
   <script>
   (function () {
@@ -209,7 +209,13 @@
             var atividadesEl = window.atividades.cartaoDoAluno(aluno, function (a) {
               a.alunoNome = aluno.nome;
               window.atividades.telaDaAtividadeAluno(app, a, function () { desenharPaginaDoAluno(user, aluno, previa); }, previa);
-            }, { semMoldura: true, aoCarregar: function (qtd) { avisar(qtd); caixaCaderno.style.display = qtd ? '' : 'none'; } });
+            }, { semMoldura: true, aoCarregar: function (qtd, paraResponder) {
+              avisar(qtd); caixaCaderno.style.display = qtd ? '' : 'none';
+              avisoResponder.textContent = paraResponder === 1 ? 'Você tem 1 atividade para responder.' : 'Você tem ' + paraResponder + ' atividades para responder.';
+              avisoResponder.style.display = paraResponder ? '' : 'none';
+            } });
+            var avisoResponder = el('p', { style: 'display:none;margin:0 0 14px;color:#A03E25;font-weight:700;font-size:16px' });
+            app.appendChild(avisoResponder);
             abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }).forEach(function (e) { app.appendChild(e); });
             // "Baixar meu caderno": o PDF com a capa e tudo que o aluno já fez; só aparece quando há atividades
             var caixaCaderno = window.caderno.botao(aluno);
