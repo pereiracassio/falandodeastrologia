@@ -67,7 +67,7 @@
     /* passa a gravação pro Drive do cliente: o servidor deixa ele como novo dono pendente e o Drive manda um e-mail pra ele aceitar */
     function transferirGravacao(e) {
       var msg = el('p', { class: 'portal-msg' });
-      var botao = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Passar o vídeo pro meu Drive' });
+      var botao = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Transferir para mim' });
       botao.addEventListener('click', function () {
         botao.disabled = true; P.mensagem(msg, 'Enviando...', 'ok');
         P.client.auth.getSession().then(function (r) {
