@@ -35,8 +35,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=27"></script>
-  <script src="atividades.js?v=17"></script>
+  <script src="portal.js?v=28"></script>
+  <script src="atividades.js?v=18"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -58,12 +58,25 @@
         }
         P.client.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
-          listaDeAlunos(user);
+          restaurar(user);
         });
       });
     }
 
+    /* depois de recarregar: volta pro aluno em que você estava (endereço #aluno=ID) */
+    function restaurar(user) {
+      var h = P.estado.ler();
+      if (!h.aluno) { listaDeAlunos(user); return; }
+      Promise.all([P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').eq('id', h.aluno).maybeSingle(),
+                   P.client.from('aluno_codigos').select('codigo').eq('aluno_id', h.aluno).maybeSingle()]).then(function (r) {
+        if (r[0].error || !r[0].data) { listaDeAlunos(user); return; }
+        var a = r[0].data; a.codigo = (r[1].data && r[1].data.codigo) || '';
+        alunoAberto = a; paginaDoAluno(user, a);
+      }, function () { listaDeAlunos(user); });
+    }
+
     function listaDeAlunos(user) {
+      P.estado.gravar({});
       limpar();
       app.appendChild(topo(nomeAdmin));
       /* ordem: alunos, novo aluno, pasta dos alunos, login com o Google */
@@ -142,6 +155,9 @@
     }
 
     function paginaDoAluno(user, aluno) {
+      var h = P.estado.ler(); /* se veio de um recarregamento, "atividade" diz qual atividade estava aberta */
+      var atividadeAberta = h.aluno === aluno.id ? h.atividade : '';
+      P.estado.gravar({ aluno: aluno.id });
       limpar();
       app.appendChild(topo(nomeAdmin));
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os alunos' });
@@ -194,7 +210,7 @@
         });
       });
       app.appendChild(formDados);
-      app.appendChild(window.atividades.painelAdmin(aluno));
+      app.appendChild(window.atividades.painelAdmin(aluno, atividadeAberta));
 
       /* novo item */
       var msg = el('p', { class: 'portal-msg' });

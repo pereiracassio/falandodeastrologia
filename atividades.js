@@ -377,12 +377,13 @@
   }
 
   /* cartão "Atividades" na página do aluno, no painel */
-  function painelAdmin(aluno) {
+  function painelAdmin(aluno, abrirId) {
     var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Atividades' })]);
     var corpo = el('div');
     cartao.appendChild(corpo);
 
     function lista() {
+      P.estado.mesclar({ atividade: '' });
       corpo.textContent = '';
       corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       atividadesDoAluno(aluno.id, true).then(function (r) {
@@ -614,6 +615,7 @@
 
     /* ver as respostas do aluno e corrigir */
     function telaDaAtividade(a) {
+      P.estado.mesclar({ atividade: a.id });
       corpo.textContent = '';
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Atividades' });
       voltar.addEventListener('click', lista);
@@ -901,7 +903,12 @@
       });
     }
 
-    lista();
+    if (abrirId) { /* recarregou a página dentro de uma atividade: volta pra ela */
+      atividadesDoAluno(aluno.id, false).then(function (r) {
+        var a = ((r && r.data) || []).filter(function (x) { return x.id === abrirId; })[0];
+        if (a) telaDaAtividade(a); else lista();
+      }, lista);
+    } else lista();
     return cartao;
   }
 
