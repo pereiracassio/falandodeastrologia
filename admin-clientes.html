@@ -105,7 +105,7 @@
       if (conexaoDrive) app.appendChild(conexaoDrive);
 
       Promise.all([
-        P.client.from('clientes').select('id,nome,email').order('nome'),
+        P.client.from('clientes').select('id,nome,email,whatsapp').order('nome'),
         P.client.from('cliente_codigos').select('cliente_id,codigo')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
@@ -149,6 +149,8 @@
       codInput.value = cliente.codigo || '';
       var nomeInput = el('input', { type: 'text', id: 'clienteNome', required: '' });
       nomeInput.value = cliente.nome || '';
+      var whatsInput = el('input', { type: 'tel', id: 'clienteWhats', placeholder: 'Ex.: 11 91234-5678' });
+      whatsInput.value = cliente.whatsapp || '';
       var salvarCod = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
       var pastaDrive = P.cartaoPastaDrive({ plural: 'clientes', tipo: 'cliente', id: cliente.id, email: cliente.email, dentroDeOutroBloco: true,
         codigo: function () { return cliente.codigo; },
@@ -157,6 +159,7 @@
         el('h2', { text: 'Dados do cliente' }),
         el('label', { for: 'clienteCodigo', text: 'Código' }), codInput,
         el('label', { for: 'clienteNome', text: 'Nome' }), nomeInput,
+        el('label', { for: 'clienteWhats', text: 'WhatsApp' }), whatsInput,
         pastaDrive, msgCod, salvarCod
       ]);
       formCod.addEventListener('submit', function (ev) {
@@ -165,7 +168,7 @@
         var novoNome = nomeInput.value.trim();
         if (!novoNome) { P.mensagem(msgCod, 'Escreva o nome.', 'erro'); return; }
         salvarCod.disabled = true;
-        P.client.from('clientes').update({ nome: novoNome }).eq('id', cliente.id).then(function (r1) {
+        P.client.from('clientes').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null }).eq('id', cliente.id).then(function (r1) {
           if (r1.error) { salvarCod.disabled = false; P.mensagem(msgCod, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('cliente_codigos').upsert({ cliente_id: cliente.id, codigo: valor }, { onConflict: 'cliente_id' })
@@ -173,7 +176,7 @@
           pedido.then(function (r) {
             salvarCod.disabled = false;
             if (r.error) { P.mensagem(msgCod, /duplicate|unique/i.test(r.error.message) ? 'Nome salvo, mas esse código já é de outro cliente.' : P.traduzErro(r.error.message), 'erro'); return; }
-            cliente.nome = novoNome; cliente.codigo = valor;
+            cliente.nome = novoNome; cliente.codigo = valor; cliente.whatsapp = whatsInput.value.trim() || null;
             paginaDoCliente(user, cliente);
           });
         });

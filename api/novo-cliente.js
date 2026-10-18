@@ -34,15 +34,19 @@ module.exports = async (req, res) => {
     const email = String(c.email || '').trim().toLowerCase();
     const nome = String(c.nome || '').trim();
     const codigo = normalizarCodigo(c.codigo);
+    const whatsapp = String(c.whatsapp || '').trim();
     if (!email || !nome) { res.status(400).json({ erro: 'faltou nome ou e-mail' }); return; }
 
     /* 1) cliente */
-    let linhas = await supa('/rest/v1/clientes?email=eq.' + q(email) + '&select=id,nome');
+    let linhas = await supa('/rest/v1/clientes?email=eq.' + q(email) + '&select=id,nome,whatsapp');
     let cliente = linhas && linhas[0];
     let criado = false;
     if (!cliente) {
-      const novo = await supa('/rest/v1/clientes', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ email, nome }) });
+      const novo = await supa('/rest/v1/clientes', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ email, nome, whatsapp: whatsapp || null }) });
       cliente = novo[0]; criado = true;
+    } else if (whatsapp && !cliente.whatsapp) {
+      // cliente que já existia sem WhatsApp: completa (nunca troca um que já está salvo)
+      try { await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ whatsapp }) }); } catch (e) { console.error('novo-cliente whatsapp:', e.message); }
     }
 
     /* 2) código (se já é de outro cliente, não mexe: o banco recusa duplicado) */
