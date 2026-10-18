@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplicações da Mentoria - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=12">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Aplicações da Mentoria</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=26"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, app = document.getElementById('app');
+    var SITUACOES = { nova: 'Nova', falei: 'Falei com ela', aprovada: 'Aprovada', recusada: 'Recusada' };
+    var aba = 'novas';
+
+    function limpar() { app.textContent = ''; }
+    function sair() { P.client.auth.signOut().then(mostrarLogin); }
+    function topo(texto) {
+      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
+      b.addEventListener('click', sair);
+      var alunos = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Alunos' });
+      var clientes = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: 'Clientes' });
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [clientes, alunos, b])]);
+    }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function iniciar(user) {
+      limpar();
+      P.client.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        P.client.from('admins').select('nome').maybeSingle().then(function (rn) {
+          lista(rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email);
+        });
+      });
+    }
+
+    var dataHora = function (iso) { return iso ? new Date(iso).toLocaleDateString('pt-BR') + ' às ' + new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''; };
+    var primeiro = function (nome) { return String(nome || '').trim().split(/\s+/)[0] || ''; };
+    function numeroWhats(n) { var d = String(n || '').replace(/\D/g, ''); return (d.length === 10 || d.length === 11) ? '55' + d : d; }
+    function botaoOpcao(texto, marcada, aoClicar) {
+      var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
+      b.style.cssText = 'background:transparent;color:#16233F;font:inherit;font-size:15px;cursor:pointer;border-radius:8px;margin:0 8px 8px 0;' +
+        (marcada ? 'border:3px solid #1F5FA3;padding:8px 14px' : 'border:1px solid #1F5FA3;padding:10px 16px');
+      b.addEventListener('click', aoClicar);
+      return b;
+    }
+
+    var nomeAdmin = '';
+    function lista(saudacao) {
+      if (saudacao) nomeAdmin = saudacao;
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aplicações' }), el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
+      app.appendChild(cartao);
+      P.client.from('aplicacoes_mentoria').select('*').order('criado_em', { ascending: false }).then(function (r) {
+        cartao.textContent = '';
+        cartao.appendChild(el('h2', { text: 'Aplicações' }));
+        if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as aplicações.' })); return; }
+        var todas = r.data || [];
+        var novasCompletas = todas.filter(function (a) { return a.concluida && a.situacao === 'nova'; });
+        var naoConcluidas = todas.filter(function (a) { return !a.concluida && a.situacao === 'nova'; });
+        var abas = el('div', { class: 'portal-abas', role: 'tablist' });
+        var defs = [['novas', 'Novas (' + novasCompletas.length + ')'], ['incompletas', 'Não concluídas (' + naoConcluidas.length + ')'], ['todas', 'Todas (' + todas.length + ')']];
+        var corpo = el('div');
+        function pintar() {
+          corpo.textContent = '';
+          var itens = aba === 'novas' ? novasCompletas : aba === 'incompletas' ? naoConcluidas : todas;
+          if (!itens.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: aba === 'todas' ? 'Nenhuma aplicação ainda.' : 'Nada por aqui.' }));
+          itens.forEach(function (a) {
+            var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
+            abrir.addEventListener('click', function () { detalhe(a); });
+            var estado = (a.concluida ? 'Completa' : 'Não concluída') + ' · ' + SITUACOES[a.situacao];
+            corpo.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.nome }), el('span', { class: 'portal-item-data', text: dataHora(a.criado_em) + ' · ' + estado })]), abrir
+            ])]));
+          });
+        }
+        defs.forEach(function (d) {
+          var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] ? ' ativa' : ''), text: d[1] });
+          b.addEventListener('click', function () { aba = d[0]; lista(); });
+          abas.appendChild(b);
+        });
+        cartao.appendChild(abas); cartao.appendChild(corpo); pintar();
+      });
+    }
+
+    function detalhe(a) {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Aplicações' });
+      voltar.addEventListener('click', function () { lista(); });
+      var texto = a.concluida
+        ? 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Recebi a sua aplicação para o Acompanhamento Prático Individual.'
+        : 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Vi que você começou a aplicação para o Acompanhamento Prático Individual e não terminou. Posso te ajudar com alguma dúvida?';
+      var whats = el('a', { class: 'portal-btn portal-btn-whats', href: 'https://wa.me/' + numeroWhats(a.whatsapp) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', text: 'Chamar no WhatsApp' });
+      app.appendChild(el('div', { class: 'portal-topo' }, [voltar, whats]));
+
+      var dados = el('div', { class: 'portal-cartao' }, [el('h2', { text: a.nome }),
+        el('p', { class: 'portal-item-data', text: dataHora(a.criado_em) + ' · ' + (a.concluida ? 'Aplicação completa' : 'Não concluída (parou no meio)') })]);
+      function campo(rotulo, valor) {
+        dados.appendChild(el('p', { class: 'portal-item-titulo', style: 'margin-top:14px', text: rotulo }));
+        dados.appendChild(el('p', { class: 'portal-descricao', text: valor || 'Ainda não respondeu.' }));
+      }
+      campo('WhatsApp', a.whatsapp); campo('Gmail', a.email);
+      campo('Nível de conhecimento em Astrologia hoje', a.nivel);
+      campo('Está disposto a desconstruir conceitos modernos e medievais?', a.metodo);
+      campo('Objetivos com a mentoria', (a.objetivos || []).join('\n') + (a.objetivo_outros ? '\nOutros: ' + a.objetivo_outros : ''));
+      campo('Por que escolheu a mentoria com você', a.motivo);
+      app.appendChild(dados);
+
+      var sit = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Situação' })]);
+      var msg = el('p', { class: 'portal-msg' });
+      var area = el('div');
+      function pintarSit() {
+        area.textContent = '';
+        Object.keys(SITUACOES).forEach(function (k) {
+          area.appendChild(botaoOpcao(SITUACOES[k], a.situacao === k, function () {
+            P.mensagem(msg, 'Salvando...');
+            P.client.from('aplicacoes_mentoria').update({ situacao: k, atualizado_em: new Date().toISOString() }).eq('id', a.id).then(function (r) {
+              if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+              a.situacao = k; pintarSit(); P.mensagem(msg, 'Salvo.', 'ok');
+            });
+          }));
+        });
+      }
+      pintarSit(); sit.appendChild(area); sit.appendChild(msg);
+      app.appendChild(sit);
+
+      var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar esta aplicação' });
+      apagar.addEventListener('click', function () {
+        if (!confirm('Apagar a aplicação de ' + a.nome + '?')) return;
+        P.client.from('aplicacoes_mentoria').delete().eq('id', a.id).then(function (r) {
+          if (r.error) { alert(P.traduzErro(r.error.message)); return; }
+          lista();
+        });
+      });
+      app.appendChild(apagar);
+    }
+
+    P.client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>

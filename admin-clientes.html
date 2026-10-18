@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=25"></script>
+  <script src="portal.js?v=26"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -47,7 +47,7 @@
       var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       b.addEventListener('click', sair);
       var alunos = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Alunos' });
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [el('a', { class: 'portal-btn portal-btn-sec', href: 'capa.html', text: 'Capa' }), alunos, b])]);
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [P.linkAplicacoes(), el('a', { class: 'portal-btn portal-btn-sec', href: 'capa.html', text: 'Capa' }), alunos, b])]);
     }
     function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
 

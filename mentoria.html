@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=12">
 </head>
 <body>
   <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
@@ -141,11 +142,10 @@
         </p>
       </div>
 
-      <!-- FORMULÁRIO TALLY EMBUTIDO -->
+      <!-- FORMULÁRIO DA APLICAÇÃO (do próprio site, em passos; as respostas vão pro painel do administrador) -->
       <div id="aplicacao-tally" style="margin-top: 20px;">
         <h3 style="color: #1F5FA3; font-size: 20px; margin-bottom: 15px;">Preencha a sua Aplicação abaixo:</h3>
-        
-        <iframe frameborder="0" height="650" marginheight="0" marginwidth="0" src="https://tally.so/embed/VL7x2v?alignLeft=1&amp;hideTitle=1&amp;transparentBackground=1" style="border: 0; min-height: 650px; width: 100%;" title="Aplicação para Mentoria" width="100%"></iframe>
+        <div class="portal" style="text-align: left;"><div id="aplicacao-form"></div></div>
       </div>
 
       <!-- SUPORTE DÚVIDAS WHATSAPP -->
@@ -160,6 +160,9 @@
   </div>
 
 </div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=26"></script>
+  <script src="aplicacao.js?v=1"></script>
   <script src="menu.js?v=17" defer></script>
 </body>
 </html>
