@@ -20,7 +20,7 @@
   }
   var hojeISO = function () { return new Date().toLocaleDateString('sv-SE'); }; /* AAAA-MM-DD no dia do aparelho */
   var diaDe = function (iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; };
-  var COLUNAS = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga';
+  var COLUNAS = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,imagem_caminho';
   var ordenar = function (q) { return q.order('data_atividade', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }); };
   var dataPostagem = function (a) { return a.data_atividade || diaDe(a.criado_em); };
   /* "Postada em 01/10/2026 · Respondida em 03/10/2026 · Corrigida em 05/10/2026" (só o que existe) */
@@ -60,17 +60,96 @@
       if (rp.error) throw rp.error;
       var perguntas = rp.data || [];
       var ids = perguntas.map(function (p) { return p.id; });
-      if (!ids.length) return { perguntas: [], respostas: {}, correcoes: {}, gabarito: {} };
+      if (!ids.length) return { perguntas: [], respostas: {}, correcoes: {}, gabarito: {}, comentarios: {} };
       var pedidos = [
         C.from('atividade_respostas').select('pergunta_id,texto,opcao').in('pergunta_id', ids),
-        C.from('atividade_correcoes').select('pergunta_id,situacao,comentario').in('pergunta_id', ids)
+        C.from('atividade_correcoes').select('pergunta_id,situacao,comentario').in('pergunta_id', ids),
+        C.from('atividade_comentarios').select('id,pergunta_id,autor,texto,criado_em').in('pergunta_id', ids).order('criado_em')
       ];
       if (comGabarito) pedidos.push(C.from('atividade_gabarito').select('pergunta_id,correta').in('pergunta_id', ids));
       return Promise.all(pedidos).then(function (r) {
         var mapa = function (res, campo) { var m = {}; ((res && res.data) || []).forEach(function (x) { m[x.pergunta_id] = x; }); return m; };
-        return { perguntas: perguntas, respostas: mapa(r[0]), correcoes: mapa(r[1]), gabarito: comGabarito ? mapa(r[2]) : {} };
+        var conversas = {}; /* pergunta_id -> [comentários em ordem] (sem a tabela nova ainda, vem vazio: nunca derruba a tela) */
+        ((r[2] && r[2].data) || []).forEach(function (x) { (conversas[x.pergunta_id] = conversas[x.pergunta_id] || []).push(x); });
+        return { perguntas: perguntas, respostas: mapa(r[0]), correcoes: mapa(r[1]), gabarito: comGabarito ? mapa(r[3]) : {}, comentarios: conversas };
       });
     });
+  }
+
+  /* ============ IMAGEM DO MAPA e CONVERSA (comentários) ============ */
+
+  var BUCKET = 'atividades', LIMITE_IMAGEM = 8 * 1024 * 1024;
+  var urlAssinada = function (caminho) { return C.storage.from(BUCKET).createSignedUrl(caminho, 3600).then(function (r) { return r.error || !r.data ? null : r.data.signedUrl; }, function () { return null; }); };
+
+  /* a imagem do mapa da atividade; tocar abre em tamanho grande */
+  function figuraDoMapa(caminho) {
+    var caixa = el('div', { style: 'margin:12px 0' }, [el('p', { class: 'portal-vazio', text: 'Carregando a imagem...' })]);
+    urlAssinada(caminho).then(function (url) {
+      caixa.textContent = '';
+      if (!url) { caixa.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a imagem agora.' })); return; }
+      var img = el('img', { src: url, alt: 'Mapa da atividade', style: 'display:block;width:100%;height:auto;border:1px solid #1F5FA3;border-radius:8px' });
+      caixa.appendChild(el('a', { href: url, target: '_blank', rel: 'noopener' }, [img]));
+      caixa.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:6px', text: 'Toque na imagem para ver em tamanho grande.' }));
+    });
+    return caixa;
+  }
+  function enviarImagem(atividadeId, arquivo, caminhoAntigo) {
+    if (!/^image\/(png|jpeg)$/.test(arquivo.type)) return Promise.reject(new Error('Use uma imagem PNG ou JPEG.'));
+    if (arquivo.size > LIMITE_IMAGEM) return Promise.reject(new Error('A imagem é grande demais (máximo 8 MB).'));
+    var caminho = atividadeId + '/mapa-' + Date.now() + '.' + (arquivo.type === 'image/png' ? 'png' : 'jpg');
+    return C.storage.from(BUCKET).upload(caminho, arquivo, { contentType: arquivo.type, upsert: false }).then(function (r) {
+      if (r.error) throw r.error;
+      return C.from('atividades').update({ imagem_caminho: caminho }).eq('id', atividadeId);
+    }).then(function (r) {
+      if (r.error) throw r.error;
+      if (caminhoAntigo) C.storage.from(BUCKET).remove([caminhoAntigo]);
+      return caminho;
+    });
+  }
+  function removerImagem(atividadeId, caminho) {
+    return C.from('atividades').update({ imagem_caminho: null }).eq('id', atividadeId).then(function (r) {
+      if (r.error) throw r.error;
+      C.storage.from(BUCKET).remove([caminho]);
+    });
+  }
+  /* botão que abre o seletor de arquivo (o campo nativo fica escondido) */
+  function botaoDeImagem(rotulo, aoEscolher) {
+    var input = el('input', { type: 'file', accept: 'image/png,image/jpeg' });
+    input.style.display = 'none';
+    var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: rotulo });
+    b.addEventListener('click', function () { input.click(); });
+    input.addEventListener('change', function () { if (input.files && input.files[0]) aoEscolher(input.files[0]); input.value = ''; });
+    return el('span', {}, [b, input]);
+  }
+
+  /* conversa embaixo de uma pergunta: o aluno comenta/pergunta (opcional) e o administrador responde.
+     quem = { euAutor: 'aluno' | 'admin', nomeAluno, previa } */
+  function conversaDaPergunta(perguntaId, lista, quem) {
+    var souAluno = quem.euAutor === 'aluno';
+    var fio = el('div'), msg = el('p', { class: 'portal-msg' });
+    var texto = el('textarea', { rows: '3', placeholder: souAluno ? 'Escreva aqui um comentário ou uma dúvida (opcional)' : 'Escreva a sua resposta ao aluno' });
+    var enviar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: souAluno ? 'Enviar comentário' : 'Responder' });
+    var nomeDe = function (c) { return c.autor === quem.euAutor ? 'Você' : (c.autor === 'admin' ? 'Cássio' : primeiroNome(quem.nomeAluno)); };
+    function desenhar() {
+      fio.textContent = '';
+      lista.forEach(function (c) {
+        fio.appendChild(el('div', { class: 'portal-item' }, [el('span', { class: 'portal-item-titulo', text: nomeDe(c) }),
+          el('span', { class: 'portal-item-data', text: dataHoraBR(c.criado_em) }), el('p', { class: 'portal-descricao', text: c.texto })]));
+      });
+    }
+    enviar.addEventListener('click', function () {
+      var t = texto.value.trim();
+      if (!t) { P.mensagem(msg, 'Escreva alguma coisa antes de enviar.', 'erro'); return; }
+      if (quem.previa) { P.mensagem(msg, 'Isto é só uma prévia: nada foi enviado.', 'erro'); return; }
+      enviar.disabled = true; P.mensagem(msg, 'Enviando...');
+      C.from('atividade_comentarios').insert({ pergunta_id: perguntaId, autor: quem.euAutor, texto: t }).select('id,pergunta_id,autor,texto,criado_em').single().then(function (r) {
+        enviar.disabled = false;
+        if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+        lista.push(r.data); texto.value = ''; P.mensagem(msg, ''); desenhar();
+      });
+    });
+    desenhar();
+    return el('div', { style: 'margin-top:14px' }, [el('p', { class: 'portal-item-titulo', text: souAluno ? 'Comentários e dúvidas' : 'Conversa com o aluno' }), fio, texto, msg, el('div', { class: 'portal-acoes' }, [enviar])]);
   }
 
   /* ============ ALUNO ============ */
@@ -119,6 +198,7 @@
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: atividade.titulo })]);
       if (atividade.descricao) cab.appendChild(el('p', { text: atividade.descricao, class: 'portal-descricao' }));
       cab.appendChild(el('p', { class: 'portal-item-data', text: linhaDatas(atividade) }));
+      if (atividade.imagem_caminho) cab.appendChild(figuraDoMapa(atividade.imagem_caminho));
       if (!editavel) {
         var corrigida = Object.keys(d.correcoes).some(function (k) { return d.correcoes[k].situacao || d.correcoes[k].comentario; });
         if (!corrigida && !atividade.antiga) {
@@ -158,6 +238,7 @@
           if (c.comentario) box.appendChild(el('p', { class: 'portal-descricao', text: c.comentario }));
           cartao.appendChild(box);
         }
+        cartao.appendChild(conversaDaPergunta(p.id, d.comentarios[p.id] || (d.comentarios[p.id] = []), { euAutor: 'aluno', nomeAluno: atividade.alunoNome, previa: previa }));
         corpo.appendChild(cartao);
       });
 
@@ -262,6 +343,14 @@
       var dCorrecao = el('input', { type: 'date' });
       var blocos = [];
       var areaPerguntas = el('div');
+      var imagemEscolhida = null; /* arquivo do mapa; é enviado depois que a atividade é salva */
+      var nomeImagem = el('p', { class: 'portal-vazio', style: 'margin:6px 0 14px' });
+      var areaImagem = el('div', {}, [el('label', { text: 'Imagem do mapa (opcional, PNG ou JPEG)' }),
+        botaoDeImagem('Escolher a imagem', function (arq) {
+          if (!/^image\/(png|jpeg)$/.test(arq.type)) { P.mensagem(msg, 'Use uma imagem PNG ou JPEG.', 'erro'); return; }
+          if (arq.size > LIMITE_IMAGEM) { P.mensagem(msg, 'A imagem é grande demais (máximo 8 MB).', 'erro'); return; }
+          imagemEscolhida = arq; P.mensagem(msg, ''); nomeImagem.textContent = 'Imagem escolhida: ' + arq.name;
+        }), nomeImagem]);
 
       /* escolha do tipo (botões, não campo nativo) */
       var modo = el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' });
@@ -352,6 +441,7 @@
           if (b.tipo.value === 'multipla' && b.linhasOpcoes().length < 2) { P.mensagem(msg, 'A pergunta ' + (i + 1) + ' precisa de pelo menos 2 alternativas.', 'erro'); return; }
         }
         salvar.disabled = true; P.mensagem(msg, 'Salvando...');
+        var idNova = null;
         var registro = { aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: antiga ? null : (descricao.value.trim() || null), data_atividade: antiga ? dAtividade.value : hojeISO(), antiga: antiga };
         if (antiga) {
           registro.enviada_em = new Date((dResposta.value || dAtividade.value) + 'T12:00:00').toISOString(); /* já feita: entra como enviada */
@@ -359,6 +449,7 @@
         }
         C.from('atividades').insert(registro).select('id').single().then(function (r) {
           if (r.error) throw r.error;
+          idNova = r.data.id;
           var linhas = blocos.map(function (b, i) {
             return { atividade_id: r.data.id, ordem: i, tipo: b.tipo.value, enunciado: b.enunciado.value.trim(), opcoes: b.tipo.value === 'multipla' ? b.linhasOpcoes() : null };
           });
@@ -383,6 +474,10 @@
           });
         }).then(function (rg) {
           if (rg && rg.error) throw rg.error;
+          /* a imagem só sobe depois de tudo salvo; se ela falhar, a atividade já existe e dá pra anexar de novo na tela dela */
+          return imagemEscolhida ? enviarImagem(idNova, imagemEscolhida, null).then(function () { return null; }, function () { return 'imagem'; }) : null;
+        }).then(function (falhou) {
+          if (falhou === 'imagem') { alert('A atividade foi salva, mas a imagem não subiu. Abra a atividade e anexe a imagem de novo.'); lista(); return; }
           if (antiga) lista(); else avisarNovaAtividade(titulo.value.trim());
         }).catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
@@ -392,6 +487,7 @@
       corpo.appendChild(el('label', { text: 'Título' })); corpo.appendChild(titulo);
       corpo.appendChild(areaDatasAntiga);
       corpo.appendChild(descricaoRotulo); corpo.appendChild(descricao);
+      corpo.appendChild(areaImagem);
       corpo.appendChild(areaPerguntas);
       novaPergunta();
       corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [maisUma]));
@@ -435,6 +531,33 @@
         cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr);
         cartaoDatas.appendChild(msgDatas); cartaoDatas.appendChild(salvarDatas);
         area.appendChild(cartaoDatas);
+
+        /* imagem do mapa da atividade (PNG ou JPEG): o aluno vê em cima das perguntas e ela entra no caderno */
+        var cartaoImagem = el('div', { class: 'portal-cartao' });
+        var msgImagem = el('p', { class: 'portal-msg' });
+        function desenharImagem() {
+          cartaoImagem.textContent = '';
+          cartaoImagem.appendChild(el('p', { class: 'portal-item-titulo', text: 'Imagem do mapa' }));
+          if (a.imagem_caminho) cartaoImagem.appendChild(figuraDoMapa(a.imagem_caminho));
+          else cartaoImagem.appendChild(el('p', { class: 'portal-vazio', style: 'margin-bottom:10px', text: 'Nenhuma imagem. Se a atividade for sobre um mapa, anexe a imagem aqui (PNG ou JPEG).' }));
+          var acoesImg = el('div', { class: 'portal-acoes' }, [botaoDeImagem(a.imagem_caminho ? 'Trocar a imagem' : 'Anexar imagem', function (arq) {
+            P.mensagem(msgImagem, 'Enviando a imagem...');
+            enviarImagem(a.id, arq, a.imagem_caminho).then(function (caminho) { a.imagem_caminho = caminho; desenharImagem(); P.mensagem(msgImagem, 'Imagem salva.', 'ok'); })
+              .catch(function (e) { P.mensagem(msgImagem, P.traduzErro(e.message), 'erro'); });
+          })]);
+          if (a.imagem_caminho) {
+            var tirarImg = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar a imagem' });
+            tirarImg.addEventListener('click', function () {
+              if (!confirm('Tirar a imagem desta atividade?')) return;
+              removerImagem(a.id, a.imagem_caminho).then(function () { a.imagem_caminho = null; desenharImagem(); P.mensagem(msgImagem, 'Imagem removida.', 'ok'); })
+                .catch(function (e) { P.mensagem(msgImagem, P.traduzErro(e.message), 'erro'); });
+            });
+            acoesImg.appendChild(tirarImg);
+          }
+          cartaoImagem.appendChild(acoesImg); cartaoImagem.appendChild(msgImagem);
+        }
+        desenharImagem();
+        area.appendChild(cartaoImagem);
         var campos = {}; /* pergunta_id -> { sit, com } */
         d.perguntas.forEach(function (p, i) {
           var r = d.respostas[p.id] || {};
@@ -455,6 +578,7 @@
           var com = el('textarea', { rows: '3', placeholder: 'Comentário para o aluno (opcional)' });
           com.value = c.comentario || '';
           cx.appendChild(el('label', { text: 'Sua correção' })); cx.appendChild(sit); cx.appendChild(com);
+          cx.appendChild(conversaDaPergunta(p.id, d.comentarios[p.id] || (d.comentarios[p.id] = []), { euAutor: 'admin', nomeAluno: aluno.nome }));
           campos[p.id] = { sit: sit, com: com, tipo: p.tipo, opcao: r.opcao, certa: certa };
           area.appendChild(cx);
         });
@@ -537,10 +661,10 @@
       if (r.error) throw r.error;
       var lista = (r.data || []).slice().sort(function (a, b) { return dataPostagem(a) < dataPostagem(b) ? -1 : dataPostagem(a) > dataPostagem(b) ? 1 : String(a.criado_em).localeCompare(String(b.criado_em)); });
       return Promise.all(lista.map(function (a) {
-        return carregar(a.id, false).then(function (d) { return { atividade: a, datas: linhaDatas(a), perguntas: d.perguntas, respostas: d.respostas, correcoes: d.correcoes }; });
+        return carregar(a.id, false).then(function (d) { return { atividade: a, datas: linhaDatas(a), perguntas: d.perguntas, respostas: d.respostas, correcoes: d.correcoes, comentarios: d.comentarios }; });
       }));
     });
   }
 
-  window.atividades = { dadosDoCaderno: dadosDoCaderno, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
+  window.atividades = { dadosDoCaderno: dadosDoCaderno, urlAssinada: urlAssinada, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
 })();
