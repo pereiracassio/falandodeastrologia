@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="blog.css?v=1">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+      <a href="blog.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Blog</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="blog" id="post"><p class="blog-vazio">Carregando...</p></div>
+</div></div>
+  <script src="blog.js?v=1"></script>
+  <script>
+  (function () {
+    var B = window.blog, el = B.el, area = document.getElementById('post');
+    var slug = new URLSearchParams(location.search).get('p') || '';
+
+    function naoEncontrada() {
+      document.title = 'Texto não encontrado - Falando de Astrologia';
+      B.definirMeta('meta[name="robots"]', 'content', 'noindex');
+      area.textContent = '';
+      area.appendChild(el('p', { class: 'blog-vazio', text: 'Não encontrei este texto.' }));
+      area.appendChild(el('a', { class: 'blog-voltar', href: 'blog.html', text: '← Ver todos os textos' }));
+    }
+    if (!slug) { naoEncontrada(); return; }
+
+    B.buscar('slug=eq.' + encodeURIComponent(slug) + '&publicado=eq.true&select=*&limit=1').then(function (l) {
+      var p = l && l[0];
+      if (!p) { naoEncontrada(); return; }
+      var url = B.SITE + '/' + B.enderecoDe(p.slug), resumo = B.resumoDe(p);
+      document.title = p.titulo + ' - Falando de Astrologia';
+      B.definirMeta('meta[name="description"]', 'content', resumo);
+      B.definirMeta('link[rel="canonical"]', 'href', url);
+      B.definirMeta('meta[property="og:type"]', 'content', 'article');
+      B.definirMeta('meta[property="og:title"]', 'content', p.titulo);
+      B.definirMeta('meta[property="og:description"]', 'content', resumo);
+      B.definirMeta('meta[property="og:url"]', 'content', url);
+      if (p.imagem_url) B.definirMeta('meta[property="og:image"]', 'content', p.imagem_url);
+      var ld = {
+        '@context': 'https://schema.org', '@type': 'BlogPosting', headline: p.titulo, description: resumo,
+        datePublished: p.publicado_em, dateModified: p.atualizado_em || p.publicado_em, mainEntityOfPage: url,
+        author: { '@type': 'Person', name: 'Cássio Pereira' }
+      };
+      if (p.imagem_url) ld.image = p.imagem_url;
+      var s = document.createElement('script'); s.type = 'application/ld+json'; s.textContent = JSON.stringify(ld);
+      document.head.appendChild(s);
+
+      area.textContent = '';
+      area.appendChild(el('h1', { text: p.titulo }));
+      if (p.publicado_em) area.appendChild(el('p', { class: 'blog-data', style: 'text-align:center;margin-bottom:20px', text: B.dataExtenso(p.publicado_em) }));
+      if (p.imagem_url) area.appendChild(el('img', { class: 'blog-capa', src: p.imagem_url, alt: p.titulo }));
+      area.appendChild(B.renderizarCorpo(p.corpo));
+      area.appendChild(el('a', { class: 'blog-voltar', href: 'blog.html', text: '← Ver todos os textos' }));
+    }).catch(function () {
+      area.textContent = '';
+      area.appendChild(el('p', { class: 'blog-vazio', text: 'Não consegui carregar este texto agora. Tente de novo em instantes.' }));
+    });
+  })();
+  </script>
+  <script src="menu.js?v=18" defer></script>
+</body>
+</html>

@@ -2,6 +2,7 @@
   var links = [
     { label: "Início", href: "index.html" },
     { label: "Quem sou eu", href: "sobre.html" },
+    { label: "Blog", href: "blog.html" },
     { label: "Mentoria em Astrologia Clássica", href: "mentoria.html", sep: true },
     { label: "Retificação de Mapa", href: "retificacao.html" },
     { label: "Mapa Natal Clássico", href: "mapa-natal.html", sep: true },

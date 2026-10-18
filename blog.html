@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog - Falando de Astrologia</title>
+  <meta name="description" content="Textos de Cássio Pereira sobre Astrologia Helenística Tradicional.">
+  <link rel="canonical" href="https://falandodeastrologia.com.br/blog.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="blog.css?v=1">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+      <a href="blog.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Blog</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="blog">
+    <h1>Blog</h1>
+    <div id="lista"><p class="blog-vazio">Carregando...</p></div>
+  </div>
+</div></div>
+  <script src="blog.js?v=1"></script>
+  <script>
+  (function () {
+    var B = window.blog, el = B.el, lista = document.getElementById('lista');
+    B.buscar('publicado=eq.true&select=slug,titulo,resumo,corpo,imagem_url,publicado_em&order=publicado_em.desc').then(function (posts) {
+      lista.textContent = '';
+      if (!posts.length) { lista.appendChild(el('p', { class: 'blog-vazio', text: 'Em breve, os primeiros textos.' })); return; }
+      posts.forEach(function (p) {
+        var filhos = [];
+        if (p.imagem_url) filhos.push(el('img', { src: p.imagem_url, alt: '', loading: 'lazy' }));
+        if (p.publicado_em) filhos.push(el('p', { class: 'blog-data', text: B.dataExtenso(p.publicado_em) }));
+        filhos.push(el('h2', { text: p.titulo }));
+        filhos.push(el('p', { text: B.resumoDe(p) }));
+        lista.appendChild(el('a', { class: 'blog-item', href: B.enderecoDe(p.slug) }, filhos));
+      });
+    }).catch(function () {
+      lista.textContent = '';
+      lista.appendChild(el('p', { class: 'blog-vazio', text: 'Não consegui carregar os textos agora. Tente de novo em instantes.' }));
+    });
+  })();
+  </script>
+  <script src="menu.js?v=18" defer></script>
+</body>
+</html>

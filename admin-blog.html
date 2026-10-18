@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="portal.css?v=12">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
+    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
+    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
+      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
+      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
+    </nav>
+  </header>
+<div class="pagina pagina-servico"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Blog</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=33"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '';
+    var LARGURA = 1600; /* largura máxima da imagem da postagem: nítida em tela grande e ainda leve */
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('blog', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          lista();
+        });
+      });
+    }
+
+    /* endereço (slug) a partir do título: sem acento, minúsculo, hífens */
+    function slugDe(titulo) {
+      var s = String(titulo || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, '');
+      return s || 'texto';
+    }
+    var caminhoDe = function (url) { var i = String(url || '').indexOf('/object/public/site/'); return i >= 0 ? decodeURIComponent(String(url).slice(i + '/object/public/site/'.length).split('?')[0]) : null; };
+
+    /* reduz a imagem (mantém a proporção) e salva em JPEG */
+    function prepararImagem(arquivo) {
+      return new Promise(function (ok, erro) {
+        var url = URL.createObjectURL(arquivo), img = new Image();
+        img.onload = function () {
+          var f = Math.min(1, LARGURA / img.naturalWidth), w = Math.round(img.naturalWidth * f), h = Math.round(img.naturalHeight * f);
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          c.toBlob(function (blob) { blob ? ok(blob) : erro(new Error('imagem')); }, 'image/jpeg', 0.85);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); erro(new Error('imagem')); };
+        img.src = url;
+      });
+    }
+
+    function lista() {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Postagens' })]);
+      var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova postagem' });
+      nova.addEventListener('click', function () { editor(null); });
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [nova]));
+      var area = el('div', { style: 'margin-top:14px' }, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
+      cartao.appendChild(area); app.appendChild(cartao);
+      C.from('blog_posts').select('id,titulo,slug,publicado,publicado_em,criado_em').order('criado_em', { ascending: false }).then(function (r) {
+        area.textContent = '';
+        if (r.error) { area.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(r.error.message) })); return; }
+        if (!r.data.length) { area.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma postagem ainda.' })); return; }
+        r.data.forEach(function (p) {
+          var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
+          editar.addEventListener('click', function () { editor(p.id); });
+          var linha = el('div', { class: 'portal-item' }, [
+            el('div', {}, [
+              el('strong', { text: p.titulo }),
+              el('div', { class: 'portal-item-data', text: p.publicado ? 'Publicada em ' + P.dataBR(p.publicado_em) : 'Rascunho' })
+            ]), editar]);
+          linha.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.35)';
+          area.appendChild(linha);
+        });
+      });
+    }
+
+    /* id nulo = postagem nova */
+    function editor(id) {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: id ? 'Editar postagem' : 'Nova postagem' })]);
+      app.appendChild(cartao);
+      var post = { titulo: '', resumo: '', corpo: '', imagem_url: '', publicado: false, slug: null, publicado_em: null };
+      if (!id) montar(); else {
+        cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+        C.from('blog_posts').select('*').eq('id', id).maybeSingle().then(function (r) {
+          if (r.error || !r.data) { lista(); return; }
+          post = r.data; cartao.textContent = ''; cartao.appendChild(el('h2', { text: 'Editar postagem' })); montar();
+        });
+      }
+
+      function montar() {
+        var msg = el('p', { class: 'portal-msg' });
+        var titulo = el('input', { type: 'text', placeholder: 'Título', maxlength: '160' }); titulo.value = post.titulo || '';
+        var resumo = el('textarea', { rows: '2', placeholder: 'Resumo para o Google e para a lista (opcional; se vazio, usa o começo do texto)' }); resumo.value = post.resumo || '';
+        var corpo = el('textarea', { rows: '16', placeholder: 'Escreva o texto. Uma linha em branco separa os parágrafos.' }); corpo.value = post.corpo || '';
+        corpo.style.minHeight = '260px';
+
+        /* imagem */
+        var imagemUrl = post.imagem_url || '', imagemNova = null, imagemAntiga = post.imagem_url || '';
+        var previa = el('img', { alt: '' }); previa.style.cssText = 'display:none;width:100%;max-width:420px;height:auto;border-radius:6px;margin:0 0 10px;border:1px solid #1F5FA3';
+        var escolher = el('input', { type: 'file', accept: 'image/*' }); escolher.style.display = 'none';
+        var botImg = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: imagemUrl ? 'Trocar a imagem' : 'Escolher uma imagem' });
+        var botTirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar a imagem' });
+        function atualizarImagem() {
+          previa.style.display = imagemUrl ? 'block' : 'none'; if (imagemUrl) previa.src = imagemUrl;
+          botImg.textContent = imagemUrl ? 'Trocar a imagem' : 'Escolher uma imagem';
+          botTirar.style.display = imagemUrl ? '' : 'none';
+        }
+        botImg.addEventListener('click', function () { escolher.click(); });
+        botTirar.addEventListener('click', function () { imagemUrl = ''; imagemNova = null; atualizarImagem(); });
+        escolher.addEventListener('change', function () {
+          var arq = escolher.files && escolher.files[0]; escolher.value = '';
+          if (!arq) return;
+          P.mensagem(msg, 'Preparando a imagem...');
+          prepararImagem(arq).then(function (blob) {
+            imagemNova = blob; imagemUrl = URL.createObjectURL(blob); atualizarImagem(); P.mensagem(msg, '');
+          }).catch(function () { P.mensagem(msg, 'Não consegui ler essa imagem. Tente outra (JPEG ou PNG).', 'erro'); });
+        });
+
+        /* botão que marca a linha como subtítulo */
+        var botSub = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Subtítulo' });
+        botSub.addEventListener('click', function () {
+          var t = corpo.value, ini = corpo.selectionStart, fim = corpo.selectionEnd;
+          var comeco = t.lastIndexOf('\n', ini - 1) + 1, f = t.indexOf('\n', fim); if (f < 0) f = t.length;
+          var trecho = t.slice(comeco, f), marcado = /^##\s/.test(trecho);
+          var novo = marcado ? trecho.replace(/^##\s+/, '') : '## ' + trecho;
+          corpo.value = t.slice(0, comeco) + novo + t.slice(f);
+          corpo.focus(); corpo.selectionStart = corpo.selectionEnd = comeco + novo.length;
+        });
+
+        var botoes = el('div', { class: 'portal-acoes', style: 'margin-top:6px' });
+        function travar(v) { Array.prototype.forEach.call(botoes.querySelectorAll('button'), function (b) { b.disabled = v; }); }
+
+        /* grava a postagem; publicar: true/false decide o estado */
+        function gravar(publicar) {
+          var t = titulo.value.trim(), c = corpo.value.trim();
+          if (!t) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
+          if (publicar && !c) { P.mensagem(msg, 'Escreva o texto antes de publicar.', 'erro'); return; }
+          travar(true); P.mensagem(msg, imagemNova ? 'Enviando a imagem...' : 'Salvando...');
+          var enviada = null;
+          var subir = imagemNova
+            ? (function () {
+                var caminho = 'blog-' + Date.now() + '.jpg';
+                return C.storage.from('site').upload(caminho, imagemNova, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
+                  if (r.error) throw r.error;
+                  enviada = caminho; imagemUrl = C.storage.from('site').getPublicUrl(caminho).data.publicUrl;
+                });
+              })()
+            : Promise.resolve();
+          subir.then(function () {
+            var agora = new Date().toISOString();
+            var dados = {
+              titulo: t, resumo: resumo.value.trim() || null, corpo: c, imagem_url: imagemUrl || null,
+              publicado: publicar, atualizado_em: agora
+            };
+            if (publicar && !post.publicado_em) dados.publicado_em = agora;
+            if (id) return C.from('blog_posts').update(dados).eq('id', id).then(function (r) { if (r.error) throw r.error; });
+            /* postagem nova: cria o endereço; se já existir, acrescenta um número */
+            var base = slugDe(t), tentativa = 1;
+            function inserir() {
+              dados.slug = tentativa === 1 ? base : base + '-' + tentativa;
+              return C.from('blog_posts').insert(dados).select('id').single().then(function (r) {
+                if (r.error && r.error.code === '23505' && tentativa < 20) { tentativa++; return inserir(); }
+                if (r.error) throw r.error;
+                id = r.data.id;
+              });
+            }
+            return inserir();
+          }).then(function () {
+            if (imagemAntiga && imagemAntiga !== imagemUrl) { var velha = caminhoDe(imagemAntiga); if (velha) C.storage.from('site').remove([velha]); }
+            lista();
+          }).catch(function (e) {
+            if (enviada) C.storage.from('site').remove([enviada]);
+            travar(false); P.mensagem(msg, P.traduzErro(e.message), 'erro');
+          });
+        }
+
+        var publicar = el('button', { type: 'button', class: 'portal-btn', text: post.publicado ? 'Salvar alterações' : 'Publicar' });
+        publicar.addEventListener('click', function () { gravar(true); });
+        botoes.appendChild(publicar);
+        {
+          var rascunho = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: post.publicado ? 'Tirar do ar (voltar a rascunho)' : 'Salvar como rascunho' });
+          rascunho.addEventListener('click', function () { gravar(false); });
+          botoes.appendChild(rascunho);
+        }
+        var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Voltar' });
+        voltar.addEventListener('click', lista);
+        botoes.appendChild(voltar);
+        if (id) {
+          var excluir = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir' });
+          excluir.addEventListener('click', function () {
+            if (!window.confirm('Excluir esta postagem de vez? Não dá para desfazer.')) return;
+            travar(true);
+            C.from('blog_posts').delete().eq('id', id).then(function (r) {
+              if (r.error) { travar(false); P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+              var velha = caminhoDe(imagemAntiga); if (velha) C.storage.from('site').remove([velha]);
+              lista();
+            });
+          });
+          botoes.appendChild(excluir);
+        }
+
+        cartao.appendChild(titulo); cartao.appendChild(resumo);
+        cartao.appendChild(previa); cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [botImg, botTirar, escolher]));
+        cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:8px' }, [botSub]));
+        cartao.appendChild(corpo);
+        cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Subtítulo: clique na linha e toque em "Subtítulo". O visual (cores e fonte) é sempre o do site.' }));
+        if (post.publicado && post.slug) {
+          cartao.appendChild(el('p', { class: 'portal-vazio' }, [el('a', { href: 'postagem.html?p=' + encodeURIComponent(post.slug), target: '_blank', rel: 'noopener', text: 'Ver no site' })]));
+        }
+        cartao.appendChild(msg); cartao.appendChild(botoes);
+        atualizarImagem();
+      }
+    }
+
+    C.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>
