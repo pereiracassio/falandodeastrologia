@@ -49,14 +49,14 @@ module.exports = async (req, res) => {
     if (!arquivoId) { res.status(400).json({ erro: 'não é um arquivo do Drive' }); return; }
 
     const c = await lerConexao();
-    if (!c) { res.status(503).json({ codigo: 'desconectado' }); return; }
+    if (!c) { res.status(503).json({ codigo: 'desconectado', detalhe: 'O Drive do administrador está desconectado.' }); return; }
     const token = (await tokenDeAcesso(c)).valor;
     const H = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' };
     const base = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(arquivoId);
 
     // só dá pra transferir o que é do administrador
     const info = await fetch(base + '?supportsAllDrives=true&fields=ownedByMe,driveId', { headers: H });
-    if (!info.ok) { res.status(502).json({ codigo: 'arquivo' }); return; }
+    if (!info.ok) { res.status(502).json({ codigo: 'arquivo', detalhe: 'Drive não leu o arquivo (' + info.status + '): ' + (await info.text()).slice(0, 200) }); return; }
     const i = await info.json();
     if (!i.ownedByMe || i.driveId) { res.status(409).json({ codigo: 'ja_transferido' }); return; }
 
@@ -70,12 +70,12 @@ module.exports = async (req, res) => {
     if (!r.ok) {
       const t = await r.text();
       console.error('transferir:', r.status, t.slice(0, 300));
-      res.status(502).json({ codigo: 'drive' });
+      res.status(502).json({ codigo: 'drive', detalhe: 'Drive recusou (' + r.status + '): ' + t.slice(0, 250) });
       return;
     }
     res.status(200).json({ ok: true, email });
   } catch (e) {
     console.error('transferir:', e.message);
-    res.status(500).json({ erro: 'erro no servidor' });
+    res.status(500).json({ erro: 'erro no servidor', detalhe: String(e.message || e).slice(0, 200) });
   }
 };
