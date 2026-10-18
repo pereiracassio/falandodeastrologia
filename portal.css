@@ -25,6 +25,10 @@
 .portal-btn{display:inline-block;padding:12px 24px;background:#1F5FA3;color:#f6e7b4;font-weight:700;font-size:15px;text-decoration:none;border:0;border-radius:8px;cursor:pointer;transition:background .3s ease,transform .2s ease}
 .portal-btn:hover{background:#0b2a52;transform:translateY(-2px)}
 .portal-btn:disabled{opacity:.6;cursor:default;transform:none}
+.portal-btn-meet{background:#B5852F;color:#16233F}
+.portal-btn-meet:hover{background:#8f6a24}
+.portal-btn-whats{background:#4A7C59;color:#f6e7b4}
+.portal-btn-whats:hover{background:#365d42}
 .portal-btn-sec{background:transparent;color:#1F5FA3;border:1px solid #1F5FA3}
 .portal-btn-sec:hover{background:transparent;border-width:3px;padding:10px 22px}
 .portal-btn-perigo{background:transparent;color:#A03E25;border:1px solid #A03E25;padding:6px 12px;font-size:13px}
