@@ -343,7 +343,7 @@
       var msg = el('p', { class: 'portal-msg' });
       var antiga = false;
       var titulo = el('input', { type: 'text', placeholder: 'Ex.: Atividade sobre as casas' });
-      var descricao = el('textarea', { rows: '3', placeholder: 'Instruções para o aluno (opcional)' });
+      var descricao = el('textarea', { rows: '6', placeholder: 'Texto que aparece antes das perguntas (opcional)' });
       var dAtividade = el('input', { type: 'date' });
       var dResposta = el('input', { type: 'date' });
       var dCorrecao = el('input', { type: 'date' });
@@ -376,11 +376,9 @@
       function aplicarModo() {
         desenharModo();
         areaDatasAntiga.style.display = antiga ? '' : 'none';
-        descricao.style.display = antiga ? 'none' : '';
-        descricaoRotulo.style.display = antiga ? 'none' : '';
         blocos.forEach(function (b) { b.areaAntiga.style.display = antiga ? '' : 'none'; });
       }
-      var descricaoRotulo = el('label', { text: 'Instruções (opcional)' });
+      var descricaoRotulo = el('label', { text: 'Texto antes das perguntas (opcional)' });
 
       function novaPergunta() {
         var tipo = el('select', {}, [el('option', { value: 'dissertativa', text: 'Dissertativa (o aluno escreve)' }), el('option', { value: 'multipla', text: 'Múltipla escolha' })]);
@@ -448,7 +446,7 @@
         }
         salvar.disabled = true; P.mensagem(msg, 'Salvando...');
         var idNova = null;
-        var registro = { aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: antiga ? null : (descricao.value.trim() || null), data_atividade: antiga ? dAtividade.value : hojeISO(), antiga: antiga };
+        var registro = { aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: descricao.value.trim() || null, data_atividade: antiga ? dAtividade.value : hojeISO(), antiga: antiga };
         if (antiga) {
           registro.enviada_em = new Date((dResposta.value || dAtividade.value) + 'T12:00:00').toISOString(); /* já feita: entra como enviada */
           registro.corrigida_em = dCorrecao.value || null;
@@ -537,6 +535,22 @@
         cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr);
         cartaoDatas.appendChild(msgDatas); cartaoDatas.appendChild(salvarDatas);
         area.appendChild(cartaoDatas);
+
+        /* texto que aparece antes das perguntas (dá pra mexer a qualquer hora, também nas antigas) */
+        var textoAtividade = el('textarea', { rows: '6', placeholder: 'Texto que aparece antes das perguntas (opcional)' });
+        textoAtividade.value = a.descricao || '';
+        var msgTexto = el('p', { class: 'portal-msg' });
+        var salvarTexto = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar texto' });
+        salvarTexto.addEventListener('click', function () {
+          var novo = textoAtividade.value.trim() || null;
+          salvarTexto.disabled = true;
+          C.from('atividades').update({ descricao: novo }).eq('id', a.id).then(function (r) {
+            salvarTexto.disabled = false;
+            if (r.error) { P.mensagem(msgTexto, P.traduzErro(r.error.message), 'erro'); return; }
+            a.descricao = novo; P.mensagem(msgTexto, 'Texto salvo.', 'ok');
+          });
+        });
+        area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Texto antes das perguntas' }), textoAtividade, msgTexto, salvarTexto]));
 
         /* imagem do mapa da atividade (PNG ou JPEG): o aluno vê em cima das perguntas e ela entra no caderno */
         var cartaoImagem = el('div', { class: 'portal-cartao' });
