@@ -35,6 +35,28 @@
     return doc;
   }
 
+  /* baixa a imagem do mapa (link assinado do Supabase) e devolve { dados, tipo, w, h } pra entrar no PDF; null se não deu */
+  function imagemDoMapa(caminho) {
+    if (!caminho) return Promise.resolve(null);
+    return window.atividades.urlAssinada(caminho).then(function (url) {
+      if (!url) return null;
+      return fetch(url).then(function (r) { return r.ok ? r.blob() : null; }).then(function (blob) {
+        if (!blob) return null;
+        return new Promise(function (ok) {
+          var fr = new FileReader();
+          fr.onload = function () {
+            var img = new Image();
+            img.onload = function () { ok({ dados: fr.result, tipo: /png/i.test(blob.type) ? 'PNG' : 'JPEG', w: img.naturalWidth, h: img.naturalHeight }); };
+            img.onerror = function () { ok(null); };
+            img.src = fr.result;
+          };
+          fr.onerror = function () { ok(null); };
+          fr.readAsDataURL(blob);
+        });
+      });
+    }).catch(function () { return null; });
+  }
+
   /* a capa vira uma imagem (ela é desenho, não texto) */
   function capaComoImagem(nomeAluno) {
     var F = window.capaFormato('a4');
@@ -54,7 +76,7 @@
   /* monta o PDF; blocos = o que atividades.dadosDoCaderno devolveu. nums = página (já numerada) onde cada atividade começa; sem ele, usa "00"
      (primeira passada, só pra descobrir onde cada atividade cai). Ordem das páginas: capa (fora da contagem), folha de rosto = página 1,
      índice = página 2 (e seguintes, se for grande), depois as atividades, cada uma começando em página nova. Devolve os inícios. */
-  function montarPdf(doc, blocos, capaImg, nums) {
+  function montarPdf(doc, blocos, capaImg, nums, nomeDoAluno) {
     var y = M, inicios = [];
     doc.addImage(capaImg, 'JPEG', 0, 0, A4.w, A4.h);
 
@@ -113,6 +135,13 @@
       titulo(b.atividade.titulo);
       texto(b.datas, { tam: 10.5, cor: COR.ocre, estilo: 'bold', depois: 8 });
       if (b.atividade.descricao) texto(b.atividade.descricao, { depois: 10 });
+      if (b.mapa) {
+        var iw = LARGURA, ih = LARGURA * b.mapa.h / b.mapa.w, maxH = 380;
+        if (ih > maxH) { iw = iw * maxH / ih; ih = maxH; }
+        cabe(ih + 10);
+        doc.addImage(b.mapa.dados, b.mapa.tipo, M + (LARGURA - iw) / 2, y, iw, ih);
+        y += ih + 12;
+      }
       if (!b.perguntas.length) texto('Esta atividade não tem perguntas.', { estilo: 'italic' });
       b.perguntas.forEach(function (q, n) {
         var r = b.respostas[q.id] || {}, c = b.correcoes[q.id] || {};
@@ -136,6 +165,16 @@
         if (c.situacao || c.comentario) {
           texto('Correção' + (c.situacao ? ': ' + (window.atividades.situacoes[c.situacao] || c.situacao) : ''), { tam: 10.5, estilo: 'bold', cor: COR.terracota, recuo: 20, depois: 1 });
           if (c.comentario) texto(c.comentario, { recuo: 20, depois: 2 });
+        }
+        var conversa = (b.comentarios && b.comentarios[q.id]) || [];
+        if (conversa.length) {
+          texto('Comentários', { tam: 10.5, estilo: 'bold', cor: COR.azul, recuo: 20, depois: 1 });
+          conversa.forEach(function (c) {
+            var quem = c.autor === 'admin' ? 'Cássio' : (String(nomeDoAluno || '').trim().split(/\s+/)[0] || 'Aluno');
+            var quando = c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '';
+            texto(quem + (quando ? ' · ' + quando : ''), { tam: 10, estilo: 'bold', cor: c.autor === 'admin' ? COR.terracota : COR.azul, recuo: 28, depois: 0 });
+            texto(c.texto, { recuo: 28, depois: 4 });
+          });
         }
         y += 4;
       });
@@ -167,10 +206,12 @@
       carregarScript('capa.js?v=7', function () { return !!window.capaFolha; })
     ]).then(function () {
       return Promise.all([window.atividades.dadosDoCaderno(aluno), capaComoImagem(aluno.nome), baixarFontes()]).then(function (r) {
+        return Promise.all(r[0].map(function (b) { return imagemDoMapa(b.atividade.imagem_caminho).then(function (m) { b.mapa = m; }); })).then(function () { return r; });
+      }).then(function (r) {
         /* duas passadas: a primeira só descobre em que página cada atividade começa, pra o índice sair com os números certos */
-        var inicios = montarPdf(novoDoc(r[2]), r[0], r[1], null);
+        var inicios = montarPdf(novoDoc(r[2]), r[0], r[1], null, aluno.nome);
         var doc = novoDoc(r[2]);
-        montarPdf(doc, r[0], r[1], inicios);
+        montarPdf(doc, r[0], r[1], inicios, aluno.nome);
         doc.save(nomeArquivo(aluno.nome));
         aviso('Pronto! O caderno foi baixado. Procure em Arquivos (Downloads).', 'ok');
       });
