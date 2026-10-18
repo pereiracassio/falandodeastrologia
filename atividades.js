@@ -406,6 +406,7 @@
         corpo.textContent = '';
         var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova atividade' });
         nova.addEventListener('click', function () { construtor(); });
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [nova])); /* no topo: com muitas atividades, não precisa descer a lista toda */
         if (r.error) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as atividades.' })); return; }
         if (!r.data.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma atividade ainda.' }));
         r.data.forEach(function (a) {
@@ -418,7 +419,6 @@
             el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }), info]), abrir
           ])]));
         });
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [nova]));
       });
     }
 
