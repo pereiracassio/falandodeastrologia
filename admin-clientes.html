@@ -69,9 +69,9 @@
     function listaDeClientes(user) {
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var conexaoDrive = P.cartaoConexaoDrive();
-      if (conexaoDrive) app.appendChild(conexaoDrive);
-      app.appendChild(P.cartaoPastaBase('clientes'));
+      /* ordem: clientes, novo cliente, pasta dos clientes, login com o Google */
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Clientes' })]);
+      app.appendChild(cartao);
 
       var msg = el('p', { class: 'portal-msg' });
       var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
@@ -100,9 +100,10 @@
         });
       });
       app.appendChild(form);
+      app.appendChild(P.cartaoPastaBase('clientes'));
+      var conexaoDrive = P.cartaoConexaoDrive();
+      if (conexaoDrive) app.appendChild(conexaoDrive);
 
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Clientes' })]);
-      app.appendChild(cartao);
       Promise.all([
         P.client.from('clientes').select('id,nome,email').order('nome'),
         P.client.from('cliente_codigos').select('cliente_id,codigo')
