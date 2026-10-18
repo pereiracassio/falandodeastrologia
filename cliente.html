@@ -59,9 +59,30 @@
       var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
       if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
       if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
-      var idGrav = P.idArquivoDrive(gravacao);
-      if (idGrav) botoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: 'https://drive.google.com/file/d/' + idGrav + '/copy', target: '_blank', rel: 'noopener', text: 'Salvar no meu Drive' }));
-      return el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [titulo, botoes])]);
+      var caixa = el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [titulo, botoes])]);
+      if (gravacao && P.idArquivoDrive(gravacao)) caixa.appendChild(transferirGravacao(e));
+      return caixa;
+    }
+
+    /* passa a gravação pro Drive do cliente: o servidor deixa ele como novo dono pendente e o Drive manda um e-mail pra ele aceitar */
+    function transferirGravacao(e) {
+      var msg = el('p', { class: 'portal-msg' });
+      var botao = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Passar o vídeo pro meu Drive' });
+      botao.addEventListener('click', function () {
+        botao.disabled = true; P.mensagem(msg, 'Enviando...', 'ok');
+        P.client.auth.getSession().then(function (r) {
+          var jwt = r.data && r.data.session ? r.data.session.access_token : '';
+          return fetch('https://falandodeastrologia.vercel.app/api/transferir', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt }, body: JSON.stringify({ entrega_id: e.id }) });
+        }).then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { return { ok: resp.ok, d: d }; }); }).then(function (x) {
+          if (x.ok) { P.mensagem(msg, 'Pronto! Enviamos um e-mail do Google Drive para ' + x.d.email + '. Abra o e-mail e aceite a transferência.', 'ok'); return; }
+          botao.disabled = false;
+          P.mensagem(msg, x.d.codigo === 'ja_transferido' ? 'Esse vídeo já foi passado pra você. Procure no seu Drive ou no e-mail do Google Drive.' : 'Não foi possível passar o vídeo agora. Use "Baixar a gravação".', 'erro');
+        }).catch(function () { botao.disabled = false; P.mensagem(msg, 'Não foi possível passar o vídeo agora. Use "Baixar a gravação".', 'erro'); });
+      });
+      return el('div', { style: 'margin-top:12px' }, [
+        el('p', { text: 'Você vai receber um e-mail do Google Drive. Abra o e-mail e aceite a transferência: depois disso o vídeo passa a ser seu, no seu Drive.' }),
+        el('div', { class: 'portal-acoes' }, [botao]), msg
+      ]);
     }
 
     function mostrarPortal(user) {
@@ -82,7 +103,7 @@
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
           el('p', { text: 'Ao baixar a gravação, o Google pode avisar que não consegue verificar vírus por ser um arquivo grande. Toque em "Fazer o download mesmo assim".' })
         ]));
-        P.client.from('entregas').select('servico,data,pdf_link,gravacao_link,criado_em').eq('cliente_id', r.data.id)
+        P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,criado_em').eq('cliente_id', r.data.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (re) {
             var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Seus serviços' })]);
             app.appendChild(cartao);
