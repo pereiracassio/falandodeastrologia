@@ -163,6 +163,7 @@
           texto(r.texto && String(r.texto).trim() ? r.texto : 'Sem resposta.', { recuo: 20, estilo: r.texto && String(r.texto).trim() ? 'normal' : 'italic', depois: 2 });
         }
         if (c.situacao || c.comentario) {
+          y += 14; /* uma linha de respiro entre a resposta e a correção */
           texto('Correção' + (c.situacao ? ': ' + (window.atividades.situacoes[c.situacao] || c.situacao) : ''), { tam: 10.5, estilo: 'bold', cor: COR.terracota, recuo: 20, depois: 1 });
           if (c.comentario) texto(c.comentario, { recuo: 20, depois: 2 });
         }
