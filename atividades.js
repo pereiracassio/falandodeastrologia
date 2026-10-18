@@ -159,6 +159,58 @@
     return el('div', { style: 'margin-top:14px' }, [el('p', { class: 'portal-item-titulo', text: souAluno ? 'Comentários e dúvidas' : 'Conversa com o aluno' }), fio, texto, msg, el('div', { class: 'portal-acoes' }, [enviar])]);
   }
 
+  /* formulário de UMA pergunta (editar ou acrescentar numa atividade que já existe).
+     cfg: { tipoFixo, tipo, enunciado, opcoes[], certa, comResposta (só atividade antiga), resposta {texto,opcao}, comCorrecao (só ao acrescentar numa antiga) }
+     devolve { caixa, ler() } — ler() dá os valores ou { erro } */
+  function formularioPergunta(cfg) {
+    var tipo = el('select', {}, [el('option', { value: 'dissertativa', text: 'Dissertativa (o aluno escreve)' }), el('option', { value: 'multipla', text: 'Múltipla escolha' })]);
+    tipo.value = cfg.tipo || 'dissertativa'; if (cfg.tipoFixo) tipo.disabled = true;
+    var enunciado = el('textarea', { rows: '3', placeholder: 'Escreva a pergunta' }); enunciado.value = cfg.enunciado || '';
+    var opcoes = el('textarea', { rows: '4', placeholder: 'Uma alternativa por linha' }); opcoes.value = (cfg.opcoes || []).join('\n');
+    var certa = el('select');
+    var areaOpcoes = el('div', {}, [el('label', { text: 'Alternativas (uma por linha)' }), opcoes,
+      el('label', { text: 'Alternativa certa (só você vê; serve para corrigir sozinho)' }), certa]);
+    var respTexto = el('textarea', { rows: '5', placeholder: 'Cole aqui a resposta do aluno' }); respTexto.value = (cfg.resposta && cfg.resposta.texto) || '';
+    var respOpcao = el('select');
+    var sit = el('select', {}, [el('option', { value: '', text: 'Sem avaliação' })].concat(Object.keys(SITUACOES).map(function (k) { return el('option', { value: k, text: SITUACOES[k] }); })));
+    var com = el('textarea', { rows: '4', placeholder: 'Cole aqui a sua correção (opcional)' });
+    var linhas = function () { return opcoes.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean); };
+    function atualizarSelects() {
+      var a1 = certa.value, a2 = respOpcao.value;
+      certa.textContent = ''; respOpcao.textContent = '';
+      certa.appendChild(el('option', { value: '', text: 'Sem gabarito (eu corrijo)' }));
+      respOpcao.appendChild(el('option', { value: '', text: 'O aluno não respondeu' }));
+      linhas().forEach(function (op, k) {
+        var txt = String.fromCharCode(65 + k) + ') ' + op;
+        certa.appendChild(el('option', { value: String(k), text: txt })); respOpcao.appendChild(el('option', { value: String(k), text: txt }));
+      });
+      certa.value = a1; respOpcao.value = a2;
+    }
+    var rotuloResp = el('label', { text: 'Resposta do aluno' });
+    var areaResp = el('div', {}, [rotuloResp, respTexto, respOpcao]);
+    var areaCorr = el('div', {}, [el('label', { text: 'Sua correção' }), sit, com]);
+    function mostrar() {
+      var m = tipo.value === 'multipla';
+      areaOpcoes.style.display = m ? '' : 'none';
+      respTexto.style.display = m ? 'none' : ''; respOpcao.style.display = m ? '' : 'none';
+      areaResp.style.display = cfg.comResposta ? '' : 'none';
+      areaCorr.style.display = cfg.comCorrecao ? '' : 'none';
+    }
+    opcoes.addEventListener('input', atualizarSelects); tipo.addEventListener('change', mostrar);
+    atualizarSelects();
+    if (cfg.certa != null) certa.value = String(cfg.certa);
+    if (cfg.resposta && cfg.resposta.opcao != null) respOpcao.value = String(cfg.resposta.opcao);
+    mostrar();
+    var caixa = el('div', {}, [el('label', { text: 'Tipo' }), tipo, el('label', { text: 'Pergunta' }), enunciado, areaOpcoes, areaResp, areaCorr]);
+    return { caixa: caixa, ler: function () {
+      if (!enunciado.value.trim()) return { erro: 'A pergunta está sem texto.' };
+      var m = tipo.value === 'multipla';
+      if (m && linhas().length < 2) return { erro: 'A pergunta precisa de pelo menos 2 alternativas.' };
+      return { tipo: tipo.value, enunciado: enunciado.value.trim(), opcoes: m ? linhas() : null, certa: m && certa.value !== '' ? Number(certa.value) : null,
+        respTexto: m ? '' : respTexto.value.trim(), respOpcao: m && respOpcao.value !== '' ? Number(respOpcao.value) : null, sit: sit.value || null, com: com.value.trim() || null };
+    } };
+  }
+
   /* ============ ALUNO ============ */
 
   /* lista de atividades do aluno; aoAbrir(atividade) abre uma.
@@ -570,20 +622,22 @@
         area.appendChild(cartaoDatas);
 
         /* texto que aparece antes das perguntas (dá pra mexer a qualquer hora, também nas antigas) */
+        var tituloAtividade = el('input', { type: 'text' }); tituloAtividade.value = a.titulo || '';
         var textoAtividade = el('textarea', { rows: '6', placeholder: 'Texto que aparece antes das perguntas (opcional)' });
         textoAtividade.value = a.descricao || '';
         var msgTexto = el('p', { class: 'portal-msg' });
-        var salvarTexto = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar texto' });
+        var salvarTexto = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar título e texto' });
         salvarTexto.addEventListener('click', function () {
-          var novo = textoAtividade.value.trim() || null;
+          var novo = textoAtividade.value.trim() || null, novoTitulo = tituloAtividade.value.trim();
+          if (!novoTitulo) { P.mensagem(msgTexto, 'O título não pode ficar em branco.', 'erro'); return; }
           salvarTexto.disabled = true;
-          C.from('atividades').update({ descricao: novo }).eq('id', a.id).then(function (r) {
+          C.from('atividades').update({ titulo: novoTitulo, descricao: novo }).eq('id', a.id).then(function (r) {
             salvarTexto.disabled = false;
             if (r.error) { P.mensagem(msgTexto, P.traduzErro(r.error.message), 'erro'); return; }
-            a.descricao = novo; P.mensagem(msgTexto, 'Texto salvo.', 'ok');
+            a.descricao = novo; a.titulo = novoTitulo; P.mensagem(msgTexto, 'Salvo.', 'ok');
           });
         });
-        area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Texto antes das perguntas' }), textoAtividade, msgTexto, salvarTexto]));
+        area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Título e texto antes das perguntas' }), el('label', { text: 'Título' }), tituloAtividade, el('label', { text: 'Texto (opcional)' }), textoAtividade, msgTexto, salvarTexto]));
 
         /* imagem do mapa da atividade (PNG ou JPEG): o aluno vê em cima das perguntas e ela entra no caderno */
         var cartaoImagem = el('div', { class: 'portal-cartao' });
@@ -644,9 +698,86 @@
           com.value = c.comentario || '';
           cx.appendChild(el('label', { text: 'Sua correção' })); cx.appendChild(sit); cx.appendChild(com);
           cx.appendChild(conversaDaPergunta(p.id, d.comentarios[p.id] || (d.comentarios[p.id] = []), { euAutor: 'admin', nomeAluno: aluno.nome }));
+          /* editar o texto/alternativas (e, na antiga, a resposta do aluno) ou tirar a pergunta */
+          var areaEdicao = el('div', { style: 'margin-top:14px' });
+          var botEditar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar a pergunta' });
+          var botTirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar esta pergunta' });
+          botEditar.addEventListener('click', function () {
+            if (areaEdicao.firstChild) { areaEdicao.textContent = ''; return; }
+            var f = formularioPergunta({ tipoFixo: true, tipo: p.tipo, enunciado: p.enunciado, opcoes: p.opcoes, certa: certa, comResposta: !!a.antiga, resposta: { texto: r.texto, opcao: r.opcao } });
+            var msgE = el('p', { class: 'portal-msg' });
+            var gravar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar a pergunta' });
+            var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+            fechar.addEventListener('click', function () { areaEdicao.textContent = ''; });
+            gravar.addEventListener('click', function () {
+              var v = f.ler(); if (v.erro) { P.mensagem(msgE, v.erro, 'erro'); return; }
+              gravar.disabled = true; P.mensagem(msgE, 'Salvando...');
+              C.from('atividade_perguntas').update({ enunciado: v.enunciado, opcoes: v.opcoes }).eq('id', p.id).then(function (r1) {
+                if (r1.error) throw r1.error;
+                if (p.tipo !== 'multipla') return null;
+                return v.certa != null ? C.from('atividade_gabarito').upsert({ pergunta_id: p.id, correta: v.certa }, { onConflict: 'pergunta_id' }) : C.from('atividade_gabarito').delete().eq('pergunta_id', p.id);
+              }).then(function (r2) {
+                if (r2 && r2.error) throw r2.error;
+                if (!a.antiga) return null;
+                var tem = p.tipo === 'multipla' ? v.respOpcao != null : !!v.respTexto;
+                return tem ? C.from('atividade_respostas').upsert({ pergunta_id: p.id, texto: v.respTexto || null, opcao: v.respOpcao, atualizado_em: new Date().toISOString() }, { onConflict: 'pergunta_id' })
+                           : C.from('atividade_respostas').delete().eq('pergunta_id', p.id);
+              }).then(function (r3) {
+                if (r3 && r3.error) throw r3.error;
+                telaDaAtividade(a);
+              }).catch(function (e) { gravar.disabled = false; P.mensagem(msgE, P.traduzErro(e.message), 'erro'); });
+            });
+            areaEdicao.appendChild(f.caixa); areaEdicao.appendChild(msgE);
+            areaEdicao.appendChild(el('div', { class: 'portal-acoes' }, [gravar, fechar]));
+          });
+          botTirar.addEventListener('click', function () {
+            if (!confirm('Tirar a pergunta ' + (i + 1) + '? A resposta, a correção e a conversa dela também somem.')) return;
+            C.from('atividade_perguntas').delete().eq('id', p.id).then(function (rd) {
+              if (rd.error) { alert(P.traduzErro(rd.error.message)); return; }
+              telaDaAtividade(a);
+            });
+          });
+          cx.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [botEditar, botTirar]));
+          cx.appendChild(areaEdicao);
           campos[p.id] = { sit: sit, com: com, tipo: p.tipo, opcao: r.opcao, certa: certa };
           area.appendChild(cx);
         });
+
+        /* acrescentar uma pergunta numa atividade que já existe */
+        var cartaoMais = el('div', { class: 'portal-cartao' });
+        var botMais = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Acrescentar uma pergunta' });
+        var areaMais = el('div');
+        botMais.addEventListener('click', function () {
+          if (areaMais.firstChild) { areaMais.textContent = ''; return; }
+          var f = formularioPergunta({ comResposta: !!a.antiga, comCorrecao: !!a.antiga });
+          var msgM = el('p', { class: 'portal-msg' });
+          var gravar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar a pergunta' });
+          var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+          fechar.addEventListener('click', function () { areaMais.textContent = ''; });
+          gravar.addEventListener('click', function () {
+            var v = f.ler(); if (v.erro) { P.mensagem(msgM, v.erro, 'erro'); return; }
+            gravar.disabled = true; P.mensagem(msgM, 'Salvando...');
+            var ordem = d.perguntas.reduce(function (m, q) { return Math.max(m, q.ordem); }, -1) + 1;
+            C.from('atividade_perguntas').insert({ atividade_id: a.id, ordem: ordem, tipo: v.tipo, enunciado: v.enunciado, opcoes: v.opcoes }).select('id').single().then(function (r1) {
+              if (r1.error) throw r1.error;
+              var id = r1.data.id, passos = [];
+              if (v.tipo === 'multipla' && v.certa != null) passos.push(C.from('atividade_gabarito').insert({ pergunta_id: id, correta: v.certa }));
+              if (a.antiga) {
+                if (v.respTexto || v.respOpcao != null) passos.push(C.from('atividade_respostas').insert({ pergunta_id: id, texto: v.respTexto || null, opcao: v.respOpcao }));
+                if (v.sit || v.com) passos.push(C.from('atividade_correcoes').insert({ pergunta_id: id, situacao: v.sit, comentario: v.com }));
+              }
+              return Promise.all(passos);
+            }).then(function (rs) {
+              var falha = rs.filter(function (x) { return x && x.error; })[0];
+              if (falha) throw falha.error;
+              telaDaAtividade(a);
+            }).catch(function (e) { gravar.disabled = false; P.mensagem(msgM, P.traduzErro(e.message), 'erro'); });
+          });
+          areaMais.appendChild(f.caixa); areaMais.appendChild(msgM);
+          areaMais.appendChild(el('div', { class: 'portal-acoes' }, [gravar, fechar]));
+        });
+        cartaoMais.appendChild(el('div', { class: 'portal-acoes' }, [botMais])); cartaoMais.appendChild(areaMais);
+        area.appendChild(cartaoMais);
 
         var msg = el('p', { class: 'portal-msg' });
         function salvarCorrecao() {
