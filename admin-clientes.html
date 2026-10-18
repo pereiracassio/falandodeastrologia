@@ -143,33 +143,41 @@
       voltar.addEventListener('click', function () { listaDeClientes(user); });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
 
-      /* código do cliente (só o administrador vê) */
+      /* dados do cliente: código, nome e pasta no Drive (o código só o administrador vê) */
       var msgCod = el('p', { class: 'portal-msg' });
       var codInput = el('input', { type: 'text', id: 'clienteCodigo', placeholder: 'Ex.: 0147' });
       codInput.value = cliente.codigo || '';
-      var salvarCod = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar código' });
+      var nomeInput = el('input', { type: 'text', id: 'clienteNome', required: '' });
+      nomeInput.value = cliente.nome || '';
+      var salvarCod = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
+      var pastaDrive = P.cartaoPastaDrive({ plural: 'clientes', tipo: 'cliente', id: cliente.id, email: cliente.email, dentroDeOutroBloco: true,
+        nome: function () { return (cliente.codigo ? cliente.codigo + ' - ' : '') + cliente.nome; } });
       var formCod = el('form', { class: 'portal-cartao' }, [
-        el('h2', { text: 'Código do cliente' }),
-        el('p', { text: 'O mesmo código do Astro Hellenic. O cliente não vê este campo. Pra apagar o código, deixe em branco e salve.' }),
-        el('label', { for: 'clienteCodigo', text: 'Código' }), codInput, msgCod, salvarCod
+        el('h2', { text: 'Dados do cliente' }),
+        el('label', { for: 'clienteCodigo', text: 'Código' }), codInput,
+        el('label', { for: 'clienteNome', text: 'Nome' }), nomeInput,
+        pastaDrive, msgCod, salvarCod
       ]);
       formCod.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var valor = codInput.value.trim();
+        var novoNome = nomeInput.value.trim();
+        if (!novoNome) { P.mensagem(msgCod, 'Escreva o nome.', 'erro'); return; }
         salvarCod.disabled = true;
-        var pedido = valor
-          ? P.client.from('cliente_codigos').upsert({ cliente_id: cliente.id, codigo: valor }, { onConflict: 'cliente_id' })
-          : P.client.from('cliente_codigos').delete().eq('cliente_id', cliente.id);
-        pedido.then(function (r) {
-          salvarCod.disabled = false;
-          if (r.error) { P.mensagem(msgCod, /duplicate|unique/i.test(r.error.message) ? 'Esse código já é de outro cliente.' : P.traduzErro(r.error.message), 'erro'); return; }
-          cliente.codigo = valor;
-          P.mensagem(msgCod, valor ? 'Código salvo.' : 'Código removido.', 'ok');
+        P.client.from('clientes').update({ nome: novoNome }).eq('id', cliente.id).then(function (r1) {
+          if (r1.error) { salvarCod.disabled = false; P.mensagem(msgCod, P.traduzErro(r1.error.message), 'erro'); return; }
+          var pedido = valor
+            ? P.client.from('cliente_codigos').upsert({ cliente_id: cliente.id, codigo: valor }, { onConflict: 'cliente_id' })
+            : P.client.from('cliente_codigos').delete().eq('cliente_id', cliente.id);
+          pedido.then(function (r) {
+            salvarCod.disabled = false;
+            if (r.error) { P.mensagem(msgCod, /duplicate|unique/i.test(r.error.message) ? 'Nome salvo, mas esse código já é de outro cliente.' : P.traduzErro(r.error.message), 'erro'); return; }
+            cliente.nome = novoNome; cliente.codigo = valor;
+            paginaDoCliente(user, cliente);
+          });
         });
       });
       app.appendChild(formCod);
-      app.appendChild(P.cartaoPastaDrive({ plural: 'clientes', tipo: 'cliente', id: cliente.id, email: cliente.email,
-        nome: function () { return (cliente.codigo ? cliente.codigo + ' - ' : '') + cliente.nome; } }));
 
       var msg = el('p', { class: 'portal-msg' });
       var servico = el('input', { type: 'text', id: 'entServico', required: '', placeholder: 'Escreva o que quiser, ou toque num atalho abaixo' });
