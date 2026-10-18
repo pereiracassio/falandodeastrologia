@@ -252,10 +252,14 @@
             var dig = String(cliente.whatsapp || '').replace(/\D/g, '');
             if (dig && (dig.length === 10 || dig.length === 11)) dig = '55' + dig;
             var primeiro = String(cliente.nome || '').trim().split(/\s+/)[0];
-            var texto = 'Oi ' + primeiro + '! O seu material já está disponível: ' + e.servico + '.\n\n' +
-              'Para acessar, entre na Área do Cliente com o Gmail ' + cliente.email + ' (o mesmo da contratação):\n' +
+            var itens = [e.gravacao_link ? 'a gravação da sua sessão' : '', e.pdf_link ? 'o PDF' : ''].filter(Boolean);
+            var texto = 'Oi ' + primeiro + '. Tudo bem?\n\n' +
+              (itens.length ? 'Na Área do Cliente você encontra ' + itens.join(' e ') + ', do serviço ' + e.servico + '.' : 'O material do serviço ' + e.servico + ' está na Área do Cliente.') + '\n' +
+              'Entre com o Gmail ' + cliente.email + ' (o mesmo da contratação):\n' +
               'https://falandodeastrologia.com.br/cliente.html\n\n' +
-              'Qualquer dúvida, é só me chamar por aqui.';
+              'Você pode salvar com você, pra que sempre tenha acesso.' +
+              (e.gravacao_link ? ' Não consigo garantir que vou ter a gravação sempre lá, porque às vezes preciso liberar espaço. Por isso recomendo baixar e guardar contigo.' : '') + '\n\n' +
+              'Qualquer dúvida, estou à disposição.';
             var enviar = el('a', { class: 'portal-btn portal-btn-sec', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', text: 'Enviar' });
             enviar.style.cssText = 'color:#4A7C59;border-color:#4A7C59';
             var tem = [e.pdf_link ? 'PDF' : '', e.gravacao_link ? 'gravação' : ''].filter(Boolean).join(' + ');
