@@ -1,7 +1,7 @@
 /* Caderno de estudos do aluno em PDF: a capa (papiro, a mesma do gerador de capas, com o nome do aluno) e, depois, todas as atividades
    dele em ordem de data — perguntas, respostas e correções — no visual do documento A4 dos estudos: fundo branco, títulos em Cinzel
    (terracota, com filete azul), texto em Calibri (Carlito), rodapé "Falando de Astrologia Helenística" + número da página.
-   A página 1 é a capa (sem rodapé); as outras já saem numeradas. Texto de verdade (selecionável e bom de imprimir).
+   A capa não entra na contagem: a página 1 é a folha de rosto (só o título), a 2 é o índice, e as atividades vêm depois. Texto de verdade (selecionável e bom de imprimir).
    Depende de portal.js, atividades.js e, na hora de baixar, de html2canvas e jsPDF (carregados só então) e capa.js. */
 (function () {
   var P = window.portal, el = P.el;
@@ -22,10 +22,17 @@
     for (var i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
     return btoa(s);
   }
-  function fonte(doc, arquivo, nome, estilo) {
-    return fetch('fonts/' + arquivo).then(function (r) { if (!r.ok) throw new Error('fonte'); return r.arrayBuffer(); }).then(function (buf) {
-      doc.addFileToVFS(arquivo, paraBase64(buf)); doc.addFont(arquivo, nome, estilo);
-    });
+  var FONTES = [['Cinzel-Regular.ttf', 'Cinzel', 'normal'], ['Cinzel-Bold.ttf', 'Cinzel', 'bold'],
+    ['Carlito-Regular.ttf', 'Carlito', 'normal'], ['Carlito-Bold.ttf', 'Carlito', 'bold'], ['Carlito-Italic.ttf', 'Carlito', 'italic']];
+  function baixarFontes() {
+    return Promise.all(FONTES.map(function (f) {
+      return fetch('fonts/' + f[0]).then(function (r) { if (!r.ok) throw new Error('fonte'); return r.arrayBuffer(); }).then(paraBase64);
+    }));
+  }
+  function novoDoc(base64s) {
+    var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+    FONTES.forEach(function (f, i) { doc.addFileToVFS(f[0], base64s[i]); doc.addFont(f[0], f[1], f[2]); });
+    return doc;
   }
 
   /* a capa vira uma imagem (ela é desenho, não texto) */
@@ -44,11 +51,12 @@
     }).then(function (c) { palco.remove(); return c.toDataURL('image/jpeg', 0.92); }, function (e) { palco.remove(); throw e; });
   }
 
-  /* monta o PDF; blocos = o que atividades.dadosDoCaderno devolveu */
-  function montarPdf(doc, blocos, capaImg) {
-    var y = M;
+  /* monta o PDF; blocos = o que atividades.dadosDoCaderno devolveu. nums = página (já numerada) onde cada atividade começa; sem ele, usa "00"
+     (primeira passada, só pra descobrir onde cada atividade cai). Ordem das páginas: capa (fora da contagem), folha de rosto = página 1,
+     índice = página 2 (e seguintes, se for grande), depois as atividades, cada uma começando em página nova. Devolve os inícios. */
+  function montarPdf(doc, blocos, capaImg, nums) {
+    var y = M, inicios = [];
     doc.addImage(capaImg, 'JPEG', 0, 0, A4.w, A4.h);
-    doc.addPage(); y = M;
 
     function nova() { doc.addPage(); y = M; }
     function cabe(h) { if (y + h > LIMITE) nova(); }
@@ -59,7 +67,6 @@
       doc.setFont(o.fonte || 'Carlito', o.estilo || 'normal'); doc.setFontSize(o.tam || 12); cor(o.cor || COR.texto);
       var lh = (o.tam || 12) * (o.entre || 1.3);
       var linhas = doc.splitTextToSize(String(str == null ? '' : str), LARGURA - (o.recuo || 0));
-      if (o.juntoComProximo) cabe(lh * linhas.length + (o.juntoComProximo || 0));
       linhas.forEach(function (l) { cabe(lh); doc.text(l, M + (o.recuo || 0), y + (o.tam || 12) * 0.85); y += lh; });
       y += o.depois == null ? 6 : o.depois;
     }
@@ -72,12 +79,37 @@
       y += 12;
     }
 
-    if (!blocos.length) {
-      titulo('Caderno de estudos');
-      texto('Ainda não há atividades neste caderno.');
-    }
+    /* folha de rosto (página 1): só o título, no meio da página, sem rodapé */
+    doc.addPage();
+    doc.setFont('Cinzel', 'bold'); doc.setFontSize(32); cor(COR.terracota);
+    var tr = doc.splitTextToSize('Caderno de Estudos', LARGURA), alt = tr.length * 42;
+    tr.forEach(function (l, i) { doc.text(l, A4.w / 2, (A4.h - alt) / 2 + 32 + i * 42, { align: 'center' }); });
+
+    /* índice (só o título de cada atividade, com o número da página) */
+    nova();
+    titulo('Índice');
     blocos.forEach(function (b, i) {
-      if (i > 0) nova();
+      doc.setFont('Carlito', 'normal'); doc.setFontSize(12); cor(COR.texto);
+      var num = nums ? String(nums[i]) : '00';
+      var linhas = doc.splitTextToSize(String(b.atividade.titulo), LARGURA - 36);
+      cabe(linhas.length * 17 + 8);
+      linhas.forEach(function (l, k) {
+        doc.text(l, M, y + 12);
+        if (k === linhas.length - 1) {
+          var x0 = M + doc.getTextWidth(l) + 5, x1 = M + LARGURA - doc.getTextWidth(num) - 5;
+          doc.setTextColor(COR.ocre[0], COR.ocre[1], COR.ocre[2]);
+          var pontos = Math.max(0, Math.floor((x1 - x0) / doc.getTextWidth('.')));
+          doc.text(new Array(pontos + 1).join('.'), x0, y + 12);
+          cor(COR.texto); doc.text(num, M + LARGURA, y + 12, { align: 'right' });
+        }
+        y += 17;
+      });
+      y += 5;
+    });
+    if (!blocos.length) texto('Ainda não há atividades neste caderno.');
+
+    blocos.forEach(function (b, i) {
+      nova(); inicios.push(doc.getNumberOfPages() - 1);
       titulo(b.atividade.titulo);
       texto(b.datas, { tam: 10.5, cor: COR.ocre, estilo: 'bold', depois: 8 });
       if (b.atividade.descricao) texto(b.atividade.descricao, { depois: 10 });
@@ -109,15 +141,16 @@
       });
     });
 
-    /* rodapé de todas as páginas, menos a capa */
+    /* rodapé: do índice em diante (a capa e a folha de rosto não têm); a folha de rosto é a página 1, então o número é a página física menos 1 */
     var total = doc.getNumberOfPages();
-    for (var p = 2; p <= total; p++) {
+    for (var p = 3; p <= total; p++) {
       doc.setPage(p);
       doc.setDrawColor(COR.ocre[0], COR.ocre[1], COR.ocre[2]); doc.setLineWidth(0.75); doc.line(M, A4.h - M + 14, M + LARGURA, A4.h - M + 14);
       doc.setFont('Cinzel', 'normal'); doc.setFontSize(9); cor(COR.ocre);
       doc.text('Falando de Astrologia Helenística', M, A4.h - M + 30);
-      doc.text(String(p), M + LARGURA, A4.h - M + 30, { align: 'right' });
+      doc.text(String(p - 1), M + LARGURA, A4.h - M + 30, { align: 'right' });
     }
+    return inicios;
   }
 
   function nomeArquivo(nome) {
@@ -133,14 +166,11 @@
       carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', function () { return !!(window.jspdf && window.jspdf.jsPDF); }),
       carregarScript('capa.js?v=7', function () { return !!window.capaFolha; })
     ]).then(function () {
-      var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
-      return Promise.all([
-        window.atividades.dadosDoCaderno(aluno),
-        capaComoImagem(aluno.nome),
-        fonte(doc, 'Cinzel-Regular.ttf', 'Cinzel', 'normal'), fonte(doc, 'Cinzel-Bold.ttf', 'Cinzel', 'bold'),
-        fonte(doc, 'Carlito-Regular.ttf', 'Carlito', 'normal'), fonte(doc, 'Carlito-Bold.ttf', 'Carlito', 'bold'), fonte(doc, 'Carlito-Italic.ttf', 'Carlito', 'italic')
-      ]).then(function (r) {
-        montarPdf(doc, r[0], r[1]);
+      return Promise.all([window.atividades.dadosDoCaderno(aluno), capaComoImagem(aluno.nome), baixarFontes()]).then(function (r) {
+        /* duas passadas: a primeira só descobre em que página cada atividade começa, pra o índice sair com os números certos */
+        var inicios = montarPdf(novoDoc(r[2]), r[0], r[1], null);
+        var doc = novoDoc(r[2]);
+        montarPdf(doc, r[0], r[1], inicios);
         doc.save(nomeArquivo(aluno.nome));
         aviso('Pronto! O caderno foi baixado. Procure em Arquivos (Downloads).', 'ok');
       });
