@@ -300,6 +300,36 @@
       });
     }).catch(function () { return null; });
   }
+  /* id do arquivo (não pasta) num link do Drive: /file/d/ID/... ou ?id=ID */
+  function idArquivoDrive(url) {
+    var m = String(url || '').match(/drive\.google\.com\/file\/d\/([\w-]{10,})/) || String(url || '').match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]{10,})/);
+    return m ? m[1] : null;
+  }
+  /* gravação: player do Drive dentro da página (abre ao tocar em Assistir) + Baixar + abrir no Drive.
+     Devolve null se o link não for de um arquivo do Drive (aí quem chama usa o botão de sempre). */
+  function playerGravacao(link) {
+    var id = idArquivoDrive(link);
+    if (!id) return null;
+    var acoes = el('div', { class: 'portal-acoes' });
+    var area = el('div');
+    var assistir = el('button', { type: 'button', class: 'portal-btn', text: 'Assistir' });
+    var aberto = false;
+    assistir.addEventListener('click', function () {
+      aberto = !aberto;
+      area.textContent = '';
+      assistir.textContent = aberto ? 'Fechar o vídeo' : 'Assistir';
+      if (!aberto) return;
+      var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;margin-top:12px;border:1px solid #1F5FA3;overflow:hidden' });
+      caixa.appendChild(el('iframe', { src: 'https://drive.google.com/file/d/' + id + '/preview', allow: 'autoplay; fullscreen', allowfullscreen: '',
+        style: 'position:absolute;inset:0;width:100%;height:100%;border:0', title: 'Gravação' }));
+      area.appendChild(caixa);
+      area.appendChild(el('p', { class: 'portal-vazio', text: 'Se o vídeo não carregar, toque em "Abrir no Drive".' }));
+    });
+    acoes.appendChild(assistir);
+    acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: 'https://drive.google.com/uc?export=download&id=' + id, target: '_blank', rel: 'noopener', text: 'Baixar' }));
+    acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Abrir no Drive' }));
+    return el('div', {}, [acoes, area]);
+  }
   function guardarPasta(chave, pastaId) { return client.from('drive_pastas').upsert({ chave: chave, pasta_id: pastaId }, { onConflict: 'chave' }); }
   function botaoPasta(texto, aoClicar, sec) {
     var b = el('button', { type: 'button', class: 'portal-btn' + (sec ? ' portal-btn-sec' : ''), text: texto });
@@ -551,7 +581,7 @@
   var emRecuperacao = /type=recovery/.test(location.hash);
 
   window.portal = {
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
   };
