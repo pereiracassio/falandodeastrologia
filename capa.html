@@ -29,19 +29,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="portal.js?v=26"></script>
+  <script src="portal.js?v=27"></script>
   <script src="capa.js?v=7"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
     function limpar() { app.textContent = ''; }
-    function topo(texto) {
-      var sair = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
-      sair.addEventListener('click', function () { P.client.auth.signOut().then(mostrarLogin); });
-      var alunos = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Alunos' });
-      var clientes = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: 'Clientes' });
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [clientes, alunos, sair])]);
-    }
+    function topo(texto) { return P.navAdmin('capa', texto, function () { P.client.auth.signOut().then(mostrarLogin); }); }
     function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
     function iniciar(user) {
       limpar();
