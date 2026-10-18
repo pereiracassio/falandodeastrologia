@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=21"></script>
+  <script src="portal.js?v=22"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -58,8 +58,11 @@
       var botoes = el('div', { class: 'portal-acoes' });
       var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
       if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
-      if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
-      return el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [titulo, botoes])]);
+      var player = gravacao ? P.playerGravacao(gravacao) : null;
+      if (gravacao && !player) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
+      var caixa = el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [titulo, botoes])]);
+      if (player) caixa.appendChild(player);
+      return caixa;
     }
 
     function mostrarPortal(user) {

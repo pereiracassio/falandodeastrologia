@@ -36,7 +36,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=21"></script>
+  <script src="portal.js?v=22"></script>
   <script src="atividades.js?v=5"></script>
   <script>
   (function () {
@@ -95,18 +95,20 @@
       P.montarNovaSenha(app, mostrarPortal);
     }
 
-    /* um item da lista: sempre abre no Drive (em outra aba/app), como o caderno — o player embutido do Drive não
-       funciona em arquivo restrito dentro de outro site (o Safari bloqueia o login do Google dentro da página) */
+    /* um item da lista: gravações têm player embutido do Drive (com botão de abrir no Drive de reserva); o resto abre no Drive. (Antes era sempre em outra aba: o player embutido do Drive não
+       funcionava em arquivo restrito no Safari, que bloqueia o login do Google dentro da página — se isso voltar a acontecer, é por isso.) */
     function itemDaLista(item, bloco) {
       var seguro = P.linkSeguro(item.link);
       var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: item.titulo })]);
       if (item.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(item.data) }));
       var linha = el('div', { class: 'portal-item-linha' }, [titulo]);
-      if (seguro) {
+      var player = bloco === 'gravacoes' && seguro ? P.playerGravacao(seguro) : null;
+      if (seguro && !player) {
         var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : 'Abrir';
         linha.appendChild(el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto }));
       }
       var caixa = el('div', { class: 'portal-item' }, [linha]);
+      if (player) caixa.appendChild(player);
       if (item.descricao) caixa.appendChild(el('p', { class: 'portal-descricao', text: item.descricao }));
       return caixa;
     }
