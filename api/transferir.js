@@ -64,9 +64,18 @@ module.exports = async (req, res) => {
     const lista = await fetch(base + '/permissions?supportsAllDrives=true&fields=permissions(id,emailAddress)', { headers: H });
     const perms = lista.ok ? ((await lista.json()).permissions || []) : [];
     const dele = perms.find((p) => String(p.emailAddress || '').toLowerCase() === email);
-    const r = dele
-      ? await fetch(base + '/permissions/' + encodeURIComponent(dele.id) + '?supportsAllDrives=true', { method: 'PATCH', headers: H, body: JSON.stringify({ role: 'writer', pendingOwner: true }) })
-      : await fetch(base + '/permissions?supportsAllDrives=true&sendNotificationEmail=true', { method: 'POST', headers: H, body: JSON.stringify({ type: 'user', role: 'writer', emailAddress: email, pendingOwner: true }) });
+    // o cliente já tem acesso (o arquivo foi compartilhado com ele antes): atualizar a permissão NÃO manda e-mail do Drive.
+    // Por isso tira a permissão antiga e cria de novo já como "novo dono pendente", que manda o e-mail pedindo pra ele aceitar.
+    if (dele) {
+      const del = await fetch(base + '/permissions/' + encodeURIComponent(dele.id) + '?supportsAllDrives=true', { method: 'DELETE', headers: H });
+      if (!del.ok && del.status !== 404) {
+        const t = await del.text();
+        console.error('transferir (tirar acesso antigo):', del.status, t.slice(0, 300));
+        res.status(502).json({ codigo: 'drive', detalhe: 'Drive não tirou o acesso antigo (' + del.status + '): ' + t.slice(0, 200) });
+        return;
+      }
+    }
+    const r = await fetch(base + '/permissions?supportsAllDrives=true&sendNotificationEmail=true', { method: 'POST', headers: H, body: JSON.stringify({ type: 'user', role: 'writer', emailAddress: email, pendingOwner: true }) });
     if (!r.ok) {
       const t = await r.text();
       console.error('transferir:', r.status, t.slice(0, 300));
