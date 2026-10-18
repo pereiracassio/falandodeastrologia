@@ -32,7 +32,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=27"></script>
+  <script src="portal.js?v=28"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -52,7 +52,13 @@
           return;
         }
         P.client.from('admins').select('nome').maybeSingle().then(function (rn) {
-          lista(rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email);
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          var h = P.estado.ler(); /* depois de recarregar: volta pra mesma aba e pra mesma aplicação */
+          if (h.aba) aba = h.aba;
+          if (!h.aplicacao) { lista(); return; }
+          P.client.from('aplicacoes_mentoria').select('*').eq('id', h.aplicacao).maybeSingle().then(function (ra) {
+            if (ra.data) detalhe(ra.data); else lista();
+          }, function () { lista(); });
         });
       });
     }
@@ -71,6 +77,7 @@
     var nomeAdmin = '';
     function lista(saudacao) {
       if (saudacao) nomeAdmin = saudacao;
+      P.estado.gravar({ aba: aba });
       limpar();
       app.appendChild(topo(nomeAdmin));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aplicações' }), el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
@@ -108,6 +115,7 @@
     }
 
     function detalhe(a) {
+      P.estado.gravar({ aba: aba, aplicacao: a.id });
       limpar();
       app.appendChild(topo(nomeAdmin));
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Aplicações' });

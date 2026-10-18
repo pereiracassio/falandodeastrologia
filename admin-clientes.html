@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=27"></script>
+  <script src="portal.js?v=28"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -56,12 +56,25 @@
         }
         P.client.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
-          listaDeClientes(user);
+          restaurar(user);
         });
       });
     }
 
+    /* depois de recarregar: volta pro cliente em que você estava (endereço #cliente=ID) */
+    function restaurar(user) {
+      var h = P.estado.ler();
+      if (!h.cliente) { listaDeClientes(user); return; }
+      Promise.all([P.client.from('clientes').select('id,nome,email,whatsapp').eq('id', h.cliente).maybeSingle(),
+                   P.client.from('cliente_codigos').select('codigo').eq('cliente_id', h.cliente).maybeSingle()]).then(function (r) {
+        if (r[0].error || !r[0].data) { listaDeClientes(user); return; }
+        var c = r[0].data; c.codigo = (r[1].data && r[1].data.codigo) || '';
+        paginaDoCliente(user, c);
+      }, function () { listaDeClientes(user); });
+    }
+
     function listaDeClientes(user) {
+      P.estado.gravar({});
       limpar();
       app.appendChild(topo(nomeAdmin));
       /* ordem: clientes, novo cliente, pasta dos clientes, login com o Google */
@@ -132,6 +145,7 @@
     }
 
     function paginaDoCliente(user, cliente) {
+      P.estado.gravar({ cliente: cliente.id });
       limpar();
       app.appendChild(topo(nomeAdmin));
       var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os clientes' });
