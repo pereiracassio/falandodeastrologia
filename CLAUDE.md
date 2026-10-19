@@ -27,3 +27,24 @@ Regras do astrólogo: página 1 = título centralizado, sem rodapé; índice na 
 ## Caderno de estudos do aluno em PDF (18/10/2026)
 
 Botão "Baixar meu caderno" na aba Atividades da página do aluno (`caderno.js`, só aparece se há atividades). O PDF é montado no navegador com jsPDF: capa fixa no código (`capa.js`, opção `aluno` = nome do aluno em azul acima do logo; título "Caderno de Estudos", subtítulo "Acompanhamento Prático de Astrologia", "Mentoria em Astrologia Clássica") + todas as atividades em ordem de data (perguntas, respostas, correções), fundo branco, no visual do documento A4 dos estudos (`estudo-pages/`). A capa NÃO entra na contagem: página 1 = folha de rosto (só o título), página 2 = índice (só o título das atividades, com número de página; duas passadas pra os números saírem certos), atividades depois. Capa e folha de rosto sem rodapé. Fontes em `fonts/` (Cinzel e Carlito, subconjunto latino, licença OFL), baixadas só na hora de gerar. Papiro só na capa (ruim de imprimir nas outras páginas).
+
+## Blog do site (19/10/2026)
+
+Substitui o Blogger (`blog.falandodeastrologia.com.br`, aposentado; as 3 postagens boas foram refeitas aqui e o Blogger redireciona por `<script>location.replace(...)</script>` no HTML de cada postagem antiga).
+
+**Como funciona (leia antes de mexer):**
+- Postagens na tabela `blog_posts` do Supabase (`slug`, `titulo`, `assunto`, `resumo`, `corpo`, `imagem_url`, `video_url`, `publicado`, `publicado_em`...). Leitura pública só das publicadas; escrita só `sou_admin()`. Imagens no bucket `site` (`blog-<timestamp>.jpg`).
+- Painel: `admin-blog.html` (botão **Blog** no `navAdmin`, `portal.js`). O astrólogo só digita título, assunto, resumo (opcional), imagem, texto e link do YouTube. **Texto = parágrafos separados por linha em branco; `## ` no começo da linha = subtítulo** (botão "Subtítulo"). Nada digitado vira HTML (sempre `textContent`/`esc`).
+- Páginas **estáticas** geradas por `api/blog-publicar.js` + `api/_blog.js` (Vercel): `blog/<slug>.html` por postagem, `assunto/<slug>.html` por assunto, `sitemap.xml` e `robots.txt`, num ÚNICO commit na `main` via API do GitHub (`GITHUB_TOKEN` na Vercel, token fine-grained só com Contents: Read and write neste repositório, sem expiração). Só o administrador chama (valida o login com `sou_admin`). Páginas de postagem despublicada/excluída saem sozinhas. Se nada mudou, não faz commit.
+- Por que estático e não só `postagem.html?p=`: Google lê melhor, e o servidor da Vercel está em outro domínio (`vercel.app`), então as páginas TÊM de morar no GitHub Pages (`falandodeastrologia.com.br`). `blog.html` (lista de assuntos) e `postagem.html` (leitor direto do Supabase) são dinâmicos; `blog.js` é a parte comum (`PAGINAS_PROPRIAS = true`).
+- `404.html`: se `/blog/<slug>.html` ainda não existe (postagem nova antes de atualizar as páginas), redireciona para `postagem.html?p=<slug>`.
+- Fim de cada postagem: vídeo do YouTube (toca ali e tem link "Assistir no YouTube"; conta como visualização), Instagram e TikTok (mesmos ícones da home, **sem WhatsApp**), botões Serviços e Mentoria (`FIM_HTML` em `api/_blog.js`).
+- Um assunto por postagem (decisão do astrólogo). O mesmo nome com grafia diferente (maiúscula/acento) vira o mesmo assunto (`slugDe`).
+
+**Armadilhas já vividas — não repetir:**
+1. **Salvar NÃO pode republicar o site.** Cada commit na `main` faz o GitHub Pages republicar tudo, e durante isso (e com muitas publicações na mesma hora, o GitHub limita e atrasa) o site dá **404 em tudo menos na home**. Aconteceu duas vezes em 19/10. Por isso a geração das páginas é só no botão **Atualizar as páginas do blog**, tocado UMA vez ao terminar. Nunca ligar isso de novo a cada salvamento, e nunca mandar várias publicações seguidas.
+2. Não refazer ("re-run") uma publicação antiga do Pages: a refeita ficou parada na fila e pode publicar uma versão velha por cima da nova.
+3. Mexeu em `blog.css`/`blog.js`: bumpar o `?v=` em `blog.html`, `postagem.html`, `404.html` e em `api/_blog.js` (as páginas geradas usam `blog.css?v=N`) e pedir ao astrólogo para tocar em "Atualizar as páginas do blog" (as páginas já geradas guardam o `?v=` antigo). Depois de publicar, o navegador pode mostrar a versão guardada: testar em aba anônima.
+4. O token do GitHub nunca vai para a conversa nem para o repositório; o formulário do GitHub no iPad trava com data de expiração "Custom" muito distante — usar "No expiration".
+5. Datas do Supabase vêm como timestamp completo: usar `.slice(0, 10)` antes de `P.dataBR`.
+6. Google Search Console: o site `falandodeastrologia.com.br` já foi adicionado (propriedade de domínio, verificada automaticamente) e o `https://falandodeastrologia.com.br/sitemap.xml` foi enviado (precisa do endereço inteiro). Postagem nova entra no mapa sozinha quando as páginas são atualizadas.
