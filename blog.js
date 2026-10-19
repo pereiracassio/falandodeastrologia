@@ -5,7 +5,7 @@
   var SUPABASE_KEY = 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt';
   var SITE = 'https://falandodeastrologia.com.br';
   /* true quando cada postagem já tem a sua página própria (blog/<endereço>.html, gerada por api/blog-publicar.js) */
-  var PAGINAS_PROPRIAS = false;
+  var PAGINAS_PROPRIAS = true;
 
   function buscar(filtro) {
     return fetch(SUPABASE_URL + '/rest/v1/blog_posts?' + filtro, { headers: { apikey: SUPABASE_KEY } })

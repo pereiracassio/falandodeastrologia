@@ -117,7 +117,7 @@
           var linha = el('div', { class: 'portal-item' }, [
             el('div', {}, [
               el('strong', { text: p.titulo }),
-              el('div', { class: 'portal-item-data', text: p.publicado ? 'Publicada em ' + P.dataBR(p.publicado_em) : 'Rascunho' })
+              el('div', { class: 'portal-item-data', text: p.publicado ? 'Publicada em ' + P.dataBR(String(p.publicado_em).slice(0, 10)) : 'Rascunho' })
             ]), editar]);
           linha.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.35)';
           area.appendChild(linha);
