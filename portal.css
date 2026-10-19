@@ -15,6 +15,11 @@
 .portal input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;min-height:50px}
 .portal textarea{resize:vertical;min-height:90px;font-family:Arial,sans-serif}
 .portal-descricao{font-size:14px;line-height:1.5;color:#16233F;margin:8px 0 0;white-space:pre-line}
+.portal-texto{margin:8px 0 0;font-size:15px;line-height:1.6;color:#16233F}
+.portal-cartao .portal-texto p{margin:0 0 14px}
+.portal-texto-sub{font-family:'Cinzel',serif;font-size:16px;color:#A03E25;margin:22px 0 8px}
+.portal-texto-lista{margin:0 0 14px;padding-left:22px}
+.portal-texto-lista li{margin:0 0 6px}
 .portal-abas{display:flex;gap:8px;margin-bottom:14px}
 .portal-aba{flex:1 1 0;min-width:0;padding:10px 6px;background:transparent;color:#1F5FA3;border:1px solid #1F5FA3;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer}
 .portal-aba.ativa{border-width:3px;padding:8px 4px;color:#A03E25}

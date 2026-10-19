@@ -134,7 +134,15 @@
       nova(); inicios.push(doc.getNumberOfPages() - 1);
       titulo(b.atividade.titulo);
       texto(b.datas, { tam: 10.5, cor: COR.ocre, estilo: 'bold', depois: 8 });
-      if (b.atividade.descricao) texto(b.atividade.descricao, { depois: 10 });
+      if (b.atividade.descricao) {
+        window.atividades.blocosDoTexto(b.atividade.descricao).forEach(function (bl) {
+          var sm = window.atividades.semMarcas;
+          if (bl.tipo === 'sub') { y += 6; texto(sm(bl.texto), { estilo: 'bold', cor: COR.terracota, tam: 13, depois: 4 }); }
+          else if (bl.tipo === 'lista') bl.itens.forEach(function (it) { texto('•  ' + sm(it), { recuo: 10, depois: 3 }); });
+          else texto(sm(bl.linhas.join('\n')), { depois: 8 });
+        });
+        y += 4;
+      }
       if (b.mapa) {
         var iw = LARGURA, ih = LARGURA * b.mapa.h / b.mapa.w, maxH = 380;
         if (ih > maxH) { iw = iw * maxH / ih; ih = maxH; }

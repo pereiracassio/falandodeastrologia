@@ -6,6 +6,43 @@
   var P = window.portal, el = P.el, C = P.client;
   var SITUACOES = { certo: 'Certo', errado: 'Errado', parcial: 'Parcialmente certo' };
 
+  /* Texto da atividade com marcas simples (as mesmas do blog, mais negrito e lista): "## " no começo da linha = subtítulo,
+     "**palavra**" = negrito, "- " no começo da linha = item de lista. Linha em branco separa parágrafos. Tudo entra como texto
+     (textContent): nada digitado vira HTML. blocosDoTexto também serve ao PDF do caderno (caderno.js). */
+  function blocosDoTexto(str) {
+    var blocos = [], lista = null, par = null;
+    String(str || '').replace(/\r\n?/g, '\n').split('\n').forEach(function (l) {
+      var t = l.trim(), m;
+      if (!t) { lista = par = null; return; }
+      if ((m = /^#{2,}\s+(.+)$/.exec(t))) { lista = par = null; blocos.push({ tipo: 'sub', texto: m[1] }); }
+      else if ((m = /^[-•]\s+(.+)$/.exec(t))) { par = null; if (!lista) blocos.push(lista = { tipo: 'lista', itens: [] }); lista.itens.push(m[1]); }
+      else { lista = null; if (!par) blocos.push(par = { tipo: 'p', linhas: [] }); par.linhas.push(t); }
+    });
+    return blocos;
+  }
+  function semMarcas(t) { return String(t).replace(/\*\*(.+?)\*\*/g, '$1'); }
+  function comNegrito(pai, t) {
+    String(t).split(/(\*\*.+?\*\*)/).forEach(function (parte) {
+      var m = /^\*\*(.+)\*\*$/.exec(parte);
+      if (m) pai.appendChild(el('strong', { text: m[1] })); else if (parte) pai.appendChild(document.createTextNode(parte));
+    });
+  }
+  function textoFormatado(str) {
+    var caixa = el('div', { class: 'portal-texto' });
+    blocosDoTexto(str).forEach(function (b) {
+      if (b.tipo === 'sub') caixa.appendChild(el('h3', { class: 'portal-texto-sub', text: semMarcas(b.texto) }));
+      else if (b.tipo === 'lista') {
+        var ul = el('ul', { class: 'portal-texto-lista' });
+        b.itens.forEach(function (i) { var li = el('li'); comNegrito(li, i); ul.appendChild(li); });
+        caixa.appendChild(ul);
+      } else {
+        var p = el('p'); b.linhas.forEach(function (l, i) { if (i) p.appendChild(document.createElement('br')); comNegrito(p, l); });
+        caixa.appendChild(p);
+      }
+    });
+    return caixa;
+  }
+
   function dataHoraBR(iso) {
     if (!iso) return '';
     var d = new Date(iso);
@@ -283,7 +320,7 @@
       var sujo = {}; /* o que mudou e ainda não foi salvo */
 
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: atividade.titulo })]);
-      if (atividade.descricao) cab.appendChild(el('p', { text: atividade.descricao, class: 'portal-descricao' }));
+      if (atividade.descricao) cab.appendChild(textoFormatado(atividade.descricao));
       cab.appendChild(el('p', { class: 'portal-item-data', text: linhaDatas(atividade) }));
       if (atividade.imagem_caminho) cab.appendChild(figuraDoMapa(atividade.imagem_caminho));
       if (!editavel) {
@@ -923,5 +960,5 @@
     });
   }
 
-  window.atividades = { dadosDoCaderno: dadosDoCaderno, urlAssinada: urlAssinada, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
+  window.atividades = { blocosDoTexto: blocosDoTexto, semMarcas: semMarcas, dadosDoCaderno: dadosDoCaderno, urlAssinada: urlAssinada, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
 })();
