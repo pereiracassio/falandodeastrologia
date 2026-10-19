@@ -104,7 +104,14 @@
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Postagens' })]);
       var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova postagem' });
       nova.addEventListener('click', function () { editor(null); });
-      cartao.appendChild(el('div', { class: 'portal-acoes' }, [nova]));
+      var atualizar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Atualizar as páginas do blog' });
+      var avisoAtualizar = el('p', { class: 'portal-msg' });
+      atualizar.addEventListener('click', function () {
+        atualizar.disabled = true; P.mensagem(avisoAtualizar, 'Atualizando...');
+        gerarPaginas().then(function (ok) { atualizar.disabled = false; P.mensagem(avisoAtualizar, ok ? 'Pronto! As páginas foram atualizadas.' : 'Não consegui atualizar agora. Tente de novo em instantes.', ok ? 'ok' : 'erro'); });
+      });
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [nova, atualizar]));
+      cartao.appendChild(avisoAtualizar);
       var area = el('div', { style: 'margin-top:14px' }, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
       cartao.appendChild(area); app.appendChild(cartao);
       C.from('blog_posts').select('id,titulo,slug,publicado,publicado_em,criado_em').order('criado_em', { ascending: false }).then(function (r) {
@@ -143,6 +150,11 @@
       function montar() {
         var msg = el('p', { class: 'portal-msg' });
         var titulo = el('input', { type: 'text', placeholder: 'Título', maxlength: '160' }); titulo.value = post.titulo || '';
+        var assunto = el('input', { type: 'text', list: 'blog-assuntos', placeholder: 'Assunto (ex.: Casas) — escolha um que já existe ou escreva um novo', maxlength: '60' }); assunto.value = post.assunto || '';
+        var sugestoes = el('datalist', { id: 'blog-assuntos' });
+        C.from('blog_posts').select('assunto').not('assunto', 'is', null).then(function (r) {
+          var vistos = {}; (r.data || []).forEach(function (x) { var n = String(x.assunto || '').trim(); if (n && !vistos[n]) { vistos[n] = 1; sugestoes.appendChild(el('option', { value: n })); } });
+        });
         var resumo = el('textarea', { rows: '2', placeholder: 'Resumo para o Google e para a lista (opcional; se vazio, usa o começo do texto)' }); resumo.value = post.resumo || '';
         var video = el('input', { type: 'url', placeholder: 'Link do vídeo no YouTube (opcional; aparece no fim da postagem)' }); video.value = post.video_url || '';
         var corpo = el('textarea', { rows: '16', placeholder: 'Escreva o texto. Uma linha em branco separa os parágrafos.' }); corpo.value = post.corpo || '';
@@ -204,7 +216,7 @@
           subir.then(function () {
             var agora = new Date().toISOString();
             var dados = {
-              titulo: t, resumo: resumo.value.trim() || null, video_url: video.value.trim() || null, corpo: c, imagem_url: imagemUrl || null,
+              titulo: t, assunto: assunto.value.trim() || null, resumo: resumo.value.trim() || null, video_url: video.value.trim() || null, corpo: c, imagem_url: imagemUrl || null,
               publicado: publicar, atualizado_em: agora
             };
             if (publicar && !post.publicado_em) dados.publicado_em = agora;
@@ -254,7 +266,7 @@
           botoes.appendChild(excluir);
         }
 
-        cartao.appendChild(titulo); cartao.appendChild(resumo);
+        cartao.appendChild(titulo); cartao.appendChild(assunto); cartao.appendChild(sugestoes); cartao.appendChild(resumo);
         cartao.appendChild(previa); cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [botImg, botTirar, escolher]));
         cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:8px' }, [botSub]));
         cartao.appendChild(corpo);

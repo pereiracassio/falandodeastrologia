@@ -6,7 +6,7 @@
    além da SUPABASE_SERVICE_ROLE_KEY que o resto do servidor já usa. Sem dependências (só fetch). */
 
 const { SUPABASE_URL, SUPABASE_ANON, env, supa } = require('./_drive');
-const { paginaPost, sitemap, SITE } = require('./_blog');
+const { paginaPost, paginaAssunto, agruparAssuntos, sitemap, SITE } = require('./_blog');
 
 const ORIGENS_PERMITIDAS = ['https://falandodeastrologia.com.br', 'https://www.falandodeastrologia.com.br'];
 const REPO = 'pereiracassio/falandodeastrologia';
@@ -45,8 +45,10 @@ module.exports = async (req, res) => {
 
     const posts = (await supa('/rest/v1/blog_posts?publicado=eq.true&select=*&order=publicado_em.desc'))
       .filter((p) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug));
-    const arquivos = { 'sitemap.xml': sitemap(posts) };
+    const assuntos = agruparAssuntos(posts);
+    const arquivos = { 'sitemap.xml': sitemap(posts, assuntos) };
     posts.forEach((p) => { arquivos['blog/' + p.slug + '.html'] = paginaPost(p); });
+    assuntos.forEach((a) => { arquivos['assunto/' + a.slug + '.html'] = paginaAssunto(a); });
 
     const ref = await gh('/git/ref/heads/' + RAMO);
     const commitBase = await gh('/git/commits/' + ref.object.sha);
@@ -54,8 +56,8 @@ module.exports = async (req, res) => {
     const existentes = arvoreBase.tree.filter((i) => i.type === 'blob');
     const entradas = Object.keys(arquivos).map((c) => ({ path: c, mode: '100644', type: 'blob', content: arquivos[c] }));
     if (!existentes.some((i) => i.path === 'robots.txt')) entradas.push({ path: 'robots.txt', mode: '100644', type: 'blob', content: 'User-agent: *\nAllow: /\n\nSitemap: ' + SITE + '/sitemap.xml\n' });
-    // postagem despublicada ou excluída: a página própria dela sai
-    existentes.filter((i) => /^blog\/[^/]+\.html$/.test(i.path) && !arquivos[i.path]).forEach((i) => entradas.push({ path: i.path, mode: '100644', type: 'blob', sha: null }));
+    // postagem despublicada/excluída ou assunto sem postagens: a página própria sai
+    existentes.filter((i) => /^(blog|assunto)\/[^/]+\.html$/.test(i.path) && !arquivos[i.path]).forEach((i) => entradas.push({ path: i.path, mode: '100644', type: 'blob', sha: null }));
 
     const arvore = await gh('/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: commitBase.tree.sha, tree: entradas }) });
     if (arvore.sha === commitBase.tree.sha) { res.status(200).json({ ok: true, mudou: false, paginas: posts.length }); return; }

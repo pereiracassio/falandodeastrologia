@@ -60,6 +60,9 @@
     return t.length > 155 ? t.slice(0, 155).replace(/\s+\S*$/, '') + '…' : t;
   }
 
+  /* endereço (slug) a partir de um texto: sem acento, minúsculo, hífens (a mesma regra do painel e do servidor) */
+  function slugDe(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, ''); }
+
   /* endereço de uma postagem */
   function enderecoDe(slug) { return PAGINAS_PROPRIAS ? 'blog/' + slug + '.html' : 'postagem.html?p=' + encodeURIComponent(slug); }
 
@@ -96,6 +99,6 @@
 
   window.blog = {
     buscar: buscar, el: el, dataExtenso: dataExtenso, renderizarCorpo: renderizarCorpo, resumoDe: resumoDe,
-    enderecoDe: enderecoDe, idYoutube: idYoutube, renderizarVideo: renderizarVideo, definirMeta: definirMeta, SITE: SITE
+    enderecoDe: enderecoDe, slugDe: slugDe, idYoutube: idYoutube, renderizarVideo: renderizarVideo, definirMeta: definirMeta, SITE: SITE
   };
 })();
