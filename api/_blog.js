@@ -54,6 +54,15 @@ function videoHtml(url) {
     '<p class="blog-p" style="text-align:center"><a class="blog-voltar" style="margin:0" href="https://www.youtube.com/watch?v=' + id + '" target="_blank" rel="noopener">Assistir no YouTube</a></p>';
 }
 
+/* fim de cada postagem: Instagram, TikTok e os caminhos para os serviços e a mentoria (mesmos ícones e endereços da home) */
+const FIM_HTML = `  <div class="blog-fim">
+    <div class="social-bar">
+      <a href="https://www.instagram.com/cassiopereira___?igsh=MWU5YjVtNWpjYzduZQ%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener" title="Instagram"><img alt="Instagram" src="/img/rede-instagram.svg" width="44" height="44"></a>
+      <a href="https://www.tiktok.com/@cassiopereira__?_r=1&amp;_t=ZS-98YFBywW5Za" target="_blank" rel="noopener" title="TikTok"><img alt="TikTok" src="/img/rede-tiktok.svg" width="44" height="44"></a>
+    </div>
+    <div class="blog-botoes"><a class="blog-botao" href="/index.html#servicos">Serviços</a><a class="blog-botao" href="/mentoria.html">Mentoria</a></div>
+  </div>`;
+
 const enderecoPost = (slug) => SITE + '/blog/' + slug + '.html';
 const enderecoAssunto = (slug) => SITE + '/assunto/' + slug + '.html';
 
@@ -93,7 +102,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo }) {
   <link rel="stylesheet" href="/papiro.css?v=4">
   <link rel="stylesheet" href="/home.css?v=18">
   <link rel="stylesheet" href="/page.css?v=17">
-  <link rel="stylesheet" href="/blog.css?v=3">
+  <link rel="stylesheet" href="/blog.css?v=4">
 </head>
 <body>
   <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
@@ -134,6 +143,7 @@ function paginaPost(p) {
     ${p.imagem_url ? '<img class="blog-capa" src="' + esc(p.imagem_url) + '" alt="' + esc(p.titulo) + '">' : ''}
 ${corpoHtml(p.corpo)}
 ${id ? videoHtml(p.video_url) : ''}
+${FIM_HTML}
     <a class="blog-voltar" href="${slugAssunto ? '/assunto/' + slugAssunto + '.html' : '/blog.html'}">← ${slugAssunto ? 'Mais textos de ' + esc(assunto) : 'Ver todos os textos'}</a>
   </article>`
   });
