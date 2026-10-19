@@ -92,6 +92,36 @@
       linhas.forEach(function (l) { cabe(lh); doc.text(l, M + (o.recuo || 0), y + (o.tam || 12) * 0.85); y += lh; });
       y += o.depois == null ? 6 : o.depois;
     }
+    /* texto com **negrito** no meio: quebra de linha à mão, palavra por palavra, trocando de fonte (normal/bold) */
+    function textoRico(str, o) {
+      o = o || {};
+      var tam = o.tam || 12, lh = tam * 1.3, largura = LARGURA - (o.recuo || 0), x0 = M + (o.recuo || 0);
+      var palavras = [];
+      String(str).split('\n').forEach(function (linha, k) {
+        if (k) palavras.push({ quebra: true });
+        linha.split(/(\*\*.+?\*\*)/).forEach(function (parte) {
+          var m = /^\*\*(.+)\*\*$/.exec(parte), negrito = !!m;
+          (m ? m[1] : parte).split(/\s+/).forEach(function (w) { if (w) palavras.push({ w: w, b: negrito }); });
+        });
+      });
+      var linhas = [[]], larg = 0;
+      function medida(w, b) { doc.setFont('Carlito', b ? 'bold' : 'normal'); doc.setFontSize(tam); return doc.getTextWidth(w); }
+      palavras.forEach(function (p) {
+        if (p.quebra) { linhas.push([]); larg = 0; return; }
+        var ww = medida(p.w, p.b), esp = linhas[linhas.length - 1].length ? medida(' ', false) : 0;
+        if (larg + esp + ww > largura && linhas[linhas.length - 1].length) { linhas.push([]); larg = 0; esp = 0; }
+        linhas[linhas.length - 1].push({ w: p.w, b: p.b, esp: esp }); larg += esp + ww;
+      });
+      linhas.forEach(function (l) {
+        cabe(lh); var x = x0;
+        l.forEach(function (p) {
+          x += p.esp; doc.setFont('Carlito', p.b ? 'bold' : 'normal'); doc.setFontSize(tam); cor(COR.texto);
+          doc.text(p.w, x, y + tam * 0.85); x += doc.getTextWidth(p.w);
+        });
+        y += lh;
+      });
+      y += o.depois == null ? 6 : o.depois;
+    }
     function titulo(str) {
       doc.setFont('Cinzel', 'bold'); doc.setFontSize(20);
       var linhas = doc.splitTextToSize(str.toUpperCase(), LARGURA);
@@ -138,8 +168,8 @@
         window.atividades.blocosDoTexto(b.atividade.descricao).forEach(function (bl) {
           var sm = window.atividades.semMarcas;
           if (bl.tipo === 'sub') { y += 6; texto(sm(bl.texto), { estilo: 'bold', cor: COR.terracota, tam: 13, depois: 4 }); }
-          else if (bl.tipo === 'lista') bl.itens.forEach(function (it) { texto('•  ' + sm(it), { recuo: 10, depois: 3 }); });
-          else texto(sm(bl.linhas.join('\n')), { depois: 8 });
+          else if (bl.tipo === 'lista') bl.itens.forEach(function (it) { textoRico('•  ' + it, { recuo: 10, depois: 3 }); });
+          else textoRico(bl.linhas.join('\n'), { depois: 8 });
         });
         y += 4;
       }
