@@ -89,12 +89,10 @@
         return fetch(GERAR_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + jwt } });
       }).then(function (resp) { return resp.ok; }).catch(function () { return false; });
     }
+    /* salvar NÃO republica o site: cada republicação tira o site do ar por alguns segundos e o GitHub limita quantas aceita por hora.
+       O texto já aparece no blog na hora; a página própria (para o Google) é gerada quando você toca em "Atualizar as páginas do blog". */
     function listaAposGravar() {
-      lista('Salvo. Preparando a página para o Google...');
-      gerarPaginas().then(function (ok) {
-        var m = document.querySelector('.portal-aviso-blog');
-        if (m) P.mensagem(m, ok ? 'Pronto! A página para o Google foi preparada.' : 'Salvo, e o texto já está no site. A página para o Google ainda não foi preparada (falta uma configuração).', ok ? 'ok' : 'erro');
-      });
+      lista('Salvo. O texto já está no blog. Quando terminar de mexer, toque UMA vez em "Atualizar as páginas do blog" para o Google ver.');
     }
 
     function lista(aviso) {
