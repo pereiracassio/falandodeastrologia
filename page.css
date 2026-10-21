@@ -89,7 +89,7 @@ body>header a:first-child{color:#f6e7b4!important}
 /* ===== Páginas de serviço: o papiro é a página inteira (sem céu) e o cabeçalho mora dentro dele ===== */
 html:has(.pagina-papiro),body:has(.pagina-papiro){background:var(--papiro-fundo)}
 /* cor lisa por baixo do degradê: o Safari pinta as barras de cima e de baixo com ela (sem cor lisa elas ficam brancas) */
-html:has(.pagina-papiro),body:has(.pagina-papiro){background-color:var(--papiro-meio)}
+html:has(.pagina-papiro),body:has(.pagina-papiro){background-color:var(--papiro-topo)}
 body:has(.pagina-papiro)::before,body:has(.pagina-papiro)::after{display:none}
 .pagina-papiro{margin:0;max-width:none;filter:none}
 .pagina-papiro .folha-pagina{clip-path:none;background:none;min-height:100vh;hyphens:auto;-webkit-hyphens:auto}
