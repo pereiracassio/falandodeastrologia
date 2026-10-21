@@ -14,20 +14,17 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
-  <link rel="stylesheet" href="page.css?v=17">
+  <link rel="stylesheet" href="page.css?v=24">
   <link rel="stylesheet" href="portal.css?v=13">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
-    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
-    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
-      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
-      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
-      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
-    </nav>
-  </header>
-<div class="pagina pagina-servico"><div class="folha-pagina">
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="index.html" class="cab-logo"><img src="img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="aluno.html" class="atual">Alunos</a><a href="index.html#servicos">Serviços</a><a href="blog.html">Blog</a></nav>
+    <hr class="cab-linha">
+  </div>
   <div class="portal"><div class="portal-caixa">
     <h1 class="portal-titulo" id="portalTitulo">Alunos</h1>
     <p class="portal-sub" id="portalSub">Falando de Astrologia</p>
@@ -83,6 +80,20 @@
       document.getElementById('salaClassroom').style.display = '';
       var google = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
       google.addEventListener('click', function () { P.entrarComGoogle('/aluno.html'); });
+      /* quem ainda não é aluno vê as três abas vazias e o caminho para se tornar aluno */
+      var barraVazia = el('div', { class: 'portal-abas', role: 'tablist' }), msgVazia = el('div', { class: 'portal-cartao' }, [
+        el('p', { class: 'portal-vazio', text: 'Você ainda não é aluno.' }),
+        el('p', {}, [el('span', { text: 'Você pode se tornar aluno pela aplicação na página da ' }), el('a', { href: 'mentoria.html#aplicacao-tally', text: 'Mentoria em Astrologia Clássica' }), el('span', { text: '.' })])
+      ]);
+      ABAS.forEach(function (ab, i) {
+        var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (i === 0 ? ' ativa' : ''), text: ab.nome });
+        b.addEventListener('click', function () {
+          [].forEach.call(barraVazia.children, function (x) { x.className = 'portal-aba' + (x === b ? ' ativa' : ''); });
+        });
+        barraVazia.appendChild(b);
+      });
+      app.appendChild(barraVazia); app.appendChild(msgVazia);
+      app.appendChild(el('h2', { class: 'portal-subtitulo', text: 'Já é aluno? Entre aqui' }));
       app.appendChild(el('div', { class: 'portal-cartao' }, [
         el('p', { text: 'Entre com a conta Google (Gmail) que você informou na matrícula.' }),
         google,
