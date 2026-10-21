@@ -30,7 +30,6 @@
     <h1 class="portal-titulo" id="portalTitulo">Alunos</h1>
     <p class="portal-sub" id="portalSub"></p>
     <div id="app"></div>
-    <p class="portal-sala" id="salaClassroom">Ainda usa o Google Classroom? <a href="https://classroom.google.com" rel="nofollow" target="_blank">Acesse a sala de aula virtual</a>.</p>
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -102,7 +101,6 @@
 
     function mostrarLogin() {
       limpar();
-      document.getElementById('salaClassroom').style.display = '';
       var google = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
       google.addEventListener('click', function () { P.entrarComGoogle('/aluno.html'); });
       abasVazias();
@@ -191,7 +189,6 @@
 
     function mostrarPortal(user) {
       limpar();
-      document.getElementById('salaClassroom').style.display = 'none';
       app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       var email = String(user.email || '').toLowerCase();
       P.client.from('alunos').select('id,nome,meet_link').eq('email', email).maybeSingle().then(function (r) {
@@ -219,7 +216,6 @@
     /* a página do aluno em si. previa = o administrador vendo como o aluno vê (nada é salvo nem enviado) */
     function desenharPaginaDoAluno(user, aluno, previa) {
         limpar();
-        document.getElementById('salaClassroom').style.display = 'none';
         titulos(true);
         if (previa) {
           var voltarPainel = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: '← Voltar ao painel' });
@@ -263,7 +259,6 @@
     /* administrador abrindo a página de um aluno (aluno.html?ver=ID): vê o que o aluno vê */
     function mostrarComoAluno(user, alunoId) {
       limpar();
-      document.getElementById('salaClassroom').style.display = 'none';
       app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       P.client.rpc('sou_admin').then(function (ra) {
         if (ra.error || ra.data !== true) { mostrarPortal(user); return; }
