@@ -153,3 +153,12 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 /* nenhuma palavra é cortada com hífen e botões ficam numa linha só (a letra diminui para caber) */
 .pagina-papiro,.pagina-papiro *{hyphens:none;-webkit-hyphens:none}
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]{white-space:nowrap;font-size:clamp(12px,3.8vw,15px)!important;padding-left:8px!important;padding-right:8px!important}
+/* BOTÕES IMPORTANTES (carrinho, pagamento, entrar, enviar...): preenchidos de terracota, texto no tom claro do papiro, canto reto.
+   Botões secundários (voltar, sair, cancelar): só contorno azul egípcio. Link para o WhatsApp: sempre só o ícone (.icone-whats). */
+.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo),
+.pagina-papiro .blog-botao,
+.pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:#A03E25!important;color:#F3E3B8!important;border:1.5px solid #A03E25!important;border-radius:0!important}
+.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):hover,
+.pagina-papiro .blog-botao:hover,
+.pagina-papiro .folha-pagina a[href*="carrinho.html"]:hover{background:#7d2f1a!important;border-color:#7d2f1a!important;padding:inherit;transform:none}
+.pagina-papiro .portal-btn-sec,.pagina-papiro .portal-btn-perigo{border-radius:0!important}
