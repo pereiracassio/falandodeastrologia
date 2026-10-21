@@ -9,7 +9,7 @@
   var WHATS = '5511970404508';
   var est = { id: null, nome: '', whatsapp: '', email: '', nivel: '', metodo: '', objetivos: [], outros: '', motivo: '' };
 
-  var NIVEIS = ['Estou começando do zero', 'Estudo astrologia moderna', 'Estudo astrologia tradicional', 'Já estudo Astrologia Clássica', 'Já atendo clientes e busco aprimoramento'];
+  var NIVEIS = ['Estou começando agora, ainda não estudei', 'Já estudei astrologia moderna', 'Já estudei astrologia tradicional', 'Já estudo astrologia clássica', 'Já atendo clientes e quero me aprimorar'];
   var PERGUNTA_METODO = 'Este acompanhamento é fundamentado exclusivamente na Astrologia Clássica, o que exige deixar de lado o uso de planetas modernos (Urano, Netuno e Plutão) e misturas medievais. Também se faz necessário o uso único e exclusivo do sistema de divisão de casas por signos inteiros. Você está disposto a desconstruir esses conceitos para aprender a mecânica original?';
   var METODOS = ['Sim, estou totalmente aberto e quero um método limpo.', 'Tenho dúvidas sobre abrir mão de abordagens modernas.', 'Não quero abrir mão da astrologia moderna.', 'Não estou aberto a usar signos inteiros.'];
   var OBJETIVOS = ['Dominar meu próprio Mapa Natal a fundo', 'Adquirir segurança técnica para atender clientes', 'Organizar meu raciocínio e eliminar ruídos técnicos', 'Aprender técnicas preditivas', 'Outros'];
@@ -54,8 +54,8 @@
         return null;
       };
     } },
-    { titulo: 'Bagagem atual', desenhar: function (cx) {
-      cx.appendChild(el('label', { text: 'Qual o seu nível de conhecimento em Astrologia hoje? *' }));
+    { titulo: 'De onde você parte', desenhar: function (cx) {
+      cx.appendChild(el('label', { text: 'Como você descreveria o seu momento na astrologia? *' }));
       var area = el('div');
       (function pintar() { area.textContent = ''; NIVEIS.forEach(function (n) { area.appendChild(opcao(n, est.nivel === n, function () { est.nivel = n; pintar(); })); }); })();
       cx.appendChild(area);
