@@ -102,10 +102,10 @@
     var msgWhats = 'Oi, Cássio! Aqui é ' + primeiroNome() + '. Acabei de enviar a minha aplicação para o Acompanhamento Prático de Astrologia, no seu site.';
     var botao = el('a', { class: 'portal-btn portal-btn-whats', href: 'https://wa.me/' + WHATS + '?text=' + encodeURIComponent(msgWhats), target: '_blank', rel: 'noopener', text: 'Avisar o Cássio no WhatsApp' });
     raiz.appendChild(el('div', { class: 'portal-cartao' }, [
-      el('h2', { text: 'Aplicação enviada com sucesso!' }),
-      el('p', { text: 'Analisarei suas respostas com atenção para avaliar o alinhamento do seu perfil com a nossa metodologia.' }),
-      el('p', { text: 'Se a sua aplicação for aprovada, entrarei em contato diretamente pelo seu WhatsApp em até 48 horas para alinharmos os próximos passos.' }),
-      el('p', { style: 'font-weight:700', text: 'Para eu ver mais rápido, toque no botão abaixo e me avise no WhatsApp. A mensagem já vai pronta.' }),
+      el('h2', { text: 'Recebi a sua aplicação, obrigado!' }),
+      el('p', { text: 'Vou ler as suas respostas com cuidado para entender o seu momento e o que podemos trabalhar juntos.' }),
+      el('p', { text: 'Entro em contato pelo seu WhatsApp em até 48 horas para combinarmos os próximos passos.' }),
+      el('p', { style: 'font-weight:700', text: 'Se quiser que eu veja mais rápido, toque no botão abaixo e me avise no WhatsApp. A mensagem já vai pronta.' }),
       el('div', { class: 'portal-acoes' }, [botao])
     ]));
   }
