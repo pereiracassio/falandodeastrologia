@@ -96,7 +96,7 @@
 
   var cart = document.createElement("a");
   cart.className = "cart-toggle";
-  cart.href = "carrinho.html";
+  cart.href = "/carrinho.html";
   cart.setAttribute("aria-label", "Meu carrinho");
   cart.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h3l2.4 12.2a1.5 1.5 0 0 0 1.5 1.2h8.7a1.5 1.5 0 0 0 1.5-1.1L21 8H6"/><circle cx="9.5" cy="20" r="1.4"/><circle cx="17.5" cy="20" r="1.4"/></svg>';
   // a página do carrinho chama isto quando a pessoa tira um serviço

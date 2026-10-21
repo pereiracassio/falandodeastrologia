@@ -139,3 +139,5 @@ html body:has(.pagina-papiro) .cart-toggle svg{stroke:#1034A6;width:18px!importa
 .pagina-papiro .portal-aba{font-size:12px;padding:10px 2px;letter-spacing:0}
 @media(min-width:701px){.pagina-papiro .portal-aba{font-size:clamp(14px,1.2vw,18px)}}
 .pagina-papiro .portal a:not(.portal-btn){color:#1F5FA3}
+/* páginas com estilo próprio no body (carrinho, horário confirmado): o papiro inteiro manda */
+body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:0!important}
