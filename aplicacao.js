@@ -36,15 +36,15 @@
 
   var passo = 0;
   var PASSOS = [
-    { titulo: 'Identificação básica', desenhar: function (cx, msg) {
+    { titulo: 'Vamos nos conhecer', desenhar: function (cx, msg) {
       var nome = el('input', { type: 'text', autocomplete: 'name' }); nome.value = est.nome;
       var whats = el('input', { type: 'tel', autocomplete: 'tel', inputmode: 'tel', placeholder: '(11) 99999-9999' }); whats.value = est.whatsapp;
       var email = el('input', { type: 'email', autocomplete: 'email', inputmode: 'email', placeholder: 'seunome@gmail.com' }); email.value = est.email;
       var isca = el('input', { type: 'text', tabindex: '-1', autocomplete: 'off', 'aria-hidden': 'true', name: 'empresa' }); /* campo-isca contra robô: pessoa de verdade não vê nem preenche */
       isca.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0';
       cx.appendChild(el('label', { text: 'Nome completo *' })); cx.appendChild(nome);
-      cx.appendChild(el('label', { text: 'WhatsApp para contato *' })); cx.appendChild(whats);
-      cx.appendChild(el('label', { text: 'Gmail (o que você usa no Google) *' })); cx.appendChild(email); cx.appendChild(isca);
+      cx.appendChild(el('label', { text: 'WhatsApp (com DDD) *' })); cx.appendChild(whats);
+      cx.appendChild(el('label', { text: 'Seu Gmail, o e-mail que você usa no Google *' })); cx.appendChild(email); cx.appendChild(isca);
       return function () {
         est.nome = nome.value.trim(); est.whatsapp = whats.value.trim(); est.email = email.value.trim();
         if (est.nome.length < 3) return 'Escreva o seu nome completo.';
