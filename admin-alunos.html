@@ -97,14 +97,25 @@
       cancelarNovo.addEventListener('click', function () { areaForm.textContent = ''; });
       var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
         el('p', { class: 'portal-item-titulo', text: 'Novo aluno' }),
-        el('p', { text: 'Antes, crie o acesso dele no Supabase: Authentication → Users → Add user (e-mail + senha, marcando "Auto Confirm User"). Depois, cadastre aqui o mesmo e-mail.' }),
+        el('p', { text: 'O acesso dele é criado aqui, ao adicionar. Ele entra com o Google (o mesmo Gmail) ou toca em "Esqueci minha senha" na tela de entrada.' }),
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (o mesmo do acesso)' }), email,
         el('label', { for: 'novoCodigo', text: 'Código do aluno (o mesmo do Astro Hellenic, opcional). Só você vê.' }), codigo, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
-        ev.preventDefault(); add.disabled = true;
-        P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single().then(function (r) {
+        ev.preventDefault(); add.disabled = true; P.mensagem(msg, 'Criando o acesso...');
+        /* primeiro o acesso (login) do aluno, criado pelo servidor; só depois a ficha dele aqui */
+        P.client.auth.getSession().then(function (sessao) {
+          var jwt = sessao.data && sessao.data.session ? sessao.data.session.access_token : '';
+          return fetch('https://falandodeastrologia.vercel.app/api/criar-acesso', { method: 'POST', headers: { Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: nome.value.trim(), email: email.value.trim() }) })
+            .then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { if (!resp.ok) throw new Error(d.detalhe || d.erro || 'erro'); }); });
+        }).then(function () {
+          P.mensagem(msg, '');
+          return P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single();
+        }).catch(function (e) {
+          return { error: { message: 'acesso: ' + e.message, acesso: true } };
+        }).then(function (r) {
+          if (r.error && r.error.acesso) { add.disabled = false; P.mensagem(msg, 'Não consegui criar o acesso agora (' + r.error.message.replace('acesso: ', '') + '). Tente de novo em instantes.', 'erro'); return; }
           if (r.error) { add.disabled = false; P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um aluno com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
           var cod = codigo.value.trim();
           if (!cod) { add.disabled = false; listaDeAlunos(user); return; }
