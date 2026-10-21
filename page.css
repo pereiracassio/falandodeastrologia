@@ -162,3 +162,5 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 .pagina-papiro .blog-botao:hover,
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]:hover{background:#7d2f1a!important;border-color:#7d2f1a!important;padding:inherit;transform:none}
 .pagina-papiro .portal-btn-sec,.pagina-papiro .portal-btn-perigo{border-radius:0!important}
+/* canto reto em tudo dentro das páginas de papiro (sanfonas, cartões, campos, botões) */
+.pagina-papiro *,.pagina-papiro *::before,.pagina-papiro *::after{border-radius:0!important}
