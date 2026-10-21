@@ -177,3 +177,18 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 .pagina-papiro .portal-item .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;border-width:3px!important}
 /* a foto de perfil é redonda (decisão do astrólogo); nada que ele tenha pedido redondo vira quadrado */
 .pagina-papiro #foto-sobre,.pagina-papiro [style*="border-radius: 50%"]{border-radius:50%!important}
+/* ABAS DO PORTAL = mesmo desenho do retângulo de três botões do topo (um bloco só, divisas internas); só muda a cor do texto: azul, e a selecionada em ocre.
+   Azul egípcio ESCURO (#1034A6) em todas as linhas. */
+.pagina-papiro .portal-abas{display:flex;gap:0!important;border:1.5px solid #1034A6!important;margin:0 0 18px!important;padding:0!important}
+.pagina-papiro .portal-aba{flex:1 1 0;border:0!important;border-left:1.5px solid #1034A6!important;padding:9px 2px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;color:#1034A6!important;background:transparent!important}
+.pagina-papiro .portal-aba:first-child{border-left:0!important}
+.pagina-papiro .portal-aba.ativa{color:#B5852F!important;border-width:0!important;border-left-width:1.5px!important;padding:9px 2px!important}
+.pagina-papiro .portal-aba.ativa:first-child{border-left-width:0!important}
+@media(min-width:701px){.pagina-papiro .portal-aba{font-size:clamp(13px,1.1vw,17px)!important;padding:clamp(9px,.9vw,14px) 0!important}}
+/* botões não mexem nem encolhem quando o mouse passa: só a cor muda */
+.pagina-papiro .portal-btn,.pagina-papiro .portal-btn:hover,.pagina-papiro .portal-btn:active,.pagina-papiro .portal-aba:hover{transform:none!important;transition:background .15s ease,color .15s ease!important}
+.pagina-papiro .portal-btn-sec:hover,.pagina-papiro .portal-item .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{border-width:1.5px!important;padding:12px 24px;box-shadow:inset 0 0 0 1px #1034A6;background:transparent!important}
+.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item .portal-btn):hover{padding:12px 24px}
+/* botões dentro das listas ganham das regras acima (secundários, só contorno) */
+html body .pagina-papiro .portal-item .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;color:#1034A6!important;border:1.5px solid #1034A6!important}
+html body .pagina-papiro .portal-item .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;box-shadow:inset 0 0 0 1px #1034A6}

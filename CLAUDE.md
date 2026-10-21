@@ -75,3 +75,4 @@ A tela Alunos (`aluno.html`) **não tem e não pode ter lugar para criar conta**
 - Botão sempre numa linha só; nunca hífen cortando palavra; nunca canto arredondado; nunca quadro dentro de quadro.
 - **Pouco vermelho:** terracota só nos botões realmente importantes (carrinho, pagamento, entrar, enviar). Abas do portal em azul, **a selecionada em ocre**. Botões dentro de listas (Assistir, Abrir, Baixar) são secundários (contorno azul).
 - **A foto do "Quem sou eu" é REDONDA** (pedido dele). A regra de canto reto (`border-radius:0` em `.pagina-papiro *`) tem exceção para `#foto-sobre` e para qualquer elemento com `border-radius: 50%` inline. Nunca tirar o redondo da foto.
+- **Abas do portal = o mesmo retângulo de três partes do topo** (um bloco só, divisas internas, azul egípcio ESCURO `#1034A6`), texto azul e **selecionada em ocre**. **Botões nunca mexem nem encolhem no hover** (só a cor muda); nada de `transform` nem troca de padding no hover.
