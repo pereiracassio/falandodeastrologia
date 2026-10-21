@@ -141,3 +141,12 @@ html body:has(.pagina-papiro) .cart-toggle svg{stroke:#1034A6;width:18px!importa
 .pagina-papiro .portal a:not(.portal-btn){color:#1F5FA3}
 /* páginas com estilo próprio no body (carrinho, horário confirmado): o papiro inteiro manda */
 body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:0!important}
+/* serviços: nada de quadro dentro de quadro. O investimento e os avisos ficam soltos no papiro; botão só com contorno, sem canto arredondado */
+.pagina-papiro .folha-pagina div[style*="f8f9fa"]{background:none!important;border:0!important;border-top:1px solid #1F5FA3!important;border-radius:0!important;box-shadow:none!important;padding:26px 0 0!important}
+.pagina-papiro .folha-pagina div[style*="background-color: white"]{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+.pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:transparent!important;border:1.5px solid #1034A6!important;border-radius:0!important;color:#A03E25!important}
+.duvida-whats{margin:0 0 10px;color:#16233F;font-size:15px;text-align:center}
+.icone-whats{display:inline-block;transition:transform .2s ease}
+.icone-whats:hover{transform:translateY(-3px)}
+.icone-whats img{display:block;width:44px;height:44px}
+.icone-whats{margin-bottom:34px}
