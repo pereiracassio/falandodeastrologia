@@ -92,7 +92,7 @@ html:has(.pagina-papiro),body:has(.pagina-papiro){background:var(--papiro-fundo)
 html:has(.pagina-papiro),body:has(.pagina-papiro){background-color:var(--papiro-topo)}
 body:has(.pagina-papiro)::before,body:has(.pagina-papiro)::after{display:none}
 .pagina-papiro{margin:0;max-width:none;filter:none}
-.pagina-papiro .folha-pagina{clip-path:none;background:none;min-height:100vh;hyphens:auto;-webkit-hyphens:auto}
+.pagina-papiro .folha-pagina{clip-path:none;background:none;min-height:100vh;hyphens:none;-webkit-hyphens:none}
 @media(max-width:700px){.pagina-papiro{margin:0}.pagina-papiro .folha-pagina{padding-left:60px;padding-right:60px}}
 .cab-papiro{text-align:center;margin:0 auto 6px;max-width:700px}
 .cab-logo{display:block;margin:0 auto;max-width:270px}
@@ -150,3 +150,6 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 .icone-whats:hover{transform:translateY(-3px)}
 .icone-whats img{display:block;width:44px;height:44px}
 .icone-whats{margin-bottom:34px}
+/* nenhuma palavra é cortada com hífen e botões ficam numa linha só (a letra diminui para caber) */
+.pagina-papiro,.pagina-papiro *{hyphens:none;-webkit-hyphens:none}
+.pagina-papiro .folha-pagina a[href*="carrinho.html"]{white-space:nowrap;font-size:clamp(12px,3.8vw,15px)!important;padding-left:8px!important;padding-right:8px!important}
