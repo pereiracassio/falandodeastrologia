@@ -176,3 +176,18 @@ html,body{max-width:100%;overflow-x:hidden}
 /* a barra de papiro também leva a moldura com meandros (todo papiro leva) */
 .barra-topo.papiro-moldura{position:relative;padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 16px)}
 .barra-texto{margin:0;font:400 14px/1.6 'Cinzel',serif;color:#A03E25;text-align:justify;text-align-last:center}
+
+/* ===== computador e tablet deitado: a página inicial usa a largura (antes era uma coluna estreita no meio) ===== */
+@media(min-width:900px){
+  .logo-home img{width:min(620px,60vw)}
+  .barra-wrap{max-width:1100px}
+  .barra-topo.papiro-moldura{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);column-gap:44px;align-items:center}
+  .barra-topo .cab-nav{grid-column:1;grid-row:1}
+  .barra-topo .cab-linha:first-of-type{grid-column:1;grid-row:2}
+  .barra-topo .social-bar{grid-column:1;grid-row:3}
+  .barra-topo .cab-linha:last-of-type{display:none}
+  .barra-topo .barra-texto{grid-column:2;grid-row:1/4;padding-left:44px;border-left:1px solid #1F5FA3;font-size:clamp(15px,1.3vw,19px)}
+  .container{max-width:1100px}
+  .top-banners.um{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:2.5vw}
+  .services-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
