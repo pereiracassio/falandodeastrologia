@@ -114,3 +114,11 @@ html body:has(.pagina-papiro) .cart-toggle svg{stroke:#1034A6;width:18px!importa
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"]{text-align:justify!important}
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"]{font-size:15px!important}
 .pagina-papiro .folha-pagina h2[style*="border-bottom"]{border-bottom:none!important;font-size:21px!important;margin:30px 0 12px!important;padding:0!important}
+/* computador: a coluna do texto acompanha o papiro inteiro (antes era presa em 700px e sobrava margem) */
+@media(min-width:701px){
+  .pagina-papiro .folha-pagina>div[style*="max-width: 700px"]{max-width:920px!important}
+  .pagina-papiro .cab-papiro{max-width:920px}
+  .pagina-papiro .cab-nav{max-width:640px;margin-left:auto;margin-right:auto}
+  .pagina-papiro .folha-pagina p[style*="font-size: 16px"],.pagina-papiro .folha-pagina li[style*="margin-bottom"],.pagina-papiro .folha-pagina ul[style*="font-size: 16px"]{font-size:17px!important}
+}
+@media(min-width:701px){.pagina-papiro .folha-pagina p[style*="font-size: 17px"]{font-size:17px!important}}
