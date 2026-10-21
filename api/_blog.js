@@ -135,13 +135,13 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/papiro.css?v=4">
-  <link rel="stylesheet" href="/home.css?v=24">
-  <link rel="stylesheet" href="/page.css?v=42">
-  <link rel="stylesheet" href="/blog.css?v=13">
+  <link rel="stylesheet" href="/papiro.css">
+  <link rel="stylesheet" href="/home.css">
+  <link rel="stylesheet" href="/page.css">
+  <link rel="stylesheet" href="/blog.css">
 </head>
 <body${home ? ' class="blog-home"' : ''}>
-${home ? CABECALHO_HOME.replace('<!--BARRA-->', barra || '') + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js?v=26" defer></script>
+${home ? CABECALHO_HOME.replace('<!--BARRA-->', barra || '') + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js" defer></script>
 </body>
 </html>
 `;
