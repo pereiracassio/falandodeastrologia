@@ -101,6 +101,12 @@
         el('label', { for: 'novoCodigo', text: 'Código do aluno (o mesmo do Astro Hellenic, opcional). Só você vê.' }), codigo, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
+        var avisoAcesso = '';
+        var terminar = function () {
+          if (!avisoAcesso) { listaDeAlunos(user); return; }
+          P.mensagem(msg, 'Cadastrado. Mas o acesso não foi criado agora (' + avisoAcesso + ').', 'erro');
+          setTimeout(function () { listaDeAlunos(user); }, 7000);
+        };
         ev.preventDefault(); add.disabled = true; P.mensagem(msg, 'Criando o acesso...');
         /* primeiro o acesso (login) do aluno, criado pelo servidor; só depois a ficha dele aqui */
         P.client.auth.getSession().then(function (sessao) {
@@ -111,16 +117,16 @@
           P.mensagem(msg, '');
           return P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single();
         }).catch(function (e) {
-          return { error: { message: 'acesso: ' + e.message, acesso: true } };
+          avisoAcesso = e.message; /* o acesso não travou: a ficha é criada mesmo assim e o motivo aparece */
+          return P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single();
         }).then(function (r) {
-          if (r.error && r.error.acesso) { add.disabled = false; P.mensagem(msg, 'Não consegui criar o acesso agora (' + r.error.message.replace('acesso: ', '') + '). Tente de novo em instantes.', 'erro'); return; }
           if (r.error) { add.disabled = false; P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um aluno com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
           var cod = codigo.value.trim();
-          if (!cod) { add.disabled = false; listaDeAlunos(user); return; }
+          if (!cod) { add.disabled = false; terminar(); return; }
           P.client.from('aluno_codigos').insert({ aluno_id: r.data.id, codigo: cod }).then(function (rc) {
             add.disabled = false;
             if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Aluno criado, mas esse código já é de outro aluno. Abra o aluno e corrija o código.' : 'Aluno criado, mas não foi possível salvar o código.', 'erro'); return; }
-            listaDeAlunos(user);
+            terminar();
           });
         });
       });

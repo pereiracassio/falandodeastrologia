@@ -98,6 +98,12 @@
         el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
+        var avisoAcesso = '';
+        var terminar = function () {
+          if (!avisoAcesso) { listaDeClientes(user); return; }
+          P.mensagem(msg, 'Cadastrado. Mas o acesso não foi criado agora (' + avisoAcesso + ').', 'erro');
+          setTimeout(function () { listaDeClientes(user); }, 7000);
+        };
         ev.preventDefault(); add.disabled = true; P.mensagem(msg, 'Criando o acesso...');
         /* primeiro o acesso (login) do cliente, criado pelo servidor; só depois a ficha dele aqui */
         P.client.auth.getSession().then(function (sessao) {
@@ -113,12 +119,12 @@
           if (r.error && r.error.acesso) { add.disabled = false; P.mensagem(msg, 'Não consegui criar o acesso agora (' + r.error.message + '). Tente de novo em instantes.', 'erro'); return; }
           if (r.error) { add.disabled = false; P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um cliente com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
           var cod = codigo.value.trim();
-          if (!cod) { listaDeClientes(user); return; }
+          if (!cod) { add.disabled = false; terminar(); return; }
           // o código fica numa tabela só do administrador: o cliente nunca consegue lê-lo
           P.client.from('cliente_codigos').insert({ cliente_id: r.data.id, codigo: cod }).then(function (rc) {
             add.disabled = false;
             if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Cliente criado, mas esse código já é de outro cliente. Abra o cliente e corrija o código.' : 'Cliente criado, mas não foi possível salvar o código.', 'erro'); return; }
-            listaDeClientes(user);
+            terminar();
           });
         });
       });

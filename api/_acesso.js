@@ -13,7 +13,9 @@ async function criarAcesso(email, nome) {
   let d = {}; try { d = await resp.json(); } catch (e) { /* sem corpo */ }
   const texto = String(d.error_code || '') + ' ' + String(d.msg || d.message || d.error_description || d.error || '');
   // o acesso desse e-mail já existe (ex.: a pessoa entrou com o Google quando o cadastro estava aberto): está certo, só falta a ficha
-  if (/email_exists|already|registered|exists|duplicate/i.test(texto)) return false;
+  if (/email_exists|user_already_exists|already|registered|exists|duplicate/i.test(texto)) return false;
+  // 422 que não é e-mail inválido: o Supabase recusou criar porque o acesso já está lá (mensagens variam entre versões): segue com a ficha
+  if (resp.status === 422 && !/invalid|validation|weak|format/i.test(texto)) return false;
   throw new Error('Supabase ' + resp.status + (texto.trim() ? ': ' + texto.trim() : ''));
 }
 module.exports = { criarAcesso };
