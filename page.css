@@ -212,5 +212,5 @@ html body .pagina-papiro .portal-item .portal-btn.portal-btn:not(.portal-btn-mee
 .pagina-papiro .rolagem-wrap{position:relative;width:100%}
 .pagina-papiro .barra-seta{display:none;position:absolute;top:1.5px;bottom:1.5px;z-index:3;width:34px;padding:0;border:0!important;cursor:pointer;align-items:center;color:#A03E25;background:transparent}
 .pagina-papiro .barra-seta.visivel{display:flex}
-.pagina-papiro .barra-seta-esq{left:1.5px;justify-content:flex-start;padding-left:4px;background:linear-gradient(to right,rgba(232,214,166,.97) 45%,transparent)}
-.pagina-papiro .barra-seta-dir{right:1.5px;justify-content:flex-end;padding-right:4px;background:linear-gradient(to left,rgba(232,214,166,.97) 45%,transparent)}
+.pagina-papiro .barra-seta-esq{left:1.5px;justify-content:flex-start;padding-left:4px;background:transparent}
+.pagina-papiro .barra-seta-dir{right:1.5px;justify-content:flex-end;padding-right:4px;background:transparent}
