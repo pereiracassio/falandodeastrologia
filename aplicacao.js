@@ -12,7 +12,7 @@
   var NIVEIS = ['Estou começando agora, ainda não estudei', 'Já estudei astrologia moderna', 'Já estudei astrologia tradicional', 'Já estudo astrologia clássica', 'Já atendo clientes e quero me aprimorar'];
   var PERGUNTA_METODO = 'A astrologia é o estudo do céu, e céu é o que conseguimos ver quando olhamos para cima. O que não dá para ver a olho nu não é céu, é espaço sideral. Por isso, na astrologia clássica usamos apenas os planetas que podemos encontrar no céu (do Sol a Saturno) e apenas as casas por signos inteiros. Você topa estudar assim?';
   var METODOS = ['Sim, é exatamente o que eu busco.', 'Tenho curiosidade, mas ainda tenho dúvidas.', 'Prefiro continuar usando os planetas modernos.', 'Prefiro outro sistema de casas.'];
-  var OBJETIVOS = ['Dominar meu próprio Mapa Natal a fundo', 'Adquirir segurança técnica para atender clientes', 'Organizar meu raciocínio e eliminar ruídos técnicos', 'Aprender técnicas preditivas', 'Outros'];
+  var OBJETIVOS = ['Entender o meu próprio mapa com profundidade', 'Ter segurança para atender clientes', 'Organizar o que já sei e tirar as confusões', 'Aprender técnicas de previsão', 'Outro objetivo'];
 
   function opcao(texto, marcada, aoClicar) {
     var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
@@ -61,15 +61,15 @@
       cx.appendChild(area);
       return function () { return est.nivel ? null : 'Escolha uma opção.'; };
     } },
-    { titulo: 'Sobre o método', desenhar: function (cx) {
+    { titulo: 'O céu e a astrologia clássica', desenhar: function (cx) {
       cx.appendChild(el('p', { style: 'font-size:16px;font-weight:700;line-height:1.5;margin:0 0 14px', text: PERGUNTA_METODO + ' *' }));
       var area = el('div');
       (function pintar() { area.textContent = ''; METODOS.forEach(function (n) { area.appendChild(opcao(n, est.metodo === n, function () { est.metodo = n; pintar(); })); }); })();
       cx.appendChild(area);
       return function () { return est.metodo ? null : 'Escolha uma opção.'; };
     } },
-    { titulo: 'Objetivo', desenhar: function (cx) {
-      cx.appendChild(el('label', { text: 'Quais seus objetivos com esta mentoria astrológica? (pode marcar mais de um) *' }));
+    { titulo: 'O que você busca', desenhar: function (cx) {
+      cx.appendChild(el('label', { text: 'O que você espera da mentoria? (pode marcar mais de um) *' }));
       var area = el('div'), outros = el('textarea', { rows: '3', placeholder: 'Conte quais outros objetivos' });
       outros.value = est.outros;
       outros.addEventListener('input', function () { est.outros = outros.value; });
@@ -82,16 +82,16 @@
             pintar();
           }));
         });
-        outros.style.display = est.objetivos.indexOf('Outros') >= 0 ? '' : 'none';
+        outros.style.display = est.objetivos.indexOf('Outro objetivo') >= 0 ? '' : 'none';
       }
       pintar(); cx.appendChild(area); cx.appendChild(outros);
       var motivo = el('textarea', { rows: '5' }); motivo.value = est.motivo;
-      cx.appendChild(el('label', { text: 'Por que você escolheu buscar esta mentoria especificamente comigo? *' })); cx.appendChild(motivo);
+      cx.appendChild(el('label', { text: 'O que te chamou atenção na mentoria? *' })); cx.appendChild(motivo);
       return function () {
         est.motivo = motivo.value.trim();
         if (!est.objetivos.length) return 'Marque pelo menos um objetivo.';
-        if (est.objetivos.indexOf('Outros') >= 0 && !est.outros.trim()) return 'Conte quais são os outros objetivos.';
-        if (est.motivo.length < 3) return 'Responda por que você escolheu esta mentoria.';
+        if (est.objetivos.indexOf('Outro objetivo') >= 0 && !est.outros.trim()) return 'Conte quais são os outros objetivos.';
+        if (est.motivo.length < 3) return 'Conte o que te chamou atenção na mentoria.';
         return null;
       };
     } }
