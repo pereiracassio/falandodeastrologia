@@ -98,8 +98,23 @@ const CABECALHO_POST = `<div class="pagina pagina-servico pagina-papiro"><div cl
     <hr class="cab-linha">
   </div>`;
 
+/* assuntos: mesmo desenho da home do blog (céu, logo, barra de papiro, um papiro por texto) */
+const CABECALHO_HOME = `<div class="logo-home"><a href="/index.html"><img src="/img/logo-completa.svg?v=3" alt="Falando de Astrologia Helenística" width="912" height="400"></a></div>
+<div class="barra-wrap">
+  <div class="barra-topo">
+    <nav class="cab-nav"><a href="/aluno.html">Alunos</a><a href="/index.html#servicos">Serviços</a><a href="/blog.html" class="atual">Blog</a></nav>
+    <hr class="cab-linha">
+    <div class="social-bar">
+      <a href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Estava%20no%20seu%20site%20e%20queria%20tirar%20uma%20dúvida%20sobre" target="_blank" rel="noopener" title="WhatsApp"><img alt="WhatsApp" src="/img/rede-whatsapp.svg" width="44" height="44"></a>
+      <a href="https://youtube.com/@falandodeastrologia?si=YEtKppUWaDVqL7uA" target="_blank" rel="noopener" title="YouTube"><img alt="YouTube" src="/img/rede-youtube.svg" width="44" height="44"></a>
+      <a href="https://www.instagram.com/cassiopereira___?igsh=MWU5YjVtNWpjYzduZQ%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener" title="Instagram"><img alt="Instagram" src="/img/rede-instagram.svg" width="44" height="44"></a>
+      <a href="https://www.tiktok.com/@cassiopereira__?_r=1&amp;_t=ZS-98YFBywW5Za" target="_blank" rel="noopener" title="TikTok"><img alt="TikTok" src="/img/rede-tiktok.svg" width="44" height="44"></a>
+    </div>
+  </div>
+</div>`;
+
 /* casca comum das páginas: cabeçalho do site, papiro, menu */
-function casca({ titulo, descricao, url, tipo, extraHead, corpo }) {
+function casca({ titulo, descricao, url, tipo, extraHead, corpo, home }) {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -120,13 +135,10 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo }) {
   <link rel="stylesheet" href="/papiro.css?v=4">
   <link rel="stylesheet" href="/home.css?v=18">
   <link rel="stylesheet" href="/page.css?v=22">
-  <link rel="stylesheet" href="/blog.css?v=7">
+  <link rel="stylesheet" href="/blog.css?v=8">
 </head>
-<body>
-${tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO}
-${corpo}
-</div></div>
-  <script src="/menu.js?v=20" defer></script>
+<body${home ? ' class="blog-home"' : ''}>
+${home ? CABECALHO_HOME + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js?v=20" defer></script>
 </body>
 </html>
 `;
@@ -161,17 +173,19 @@ ${FIM_HTML}
 /* página de um assunto: a lista das postagens dele */
 function paginaAssunto(a) {
   const url = enderecoAssunto(a.slug);
-  const cartoes = a.posts.map((p) => '    <a class="blog-item" href="/blog/' + p.slug + '.html">' +
+  const cartoes = a.posts.map((p) => '    <a class="blog-card papiro-moldura" href="/blog/' + p.slug + '.html">' +
     (p.imagem_url ? '<img src="' + esc(p.imagem_url) + '" alt="" loading="lazy">' : '') +
     (p.publicado_em ? '<p class="blog-data">' + esc(dataExtenso(p.publicado_em)) + '</p>' : '') +
     '<h2>' + esc(p.titulo) + '</h2><p>' + esc(resumoDe(p)) + '</p></a>').join('\n');
   return casca({
-    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website',
-    corpo: `  <div class="blog">
-    <h1>${esc(a.nome)}</h1>
+    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website', home: true,
+    corpo: `<main class="blog-home-conteudo">
+  <h1 class="blog-home-titulo">${esc(a.nome)}</h1>
+  <div class="blog-grade">
 ${cartoes}
-    <a class="blog-voltar" href="/blog.html">← Ver todos os assuntos</a>
-  </div>`
+  </div>
+  <p style="text-align:center"><a class="blog-voltar blog-voltar-ceu" href="/blog.html">← Ver todos os assuntos</a></p>
+</main>`
   });
 }
 
