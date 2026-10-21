@@ -114,11 +114,15 @@ html body:has(.pagina-papiro) .cart-toggle svg{stroke:#1034A6;width:18px!importa
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"]{text-align:justify!important}
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"]{font-size:15px!important}
 .pagina-papiro .folha-pagina h2[style*="border-bottom"]{border-bottom:none!important;font-size:21px!important;margin:30px 0 12px!important;padding:0!important}
-/* computador: a coluna do texto acompanha o papiro inteiro (antes era presa em 700px e sobrava margem) */
+/* computador: mesma proporção do celular (texto de ponta a ponta entre a moldura e os botões; letra cresce com a tela) */
 @media(min-width:701px){
-  .pagina-papiro .folha-pagina>div[style*="max-width: 700px"]{max-width:920px!important}
-  .pagina-papiro .cab-papiro{max-width:920px}
-  .pagina-papiro .cab-nav{max-width:640px;margin-left:auto;margin-right:auto}
-  .pagina-papiro .folha-pagina p[style*="font-size: 16px"],.pagina-papiro .folha-pagina li[style*="margin-bottom"],.pagina-papiro .folha-pagina ul[style*="font-size: 16px"]{font-size:17px!important}
+  .pagina-papiro .folha-pagina{padding-left:84px;padding-right:84px}
+  .pagina-papiro .folha-pagina>div[style*="max-width: 700px"],.pagina-papiro .cab-papiro{max-width:none!important}
+  .pagina-papiro .cab-logo{max-width:clamp(270px,24vw,420px)}
+  .pagina-papiro .cab-nav{font-size:clamp(13px,1.1vw,17px)}
+  .pagina-papiro .cab-nav a{padding:clamp(9px,.9vw,14px) 0}
+  .pagina-papiro .folha-pagina h1[style*="font-size: 28px"]{font-size:clamp(28px,2.5vw,38px)!important}
+  .pagina-papiro .folha-pagina h2[style*="border-bottom"]{font-size:clamp(21px,1.8vw,27px)!important}
+  .pagina-papiro .folha-pagina h2[style*="text-transform: uppercase"]{font-size:clamp(16px,1.45vw,21px)!important}
+  .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"],.pagina-papiro .folha-pagina ul[style*="font-size: 16px"],.pagina-papiro .folha-pagina li[style*="margin-bottom"]{font-size:clamp(17px,1.55vw,23px)!important}
 }
-@media(min-width:701px){.pagina-papiro .folha-pagina p[style*="font-size: 17px"]{font-size:17px!important}}
