@@ -99,11 +99,11 @@ const CABECALHO_POST = `<div class="pagina pagina-servico pagina-papiro"><div cl
   </div>`;
 
 /* assuntos: mesmo desenho da home do blog (céu, logo, barra de papiro, um papiro por texto) */
-const CABECALHO_HOME = `<div class="logo-home"><a href="/index.html"><img src="/img/logo-completa.svg?v=3" alt="Falando de Astrologia Helenística" width="912" height="400"></a></div>
-<div class="barra-wrap">
+const CABECALHO_HOME = `<div class="barra-wrap">
   <div class="barra-topo papiro-moldura">
-    <nav class="cab-nav"><a href="/aluno.html">Alunos</a><a href="/index.html#servicos">Serviços</a><a href="/blog.html" class="atual">Blog</a></nav>
+    <a href="/index.html" class="cab-logo"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
     <hr class="cab-linha">
+    <nav class="cab-nav"><a href="/aluno.html">Alunos</a><a href="/index.html#servicos">Serviços</a><a href="/blog.html" class="atual">Blog</a></nav>
     <div class="social-bar">
       <a href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Estava%20no%20seu%20site%20e%20queria%20tirar%20uma%20dúvida%20sobre" target="_blank" rel="noopener" title="WhatsApp"><img alt="WhatsApp" src="/img/rede-whatsapp.svg" width="44" height="44"></a>
       <a href="https://youtube.com/@falandodeastrologia?si=YEtKppUWaDVqL7uA" target="_blank" rel="noopener" title="YouTube"><img alt="YouTube" src="/img/rede-youtube.svg" width="44" height="44"></a>
@@ -135,9 +135,9 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/papiro.css?v=4">
-  <link rel="stylesheet" href="/home.css?v=21">
+  <link rel="stylesheet" href="/home.css?v=24">
   <link rel="stylesheet" href="/page.css?v=22">
-  <link rel="stylesheet" href="/blog.css?v=11">
+  <link rel="stylesheet" href="/blog.css?v=12">
 </head>
 <body${home ? ' class="blog-home"' : ''}>
 ${home ? CABECALHO_HOME.replace('<!--BARRA-->', barra || '') + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js?v=20" defer></script>
