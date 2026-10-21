@@ -98,7 +98,7 @@
         el('p', { text: 'O acesso dele é criado aqui, ao adicionar. Ele entra com o Google (o mesmo Gmail) ou toca em "Esqueci minha senha" na tela de entrada.' }),
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (o mesmo do acesso)' }), email,
-        el('label', { for: 'novoCodigo', text: 'Código do aluno (o mesmo do Astro Hellenic, opcional). Só você vê.' }), codigo, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
+        el('label', { for: 'novoCodigo', text: 'Código do aluno' }), codigo, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
         var avisoAcesso = '';

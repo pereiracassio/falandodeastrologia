@@ -93,7 +93,7 @@
       var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
         el('p', { class: 'portal-item-titulo', text: 'Novo cliente' }),
         el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. O acesso dele é criado aqui, ao adicionar. Ele entra na página de Pós-atendimento com o Google, sem senha.' }),
-        el('label', { for: 'novoCodigo', text: 'Código do cliente (o mesmo do Astro Hellenic). Só você vê.' }), codigo,
+        el('label', { for: 'novoCodigo', text: 'Código do cliente' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
