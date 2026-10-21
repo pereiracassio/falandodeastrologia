@@ -43,10 +43,12 @@ module.exports = async (req, res) => {
     const corpo = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const site = String(corpo.site || '');
     if (!SITES.includes(site)) { res.status(400).json({ erro: 'site desconhecido' }); return; }
+    const horas = Math.min(Math.max(parseInt(corpo.horas, 10) || 0, 0), 24 * 7);
     const dias = Math.min(Math.max(parseInt(corpo.dias, 10) || 7, 1), 365);
     const fim = new Date();
-    const inicio = new Date(fim.getTime() - (dias - 1) * 86400000);
-    inicio.setUTCHours(0, 0, 0, 0);
+    let inicio;
+    if (horas) inicio = new Date(fim.getTime() - horas * 3600000);
+    else { inicio = new Date(fim.getTime() - (dias - 1) * 86400000); inicio.setUTCHours(0, 0, 0, 0); }
     const periodo = 'start=' + encodeURIComponent(inicio.toISOString()) + '&end=' + encodeURIComponent(fim.toISOString());
 
     const [total, paginas] = await Promise.all([
