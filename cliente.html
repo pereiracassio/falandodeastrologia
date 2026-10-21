@@ -50,13 +50,27 @@
       ]));
     }
 
-    function itemEntrega(e) {
+    /* guarda cada toque em "Baixar" (só o administrador enxerga); no modo "ver como o cliente" nada é guardado */
+    function registrarBaixa(entregaId, tipo, verId) {
+      if (verId) return;
+      try { P.client.from('entrega_baixas').insert({ entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {}); } catch (e) { /* o link abre do mesmo jeito */ }
+    }
+
+    function itemEntrega(e, verId) {
       var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico })]);
       if (e.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(e.data) }));
       var botoes = el('div', { class: 'portal-acoes' });
       var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
-      if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
-      if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
+      if (pdf) {
+        var aPdf = el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' });
+        aPdf.addEventListener('click', function () { registrarBaixa(e.id, 'pdf', verId); });
+        botoes.appendChild(aPdf);
+      }
+      if (gravacao) {
+        var aGrav = el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' });
+        aGrav.addEventListener('click', function () { registrarBaixa(e.id, 'gravacao', verId); });
+        botoes.appendChild(aGrav);
+      }
       var caixa = el('div', { class: 'portal-item' });
       if (gravacao || pdf) {
         /* o arquivo abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
@@ -100,7 +114,7 @@
             app.appendChild(cartao);
             if (re.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus serviços agora.' })); return; }
             if (!re.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum serviço entregue ainda.' }));
-            re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e)); });
+            re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e, verId)); });
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20cliente%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
             ]);
