@@ -137,7 +137,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/papiro.css?v=4">
   <link rel="stylesheet" href="/home.css?v=24">
-  <link rel="stylesheet" href="/page.css?v=38">
+  <link rel="stylesheet" href="/page.css?v=39">
   <link rel="stylesheet" href="/blog.css?v=12">
 </head>
 <body${home ? ' class="blog-home"' : ''}>

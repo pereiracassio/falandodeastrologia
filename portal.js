@@ -349,8 +349,8 @@
     var sair = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
     sair.addEventListener('click', aoSair);
     var grupo = el('div', {}, botoes.concat([sair]));
-    grupo.style.marginLeft = 'auto'; /* os botões ficam sempre no mesmo lugar (à direita), qualquer que seja o tamanho do texto da esquerda */
-    return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), grupo]);
+    /* sem o "Olá, ...": ele só aparece na entrada, nas telas do painel não */
+    return el('div', { class: 'portal-topo portal-topo-painel' }, [grupo]);
   }
   /* onde você estava, guardado no endereço (#aluno=ID&atividade=ID): ao recarregar a página ela volta pro mesmo lugar */
   var estado = {
