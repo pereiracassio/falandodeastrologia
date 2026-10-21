@@ -77,7 +77,7 @@
 
   links.forEach(function (link) {
     var a = document.createElement("a");
-    a.href = link.href;
+    a.href = "/" + link.href; /* com a barra no começo, vale também dentro de /blog/ e /assunto/ */
     a.textContent = link.label;
     if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
     if (link.sep) a.classList.add("is-sep");
@@ -87,8 +87,8 @@
 
   var logo = document.createElement("a");
   logo.className = "sidemenu-logo";
-  logo.href = "index.html";
-  logo.innerHTML = '<img src="img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238">';
+  logo.href = "/index.html";
+  logo.innerHTML = '<img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238">';
 
   panel.appendChild(closeBtn);
   panel.appendChild(logo);
