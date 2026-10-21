@@ -80,7 +80,7 @@
     function abasVazias() {
       var barraVazia = el('div', { class: 'portal-abas', role: 'tablist' }), msgVazia = el('div', { class: 'portal-cartao' }, [
         el('p', { class: 'portal-vazio', text: 'Você ainda não é aluno.' }),
-        el('p', {}, [el('span', { text: 'Você pode se tornar aluno pela aplicação na página da ' }), el('a', { href: 'mentoria.html#aplicacao-tally', text: 'Mentoria em Astrologia Clássica' }), el('span', { text: '.' })])
+        el('p', {}, [el('span', { text: 'Você pode se tornar aluno pela aplicação na página da ' }), el('a', { href: 'mentoria.html', text: 'Mentoria em Astrologia Clássica' }), el('span', { text: '.' })])
       ]);
       ABAS.forEach(function (ab, i) {
         var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (i === 0 ? ' ativa' : ''), text: ab.nome });
