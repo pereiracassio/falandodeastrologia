@@ -123,7 +123,7 @@
           // o código fica numa tabela só do administrador: o cliente nunca consegue lê-lo
           P.client.from('cliente_codigos').insert({ cliente_id: r.data.id, codigo: cod }).then(function (rc) {
             add.disabled = false;
-            if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Cliente criado, mas esse código já é de outro cliente. Abra o cliente e corrija o código.' : 'Cliente criado, mas não foi possível salvar o código.', 'erro'); return; }
+            if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Cliente criado, mas esse código já é de outro cliente. Abra o cliente e corrija o código.' : 'Cliente criado, mas não foi possível salvar o código.', 'erro'); setTimeout(function () { listaDeClientes(user); }, 6000); return; }
             terminar();
           });
         });

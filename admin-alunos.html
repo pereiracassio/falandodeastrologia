@@ -125,7 +125,7 @@
           if (!cod) { add.disabled = false; terminar(); return; }
           P.client.from('aluno_codigos').insert({ aluno_id: r.data.id, codigo: cod }).then(function (rc) {
             add.disabled = false;
-            if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Aluno criado, mas esse código já é de outro aluno. Abra o aluno e corrija o código.' : 'Aluno criado, mas não foi possível salvar o código.', 'erro'); return; }
+            if (rc.error) { P.mensagem(msg, /duplicate|unique/i.test(rc.error.message) ? 'Aluno criado, mas esse código já é de outro aluno. Abra o aluno e corrija o código.' : 'Aluno criado, mas não foi possível salvar o código.', 'erro'); setTimeout(function () { listaDeAlunos(user); }, 6000); return; }
             terminar();
           });
         });
