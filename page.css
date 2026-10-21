@@ -175,3 +175,5 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 .pagina-papiro .portal-aba.ativa{color:#B5852F!important}
 .pagina-papiro .portal-item .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;color:#1034A6!important;border:1.5px solid #1034A6!important}
 .pagina-papiro .portal-item .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;border-width:3px!important}
+/* a foto de perfil é redonda (decisão do astrólogo); nada que ele tenha pedido redondo vira quadrado */
+.pagina-papiro #foto-sobre,.pagina-papiro [style*="border-radius: 50%"]{border-radius:50%!important}
