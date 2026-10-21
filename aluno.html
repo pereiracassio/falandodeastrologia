@@ -5,7 +5,7 @@
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal do Aluno - Falando de Astrologia</title>
+  <title>Alunos - Falando de Astrologia</title>
   
   <!-- Importação da fonte Cinzel do Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,7 +29,7 @@
   </header>
 <div class="pagina pagina-servico"><div class="folha-pagina">
   <div class="portal"><div class="portal-caixa">
-    <h1 class="portal-titulo" id="portalTitulo">Portal do Aluno</h1>
+    <h1 class="portal-titulo" id="portalTitulo">Alunos</h1>
     <p class="portal-sub" id="portalSub">Falando de Astrologia</p>
     <div id="app"></div>
     <p class="portal-sala" id="salaClassroom">Ainda usa o Google Classroom? <a href="https://classroom.google.com" rel="nofollow" target="_blank">Acesse a sala de aula virtual</a>.</p>
@@ -37,15 +37,15 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=33"></script>
-  <script src="atividades.js?v=20"></script>
+  <script src="atividades.js?v=21"></script>
   <script src="caderno.js?v=8"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
 
-    /* fora (login, sem ficha): "Portal do Aluno"; dentro da página do aluno: o nome do produto que ele tem */
+    /* fora (login, sem ficha): "Alunos"; dentro da página do aluno: o nome do produto que ele tem */
     function titulos(dentro) {
-      document.getElementById('portalTitulo').textContent = dentro ? 'Acompanhamento Prático de Astrologia' : 'Portal do Aluno';
+      document.getElementById('portalTitulo').textContent = dentro ? 'Acompanhamento Prático de Astrologia' : 'Alunos';
       document.getElementById('portalSub').textContent = dentro ? 'Mentoria em Astrologia Clássica' : 'Falando de Astrologia';
     }
 

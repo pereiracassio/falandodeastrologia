@@ -328,7 +328,7 @@
         if (!corrigida && !atividade.antiga) {
           cab.appendChild(el('p', { class: 'portal-vazio', text: 'Quer avisar o Cássio que terminou? A mensagem já vai pronta no WhatsApp, e você pode mudar antes de enviar.' }));
           cab.appendChild(botaoWhats('Avisar o Cássio no WhatsApp', WHATS_ADMIN,
-            'Oi Cássio! Terminei a atividade "' + atividade.titulo + '" e já enviei na área do aluno. Pode corrigir quando puder. ' + (atividade.alunoNome ? '(' + primeiroNome(atividade.alunoNome) + ')' : '')));
+            'Oi Cássio! Terminei a atividade "' + atividade.titulo + '" e já enviei na página Alunos. Pode corrigir quando puder. ' + (atividade.alunoNome ? '(' + primeiroNome(atividade.alunoNome) + ')' : '')));
         }
       }
       corpo.appendChild(cab);
@@ -468,7 +468,7 @@
       voltar.addEventListener('click', lista);
       corpo.appendChild(el('div', { class: 'portal-acoes' }, [
         botaoWhats('Avisar ' + primeiroNome(aluno.nome) + ' no WhatsApp', aluno.whatsapp,
-          'Oi ' + primeiroNome(aluno.nome) + '! Deixei uma atividade nova para você na área do aluno: "' + tituloAtividade + '". Quando terminar, é só enviar por lá. ' + SITE_ALUNO),
+          'Oi ' + primeiroNome(aluno.nome) + '! Deixei uma atividade nova para você na página Alunos: "' + tituloAtividade + '". Quando terminar, é só enviar por lá. ' + SITE_ALUNO),
         voltar
       ]));
       if (!aluno.whatsapp) corpo.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Dica: se você guardar o WhatsApp do aluno em "Dados do aluno", a conversa já abre direto com ele.' }));
@@ -896,7 +896,7 @@
             salvar.disabled = false; P.mensagem(msg, 'Correção salva. O aluno já vê.', 'ok');
             avisoCorrecao.textContent = '';
             avisoCorrecao.appendChild(botaoWhats('Avisar ' + primeiroNome(aluno.nome) + ' no WhatsApp', aluno.whatsapp,
-              'Oi ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade "' + a.titulo + '". Dá uma olhada na área do aluno: ' + SITE_ALUNO));
+              'Oi ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade "' + a.titulo + '". Dá uma olhada na página Alunos: ' + SITE_ALUNO));
           })
             .catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
         });

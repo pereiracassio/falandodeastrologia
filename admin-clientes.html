@@ -94,7 +94,7 @@
       cancelarNovo.addEventListener('click', function () { areaForm.textContent = ''; });
       var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
         el('p', { class: 'portal-item-titulo', text: 'Novo cliente' }),
-        el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. Ele entra na Área do Cliente com o Google, sem senha. Não precisa criar acesso no Supabase.' }),
+        el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. Ele entra na página de Pós-atendimento com o Google, sem senha. Não precisa criar acesso no Supabase.' }),
         el('label', { for: 'novoCodigo', text: 'Código do cliente (o mesmo do Astro Hellenic). Só você vê.' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
@@ -274,7 +274,7 @@
             var primeiro = String(cliente.nome || '').trim().split(/\s+/)[0];
             var itens = [e.gravacao_link ? 'a gravação da sua sessão' : '', e.pdf_link ? 'o PDF' : ''].filter(Boolean);
             var texto = 'Oi ' + primeiro + '. Tudo bem?\n\n' +
-              (itens.length ? 'Na Área do Cliente você encontra ' + itens.join(' e ') + ', do serviço ' + e.servico + '.' : 'O material do serviço ' + e.servico + ' está na Área do Cliente.') + '\n' +
+              (itens.length ? 'Na página de Pós-atendimento do site você encontra ' + itens.join(' e ') + ', do serviço ' + e.servico + '.' : 'O material do serviço ' + e.servico + ' está na página de Pós-atendimento do site.') + '\n' +
               'Entre com o Gmail ' + cliente.email + ' (o mesmo da contratação):\n' +
               'https://falandodeastrologia.com.br/cliente.html\n\n' +
               'Você pode salvar com você, pra que sempre tenha acesso.' +
