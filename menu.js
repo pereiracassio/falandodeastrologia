@@ -43,10 +43,10 @@
     ".sidemenu-panel.is-open{transform:translateX(0)}" +
     ".sidemenu-close{position:absolute;top:calc(130px*var(--moldura-m) - 10px);right:calc(80px*var(--moldura-m) + 4px);margin:0;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#1a1410;cursor:pointer}" +
     ".sidemenu-close:hover{color:#1F5FA3}" +
-    ".sidemenu-nav{display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;padding-top:26px}" +
+    ".sidemenu-nav{display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;padding-top:26px;flex:1 1 auto;min-height:0}" +
     ".sidemenu-nav a.sem-linha{border-bottom:0}" +
     ".sidemenu-logo{display:block;text-align:center;margin:0;padding:10px 0 14px;border-bottom:1px solid rgba(31,95,163,.55)}.sidemenu-logo img{width:100%;height:auto;display:block}" +
-    ".sidemenu-nav a{padding:clamp(4px,calc((100vh - 400px) / 24),14px) 8px;color:#1a1410;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(95,65,30,.4)}" +
+    ".sidemenu-nav a{padding:var(--item-pad,14px) 8px;color:#1a1410;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(95,65,30,.4)}" +
     ".sidemenu-nav a.is-sep{margin-top:0;border-top:1px solid #B5852F}" +
     ".sidemenu-nav a:hover{color:#1F5FA3}" +
     ".sidemenu-nav a.is-current{color:#1F5FA3;border-left:3px solid #1F5FA3;padding-left:5px}" +
@@ -114,7 +114,20 @@
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
 
+  /* a lista cabe sempre na altura que está visível de verdade (medida na hora, não por vh, que no Safari do iPad é maior que a tela) */
+  function ajustarEspaco() {
+    var itens = nav.querySelectorAll("a"), n = itens.length;
+    if (!n) return;
+    nav.style.setProperty("--item-pad", "14px");
+    var disponivel = nav.clientHeight, ocupado = nav.scrollHeight;
+    if (ocupado <= disponivel + 1) return;
+    var pad = 14 - (ocupado - disponivel) / (2 * n) - 0.5;
+    nav.style.setProperty("--item-pad", Math.max(3, pad).toFixed(1) + "px");
+  }
+  window.addEventListener("resize", ajustarEspaco);
+
   function openMenu() {
+    ajustarEspaco();
     overlay.classList.add("is-open");
     panel.classList.add("is-open");
     document.body.classList.add("sidemenu-lock");
