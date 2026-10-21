@@ -53,12 +53,12 @@
     var avisoSenha = false;
 
     /* topo: saudação + botões (Trocar senha, Sair e, se houver, extras como o Painel) */
-    function topo(user, texto, extra) {
+    function topo(user, texto, extra, semTrocar) {
       var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trocar senha' });
       trocar.addEventListener('click', function () { trocarSenha(user); });
       var sairBtn = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       sairBtn.addEventListener('click', sair);
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [extra, trocar, sairBtn].filter(Boolean))]);
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [extra, semTrocar ? null : trocar, sairBtn].filter(Boolean))]);
     }
 
     function trocarSenha(user) {
@@ -186,7 +186,7 @@
           P.client.from('admins').select('nome').maybeSingle().then(function (ra) {
             var admin = ra.data ? el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: 'Painel' }) : null;
             var saudacao = ra.data && ra.data.nome ? 'Olá, ' + ra.data.nome + '!' : email;
-            app.appendChild(topo(user, saudacao, admin));
+            app.appendChild(topo(user, saudacao, admin, !admin)); /* quem não é aluno nem administrador só pode sair: sem trocar senha */
             avisoDeSenha();
             app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: admin ? 'Este é o painel de quem administra. Os alunos veem uma página própria, com o nome deles.' : 'O seu acesso ainda não foi liberado. Entre em contato pelo WhatsApp ou e-mail para liberar.' })]));
           });
