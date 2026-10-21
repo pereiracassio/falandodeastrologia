@@ -58,3 +58,4 @@
 /* a barra de papiro também leva a moldura com meandros (todo papiro leva) */
 .barra-topo.papiro-moldura{position:relative;padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 16px)}
 .barra-texto{margin:0;font:400 14px/1.6 'Cinzel',serif;color:#16233F;text-align:justify;text-align-last:center}
+.barra-assunto{margin:0;font:700 clamp(20px,5vw,26px)/1.3 'Cinzel',serif;color:#A03E25;text-align:center;text-transform:uppercase;letter-spacing:.06em}

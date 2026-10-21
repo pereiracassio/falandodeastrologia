@@ -110,11 +110,13 @@ const CABECALHO_HOME = `<div class="logo-home"><a href="/index.html"><img src="/
       <a href="https://www.instagram.com/cassiopereira___?igsh=MWU5YjVtNWpjYzduZQ%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener" title="Instagram"><img alt="Instagram" src="/img/rede-instagram.svg" width="44" height="44"></a>
       <a href="https://www.tiktok.com/@cassiopereira__?_r=1&amp;_t=ZS-98YFBywW5Za" target="_blank" rel="noopener" title="TikTok"><img alt="TikTok" src="/img/rede-tiktok.svg" width="44" height="44"></a>
     </div>
+    <hr class="cab-linha">
+    <!--BARRA-->
   </div>
 </div>`;
 
 /* casca comum das páginas: cabeçalho do site, papiro, menu */
-function casca({ titulo, descricao, url, tipo, extraHead, corpo, home }) {
+function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -135,10 +137,10 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home }) {
   <link rel="stylesheet" href="/papiro.css?v=4">
   <link rel="stylesheet" href="/home.css?v=21">
   <link rel="stylesheet" href="/page.css?v=22">
-  <link rel="stylesheet" href="/blog.css?v=9">
+  <link rel="stylesheet" href="/blog.css?v=10">
 </head>
 <body${home ? ' class="blog-home"' : ''}>
-${home ? CABECALHO_HOME + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js?v=20" defer></script>
+${home ? CABECALHO_HOME.replace('<!--BARRA-->', barra || '') + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js?v=20" defer></script>
 </body>
 </html>
 `;
@@ -178,9 +180,8 @@ function paginaAssunto(a) {
     (p.publicado_em ? '<p class="blog-data">' + esc(dataExtenso(p.publicado_em)) + '</p>' : '') +
     '<h2>' + esc(p.titulo) + '</h2><p>' + esc(resumoDe(p)) + '</p></a>').join('\n');
   return casca({
-    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website', home: true,
+    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website', home: true, barra: '<h1 class="barra-assunto">' + esc(a.nome) + '</h1>',
     corpo: `<main class="blog-home-conteudo">
-  <h1 class="blog-home-titulo">${esc(a.nome)}</h1>
   <div class="blog-grade">
 ${cartoes}
   </div>
