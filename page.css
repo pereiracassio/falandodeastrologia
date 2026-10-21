@@ -198,12 +198,19 @@ html body .pagina-papiro .portal-item .portal-btn.portal-btn:not(.portal-btn-mee
 /* barra do painel e do aluno (Aplicações, Alunos, Clientes..., Sair): o mesmo retângulo dividido, com a linha embaixo */
 .pagina-papiro .portal-topo{position:relative;margin-bottom:36px!important}
 .pagina-papiro .portal-topo::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:1px;background:#1F5FA3}
-.pagina-papiro .portal-topo>div{display:flex!important;gap:0!important;flex-wrap:nowrap!important;border:1.5px solid #1034A6;max-width:100%;overflow-x:auto}
-.pagina-papiro .portal-topo>div>*{flex:1 1 auto;border:0!important;border-left:1.5px solid #1034A6!important;padding:9px 14px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;white-space:nowrap;background:transparent!important;color:#1034A6!important;text-align:center;box-shadow:none!important}
-.pagina-papiro .portal-topo>div>*:first-child{border-left:0!important}
-.pagina-papiro .portal-topo>div>[aria-current="page"]{color:#B5852F!important}
-@media(min-width:701px){.pagina-papiro .portal-topo>div>*{font-size:clamp(13px,1.1vw,17px)!important}}
+.pagina-papiro .portal-topo .portal-grupo{display:flex!important;gap:0!important;flex-wrap:nowrap!important;border:1.5px solid #1034A6;max-width:100%;overflow-x:auto}
+.pagina-papiro .portal-topo .portal-grupo>*{flex:1 1 auto;border:0!important;border-left:1.5px solid #1034A6!important;padding:9px 14px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;white-space:nowrap;background:transparent!important;color:#1034A6!important;text-align:center;box-shadow:none!important}
+.pagina-papiro .portal-topo .portal-grupo>*:first-child{border-left:0!important}
+.pagina-papiro .portal-topo .portal-grupo>[aria-current="page"]{color:#B5852F!important}
+@media(min-width:701px){.pagina-papiro .portal-topo .portal-grupo>*{font-size:clamp(13px,1.1vw,17px)!important}}
 /* barra do painel: mesma largura e posição do retângulo do topo (centralizada); se não couber, rola para o lado (sem quebrar linha e sem barra de rolagem à vista) */
-.pagina-papiro .portal-topo>div{width:100%;margin:0!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.pagina-papiro .portal-topo>div::-webkit-scrollbar{display:none}
+.pagina-papiro .portal-topo .portal-grupo{width:100%;margin:0!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.pagina-papiro .portal-topo .portal-grupo::-webkit-scrollbar{display:none}
 .pagina-papiro .portal-topo>span{display:block;width:100%;margin:0 0 12px;text-align:left}
+
+/* setinhas de rolagem da barra do painel (igual ao Astro Hellenic) */
+.pagina-papiro .rolagem-wrap{position:relative;width:100%}
+.pagina-papiro .barra-seta{display:none;position:absolute;top:1.5px;bottom:1.5px;z-index:3;width:34px;padding:0;border:0!important;cursor:pointer;align-items:center;color:#A03E25;background:transparent}
+.pagina-papiro .barra-seta.visivel{display:flex}
+.pagina-papiro .barra-seta-esq{left:1.5px;justify-content:flex-start;padding-left:4px;background:linear-gradient(to right,rgba(232,214,166,.97) 45%,transparent)}
+.pagina-papiro .barra-seta-dir{right:1.5px;justify-content:flex-end;padding-right:4px;background:linear-gradient(to left,rgba(232,214,166,.97) 45%,transparent)}

@@ -348,9 +348,30 @@
     });
     var sair = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
     sair.addEventListener('click', aoSair);
-    var grupo = el('div', {}, botoes.concat([sair]));
+    var grupo = el('div', { class: 'portal-grupo' }, botoes.concat([sair]));
     /* sem o "Olá, ...": ele só aparece na entrada, nas telas do painel não */
-    return el('div', { class: 'portal-topo portal-topo-painel' }, [grupo]);
+    var seta = function (lado, pontos, rotulo) {
+      var b = el('button', { type: 'button', class: 'barra-seta barra-seta-' + lado, 'aria-label': rotulo });
+      b.innerHTML = '<svg viewBox="0 0 64 64" width="20" height="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="' + pontos + '"/></svg>';
+      return b;
+    };
+    var esq = seta('esq', '40,12 20,32 40,52', 'Mais botões à esquerda'), dir = seta('dir', '24,12 44,32 24,52', 'Mais botões à direita');
+    ligarSetas(grupo, esq, dir);
+    return el('div', { class: 'portal-topo portal-topo-painel' }, [el('div', { class: 'rolagem-wrap' }, [esq, dir, grupo])]);
+  }
+  /* setinhas de aviso numa barra que rola (igual ao Astro Hellenic): só aparecem quando tem botão escondido daquele lado; onde a barra cabe, nunca */
+  function ligarSetas(rolagem, esq, dir) {
+    var atualiza = function () {
+      esq.classList.toggle('visivel', rolagem.scrollLeft > 4);
+      dir.classList.toggle('visivel', rolagem.scrollLeft + rolagem.clientWidth < rolagem.scrollWidth - 4);
+    };
+    var passo = function (sentido) { rolagem.scrollBy({ left: sentido * Math.max(160, rolagem.clientWidth * 0.6), behavior: 'smooth' }); };
+    esq.addEventListener('click', function () { passo(-1); });
+    dir.addEventListener('click', function () { passo(1); });
+    rolagem.addEventListener('scroll', atualiza, { passive: true });
+    window.addEventListener('resize', atualiza);
+    if (window.ResizeObserver) new ResizeObserver(atualiza).observe(rolagem);
+    setTimeout(atualiza, 0); setTimeout(atualiza, 400);
   }
   /* onde você estava, guardado no endereço (#aluno=ID&atividade=ID): ao recarregar a página ela volta pro mesmo lugar */
   var estado = {

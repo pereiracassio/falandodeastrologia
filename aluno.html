@@ -15,7 +15,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
-  <link rel="stylesheet" href="page.css?v=39">
+  <link rel="stylesheet" href="page.css?v=41">
   <link rel="stylesheet" href="portal.css?v=13">
   <meta name="robots" content="noindex, nofollow">
 </head>
@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=34"></script>
+  <script src="portal.js?v=35"></script>
   <script src="atividades.js?v=21"></script>
   <script src="caderno.js?v=8"></script>
   <script>
@@ -59,7 +59,7 @@
       trocar.addEventListener('click', function () { trocarSenha(user); });
       var sairBtn = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       sairBtn.addEventListener('click', sair);
-      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', {}, [extra, semTrocar ? null : trocar, sairBtn].filter(Boolean))]);
+      return el('div', { class: 'portal-topo' }, [el('span', { text: texto }), el('div', { class: 'portal-grupo' }, [extra, semTrocar ? null : trocar, sairBtn].filter(Boolean))]);
     }
 
     function trocarSenha(user) {
