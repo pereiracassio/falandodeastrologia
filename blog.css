@@ -20,3 +20,12 @@
 .blog-botoes{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .blog-botao{display:inline-block;padding:12px 24px;border:1px solid #1F5FA3;border-radius:8px;background:transparent;color:#1F5FA3;font-weight:700;font-size:14px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none}
 .blog-botao:hover{border-width:3px;padding:10px 22px}
+/* textos do blog em papiro inteiro: sem canto arredondado e coluna de ponta a ponta no computador */
+.pagina-papiro .blog-botao,.pagina-papiro .blog-video,.pagina-papiro .blog-capa{border-radius:0}
+@media(min-width:701px){
+  .pagina-papiro .blog{max-width:none}
+  .pagina-papiro .blog h1{font-size:clamp(28px,2.5vw,38px)}
+  .pagina-papiro .blog-p{font-size:clamp(17px,1.55vw,23px)}
+  .pagina-papiro .blog-h2{font-size:clamp(21px,1.8vw,27px)}
+}
+
