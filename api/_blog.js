@@ -124,6 +124,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/favicon.png?v=2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${tipo === 'article' ? '<meta name="theme-color" content="#dcc590">' : ''}
   <title>${esc(titulo)} - Falando de Astrologia</title>
   <meta name="description" content="${esc(descricao)}">
   <link rel="canonical" href="${esc(url)}">
@@ -136,7 +137,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/papiro.css?v=4">
   <link rel="stylesheet" href="/home.css?v=24">
-  <link rel="stylesheet" href="/page.css?v=22">
+  <link rel="stylesheet" href="/page.css?v=25">
   <link rel="stylesheet" href="/blog.css?v=12">
 </head>
 <body${home ? ' class="blog-home"' : ''}>
