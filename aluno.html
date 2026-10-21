@@ -28,7 +28,7 @@
   </div>
   <div class="portal"><div class="portal-caixa">
     <h1 class="portal-titulo" id="portalTitulo">Alunos</h1>
-    <p class="portal-sub" id="portalSub">Falando de Astrologia</p>
+    <p class="portal-sub" id="portalSub"></p>
     <div id="app"></div>
     <p class="portal-sala" id="salaClassroom">Ainda usa o Google Classroom? <a href="https://classroom.google.com" rel="nofollow" target="_blank">Acesse a sala de aula virtual</a>.</p>
   </div></div>
@@ -44,7 +44,7 @@
     /* fora (login, sem ficha): "Alunos"; dentro da página do aluno: o nome do produto que ele tem */
     function titulos(dentro) {
       document.getElementById('portalTitulo').textContent = dentro ? 'Acompanhamento Prático de Astrologia' : 'Alunos';
-      document.getElementById('portalSub').textContent = dentro ? 'Mentoria em Astrologia Clássica' : 'Falando de Astrologia';
+      document.getElementById('portalSub').textContent = dentro ? 'Mentoria em Astrologia Clássica' : '';
     }
 
     function limpar() { app.textContent = ''; titulos(false); }
