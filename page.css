@@ -155,12 +155,18 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]{white-space:nowrap;font-size:clamp(12px,3.8vw,15px)!important;padding-left:8px!important;padding-right:8px!important}
 /* BOTÕES IMPORTANTES (carrinho, pagamento, entrar, enviar...): preenchidos de terracota, texto no tom claro do papiro, canto reto.
    Botões secundários (voltar, sair, cancelar): só contorno azul egípcio. Link para o WhatsApp: sempre só o ícone (.icone-whats). */
-.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo),
+.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats),
 .pagina-papiro .blog-botao,
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:#A03E25!important;color:#F3E3B8!important;border:1.5px solid #A03E25!important;border-radius:0!important}
-.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):hover,
+.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):hover,
 .pagina-papiro .blog-botao:hover,
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]:hover{background:#7d2f1a!important;border-color:#7d2f1a!important;padding:inherit;transform:none}
 .pagina-papiro .portal-btn-sec,.pagina-papiro .portal-btn-perigo{border-radius:0!important}
 /* canto reto em tudo dentro das páginas de papiro (sanfonas, cartões, campos, botões) */
 .pagina-papiro *,.pagina-papiro *::before,.pagina-papiro *::after{border-radius:0!important}
+/* exceções: o botão do Google Meet continua ocre (cor do Meet) e os de avisar no WhatsApp continuam verdes (cor do WhatsApp), só que de canto reto */
+.pagina-papiro .portal-btn-meet{background:#B5852F!important;color:#16233F!important;border:1.5px solid #B5852F!important}
+.pagina-papiro .portal-btn-whats{background:#4A7C59!important;color:#F3E3B8!important;border:1.5px solid #4A7C59!important}
+/* botões do portal numa linha só: a letra diminui conforme a tela */
+.pagina-papiro .portal-btn{white-space:nowrap;font-size:min(15px,3.1vw);padding-left:10px;padding-right:10px;max-width:100%;box-sizing:border-box}
+@media(min-width:701px){.pagina-papiro .portal-btn{font-size:15px;padding-left:24px;padding-right:24px}}
