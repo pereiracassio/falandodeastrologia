@@ -138,7 +138,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="stylesheet" href="/papiro.css?v=4">
   <link rel="stylesheet" href="/home.css?v=24">
   <link rel="stylesheet" href="/page.css?v=42">
-  <link rel="stylesheet" href="/blog.css?v=12">
+  <link rel="stylesheet" href="/blog.css?v=13">
 </head>
 <body${home ? ' class="blog-home"' : ''}>
 ${home ? CABECALHO_HOME.replace('<!--BARRA-->', barra || '') + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js?v=22" defer></script>
@@ -181,12 +181,11 @@ function paginaAssunto(a) {
     (p.publicado_em ? '<p class="blog-data">' + esc(dataExtenso(p.publicado_em)) + '</p>' : '') +
     '<h2>' + esc(p.titulo) + '</h2><p>' + esc(resumoDe(p)) + '</p></a>').join('\n');
   return casca({
-    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website', home: true, barra: '<h1 class="barra-assunto">' + esc(a.nome) + '</h1>',
+    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website', home: true, barra: '<h1 class="barra-assunto"><a class="voltar-seta" href="/blog.html" aria-label="Voltar para os assuntos"><svg viewBox="0 0 64 64" width="26" height="26" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="40,12 20,32 40,52"/></svg></a><span>' + esc(a.nome) + '</span></h1>',
     corpo: `<main class="blog-home-conteudo">
   <div class="blog-grade">
 ${cartoes}
   </div>
-  <p style="text-align:center"><a class="blog-voltar blog-voltar-ceu" href="/blog.html">← Ver todos os assuntos</a></p>
 </main>`
   });
 }
