@@ -215,8 +215,13 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 .pagina-papiro .barra-seta-dir{right:1.5px;justify-content:flex-end;padding-right:4px;background:transparent}
 
 /* hover: só a cor muda; nada de borda, padding ou tamanho (era isso que fazia o botão tremer) */
-.pagina-papiro .portal-btn:hover,.pagina-papiro .portal-btn:active,.pagina-papiro .portal-btn:focus{padding-top:inherit;transform:none!important}
+.pagina-papiro .portal-btn:hover,.pagina-papiro .portal-btn:active,.pagina-papiro .portal-btn:focus{transform:none!important}
 .pagina-papiro .portal-btn-sec:hover,.pagina-papiro .portal-btn-perigo:hover{border-width:1.5px!important;background:transparent!important;color:#A03E25!important;box-shadow:none!important}
 .pagina-papiro .portal-btn-sec:hover{color:#1034A6!important;box-shadow:inset 0 0 0 1px #1034A6!important}
 .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn){background:#A03E25!important;color:#F3E3B8!important}
 .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn):hover{background:#7d2f1a!important}
+/* TAMANHO FIXO dos botões do portal: o espaço interno e a borda são iguais com ou sem o mouse em cima (só a cor muda) */
+.pagina-papiro{--bpx:24px}
+@media(max-width:700px){.pagina-papiro{--bpx:10px}}
+.pagina-papiro .portal-btn:not(.portal-grupo>*),.pagina-papiro .portal-btn:not(.portal-grupo>*):hover,.pagina-papiro .portal-btn:not(.portal-grupo>*):active,.pagina-papiro .portal-btn:not(.portal-grupo>*):focus{padding:12px var(--bpx)!important;border-width:1.5px!important}
+.pagina-papiro .blog-botao,.pagina-papiro .blog-botao:hover,.pagina-papiro .blog-botao:active{border-width:1.5px!important;padding:12px 24px!important;transform:none!important}
