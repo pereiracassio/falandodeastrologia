@@ -252,6 +252,8 @@
         var doc = novoDoc(r[2]);
         montarPdf(doc, r[0], r[1], inicios, aluno.nome);
         doc.save(nomeArquivo(aluno.nome));
+        /* guarda que o caderno foi baixado (só o administrador enxerga); no modo "ver como aluno" o registro é recusado pelo banco e ignorado */
+        try { P.client.from('caderno_baixas').insert({ aluno_id: aluno.id }).then(function () {}, function () {}); } catch (e) { /* o download já aconteceu */ }
         aviso('Pronto! O caderno foi baixado. Procure em Arquivos (Downloads).', 'ok');
       });
     }).catch(function (e) {
