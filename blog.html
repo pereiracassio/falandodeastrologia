@@ -13,25 +13,28 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
-  <link rel="stylesheet" href="page.css?v=17">
-  <link rel="stylesheet" href="blog.css?v=5">
+  <link rel="stylesheet" href="page.css?v=22">
+  <link rel="stylesheet" href="blog.css?v=7">
 </head>
-<body>
-  <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 10px; max-width:700px; margin:0 auto 20px auto; border-bottom:1px solid #B5852F; font-family:'Cinzel', serif;">
-    <a href="index.html" class="marca"><img src="favicon.svg?v=2" alt="" width="40" height="40"><span>Falando de Astrologia</span></a>
-    <nav style="display:flex; gap:14px; flex-wrap:wrap;">
-      <a href="index.html#servicos" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Serviços</a>
-      <a href="mentoria.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Mentoria</a>
-      <a href="sobre.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Sobre</a>
-      <a href="blog.html" style="color:#1F5FA3; text-decoration:none; font-weight:600; font-size:13px;">Blog</a>
-    </nav>
-  </header>
-<div class="pagina pagina-servico"><div class="folha-pagina">
-  <div class="blog">
-    <h1>Blog</h1>
-    <div id="lista"><p class="blog-vazio">Carregando...</p></div>
+<body class="blog-home">
+<div class="logo-home"><a href="index.html"><img src="img/logo-completa.svg?v=3" alt="Falando de Astrologia Helenística" width="912" height="400"></a></div>
+<div class="barra-wrap">
+  <div class="barra-topo">
+    <nav class="cab-nav"><a href="aluno.html">Alunos</a><a href="index.html#servicos">Serviços</a><a href="blog.html" class="atual">Blog</a></nav>
+    <hr class="cab-linha">
+    <div class="social-bar">
+      <a href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Estava%20no%20seu%20site%20e%20queria%20tirar%20uma%20dúvida%20sobre" target="_blank" rel="noopener" title="WhatsApp"><img alt="WhatsApp" src="img/rede-whatsapp.svg" width="44" height="44"></a>
+      <a href="https://youtube.com/@falandodeastrologia?si=YEtKppUWaDVqL7uA" target="_blank" rel="noopener" title="YouTube"><img alt="YouTube" src="img/rede-youtube.svg" width="44" height="44"></a>
+      <a href="https://www.instagram.com/cassiopereira___?igsh=MWU5YjVtNWpjYzduZQ%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener" title="Instagram"><img alt="Instagram" src="img/rede-instagram.svg" width="44" height="44"></a>
+      <a href="https://www.tiktok.com/@cassiopereira__?_r=1&amp;_t=ZS-98YFBywW5Za" target="_blank" rel="noopener" title="TikTok"><img alt="TikTok" src="img/rede-tiktok.svg" width="44" height="44"></a>
+    </div>
   </div>
-</div></div>
+</div>
+<main class="blog-home-conteudo">
+  <h1 class="blog-home-titulo">Blog</h1>
+  <div id="lista" class="blog-grade"><p class="blog-vazio">Carregando...</p></div>
+</main>
+<footer class="footer">Falando de Astrologia Helenística</footer>
   <script src="blog.js?v=4"></script>
   <script>
   (function () {
@@ -53,7 +56,7 @@
         if (a.imagem) filhos.push(el('img', { src: a.imagem, alt: '', loading: 'lazy' }));
         filhos.push(el('h2', { text: a.nome }));
         filhos.push(el('p', { text: a.qtd === 1 ? '1 texto' : a.qtd + ' textos' }));
-        lista.appendChild(el('a', { class: 'blog-item', href: 'assunto/' + chave + '.html' }, filhos));
+        lista.appendChild(el('a', { class: 'blog-card papiro-moldura', href: 'assunto/' + chave + '.html' }, filhos));
       });
       soltas.forEach(function (p) {
         var filhos = [];
@@ -61,7 +64,7 @@
         if (p.publicado_em) filhos.push(el('p', { class: 'blog-data', text: B.dataExtenso(p.publicado_em) }));
         filhos.push(el('h2', { text: p.titulo }));
         filhos.push(el('p', { text: B.resumoDe(p) }));
-        lista.appendChild(el('a', { class: 'blog-item', href: B.enderecoDe(p.slug) }, filhos));
+        lista.appendChild(el('a', { class: 'blog-card papiro-moldura', href: B.enderecoDe(p.slug) }, filhos));
       });
     }).catch(function () {
       lista.textContent = '';

@@ -120,7 +120,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo }) {
   <link rel="stylesheet" href="/papiro.css?v=4">
   <link rel="stylesheet" href="/home.css?v=18">
   <link rel="stylesheet" href="/page.css?v=22">
-  <link rel="stylesheet" href="/blog.css?v=5">
+  <link rel="stylesheet" href="/blog.css?v=7">
 </head>
 <body>
 ${tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO}
