@@ -181,7 +181,7 @@ function paginaAssunto(a) {
     (p.publicado_em ? '<p class="blog-data">' + esc(dataExtenso(p.publicado_em)) + '</p>' : '') +
     '<h2>' + esc(p.titulo) + '</h2><p>' + esc(resumoDe(p)) + '</p></a>').join('\n');
   return casca({
-    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website', home: true, barra: '<h1 class="barra-assunto"><a class="voltar-seta" href="/blog.html" aria-label="Voltar para os assuntos"><svg viewBox="0 0 64 64" width="26" height="26" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="40,12 20,32 40,52"/></svg></a><span>' + esc(a.nome) + '</span></h1>',
+    titulo: a.nome + ' - Blog', descricao: 'Textos sobre ' + a.nome + ' na Astrologia Helenística, por Cássio Pereira.', url, tipo: 'website', home: true, barra: '<h1 class="barra-assunto"><a class="voltar-seta" href="/blog.html" aria-label="Voltar para os assuntos"><svg viewBox="0 0 72 64" width="48" height="30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="32" x2="64" y2="32"/><polyline points="22,19 10,32 22,45"/></svg></a><span>' + esc(a.nome) + '</span></h1>',
     corpo: `<main class="blog-home-conteudo">
   <div class="blog-grade">
 ${cartoes}
