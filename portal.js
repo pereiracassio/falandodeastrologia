@@ -340,7 +340,7 @@
   }
   /* barra de cima igual em TODAS as telas do painel (Aplicações, Alunos, Clientes, Capa, Sair): a aba em que você está fica destacada */
   function navAdmin(atual, texto, aoSair) {
-    var itens = [['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['capa', 'Capa', 'capa.html'], ['site', 'Site', 'admin-site.html'], ['blog', 'Blog', 'admin-blog.html']];
+    var itens = [['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['capa', 'Capa', 'capa.html'], ['site', 'Site', 'admin-site.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html']];
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[1] });
       if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid #1F5FA3;padding:10px 22px;color:#A03E25'; }
