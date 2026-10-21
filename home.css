@@ -175,7 +175,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
 /* a barra de papiro também leva a moldura com meandros (todo papiro leva) */
 .barra-topo.papiro-moldura{position:relative;padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 16px)}
-.barra-texto{margin:0;font:400 14px/1.6 'Cinzel',serif;color:#A03E25;text-align:justify;text-align-last:center}
+.barra-texto{margin:0;font:700 14px/1.6 'Cinzel',serif;color:#16233F;text-align:justify;text-align-last:center}
 
 /* ===== computador e tablet deitado: a página inicial usa a largura (antes era uma coluna estreita no meio) ===== */
 @media(min-width:900px){
