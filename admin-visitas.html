@@ -76,11 +76,12 @@
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Visitas do site' })]);
       var botoes = [[1, 'Últimas 24 horas'], [7, 'Últimos 7 dias'], [30, 'Últimos 30 dias'], [90, 'Últimos 90 dias']].map(function (p) {
         var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: p[1] });
-        if (p[0] === dias) b.style.cssText = 'border:3px solid #1F5FA3;color:#A03E25';
+        if (p[0] === dias) b.setAttribute('aria-current', 'page');
         b.addEventListener('click', function () { dias = p[0]; tela(); });
         return b;
       });
-      cartao.appendChild(el('div', { class: 'portal-acoes' }, botoes));
+      /* mesmo retângulo de partes da barra de cima */
+      cartao.appendChild(el('div', { class: 'portal-topo' }, [el('div', { class: 'portal-grupo' }, botoes)]));
       var msg = el('p', { class: 'portal-msg' });
       var resultado = el('div');
       cartao.appendChild(msg);
