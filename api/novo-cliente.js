@@ -9,6 +9,7 @@
 
 const crypto = require('crypto');
 const { env, supa, lerConexao, tokenDeAcesso, criarPasta, compartilhar } = require('./_drive');
+const { criarAcesso } = require('./_acesso');
 
 const igual = (a, b) => {
   const x = Buffer.from(String(a)), y = Buffer.from(String(b));
@@ -48,6 +49,9 @@ module.exports = async (req, res) => {
       // cliente que já existia sem WhatsApp: completa (nunca troca um que já está salvo)
       try { await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ whatsapp }) }); } catch (e) { console.error('novo-cliente whatsapp:', e.message); }
     }
+
+    /* 1b) acesso (login) do cliente: só quem foi cliente consegue entrar no Pós-atendimento (o cadastro aberto do Supabase fica desligado) */
+    try { await criarAcesso(email, nome); } catch (e) { console.error('novo-cliente acesso:', e.message); }
 
     /* 2) código (se já é de outro cliente, não mexe: o banco recusa duplicado) */
     let codigoGravado = false;

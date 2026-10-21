@@ -3,7 +3,8 @@
    ou pede "Esqueci minha senha" na tela de entrada; não há tela pública para criar conta.
    Variável na Vercel: SUPABASE_SERVICE_ROLE_KEY (a mesma que o resto do servidor já usa). Sem dependências (só fetch). */
 
-const { SUPABASE_URL, SUPABASE_ANON, supa } = require('./_drive');
+const { SUPABASE_URL, SUPABASE_ANON } = require('./_drive');
+const { criarAcesso } = require('./_acesso');
 
 const ORIGENS_PERMITIDAS = ['https://falandodeastrologia.com.br', 'https://www.falandodeastrologia.com.br'];
 
@@ -30,14 +31,8 @@ module.exports = async (req, res) => {
     const email = String(corpo.email || '').trim().toLowerCase();
     const nome = String(corpo.nome || '').trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { res.status(400).json({ erro: 'E-mail inválido.' }); return; }
-    try {
-      await supa('/auth/v1/admin/users', { method: 'POST', body: JSON.stringify({ email, email_confirm: true, user_metadata: { nome } }) });
-      res.status(200).json({ ok: true, criado: true });
-    } catch (e) {
-      // já existe um acesso com esse e-mail: tudo certo, o aluno só precisa da ficha
-      if (/already|registered|exists|duplicate/i.test(String(e.message))) { res.status(200).json({ ok: true, criado: false }); return; }
-      throw e;
-    }
+    const criado = await criarAcesso(email, nome);
+    res.status(200).json({ ok: true, criado });
   } catch (e) {
     res.status(500).json({ erro: 'Não foi possível criar o acesso agora.', detalhe: String(e.message || e) });
   }

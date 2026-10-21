@@ -75,12 +75,8 @@
       app.appendChild(el('p', { class: 'portal-msg ok', text: 'Senha alterada.' }));
     }
 
-    function mostrarLogin() {
-      limpar();
-      document.getElementById('salaClassroom').style.display = '';
-      var google = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
-      google.addEventListener('click', function () { P.entrarComGoogle('/aluno.html'); });
-      /* quem ainda não é aluno vê as três abas vazias e o caminho para se tornar aluno */
+    /* quem ainda não é aluno vê as três abas vazias e o caminho para se tornar aluno */
+    function abasVazias() {
       var barraVazia = el('div', { class: 'portal-abas', role: 'tablist' }), msgVazia = el('div', { class: 'portal-cartao' }, [
         el('p', { class: 'portal-vazio', text: 'Você ainda não é aluno.' }),
         el('p', {}, [el('span', { text: 'Você pode se tornar aluno pela aplicação na página da ' }), el('a', { href: 'mentoria.html#aplicacao-tally', text: 'Mentoria em Astrologia Clássica' }), el('span', { text: '.' })])
@@ -93,7 +89,15 @@
         barraVazia.appendChild(b);
       });
       app.appendChild(barraVazia); app.appendChild(msgVazia);
-      app.appendChild(el('h2', { class: 'portal-subtitulo', text: 'Já é aluno? Entre aqui' }));
+    }
+
+    function mostrarLogin() {
+      limpar();
+      document.getElementById('salaClassroom').style.display = '';
+      var google = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
+      google.addEventListener('click', function () { P.entrarComGoogle('/aluno.html'); });
+      abasVazias();
+      app.appendChild(el('h2', { class: 'portal-subtitulo', text: 'Acesso dos alunos' }));
       app.appendChild(el('div', { class: 'portal-cartao' }, [
         el('p', { text: 'Entre com a conta Google (Gmail) que você informou na matrícula.' }),
         google,
@@ -188,7 +192,7 @@
             var saudacao = ra.data && ra.data.nome ? 'Olá, ' + ra.data.nome + '!' : email;
             app.appendChild(topo(user, saudacao, admin, !admin)); /* quem não é aluno nem administrador só pode sair: sem trocar senha */
             avisoDeSenha();
-            app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: admin ? 'Este é o painel de quem administra. Os alunos veem uma página própria, com o nome deles.' : 'O seu acesso ainda não foi liberado. Entre em contato pelo WhatsApp ou e-mail para liberar.' })]));
+            if (admin) app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este é o painel de quem administra. Os alunos veem uma página própria, com o nome deles.' })])); else abasVazias();
           });
           return;
         }

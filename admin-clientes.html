@@ -94,14 +94,25 @@
       cancelarNovo.addEventListener('click', function () { areaForm.textContent = ''; });
       var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
         el('p', { class: 'portal-item-titulo', text: 'Novo cliente' }),
-        el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. Ele entra na página de Pós-atendimento com o Google, sem senha. Não precisa criar acesso no Supabase.' }),
+        el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. O acesso dele é criado aqui, ao adicionar. Ele entra na página de Pós-atendimento com o Google, sem senha.' }),
         el('label', { for: 'novoCodigo', text: 'Código do cliente (o mesmo do Astro Hellenic). Só você vê.' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
-        ev.preventDefault(); add.disabled = true;
-        P.client.from('clientes').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single().then(function (r) {
+        ev.preventDefault(); add.disabled = true; P.mensagem(msg, 'Criando o acesso...');
+        /* primeiro o acesso (login) do cliente, criado pelo servidor; só depois a ficha dele aqui */
+        P.client.auth.getSession().then(function (sessao) {
+          var jwt = sessao.data && sessao.data.session ? sessao.data.session.access_token : '';
+          return fetch('https://falandodeastrologia.vercel.app/api/criar-acesso', { method: 'POST', headers: { Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: nome.value.trim(), email: email.value.trim() }) })
+            .then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { if (!resp.ok) throw new Error(d.detalhe || d.erro || 'erro'); }); });
+        }).then(function () {
+          P.mensagem(msg, '');
+          return P.client.from('clientes').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single();
+        }).catch(function (e) {
+          return { error: { message: e.message, acesso: true } };
+        }).then(function (r) {
+          if (r.error && r.error.acesso) { add.disabled = false; P.mensagem(msg, 'Não consegui criar o acesso agora (' + r.error.message + '). Tente de novo em instantes.', 'erro'); return; }
           if (r.error) { add.disabled = false; P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um cliente com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
           var cod = codigo.value.trim();
           if (!cod) { listaDeClientes(user); return; }
