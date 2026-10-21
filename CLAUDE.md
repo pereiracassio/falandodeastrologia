@@ -48,3 +48,17 @@ Substitui o Blogger (`blog.falandodeastrologia.com.br`, aposentado; as 3 postage
 4. O token do GitHub nunca vai para a conversa nem para o repositório; o formulário do GitHub no iPad trava com data de expiração "Custom" muito distante — usar "No expiration".
 5. Datas do Supabase vêm como timestamp completo: usar `.slice(0, 10)` antes de `P.dataBR`.
 6. Google Search Console: o site `falandodeastrologia.com.br` já foi adicionado (propriedade de domínio, verificada automaticamente) e o `https://falandodeastrologia.com.br/sitemap.xml` foi enviado (precisa do endereço inteiro). Postagem nova entra no mapa sozinha quando as páginas são atualizadas.
+
+## Estética única do site: tudo igual, nada de Frankenstein (21/10/2026)
+
+O astrólogo reclamou várias vezes: cada lugar do site ficava de um jeito. **É uma experiência só. Antes de mexer ou criar qualquer peça, conferir contra esta lista.**
+- **Todo papiro leva moldura com meandro em cima e embaixo** (`papiro-moldura` ou `folha-pagina`, em `papiro.css`): páginas, a barra do topo, cartões de assunto/texto, banners. Papiro sem moldura = erro.
+- **Céu só na home, na home do blog e nas páginas de assunto.** Todo o resto (serviços, mentoria, Quem sou eu, textos do blog) é papiro inteiro, sem céu, sem borda rasgada, sem cabeçalho escuro (`pagina-papiro`, `page.css`).
+- **Cabeçalho das páginas de papiro:** logo do menu lateral (`img/logo-menu.svg`) + retângulo de três botões (Alunos, Serviços, Blog) + linha azul, tudo dentro do papiro. Nas homes: logo grande + barra de papiro (botões, redes, frase de boas-vindas). **Os botões são sempre esses três, na mesma ordem**; o da página onde a pessoa está fica ocre.
+- **Nada de canto arredondado** (retângulos, botões, imagens, vídeos). Retângulos de botão: só contorno azul egípcio (`#1034A6`), sem fundo, texto terracota.
+- **Menu lateral e carrinho** nas páginas de papiro: peças pequenas, só contorno, **dentro da moldura**, sem ficar em cima dela nem do texto; o texto tem margem para eles.
+- **Texto justificado**, subtítulos terracota **sem linha embaixo** (igual ao blog). No computador a coluna do texto vai de ponta a ponta e a letra cresce com a tela (mesma proporção do celular); nada de coluna estreita no meio.
+- **Nomes:** "Alunos" (antes Portal do Aluno / Área do Aluno) e "Pós-atendimento" (antes Área do Cliente; nos avisos, escrever "na página de Pós-atendimento do site", porque só o nome não explica que é um lugar). O nome "Blog" não aparece como título na home do blog.
+- **Linguagem acolhedora**, sem "diagnóstico", sem travessão, sem tom de exigência. PDFs entregues junto com a gravação são sempre só material técnico, **sem interpretação** (a interpretação é a consulta gravada).
+- Publicar na `main` só quando ele pedir. Mexeu em `blog.css`/`blog.js`/`api/_blog.js`: bumpar `?v=` e pedir para tocar em "Atualizar as páginas do blog" **uma vez** (as páginas geradas guardam o cabeçalho antigo).
+- **Mostrar com imagem, não com artefato nem descrição:** ele quer ver o resultado (print do Playwright pelo `SendUserFile`) e não gosta de texto que descreve o que a imagem já mostra. Ainda não tratado nesse padrão: a página de Alunos (`aluno.html`) e o Pós-atendimento (`cliente.html`).

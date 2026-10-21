@@ -54,3 +54,7 @@
 .blog-card .blog-data{font-size:13px}
 .blog-voltar-ceu{color:#f1e6c6;margin-top:30px}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* a barra de papiro também leva a moldura com meandros (todo papiro leva) */
+.barra-topo.papiro-moldura{position:relative;padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 16px)}
+.barra-texto{margin:0;font:400 14px/1.6 'Cinzel',serif;color:#16233F;text-align:justify;text-align-last:center}

@@ -101,7 +101,7 @@ const CABECALHO_POST = `<div class="pagina pagina-servico pagina-papiro"><div cl
 /* assuntos: mesmo desenho da home do blog (céu, logo, barra de papiro, um papiro por texto) */
 const CABECALHO_HOME = `<div class="logo-home"><a href="/index.html"><img src="/img/logo-completa.svg?v=3" alt="Falando de Astrologia Helenística" width="912" height="400"></a></div>
 <div class="barra-wrap">
-  <div class="barra-topo">
+  <div class="barra-topo papiro-moldura">
     <nav class="cab-nav"><a href="/aluno.html">Alunos</a><a href="/index.html#servicos">Serviços</a><a href="/blog.html" class="atual">Blog</a></nav>
     <hr class="cab-linha">
     <div class="social-bar">
@@ -133,9 +133,9 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home }) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/papiro.css?v=4">
-  <link rel="stylesheet" href="/home.css?v=18">
+  <link rel="stylesheet" href="/home.css?v=21">
   <link rel="stylesheet" href="/page.css?v=22">
-  <link rel="stylesheet" href="/blog.css?v=8">
+  <link rel="stylesheet" href="/blog.css?v=9">
 </head>
 <body${home ? ' class="blog-home"' : ''}>
 ${home ? CABECALHO_HOME + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js?v=20" defer></script>
