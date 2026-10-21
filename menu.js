@@ -43,10 +43,11 @@
     ".sidemenu-panel.is-open{transform:translateX(0)}" +
     ".sidemenu-close{position:absolute;top:calc(130px*var(--moldura-m) - 10px);right:calc(80px*var(--moldura-m) + 4px);margin:0;width:32px;height:32px;border:none;background:transparent;font-size:24px;line-height:1;color:#1a1410;cursor:pointer}" +
     ".sidemenu-close:hover{color:#1F5FA3}" +
-    ".sidemenu-nav{display:flex;flex-direction:column;overflow-y:auto}" +
+    ".sidemenu-nav{display:flex;flex-direction:column;overflow-y:auto;padding-top:26px}" +
+    ".sidemenu-nav a.sem-linha{border-bottom:0}" +
     ".sidemenu-logo{display:block;text-align:center;margin:0;padding:10px 0 14px;border-bottom:1px solid rgba(31,95,163,.55)}.sidemenu-logo img{width:100%;height:auto;display:block}" +
     ".sidemenu-nav a{padding:14px 8px;color:#1a1410;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.4px;border-bottom:1px solid rgba(95,65,30,.4)}" +
-    ".sidemenu-nav a.is-sep{margin-top:14px;border-top:1px solid #B5852F}" +
+    ".sidemenu-nav a.is-sep{margin-top:0;border-top:1px solid #B5852F}" +
     ".sidemenu-nav a:hover{color:#1F5FA3}" +
     ".sidemenu-nav a.is-current{color:#1F5FA3;border-left:3px solid #1F5FA3;padding-left:5px}" +
     "body.sidemenu-lock{overflow:hidden}";
@@ -80,18 +81,13 @@
     a.href = "/" + link.href; /* com a barra no começo, vale também dentro de /blog/ e /assunto/ */
     a.textContent = link.label;
     if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
-    if (link.sep) a.classList.add("is-sep");
+    if (link.sep) { a.classList.add("is-sep"); if (nav.lastChild) nav.lastChild.classList.add("sem-linha"); } /* onde entra a linha ocre, a linha fina de cima sai */
     if (link.href === currentPage) a.classList.add("is-current");
     nav.appendChild(a);
   });
 
-  var logo = document.createElement("a");
-  logo.className = "sidemenu-logo";
-  logo.href = "/index.html";
-  logo.innerHTML = '<img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238">';
-
+  if (nav.lastChild) nav.lastChild.classList.add("sem-linha");
   panel.appendChild(closeBtn);
-  panel.appendChild(logo);
   panel.appendChild(nav);
 
   var cart = document.createElement("a");
