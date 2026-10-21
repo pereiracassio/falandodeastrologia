@@ -99,7 +99,7 @@
 
   function agradecimento() {
     raiz.textContent = '';
-    var msgWhats = 'Oi, Cássio! Aqui é ' + primeiroNome() + '. Acabei de enviar a minha aplicação para o Acompanhamento Prático de Astrologia, no seu site.';
+    var msgWhats = 'Oi, Cássio! Aqui é ' + primeiroNome() + '. Acabei de enviar a aplicação para o Acompanhamento Prático de Astrologia.';
     var botao = el('a', { class: 'portal-btn portal-btn-whats', href: 'https://wa.me/' + WHATS + '?text=' + encodeURIComponent(msgWhats), target: '_blank', rel: 'noopener', text: 'Avisar o Cássio no WhatsApp' });
     raiz.appendChild(el('div', { class: 'portal-cartao' }, [
       el('h2', { text: 'Recebi a sua aplicação, obrigado!' }),
