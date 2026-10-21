@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
     res.status(200).json({
       ok: true,
       visitas: total.total,
-      porDia: (total.stats || []).map((d) => ({ dia: d.day, visitas: d.daily })),
+      porDia: (total.stats || []).map((d) => ({ dia: d.day, visitas: d.daily, horas: d.hourly || [] })),
       paginas: (paginas.hits || []).map((h) => ({ caminho: h.path, titulo: h.title || '', visitas: h.count }))
     });
   } catch (e) {

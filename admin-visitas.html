@@ -91,6 +91,17 @@
         P.mensagem(msg, '');
         resultado.appendChild(el('p', { style: 'font-size:2.2em;margin:.4em 0 0;color:#A03E25', text: String(d.visitas) }));
         resultado.appendChild(el('p', { text: d.visitas === 1 ? 'visita no período' : 'visitas no período' }));
+        if (dias === 1) {
+          resultado.appendChild(el('h3', { text: 'Por hora' }));
+          var achou = false;
+          d.porDia.forEach(function (dia) {
+            var dd = String(dia.dia).slice(8, 10) + '/' + String(dia.dia).slice(5, 7);
+            (dia.horas || []).forEach(function (n, h) {
+              if (n > 0) { achou = true; resultado.appendChild(el('p', { text: dd + ' às ' + h + 'h  ·  ' + n + (n === 1 ? ' visita' : ' visitas') })); }
+            });
+          });
+          if (!achou) resultado.appendChild(el('p', { text: 'Nenhuma visita nas últimas 24 horas.' }));
+        }
         resultado.appendChild(el('h3', { text: 'Páginas mais vistas' }));
         if (!d.paginas.length) { resultado.appendChild(el('p', { text: 'Ainda não há visitas neste período.' })); return; }
         d.paginas.forEach(function (p) {
