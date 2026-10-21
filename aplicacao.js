@@ -10,8 +10,8 @@
   var est = { id: null, nome: '', whatsapp: '', email: '', nivel: '', metodo: '', objetivos: [], outros: '', motivo: '' };
 
   var NIVEIS = ['Estou começando agora, ainda não estudei', 'Já estudei astrologia moderna', 'Já estudei astrologia tradicional', 'Já estudo astrologia clássica', 'Já atendo clientes e quero me aprimorar'];
-  var PERGUNTA_METODO = 'Este acompanhamento é fundamentado exclusivamente na Astrologia Clássica, o que exige deixar de lado o uso de planetas modernos (Urano, Netuno e Plutão) e misturas medievais. Também se faz necessário o uso único e exclusivo do sistema de divisão de casas por signos inteiros. Você está disposto a desconstruir esses conceitos para aprender a mecânica original?';
-  var METODOS = ['Sim, estou totalmente aberto e quero um método limpo.', 'Tenho dúvidas sobre abrir mão de abordagens modernas.', 'Não quero abrir mão da astrologia moderna.', 'Não estou aberto a usar signos inteiros.'];
+  var PERGUNTA_METODO = 'A astrologia é o estudo do céu, e céu é o que conseguimos ver quando olhamos para cima. O que não dá para ver a olho nu não é céu, é espaço sideral. Por isso, na astrologia clássica usamos apenas os planetas que podemos encontrar no céu (do Sol a Saturno) e apenas as casas por signos inteiros. Você topa estudar assim?';
+  var METODOS = ['Sim, é exatamente o que eu busco.', 'Tenho curiosidade, mas ainda tenho dúvidas.', 'Prefiro continuar usando os planetas modernos.', 'Prefiro outro sistema de casas.'];
   var OBJETIVOS = ['Dominar meu próprio Mapa Natal a fundo', 'Adquirir segurança técnica para atender clientes', 'Organizar meu raciocínio e eliminar ruídos técnicos', 'Aprender técnicas preditivas', 'Outros'];
 
   function opcao(texto, marcada, aoClicar) {
@@ -61,7 +61,7 @@
       cx.appendChild(area);
       return function () { return est.nivel ? null : 'Escolha uma opção.'; };
     } },
-    { titulo: 'Sobre o método clássico', desenhar: function (cx) {
+    { titulo: 'Sobre o método', desenhar: function (cx) {
       cx.appendChild(el('p', { style: 'font-size:16px;font-weight:700;line-height:1.5;margin:0 0 14px', text: PERGUNTA_METODO + ' *' }));
       var area = el('div');
       (function pintar() { area.textContent = ''; METODOS.forEach(function (n) { area.appendChild(opcao(n, est.metodo === n, function () { est.metodo = n; pintar(); })); }); })();
