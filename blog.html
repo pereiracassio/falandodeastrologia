@@ -51,7 +51,8 @@
         if (!chave) { soltas.push(p); return; }
         if (!assuntos[chave]) { assuntos[chave] = { nome: nome, qtd: 0, imagem: null }; ordem.push(chave); }
         assuntos[chave].qtd++;
-        if (!assuntos[chave].imagem && p.imagem_url) assuntos[chave].imagem = p.imagem_url;
+        /* a capa do assunto é a postagem mais ANTIGA (a abertura); a lista vem da mais nova para a mais antiga, então a última com imagem vence */
+        if (p.imagem_url) assuntos[chave].imagem = p.imagem_url;
       });
       ordem.sort().forEach(function (chave) {
         var a = assuntos[chave], filhos = [];
