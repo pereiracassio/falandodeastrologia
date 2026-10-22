@@ -83,3 +83,4 @@ Arquivo `tipografia.css` (carregado em todas as páginas e em `api/_blog.js`; fo
 - **Subtítulos: Architects Daughter, terracota, só a primeira letra maiúscula** (e nomes próprios, como "Mentoria em Astrologia Clássica", "Mapa Natal Clássico"). Texto novo de h2/h3 já deve ser escrito assim ("Como funciona a consulta?", não "Como Funciona a Consulta?").
 - **Corpo do texto e campos onde se escreve: Architects Daughter, azul-noite `#16233F`.** Nada de Arial/Montserrat. (Cinzel em texto corrido foi descartado: parece tudo em maiúscula, cansa.)
 - Subtítulo escrito pelo astrólogo no painel do blog (`## ...`) aparece como ele digitou: a primeira letra maiúscula é com ele.
+- **Rótulos dos campos ("Código", "Nome", "WhatsApp", "Pasta no Drive"), barras que abrem e fecham (sanfonas) e títulos de cartão: Cinzel. O que se DIGITA dentro dos campos e as anotações ("Ainda não baixou o caderno") ficam na fonte à mão.**

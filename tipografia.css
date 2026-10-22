@@ -23,3 +23,5 @@ h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titu
 /* barras que abrem e fecham (Dados do aluno, Atividades...) e títulos de cartão funcionam como botão/título: Cinzel */
 .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao h2{font-family:var(--fonte-titulo)!important}
 .pagina-papiro .folha-pagina .portal-cartao h2{color:#A03E25!important;text-transform:none!important;font-weight:700!important;letter-spacing:.5px!important;font-size:17px!important}
+/* nome dos campos (rótulos) é Cinzel; o que se digita dentro dos campos é a fonte à mão */
+.pagina-papiro label,.pagina-papiro .portal label{font-family:var(--fonte-titulo)!important;font-size:13px;letter-spacing:.04em}
