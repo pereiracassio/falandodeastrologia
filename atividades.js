@@ -209,7 +209,7 @@
     });
     desenhar();
     var partes = [el('p', { class: 'portal-item-titulo', text: souAluno ? 'Comentários e dúvidas' : 'Conversa com o aluno' }), fio];
-    if (!souAluno) {
+    if (!souAluno && quem.antiga) { /* escolher quem assina só faz sentido em atividade ANTIGA (já feita antes, que você está passando para cá); em atividade nova você sempre escreve como você */
       var escolha = el('div', { style: 'margin:10px 0' });
       var pintar = function () {
         escolha.textContent = '';
@@ -782,7 +782,7 @@
           var com = el('textarea', { rows: '3', placeholder: 'Comentário para o aluno (opcional)' });
           com.value = c.comentario || '';
           cx.appendChild(el('label', { text: 'Sua correção' })); cx.appendChild(sit); cx.appendChild(com);
-          cx.appendChild(conversaDaPergunta(p.id, d.comentarios[p.id] || (d.comentarios[p.id] = []), { euAutor: 'admin', nomeAluno: aluno.nome }));
+          cx.appendChild(conversaDaPergunta(p.id, d.comentarios[p.id] || (d.comentarios[p.id] = []), { euAutor: 'admin', nomeAluno: aluno.nome, antiga: !!a.antiga }));
           /* editar o texto/alternativas (e, na antiga, a resposta do aluno) ou tirar a pergunta */
           var areaEdicao = el('div', { style: 'margin-top:14px' });
           var botEditar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar a pergunta' });
