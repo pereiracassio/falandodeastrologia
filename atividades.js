@@ -745,6 +745,24 @@
           return;
         }
         var campos = {}; /* pergunta_id -> { sit, com } */
+        /* SALVA SOZINHO: cada avaliação e cada comentário de correção vai para o banco logo depois que você muda (nada se perde ao recarregar).
+           Só grava a correção das perguntas; a data da correção e o aviso no WhatsApp continuam no botão "Salvar correção". */
+        var autoTimer = null, autoSalvando = false, autoDeNovo = false, autoMsg = el('p', { class: 'portal-msg' });
+        function autoLinhas() {
+          return Object.keys(campos).map(function (id) { return { pergunta_id: id, situacao: campos[id].sit.value || null, comentario: campos[id].com.value.trim() || null }; });
+        }
+        function autoSalvar() {
+          clearTimeout(autoTimer);
+          if (autoSalvando) { autoDeNovo = true; return; }
+          autoSalvando = true; P.mensagem(autoMsg, 'Salvando...');
+          C.from('atividade_correcoes').upsert(autoLinhas(), { onConflict: 'pergunta_id' }).then(function (r) {
+            autoSalvando = false;
+            if (r.error) { P.mensagem(autoMsg, 'Não consegui salvar sozinho agora: ' + P.traduzErro(r.error.message) + '. O que você escreveu continua na tela.', 'erro'); return; }
+            if (autoDeNovo) { autoDeNovo = false; autoSalvar(); return; }
+            P.mensagem(autoMsg, 'Salvo automaticamente.', 'ok');
+          });
+        }
+        function autoAgendar(imediato) { clearTimeout(autoTimer); if (imediato) autoSalvar(); else autoTimer = setTimeout(autoSalvar, 1500); }
         d.perguntas.forEach(function (p, i) {
           var r = d.respostas[p.id] || {};
           var c = d.correcoes[p.id] || {};
@@ -807,6 +825,9 @@
           cx.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [botEditar, botTirar]));
           cx.appendChild(areaEdicao);
           campos[p.id] = { sit: sit, com: com, tipo: p.tipo, opcao: r.opcao, certa: certa };
+          sit.addEventListener('change', function () { autoAgendar(true); });
+          com.addEventListener('input', function () { autoAgendar(false); });
+          com.addEventListener('blur', function () { autoAgendar(true); });
           area.appendChild(cx);
         });
 
@@ -873,6 +894,7 @@
         area.appendChild(cartaoMais);
 
         var msg = el('p', { class: 'portal-msg' });
+        area.appendChild(autoMsg);
         function salvarCorrecao() {
           var linhas = Object.keys(campos).map(function (id) {
             return { pergunta_id: id, situacao: campos[id].sit.value || null, comentario: campos[id].com.value.trim() || null };
