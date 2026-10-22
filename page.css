@@ -129,8 +129,8 @@ html body:has(.pagina-papiro) .cart-toggle svg{stroke:#1034A6;width:18px!importa
   .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"],.pagina-papiro .folha-pagina ul[style*="font-size: 16px"],.pagina-papiro .folha-pagina li[style*="margin-bottom"]{font-size:clamp(17px,1.55vw,23px)!important}
 }
 /* Alunos e Pós-atendimento (portal.css) dentro do papiro inteiro: mesma estética, sem canto arredondado, coluna de ponta a ponta */
-.pagina-papiro .portal{max-width:none;font-family:'Cinzel',serif;text-align:left}
-.pagina-papiro .portal :is(input,select,textarea,button){font-family:inherit}
+.pagina-papiro .portal{max-width:none;font-family:Arial,sans-serif;text-align:left}
+.pagina-papiro .portal :is(input,select,textarea){font-family:Arial,sans-serif}
 .pagina-papiro .portal :is(.portal-cartao,.portal-aba,.portal-btn,.portal-item,input,select,textarea){border-radius:0}
 .pagina-papiro .portal-titulo{color:#A03E25;text-align:center}
 .pagina-papiro .portal-sub{text-align:center}
@@ -225,3 +225,8 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 @media(max-width:700px){.pagina-papiro{--bpx:10px}}
 .pagina-papiro .portal-btn:not(.portal-grupo>*),.pagina-papiro .portal-btn:not(.portal-grupo>*):hover,.pagina-papiro .portal-btn:not(.portal-grupo>*):active,.pagina-papiro .portal-btn:not(.portal-grupo>*):focus{padding:12px var(--bpx)!important;border-width:1.5px!important}
 .pagina-papiro .blog-botao,.pagina-papiro .blog-botao:hover,.pagina-papiro .blog-botao:active{border-width:1.5px!important;padding:12px 24px!important;transform:none!important}
+
+/* portal: texto corrido e campos em Arial (maiúscula e minúscula legíveis); Cinzel só em título, abas, barra e botões */
+.pagina-papiro .portal :is(.portal-btn,.portal-aba,.portal-grupo>*,.portal-titulo,.portal-sub,.portal-subtitulo,.portal-texto-sub,.portal-cartao h2,.portal-item-titulo){font-family:'Cinzel',serif}
+.pagina-papiro .portal :is(.portal-item-data,.portal-descricao,.portal-msg,.portal-vazio,label,p,li,textarea,input,select){font-family:Arial,sans-serif}
+.pagina-papiro .portal label{text-transform:none;font-variant:normal}
