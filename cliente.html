@@ -6,7 +6,7 @@
   <link rel="apple-touch-icon" href="favicon.png?v=2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#e6d3a0">
-  <title>Pós-atendimento - Falando de Astrologia</title>
+  <title>Seu espaço - Falando de Astrologia</title>
   
   <!-- Importação da fonte Cinzel do Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="portal.css?v=12">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=3">
+<script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -28,12 +29,12 @@
     <hr class="cab-linha">
   </div>
   <div class="portal"><div class="portal-caixa">
-    <h1 class="portal-titulo">Pós-atendimento</h1>
+    <h1 class="portal-titulo">Seu espaço</h1>
     <div id="app"></div>
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=35"></script>
+  <script src="portal.js?v=37"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -50,13 +51,27 @@
       ]));
     }
 
-    function itemEntrega(e) {
+    /* guarda cada toque em "Baixar" (só o administrador enxerga); no modo "ver como o cliente" nada é guardado */
+    function registrarBaixa(entregaId, tipo, verId) {
+      if (verId) return;
+      try { P.client.from('entrega_baixas').insert({ entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {}); } catch (e) { /* o link abre do mesmo jeito */ }
+    }
+
+    function itemEntrega(e, verId) {
       var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico })]);
       if (e.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(e.data) }));
       var botoes = el('div', { class: 'portal-acoes' });
       var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
-      if (pdf) botoes.appendChild(el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' }));
-      if (gravacao) botoes.appendChild(el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' }));
+      if (pdf) {
+        var aPdf = el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar o PDF' });
+        aPdf.addEventListener('click', function () { registrarBaixa(e.id, 'pdf', verId); });
+        botoes.appendChild(aPdf);
+      }
+      if (gravacao) {
+        var aGrav = el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' });
+        aGrav.addEventListener('click', function () { registrarBaixa(e.id, 'gravacao', verId); });
+        botoes.appendChild(aGrav);
+      }
       var caixa = el('div', { class: 'portal-item' });
       if (gravacao || pdf) {
         /* o arquivo abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
@@ -67,6 +82,33 @@
         caixa.appendChild(el('div', { class: 'portal-item-linha' }, [titulo, botoes]));
       }
       return caixa;
+    }
+
+    /* próximo atendimento (horário e Google Meet), buscado na agenda pelo servidor; sem atendimento marcado, o cartão nem aparece */
+    function carregarAtendimento() {
+      var lugar = el('div', {});
+      app.appendChild(lugar);
+      P.client.auth.getSession().then(function (r) {
+        var sessao = r.data && r.data.session;
+        if (!sessao) return;
+        return fetch('https://falandodeastrologia.vercel.app/api/meu-atendimento', { headers: { Authorization: 'Bearer ' + sessao.access_token } })
+          .then(function (resp) { return resp.ok ? resp.json() : null; })
+          .then(function (d) {
+            var a = d && d.atendimento;
+            if (!a) return;
+            var quando = new Date(a.inicio);
+            var dia = quando.toLocaleDateString('pt-BR', { timeZone: a.fuso, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            var hora = quando.toLocaleTimeString('pt-BR', { timeZone: a.fuso, hour: '2-digit', minute: '2-digit' });
+            var cartao = el('div', { class: 'portal-cartao' }, [
+              el('h2', { text: 'Seu próximo atendimento' }),
+              el('p', { text: dia + ', às ' + hora + '.' })
+            ]);
+            var link = P.linkSeguro(a.meet);
+            if (link) cartao.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: link, target: '_blank', rel: 'noopener', text: 'Entrar no atendimento (Google Meet)' }));
+            else cartao.appendChild(el('p', { text: 'O link da videochamada chega pelo WhatsApp.' }));
+            lugar.appendChild(cartao);
+          });
+      }).catch(function () { /* sem o cartão, a página segue normal */ });
     }
 
     /* verId = o administrador vendo como o cliente vê (cliente.html?ver=ID); nada é salvo nem enviado */
@@ -90,6 +132,7 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
+        if (!verId) carregarAtendimento();
         app.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
@@ -100,7 +143,7 @@
             app.appendChild(cartao);
             if (re.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus serviços agora.' })); return; }
             if (!re.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum serviço entregue ainda.' }));
-            re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e)); });
+            re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e, verId)); });
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20cliente%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
             ]);

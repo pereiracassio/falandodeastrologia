@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
       try { await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ whatsapp }) }); } catch (e) { console.error('novo-cliente whatsapp:', e.message); }
     }
 
-    /* 1b) acesso (login) do cliente: só quem foi cliente consegue entrar no Pós-atendimento (o cadastro aberto do Supabase fica desligado) */
+    /* 1b) acesso (login) do cliente: só quem foi cliente consegue entrar no Seu espaço (o cadastro aberto do Supabase fica desligado) */
     try { await criarAcesso(email, nome); } catch (e) { console.error('novo-cliente acesso:', e.message); }
 
     /* 2) código (se já é de outro cliente, não mexe: o banco recusa duplicado) */

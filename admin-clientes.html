@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=35"></script>
+  <script src="portal.js?v=37"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -93,7 +93,7 @@
       cancelarNovo.addEventListener('click', function () { areaForm.textContent = ''; });
       var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
         el('p', { class: 'portal-item-titulo', text: 'Novo cliente' }),
-        el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. O acesso dele é criado aqui, ao adicionar. Ele entra na página de Pós-atendimento com o Google, sem senha.' }),
+        el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. O acesso dele é criado aqui, ao adicionar. Ele entra na página Seu espaço com o Google, sem senha.' }),
         el('label', { for: 'novoCodigo', text: 'Código do cliente' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
@@ -265,6 +265,7 @@
 
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + cliente.nome + ' vê' })]);
       app.appendChild(cartao);
+      var itensPorId = {};
       P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link').eq('cliente_id', cliente.id)
         .order('data', { ascending: false, nullsFirst: false }).then(function (r) {
           if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
@@ -290,7 +291,7 @@
             var primeiro = String(cliente.nome || '').trim().split(/\s+/)[0];
             var itens = [e.gravacao_link ? 'a gravação da sua sessão' : '', e.pdf_link ? 'o PDF' : ''].filter(Boolean);
             var texto = 'Oi ' + primeiro + '. Tudo bem?\n\n' +
-              (itens.length ? 'Na página de Pós-atendimento do site você encontra ' + itens.join(' e ') + ', do serviço ' + e.servico + '.' : 'O material do serviço ' + e.servico + ' está na página de Pós-atendimento do site.') + '\n' +
+              (itens.length ? 'Na página Seu espaço do site você encontra ' + itens.join(' e ') + ', do serviço ' + e.servico + '.' : 'O material do serviço ' + e.servico + ' está na página Seu espaço do site.') + '\n' +
               'Entre com o Gmail ' + cliente.email + ' (o mesmo da contratação):\n' +
               'https://falandodeastrologia.com.br/cliente.html\n\n' +
               'Você pode salvar com você, pra que sempre tenha acesso.' +
@@ -299,12 +300,31 @@
             var enviar = el('a', { class: 'portal-btn portal-btn-sec', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', text: 'Enviar' });
             enviar.style.cssText = 'color:#4A7C59;border-color:#4A7C59';
             var tem = [e.pdf_link ? 'PDF' : '', e.gravacao_link ? 'gravação' : ''].filter(Boolean).join(' + ');
-            cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+            var caixaItem = el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
               el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico }),
                 el('span', { class: 'portal-item-data', text: (e.data ? P.dataBR(e.data) + ' · ' : '') + (tem || 'sem arquivos') })]),
               el('div', { class: 'portal-acoes' }, [enviar, editar, apagar])
-            ])]));
+            ])]);
+            itensPorId[e.id] = caixaItem;
+            cartao.appendChild(caixaItem);
           });
+          /* cada vez que o cliente tocou em "Baixar" (só você vê isso) */
+          if (r.data.length) {
+            P.client.from('entrega_baixas').select('entrega_id,tipo,criado_em').in('entrega_id', r.data.map(function (x) { return x.id; })).order('criado_em').then(function (rb) {
+              if (rb.error || !rb.data) return;
+              var NOMES = { pdf: 'o PDF', gravacao: 'a gravação' };
+              r.data.forEach(function (x) {
+                var caixa = itensPorId[x.id];
+                ['pdf', 'gravacao'].forEach(function (tipo) {
+                  if (!caixa || !(tipo === 'pdf' ? x.pdf_link : x.gravacao_link)) return;
+                  var vezes = rb.data.filter(function (b) { return b.entrega_id === x.id && b.tipo === tipo; });
+                  var linhas = vezes.map(function (b) { var d = new Date(b.criado_em); return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); });
+                  var titulo = vezes.length ? 'Tocou em baixar ' + NOMES[tipo] + ' ' + vezes.length + (vezes.length === 1 ? ' vez: ' : ' vezes: ') + linhas.join('; ') + '.' : 'Ainda não tocou em baixar ' + NOMES[tipo] + '.';
+                  caixa.appendChild(el('p', { style: 'margin:6px 0 0;font-size:.9em', text: titulo }));
+                });
+              });
+            });
+          }
         });
 
       var remover = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Remover este cliente' });

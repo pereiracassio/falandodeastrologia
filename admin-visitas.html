@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Visitas - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="stylesheet" href="page.css?v=47">
+  <link rel="stylesheet" href="portal.css?v=12">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/aluno.html">Alunos</a><a href="/index.html#servicos">Serviços</a><a href="/blog.html">Blog</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Visitas</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=37"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '';
+    var VISITAS_URL = 'https://falandodeastrologia.vercel.app/api/visitas';
+    var SITE = 'falandodeastrologia';
+    var dias = 1;
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('visitas', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          tela();
+        });
+      });
+    }
+
+    function buscar() {
+      return C.auth.getSession().then(function (r) {
+        var jwt = r.data && r.data.session && r.data.session.access_token;
+        return fetch(VISITAS_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: JSON.stringify(dias === 1 ? { site: SITE, horas: 24 } : { site: SITE, dias: dias }) });
+      }).then(function (resp) {
+        return resp.json().then(function (d) {
+          if (!resp.ok) throw new Error(d.detalhe || d.erro || String(resp.status));
+          return d;
+        });
+      });
+    }
+
+    function tela() {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Visitas do site' })]);
+      var botoes = [[1, 'Últimas 24 horas'], [7, 'Últimos 7 dias'], [30, 'Últimos 30 dias'], [90, 'Últimos 90 dias']].map(function (p) {
+        var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: p[1] });
+        if (p[0] === dias) b.setAttribute('aria-current', 'page');
+        b.addEventListener('click', function () { dias = p[0]; tela(); });
+        return b;
+      });
+      /* mesmo retângulo de partes da barra de cima */
+      cartao.appendChild(el('div', { class: 'portal-topo' }, [el('div', { class: 'portal-grupo' }, botoes)]));
+      var msg = el('p', { class: 'portal-msg' });
+      var resultado = el('div');
+      cartao.appendChild(msg);
+      cartao.appendChild(resultado);
+      app.appendChild(cartao);
+      P.mensagem(msg, 'Carregando...');
+      buscar().then(function (d) {
+        P.mensagem(msg, '');
+        resultado.appendChild(el('p', { style: 'font-size:2.2em;margin:.4em 0 0;color:#A03E25', text: String(d.visitas) }));
+        resultado.appendChild(el('p', { text: d.visitas === 1 ? 'visita no período' : 'visitas no período' }));
+        if (dias === 1) {
+          resultado.appendChild(el('h3', { text: 'Por hora' }));
+          var achou = false;
+          d.porDia.forEach(function (dia) {
+            var dd = String(dia.dia).slice(8, 10) + '/' + String(dia.dia).slice(5, 7);
+            (dia.horas || []).forEach(function (n, h) {
+              if (n > 0) { achou = true; resultado.appendChild(el('p', { text: dd + ' às ' + h + 'h  ·  ' + n + (n === 1 ? ' visita' : ' visitas') })); }
+            });
+          });
+          if (!achou) resultado.appendChild(el('p', { text: 'Nenhuma visita nas últimas 24 horas.' }));
+        }
+        resultado.appendChild(el('h3', { text: 'Páginas mais vistas' }));
+        if (!d.paginas.length) { resultado.appendChild(el('p', { text: 'Ainda não há visitas neste período.' })); return; }
+        d.paginas.forEach(function (p) {
+          resultado.appendChild(el('p', { text: p.visitas + '  ·  ' + (p.titulo || p.caminho) }));
+        });
+      }).catch(function (e) {
+        P.mensagem(msg, 'Não consegui ler as visitas agora. ' + (e.message || ''), 'erro');
+      });
+    }
+
+    C.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>

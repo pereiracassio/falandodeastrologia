@@ -140,6 +140,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="stylesheet" href="/page.css">
   <link rel="stylesheet" href="/blog.css">
   <link rel="stylesheet" href="/tipografia.css?v=3">
+<script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body${home ? ' class="blog-home"' : ''}>
 ${home ? CABECALHO_HOME.replace('<!--BARRA-->', barra || '') + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js" defer></script>
