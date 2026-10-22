@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=37"></script>
+  <script src="portal.js?v=38"></script>
   <script src="atividades.js?v=23"></script>
   <script>
   (function () {
@@ -287,8 +287,20 @@
         }
         novo.addEventListener('click', function () { abrirForm(null); });
 
+        var aberturas = {};
         function carregar() {
           lista.textContent = '';
+          /* quando o aluno abriu cada item (tabela item_aberturas); se falhar, a lista aparece sem essa informação */
+          P.client.from('item_aberturas').select('item_id,criado_em').eq('aluno_id', aluno.id).then(function (ra) {
+            aberturas = {};
+            ((ra && ra.data) || []).forEach(function (x) {
+              var e = aberturas[x.item_id] || (aberturas[x.item_id] = { n: 0, ultima: x.criado_em });
+              e.n++; if (x.criado_em > e.ultima) e.ultima = x.criado_em;
+            });
+            listar();
+          }, function () { aberturas = {}; listar(); });
+        }
+        function listar() {
           P.client.from('itens').select('id,bloco,titulo,descricao,link,data').eq('aluno_id', aluno.id).in('bloco', o.blocos)
             .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (r) {
               if (r.error) { lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
@@ -302,9 +314,11 @@
                   if (!confirm('Apagar "' + i.titulo + '"? (O arquivo no Drive não é apagado.)')) return;
                   P.client.from('itens').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
                 });
+                var ab = aberturas[i.id];
+                var quando = ab ? 'Aberto ' + (ab.n === 1 ? '1 vez' : ab.n + ' vezes') + ', a última em ' + new Date(ab.ultima).toLocaleDateString('pt-BR') + ' às ' + new Date(ab.ultima).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Ainda não abriu';
                 var legenda = (i.bloco === 'caderno' ? BLOCOS.caderno : '') + (i.data ? (i.bloco === 'caderno' ? ' · ' : '') + P.dataBR(i.data) : '');
                 lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-                  el('div', {}, [el('span', { class: 'portal-item-titulo', text: i.titulo })].concat(legenda ? [el('span', { class: 'portal-item-data', text: legenda })] : [])),
+                  el('div', {}, [el('span', { class: 'portal-item-titulo', text: i.titulo })].concat(legenda ? [el('span', { class: 'portal-item-data', text: legenda })] : []).concat([el('span', { class: 'portal-item-data', text: quando })])),
                   el('div', { class: 'portal-acoes' }, [editar, apagar])
                 ])]));
               });

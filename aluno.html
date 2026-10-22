@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=37"></script>
+  <script src="portal.js?v=38"></script>
   <script src="atividades.js?v=23"></script>
   <script src="caderno.js?v=9"></script>
   <script>
@@ -131,13 +131,19 @@
        funcionava em arquivo restrito no Safari, que bloqueia o login do Google dentro da página — se isso voltar a acontecer, é por isso.) */
     function itemDaLista(item, bloco) {
       var seguro = P.linkSeguro(item.link);
+      /* anota que o aluno abriu (só o administrador vê); se falhar, o link abre do mesmo jeito */
+      function anotarAbertura() {
+        try { P.client.from('item_aberturas').insert({ item_id: item.id, aluno_id: item.aluno_id }).then(function () {}, function () {}); } catch (e) { /* segue */ }
+      }
       var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: item.titulo })]);
       if (item.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(item.data) }));
       var linha = el('div', { class: 'portal-item-linha' }, [titulo]);
-      var player = bloco === 'gravacoes' && seguro ? P.playerGravacao(seguro) : null;
+      var player = bloco === 'gravacoes' && seguro ? P.playerGravacao(seguro, anotarAbertura) : null;
       if (seguro && !player) {
         var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : 'Abrir';
-        linha.appendChild(el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto }));
+        var abrir = el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto });
+        abrir.addEventListener('click', anotarAbertura);
+        linha.appendChild(abrir);
       }
       var caixa = el('div', { class: 'portal-item' }, [linha]);
       if (player) caixa.appendChild(player);
@@ -229,7 +235,7 @@
         // link fixo do encontro semanal (Google Meet), acima das abas
         var meetLink = P.linkSeguro(aluno.meet_link);
         if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetLink, target: '_blank', rel: 'noopener', text: 'Entrar no encontro (Google Meet)' }));
-        P.client.from('itens').select('bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
+        P.client.from('itens').select('id,aluno_id,bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
             var lista = ri.data || [];

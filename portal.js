@@ -307,7 +307,7 @@
   }
   /* gravação: player do Drive dentro da página (abre ao tocar em Assistir) + Baixar + abrir no Drive.
      Devolve null se o link não for de um arquivo do Drive (aí quem chama usa o botão de sempre). */
-  function playerGravacao(link) {
+  function playerGravacao(link, aoUsar) {
     var id = idArquivoDrive(link);
     if (!id) return null;
     var acoes = el('div', { class: 'portal-acoes' });
@@ -316,6 +316,7 @@
     var aberto = false;
     assistir.addEventListener('click', function () {
       aberto = !aberto;
+      if (aberto && aoUsar) aoUsar();
       area.textContent = '';
       assistir.textContent = aberto ? 'Fechar o vídeo' : 'Assistir';
       if (!aberto) return;
@@ -325,9 +326,12 @@
       area.appendChild(caixa);
       area.appendChild(el('p', { class: 'portal-vazio', text: 'Se o vídeo não carregar, toque em "Abrir no Drive".' }));
     });
+    var baixar = el('a', { class: 'portal-btn portal-btn-sec', href: 'https://drive.google.com/uc?export=download&id=' + id, target: '_blank', rel: 'noopener', text: 'Baixar' });
+    var noDrive = el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Abrir no Drive' });
+    if (aoUsar) { baixar.addEventListener('click', aoUsar); noDrive.addEventListener('click', aoUsar); }
     acoes.appendChild(assistir);
-    acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: 'https://drive.google.com/uc?export=download&id=' + id, target: '_blank', rel: 'noopener', text: 'Baixar' }));
-    acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Abrir no Drive' }));
+    acoes.appendChild(baixar);
+    acoes.appendChild(noDrive);
     return el('div', {}, [acoes, area]);
   }
   /* botão "Aplicações" do painel, com o número de aplicações novas (completas e não concluídas) */
