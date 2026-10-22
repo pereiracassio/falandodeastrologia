@@ -11,7 +11,7 @@
     { label: "Revolução Solar", href: "revolucao-solar.html" },
     { label: "Previsões Astrológicas", href: "previsoes-astrologicas.html" },
     { label: "Sinastria Clássica", href: "sinastria.html" },
-    { label: "Pós-atendimento", href: "cliente.html" }
+    { label: "Seu espaço", href: "cliente.html" }
   ];
 
   // quantos serviços tem no carrinho (guardado no navegador, ver carrinho.js; esvazia 30 min depois de ir pro pagamento)

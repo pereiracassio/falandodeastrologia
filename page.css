@@ -128,7 +128,7 @@ html body:has(.pagina-papiro) .cart-toggle svg{stroke:#1034A6;width:18px!importa
   .pagina-papiro .folha-pagina h2[style*="text-transform: uppercase"]{font-size:clamp(16px,1.45vw,21px)!important}
   .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"],.pagina-papiro .folha-pagina ul[style*="font-size: 16px"],.pagina-papiro .folha-pagina li[style*="margin-bottom"]{font-size:clamp(17px,1.55vw,23px)!important}
 }
-/* Alunos e Pós-atendimento (portal.css) dentro do papiro inteiro: mesma estética, sem canto arredondado, coluna de ponta a ponta */
+/* Alunos e Seu espaço (portal.css) dentro do papiro inteiro: mesma estética, sem canto arredondado, coluna de ponta a ponta */
 .pagina-papiro .portal{max-width:none;font-family:'Cinzel',serif;text-align:left}
 .pagina-papiro .portal :is(input,select,textarea,button){font-family:inherit}
 .pagina-papiro .portal :is(.portal-cartao,.portal-aba,.portal-btn,.portal-item,input,select,textarea){border-radius:0}
