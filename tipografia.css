@@ -27,5 +27,4 @@ h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titu
 .pagina-papiro label,.pagina-papiro .portal label{font-family:var(--fonte-titulo)!important;font-size:13px;letter-spacing:.04em}
 /* parte "impressa" de um questionário (pergunta, opções, passo): Cinzel; o que a pessoa escreve ou escolhe-marca fica à mão */
 .pagina-papiro .impresso,.pagina-papiro button.impresso{font-family:var(--fonte-titulo)!important}
-/* títulos fixos das páginas (já vêm impressos): Cinzel; só o subtítulo que alguém escreve (.blog-h2) fica à mão */
-.pagina-servico .folha-pagina :is(h2,h3):not(.blog-h2){font-family:var(--fonte-titulo)!important;font-weight:600!important;font-size:clamp(18px,1.7vw,24px)!important;letter-spacing:.02em}
+.pagina-papiro h2.impresso{font-family:var(--fonte-titulo)!important;font-weight:600!important}

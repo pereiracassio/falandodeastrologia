@@ -139,7 +139,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="stylesheet" href="/home.css">
   <link rel="stylesheet" href="/page.css">
   <link rel="stylesheet" href="/blog.css">
-  <link rel="stylesheet" href="/tipografia.css?v=7">
+  <link rel="stylesheet" href="/tipografia.css?v=8">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body${home ? ' class="blog-home"' : ''}>
