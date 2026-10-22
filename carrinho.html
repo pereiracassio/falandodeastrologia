@@ -28,6 +28,10 @@
     .btn-pay { display: block; width: 100%; background: #A03E25; color: #F3E3B8; text-align: center; padding: 14px; border-radius: 0; font-size: 16px; font-weight: bold; text-decoration: none; box-sizing: border-box; transition: background 0.2s ease; }
     .btn-pay:hover { background: #7d2f1a; }
     .btn-pay.ocupado { opacity: .6; pointer-events: none; }
+    .dados input.invalido { border: 3px solid #B3261E !important; }
+    body.checkout .pagina-papiro .card .aviso-campo, body.checkout .pagina-papiro .card .erro-dados { color: #B3261E !important; }
+    .dados input.invalido:focus { outline: none; }
+    .aviso-campo { color: #B3261E; font-size: 13px; font-weight: bold; margin: 4px 0 10px; }
     .item { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 12px 14px; margin-bottom: 10px; border: 1px solid #1F5FA3; border-radius: 8px; background: transparent; }
     .item .it-titulo { font-weight: bold; color: #2b1d12; font-size: 15px; }
     .item .it-desc { font-size: 13px; color: #6b5a3a; margin-top: 2px; }
@@ -241,6 +245,19 @@
     });
   })();
 
+  function limparAvisosCampos() {
+    document.querySelectorAll(".aviso-campo").forEach(function (x) { x.remove(); });
+    document.querySelectorAll(".dados input.invalido").forEach(function (x) { x.classList.remove("invalido"); });
+  }
+  function avisarCampo(id, msg) {
+    var c = document.getElementById(id);
+    c.classList.add("invalido");
+    var p = document.createElement("p"); p.className = "aviso-campo"; p.textContent = msg;
+    c.insertAdjacentElement("afterend", p);
+    c.addEventListener("input", function tirar() { c.classList.remove("invalido"); if (p.parentNode) p.remove(); c.removeEventListener("input", tirar); });
+    return c;
+  }
+
   var botao = document.getElementById("pay-button");
   var erro = document.getElementById("erro-dados");
   botao.addEventListener("click", function (e) {
@@ -250,14 +267,17 @@
     var nome = document.getElementById("cli-nome").value.trim();
     var whatsapp = document.getElementById("cli-whatsapp").value.trim();
     var email = document.getElementById("cli-email").value.trim();
-    if (!nome || whatsapp.replace(/\D/g, "").length < 8 || !email) {
-      erro.textContent = "Preencha nome, WhatsApp e e-mail para continuar.";
+    limparAvisosCampos();
+    var primeiro = null;
+    if (!nome) primeiro = avisarCampo("cli-nome", "Precisa preencher o nome.") || primeiro;
+    if (whatsapp.replace(/\D/g, "").length < 8) primeiro = avisarCampo("cli-whatsapp", "Precisa preencher o WhatsApp, com DDD.") || primeiro;
+    if (!email) primeiro = avisarCampo("cli-email", "Precisa preencher o e-mail.") || primeiro;
+    else if (!/^[^\s@]+@gmail\.com$/i.test(email)) primeiro = avisarCampo("cli-email", "O e-mail precisa ser um Gmail (terminado em @gmail.com).") || primeiro;
+    if (primeiro) {
+      erro.textContent = "Faltam alguns dados. Os campos em vermelho precisam ser preenchidos.";
       erro.style.display = "block";
-      return;
-    }
-    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-      erro.textContent = "O e-mail precisa ser um Gmail (terminado em @gmail.com).";
-      erro.style.display = "block";
+      primeiro.scrollIntoView({ block: "center", behavior: "smooth" });
+      primeiro.focus();
       return;
     }
     erro.style.display = "none";
