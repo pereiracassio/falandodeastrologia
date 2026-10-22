@@ -83,6 +83,33 @@
       return caixa;
     }
 
+    /* próximo atendimento (horário e Google Meet), buscado na agenda pelo servidor; sem atendimento marcado, o cartão nem aparece */
+    function carregarAtendimento() {
+      var lugar = el('div', {});
+      app.appendChild(lugar);
+      P.client.auth.getSession().then(function (r) {
+        var sessao = r.data && r.data.session;
+        if (!sessao) return;
+        return fetch('https://falandodeastrologia.vercel.app/api/meu-atendimento', { headers: { Authorization: 'Bearer ' + sessao.access_token } })
+          .then(function (resp) { return resp.ok ? resp.json() : null; })
+          .then(function (d) {
+            var a = d && d.atendimento;
+            if (!a) return;
+            var quando = new Date(a.inicio);
+            var dia = quando.toLocaleDateString('pt-BR', { timeZone: a.fuso, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            var hora = quando.toLocaleTimeString('pt-BR', { timeZone: a.fuso, hour: '2-digit', minute: '2-digit' });
+            var cartao = el('div', { class: 'portal-cartao' }, [
+              el('h2', { text: 'Seu próximo atendimento' }),
+              el('p', { text: dia + ', às ' + hora + '.' })
+            ]);
+            var link = P.linkSeguro(a.meet);
+            if (link) cartao.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: link, target: '_blank', rel: 'noopener', text: 'Entrar no atendimento (Google Meet)' }));
+            else cartao.appendChild(el('p', { text: 'O link da videochamada chega pelo WhatsApp.' }));
+            lugar.appendChild(cartao);
+          });
+      }).catch(function () { /* sem o cartão, a página segue normal */ });
+    }
+
     /* verId = o administrador vendo como o cliente vê (cliente.html?ver=ID); nada é salvo nem enviado */
     function mostrarPortal(user, verId) {
       limpar();
@@ -104,6 +131,7 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
+        if (!verId) carregarAtendimento();
         app.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
