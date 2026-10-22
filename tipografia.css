@@ -42,3 +42,8 @@ html body :is(h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro .folha-pagina h
   .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao h2,.pagina-papiro label,.pagina-papiro .portal label,
   .pagina-papiro .impresso,.pagina-papiro button.impresso,.pagina-papiro .folha-pagina :is(h2,h3).impresso,.brand,.nav-menu a,
   body.checkout .pagina-papiro .card :is(p,span,strong,div,a,button,label,li)){text-transform:lowercase!important}
+
+/* CAPA dos estudos (imagem gerada por capa.js): tudo em Cinzel, com a caixa do desenho original (título e subtítulo em maiúsculas, nome e aluno como escritos) */
+html body .pagina-papiro .folha-pagina .capa-folha :is(h1,div,span,p)[style]{font-family:var(--fonte-titulo)!important}
+html body .pagina-papiro .folha-pagina .capa-folha :is(h1,div,span,p)[style]{text-transform:none!important}
+html body .pagina-papiro .folha-pagina .capa-folha :is(h1,div,span,p)[style*="text-transform:uppercase"]{text-transform:uppercase!important}
