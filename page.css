@@ -50,8 +50,8 @@ body>header a:first-child{color:#f6e7b4!important}
 .checkout .price-title{color:#6b5a3a}
 .checkout .step-text{color:#2b1d12}
 .checkout .highlight{background:rgba(255,248,214,.85);color:#7a4a0a}
-.checkout .btn-pay{background:#1F5FA3;color:#f6e7b4;padding:16px;box-shadow:0 3px 10px rgba(31,95,163,.35)}
-.checkout .btn-pay:hover{background:#0b2a52}
+.checkout .btn-pay{background:#A03E25;color:#F3E3B8;padding:16px;box-shadow:none}
+.checkout .btn-pay:hover{background:#7d2f1a}
 @media(max-width:700px){.checkout{padding:14px 8px}}
 
 /* marca compacta (Hermes + nome) no cabeçalho das páginas internas */

@@ -32,3 +32,5 @@ h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titu
 body.checkout .pagina-papiro .card :is(p,span,strong,div,a,button,label,li){font-family:var(--fonte-titulo)!important}
 body.checkout .pagina-papiro .card :is(input,textarea,select){font-family:var(--fonte-mao)!important}
 .pagina-papiro .folha-pagina :is(h2,h3).impresso{font-family:var(--fonte-titulo)!important;font-weight:600!important}
+/* título (não subtítulo) com estilo inline, como o "Investimento": Cinzel */
+.pagina-papiro .folha-pagina h2.titulo-pagina[style]{font-family:var(--fonte-titulo)!important}
