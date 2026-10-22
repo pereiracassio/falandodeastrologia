@@ -144,6 +144,14 @@
             if (re.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus serviços agora.' })); return; }
             if (!re.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum serviço entregue ainda.' }));
             re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e, verId)); });
+            /* depois do atendimento (já há material entregue): convite para avaliar no Google */
+            if (re.data.length) {
+              app.appendChild(el('div', { class: 'portal-cartao' }, [
+                el('h2', { text: 'Sua opinião' }),
+                el('p', { text: 'Se o atendimento fez bem para você, conte como foi. A sua avaliação no Google ajuda outras pessoas a me encontrarem.' }),
+                el('a', { class: 'portal-btn portal-btn-sec', href: 'https://g.page/r/CcWP1ZarYgigEBM/review', target: '_blank', rel: 'noopener', text: 'Deixar minha avaliação no Google' })
+              ]));
+            }
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20cliente%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
             ]);
