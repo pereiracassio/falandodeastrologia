@@ -76,3 +76,10 @@ A tela Alunos (`aluno.html`) **não tem e não pode ter lugar para criar conta**
 - **Pouco vermelho:** terracota só nos botões realmente importantes (carrinho, pagamento, entrar, enviar). Abas do portal em azul, **a selecionada em ocre**. Botões dentro de listas (Assistir, Abrir, Baixar) são secundários (contorno azul).
 - **A foto do "Quem sou eu" é REDONDA** (pedido dele). A regra de canto reto (`border-radius:0` em `.pagina-papiro *`) tem exceção para `#foto-sobre` e para qualquer elemento com `border-radius: 50%` inline. Nunca tirar o redondo da foto.
 - **Abas do portal = o mesmo retângulo de três partes do topo** (um bloco só, divisas internas, azul egípcio ESCURO `#1034A6`), texto azul e **selecionada em ocre**. **Botões nunca mexem nem encolhem no hover** (só a cor muda); nada de `transform` nem troca de padding no hover.
+
+## Tipografia única do site (22/10/2026) — regra do astrólogo, vale para TODA página e peça nova
+Arquivo `tipografia.css` (carregado em todas as páginas e em `api/_blog.js`; fonte Architects Daughter junto com a Cinzel no `<link>` do Google Fonts):
+- **Títulos e botões: SEMPRE Cinzel** (maiúsculas): h1, título de página, botões, abas, barra de botões, menu lateral, nome dos banners da home, títulos de cartão do blog.
+- **Subtítulos: Architects Daughter, terracota, só a primeira letra maiúscula** (e nomes próprios, como "Mentoria em Astrologia Clássica", "Mapa Natal Clássico"). Texto novo de h2/h3 já deve ser escrito assim ("Como funciona a consulta?", não "Como Funciona a Consulta?").
+- **Corpo do texto e campos onde se escreve: Architects Daughter, azul-noite `#16233F`.** Nada de Arial/Montserrat. (Cinzel em texto corrido foi descartado: parece tudo em maiúscula, cansa.)
+- Subtítulo escrito pelo astrólogo no painel do blog (`## ...`) aparece como ele digitou: a primeira letra maiúscula é com ele.

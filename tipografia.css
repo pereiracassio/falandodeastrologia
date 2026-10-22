@@ -1,0 +1,22 @@
+/* TIPOGRAFIA ÚNICA DO SITE (regra do astrólogo, 22/10/2026) — vale para TODA página e peça nova.
+   • Títulos e botões: SEMPRE Cinzel (maiúsculas).
+   • Subtítulos: Architects Daughter, terracota, só a primeira letra maiúscula (e nomes próprios).
+   • Corpo do texto e campos onde se escreve: Architects Daughter, azul-noite. */
+:root{--fonte-titulo:'Cinzel',serif;--fonte-mao:'Architects Daughter','Segoe Print','Comic Sans MS',cursive}
+
+/* corpo do texto e campos */
+.pagina-papiro,.pagina-papiro .blog,.pagina-papiro .portal,.pagina-papiro [style*="Cinzel"],.barra-texto,
+.blog-home-conteudo p,.blog-card p,.blog-card .blog-data,.pagina-papiro :is(p,li,label,input,textarea,select,td,th,span,strong,em,small){font-family:var(--fonte-mao)!important;letter-spacing:0}
+.pagina-papiro :is(p,li,label,td,th,small){color:#16233F}
+.pagina-papiro .portal-item-titulo,.pagina-papiro .portal-item-data,.pagina-papiro .portal-msg,.pagina-papiro .portal-descricao{font-family:var(--fonte-mao)!important}
+
+/* subtítulos */
+.pagina-papiro h2,.pagina-papiro h3,.pagina-papiro .folha-pagina h2,.pagina-papiro .folha-pagina h3,.pagina-papiro .folha-pagina h2[style],.pagina-papiro .folha-pagina h3[style],.portal-sub,.portal-subtitulo,.portal-texto-sub,.blog-h2,.pagina-papiro .portal-cartao h2{
+  font-family:var(--fonte-mao)!important;color:#A03E25!important;text-transform:none!important;letter-spacing:0!important;font-weight:400!important;font-size:clamp(22px,2vw,28px)!important;line-height:1.3}
+
+/* títulos e botões: Cinzel */
+h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titulo,.barra-assunto,.blog-card h2,
+.cab-nav,.cab-nav a,.portal-btn,.portal-aba,.portal-grupo>*,.blog-botao,.btn-pay,.btn-google,.papiro .folha b,.pagina-papiro a[href*="carrinho.html"],.sidemenu-nav a{font-family:var(--fonte-titulo)!important}
+.pagina-papiro .folha-pagina h2.titulo-pagina,.pagina-papiro h2.titulo-pagina,.blog-card h2{color:#A03E25!important;text-transform:uppercase!important;font-weight:700!important;letter-spacing:.04em!important;font-size:22px!important}
+.pagina-papiro button.portal-link,.pagina-papiro .blog-voltar{font-family:var(--fonte-mao)!important}
+.pagina-papiro .blog-assunto{font-family:var(--fonte-mao)!important;text-transform:none!important;letter-spacing:0!important;font-size:19px!important}

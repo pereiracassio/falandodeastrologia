@@ -134,11 +134,12 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <meta property="og:url" content="${esc(url)}">${extraHead || ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/papiro.css">
   <link rel="stylesheet" href="/home.css">
   <link rel="stylesheet" href="/page.css">
   <link rel="stylesheet" href="/blog.css">
+  <link rel="stylesheet" href="/tipografia.css?v=3">
 </head>
 <body${home ? ' class="blog-home"' : ''}>
 ${home ? CABECALHO_HOME.replace('<!--BARRA-->', barra || '') + '\n' + corpo + '\n<footer class="footer">Falando de Astrologia Helenística</footer>\n' : (tipo === 'article' ? CABECALHO_POST : CABECALHO_ANTIGO) + '\n' + corpo + '\n</div></div>\n'}  <script src="/menu.js" defer></script>
