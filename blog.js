@@ -29,9 +29,34 @@
     return isNaN(d) ? '' : d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear();
   }
 
+  /* ligações automáticas: as palavras cadastradas em cada postagem ("Palavras que levam a este texto") viram link, TODA vez que aparecem nas outras postagens */
+  function chaveFrase(t) { return String(t || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
+  function montarLigacoes(posts, atual) {
+    var mapa = {};
+    (posts || []).forEach(function (q) {
+      if (!q.slug || q.slug === atual) return;
+      String(q.palavras_link || '').split(/[,;\n]/).forEach(function (f) { var k = chaveFrase(f); if (k && !mapa[k]) mapa[k] = q.slug; });
+    });
+    var chaves = Object.keys(mapa).sort(function (a, b) { return b.length - a.length; });
+    if (!chaves.length) return null;
+    var alt = chaves.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+'); }).join('|');
+    return { mapa: mapa, re: new RegExp('(^|[^\\p{L}\\p{N}])(' + alt + ')(?![\\p{L}\\p{N}])', 'giu') };
+  }
+  function textoComLinks(pai, linha, lig) {
+    if (!lig) { pai.appendChild(document.createTextNode(linha)); return; }
+    var ult = 0;
+    linha.replace(lig.re, function (m, pre, fr, off) {
+      var ini = off + pre.length;
+      pai.appendChild(document.createTextNode(linha.slice(ult, ini)));
+      pai.appendChild(el('a', { class: 'blog-link-interno', href: enderecoDe(lig.mapa[chaveFrase(fr)]), text: fr }));
+      ult = ini + fr.length; return m;
+    });
+    pai.appendChild(document.createTextNode(linha.slice(ult)));
+  }
+
   /* O texto da postagem é só isto: parágrafos separados por uma linha em branco e subtítulos marcados com "## " no começo da linha.
      Tudo entra como texto (textContent): nada digitado vira HTML. */
-  function renderizarCorpo(corpo) {
+  function renderizarCorpo(corpo, lig) {
     var saida = document.createDocumentFragment();
     String(corpo || '').replace(/\r\n?/g, '\n').split(/\n{2,}/).forEach(function (bloco) {
       bloco = bloco.trim();
@@ -40,7 +65,7 @@
       function fecharParagrafo() {
         if (!paragrafo.length) return;
         var p = el('p', { class: 'blog-p' });
-        paragrafo.forEach(function (l, i) { if (i) p.appendChild(document.createElement('br')); p.appendChild(document.createTextNode(l)); });
+        paragrafo.forEach(function (l, i) { if (i) p.appendChild(document.createElement('br')); textoComLinks(p, l, lig); });
         saida.appendChild(p); paragrafo = [];
       }
       linhas.forEach(function (l) {
@@ -98,7 +123,7 @@
   }
 
   window.blog = {
-    buscar: buscar, el: el, dataExtenso: dataExtenso, renderizarCorpo: renderizarCorpo, resumoDe: resumoDe,
+    buscar: buscar, el: el, dataExtenso: dataExtenso, renderizarCorpo: renderizarCorpo, montarLigacoes: montarLigacoes, resumoDe: resumoDe,
     enderecoDe: enderecoDe, slugDe: slugDe, idYoutube: idYoutube, renderizarVideo: renderizarVideo, definirMeta: definirMeta, SITE: SITE
   };
 })();

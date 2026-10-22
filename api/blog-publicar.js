@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
       .filter((p) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug));
     const assuntos = agruparAssuntos(posts);
     const arquivos = { 'sitemap.xml': sitemap(posts, assuntos) };
-    posts.forEach((p) => { arquivos['blog/' + p.slug + '.html'] = paginaPost(p); });
+    posts.forEach((p) => { arquivos['blog/' + p.slug + '.html'] = paginaPost(p, posts); });
     assuntos.forEach((a) => { arquivos['assunto/' + a.slug + '.html'] = paginaAssunto(a); });
 
     const ref = await gh('/git/ref/heads/' + RAMO);

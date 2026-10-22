@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=48">
-  <link rel="stylesheet" href="blog.css?v=14">
+  <link rel="stylesheet" href="blog.css?v=15">
   <link rel="stylesheet" href="tipografia.css?v=17">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -26,7 +26,7 @@
   </div>
   <div class="blog" id="post"><p class="blog-vazio">Carregando...</p></div>
 </div></div>
-  <script src="blog.js?v=4"></script>
+  <script src="blog.js?v=5"></script>
   <script>
   (function () {
     var B = window.blog, el = B.el, area = document.getElementById('post');
@@ -42,6 +42,9 @@
     if (!slug) { naoEncontrada(); return; }
 
     B.buscar('slug=eq.' + encodeURIComponent(slug) + '&publicado=eq.true&select=*&limit=1').then(function (l) {
+      return B.buscar('publicado=eq.true&select=slug,palavras_link').catch(function () { return []; }).then(function (todos) { return [l, todos]; });
+    }).then(function (res) {
+      var l = res[0], lig = B.montarLigacoes(res[1], l && l[0] && l[0].slug);
       var p = l && l[0];
       if (!p) { naoEncontrada(); return; }
       var url = B.SITE + '/' + B.enderecoDe(p.slug), resumo = B.resumoDe(p);
@@ -66,7 +69,7 @@
       area.appendChild(el('h1', { text: p.titulo }));
       if (p.publicado_em) area.appendChild(el('p', { class: 'blog-data', style: 'text-align:center;margin-bottom:20px', text: B.dataExtenso(p.publicado_em) }));
       if (p.imagem_url) area.appendChild(el('img', { class: 'blog-capa', src: p.imagem_url, alt: p.titulo }));
-      area.appendChild(B.renderizarCorpo(p.corpo));
+      area.appendChild(B.renderizarCorpo(p.corpo, lig));
       area.appendChild(B.renderizarVideo(p.video_url));
       area.appendChild(el('a', { class: 'blog-voltar', href: 'blog.html', text: '← Ver todos os textos' }));
     }).catch(function () {
