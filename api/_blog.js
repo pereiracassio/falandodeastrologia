@@ -77,6 +77,8 @@ function agruparAssuntos(posts) {
     if (!slug) return;
     (mapa[slug] = mapa[slug] || { nome, slug, posts: [] }).posts.push(p);
   });
+  /* dentro do assunto, da mais antiga (a abertura) para a mais nova */
+  Object.keys(mapa).forEach((k) => mapa[k].posts.sort((x, y) => String(x.publicado_em || '').localeCompare(String(y.publicado_em || ''))));
   return Object.keys(mapa).sort().map((k) => mapa[k]);
 }
 
