@@ -15,7 +15,7 @@
   var OBJETIVOS = ['Entender o meu próprio mapa com profundidade', 'Ter segurança para atender clientes', 'Organizar o que já sei e tirar as confusões', 'Aprender técnicas de previsão', 'Outro objetivo'];
 
   function opcao(texto, marcada, aoClicar) {
-    var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
+    var b = el('button', { type: 'button', class: 'impresso', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
     b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:#16233F;font:inherit;font-size:16px;cursor:pointer;border-radius:8px;margin:0 0 10px;' +
       (marcada ? 'border:3px solid #1F5FA3;padding:10px 12px' : 'border:1px solid #1F5FA3;padding:12px');
     b.addEventListener('click', aoClicar);
@@ -62,7 +62,7 @@
       return function () { return est.nivel ? null : 'Escolha uma opção.'; };
     } },
     { titulo: 'O céu e a astrologia clássica', desenhar: function (cx) {
-      cx.appendChild(el('p', { style: 'font-size:16px;font-weight:700;line-height:1.5;margin:0 0 14px', text: PERGUNTA_METODO + ' *' }));
+      cx.appendChild(el('p', { class: 'impresso', style: 'font-size:16px;font-weight:700;line-height:1.5;margin:0 0 14px', text: PERGUNTA_METODO + ' *' }));
       var area = el('div');
       (function pintar() { area.textContent = ''; METODOS.forEach(function (n) { area.appendChild(opcao(n, est.metodo === n, function () { est.metodo = n; pintar(); })); }); })();
       cx.appendChild(area);
@@ -114,7 +114,7 @@
     raiz.textContent = '';
     var p = PASSOS[passo], ultimo = passo === PASSOS.length - 1;
     var cx = el('div', { class: 'portal-cartao' });
-    cx.appendChild(el('p', { class: 'portal-item-data', text: 'Passo ' + (passo + 1) + ' de ' + PASSOS.length }));
+    cx.appendChild(el('p', { class: 'portal-item-data impresso', text: 'Passo ' + (passo + 1) + ' de ' + PASSOS.length }));
     cx.appendChild(el('h2', { text: p.titulo }));
     var msg = el('p', { class: 'portal-msg' });
     var validar = p.desenhar(cx, msg);
