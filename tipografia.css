@@ -31,3 +31,4 @@ h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titu
 /* carrinho: tudo que já é do sistema (valores, passos, dicas, nomes de campo, botões) é Cinzel; só o que o cliente digita fica à mão */
 body.checkout .pagina-papiro .card :is(p,span,strong,div,a,button,label,li){font-family:var(--fonte-titulo)!important}
 body.checkout .pagina-papiro .card :is(input,textarea,select){font-family:var(--fonte-mao)!important}
+.pagina-papiro .folha-pagina :is(h2,h3).impresso{font-family:var(--fonte-titulo)!important;font-weight:600!important}
