@@ -34,3 +34,11 @@ body.checkout .pagina-papiro .card :is(input,textarea,select){font-family:var(--
 .pagina-papiro .folha-pagina :is(h2,h3).impresso{font-family:var(--fonte-titulo)!important;font-weight:600!important}
 /* título (não subtítulo) com estilo inline, como o "Investimento": Cinzel */
 .pagina-papiro .folha-pagina h2.titulo-pagina[style]{font-family:var(--fonte-titulo)!important}
+
+/* REGRA: tudo que é Cinzel é escrito em caixa baixa. A Cinzel já desenha as minúsculas como maiúsculas menores;
+   com maiúscula no meio (WhatsApp) as letras sobem e descem. Por isso nada de text-transform: uppercase em Cinzel. */
+html body :is(h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro .folha-pagina h2.titulo-pagina[style],.pagina-papiro .folha-pagina h2.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titulo,.barra-assunto,.blog-card h2,.blog-home-titulo,
+  .cab-nav,.cab-nav a,.portal-btn,.portal-aba,.portal-grupo>*,.blog-botao,.btn-pay,.btn-google,.papiro .folha b,.pagina-papiro a[href*="carrinho.html"],.sidemenu-nav a,
+  .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao h2,.pagina-papiro label,.pagina-papiro .portal label,
+  .pagina-papiro .impresso,.pagina-papiro button.impresso,.pagina-papiro .folha-pagina :is(h2,h3).impresso,.brand,.nav-menu a,
+  body.checkout .pagina-papiro .card :is(p,span,strong,div,a,button,label,li)){text-transform:lowercase!important}
