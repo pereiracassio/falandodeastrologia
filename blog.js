@@ -78,10 +78,14 @@
     return saida;
   }
 
+  /* ícones astrológicos (U+E000 a U+E020): nos resumos e no Google viram o NOME, não um quadradinho */
+  var NOMES_ICONES = ["Sol", "Lua", "Mercúrio", "Vênus", "Marte", "Júpiter", "Saturno", "Fortuna", "Espírito", "Necessidade", "Eros", "Coragem", "Vitória", "Nêmesis", "Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes", "Lunação pré-natal", "Nodo Norte", "Nodo Sul", "Ascendente", "Descendente", "Meio do Céu", "Fundo do Céu"];
+  function semIcones(t) { return String(t || '').replace(/[\uE000-\uE020]/g, function (c) { return NOMES_ICONES[c.charCodeAt(0) - 0xE000] + ' '; }); }
+
   /* resumo automático (para o Google) quando a postagem não tem um escrito: começo do texto, sem as marcas de subtítulo */
   function resumoDe(post) {
     if (post.resumo) return post.resumo;
-    var t = String(post.corpo || '').replace(/^##\s+/gm, '').replace(/\s+/g, ' ').trim();
+    var t = semIcones(post.corpo).replace(/^##\s+/gm, '').replace(/\s+/g, ' ').trim();
     return t.length > 155 ? t.slice(0, 155).replace(/\s+\S*$/, '') + '…' : t;
   }
 

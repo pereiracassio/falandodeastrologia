@@ -13,9 +13,9 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=13">
+  <link rel="stylesheet" href="portal.css?v=14">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=17">
+  <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -191,6 +191,21 @@
           corpo.focus(); corpo.selectionStart = corpo.selectionEnd = comeco + novo.length;
         });
 
+        /* ícones astrológicos: cada botão põe o ícone no texto, no lugar do cursor (são caracteres U+E000 a U+E020 da fonte AstroIcones) */
+        var NOMES_ICONES = ['Sol','Lua','Mercúrio','Vênus','Marte','Júpiter','Saturno','Fortuna','Espírito','Necessidade','Eros','Coragem','Vitória','Nêmesis','Áries','Touro','Gêmeos','Câncer','Leão','Virgem','Libra','Escorpião','Sagitário','Capricórnio','Aquário','Peixes','Lunação pré-natal','Nodo Norte','Nodo Sul','Ascendente','Descendente','Meio do Céu','Fundo do Céu'];
+        var paleta = el('div', { class: 'portal-acoes', style: 'margin-bottom:8px;gap:4px' });
+        NOMES_ICONES.forEach(function (nome, i) {
+          var ch = String.fromCharCode(0xE000 + i);
+          var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', title: nome, 'aria-label': nome, text: ch });
+          b.style.cssText = 'min-width:44px;padding:6px 8px;font-size:24px;line-height:1;font-family:AstroIcones,sans-serif!important';
+          b.addEventListener('click', function () {
+            var t = corpo.value, ini = corpo.selectionStart, fim = corpo.selectionEnd;
+            corpo.value = t.slice(0, ini) + ch + t.slice(fim);
+            corpo.focus(); corpo.selectionStart = corpo.selectionEnd = ini + 1;
+          });
+          paleta.appendChild(b);
+        });
+
         var botoes = el('div', { class: 'portal-acoes', style: 'margin-top:6px' });
         function travar(v) { Array.prototype.forEach.call(botoes.querySelectorAll('button'), function (b) { b.disabled = v; }); }
 
@@ -267,9 +282,10 @@
         cartao.appendChild(titulo); cartao.appendChild(assunto); cartao.appendChild(sugestoes); cartao.appendChild(palavras); cartao.appendChild(resumo);
         cartao.appendChild(previa); cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [botImg, botTirar, escolher]));
         cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:8px' }, [botSub]));
+        cartao.appendChild(paleta);
         cartao.appendChild(corpo);
         cartao.appendChild(video);
-        cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Subtítulo: clique na linha e toque em "Subtítulo". O visual (cores e fonte) é sempre o do site.' }));
+        cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Subtítulo: clique na linha e toque em "Subtítulo". Ícones: toque em um dos ícones acima do texto para colocá-lo onde está o cursor. O visual (cores e fonte) é sempre o do site.' }));
         if (post.publicado && post.slug) {
           cartao.appendChild(el('p', { class: 'portal-vazio' }, [el('a', { href: 'postagem.html?p=' + encodeURIComponent(post.slug), target: '_blank', rel: 'noopener', text: 'Ver no site' })]));
         }

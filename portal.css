@@ -13,7 +13,7 @@
 .portal input:focus,.portal select:focus,.portal textarea:focus{outline:none;border-width:3px;padding:10px}
 .portal input[type=search]{-webkit-appearance:none;appearance:none}
 .portal input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;min-height:50px}
-.portal textarea{resize:vertical;min-height:90px;font-family:Arial,sans-serif}
+.portal textarea{resize:vertical;min-height:90px;font-family:'AstroIcones',Arial,sans-serif}
 .portal-descricao{font-size:14px;line-height:1.5;color:#16233F;margin:8px 0 0;white-space:pre-line}
 .portal-texto{margin:8px 0 0;font-size:15px;line-height:1.6;color:#16233F}
 .portal-cartao .portal-texto p{margin:0 0 14px}

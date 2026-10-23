@@ -2,7 +2,9 @@
    • Títulos e botões: SEMPRE Cinzel (maiúsculas).
    • Subtítulos: Architects Daughter, terracota, só a primeira letra maiúscula (e nomes próprios).
    • Corpo do texto e campos onde se escreve: Architects Daughter, azul-noite. */
-:root{--fonte-titulo:'Cinzel',serif;--fonte-mao:'Architects Daughter','Segoe Print','Comic Sans MS',cursive}
+/* Ícones de planetas, lotes, signos, lunação, nodos e ângulos (33 caracteres U+E000 a U+E020, só desenham esses; o resto do texto segue a fonte normal) */
+@font-face{font-family:'AstroIcones';src:url(fonts/astro-icones.woff2) format('woff2');unicode-range:U+E000-E020;font-display:swap}
+:root{--fonte-titulo:'AstroIcones','Cinzel',serif;--fonte-mao:'AstroIcones','Architects Daughter','Segoe Print','Comic Sans MS',cursive}
 
 /* corpo do texto e campos */
 .pagina-papiro,.pagina-papiro .blog,.pagina-papiro .portal,.pagina-papiro [style*="Cinzel"],.barra-texto,

@@ -50,9 +50,11 @@ function corpoHtml(corpo, lig) {
   return saida.join('\n');
 }
 
+const NOMES_ICONES = ["Sol", "Lua", "Mercúrio", "Vênus", "Marte", "Júpiter", "Saturno", "Fortuna", "Espírito", "Necessidade", "Eros", "Coragem", "Vitória", "Nêmesis", "Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes", "Lunação pré-natal", "Nodo Norte", "Nodo Sul", "Ascendente", "Descendente", "Meio do Céu", "Fundo do Céu"];
+const semIcones = (t) => String(t || '').replace(/[\uE000-\uE020]/g, (c) => NOMES_ICONES[c.charCodeAt(0) - 0xE000] + ' ');
 function resumoDe(p) {
   if (p.resumo) return p.resumo;
-  const t = String(p.corpo || '').replace(/^##\s+/gm, '').replace(/\s+/g, ' ').trim();
+  const t = semIcones(p.corpo).replace(/^##\s+/gm, '').replace(/\s+/g, ' ').trim();
   return t.length > 155 ? t.slice(0, 155).replace(/\s+\S*$/, '') + '…' : t;
 }
 
@@ -165,7 +167,7 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="stylesheet" href="/home.css">
   <link rel="stylesheet" href="/page.css">
   <link rel="stylesheet" href="/blog.css">
-  <link rel="stylesheet" href="/tipografia.css?v=17">
+  <link rel="stylesheet" href="/tipografia.css?v=18">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body${home ? ' class="blog-home"' : ''}>
