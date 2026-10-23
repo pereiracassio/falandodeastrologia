@@ -49,6 +49,7 @@
 .portal-item:first-of-type{border-top:0;padding-top:0}
 .portal-item-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .portal-item-titulo{font-size:15px;font-weight:700;color:#16233F}
+.portal-selo{margin-left:8px;padding:0 8px;background:transparent;cursor:pointer;font:inherit;font-size:11px;font-weight:700;color:#B5852F;border:0;border-top:1px solid #B5852F;border-bottom:1px solid #B5852F;border-radius:0;vertical-align:middle}
 .portal-item-data{font-size:13px;color:#A03E25;display:block}
 .portal-vazio{font-size:14px;color:#16233F;margin:0}
 .portal-sala{margin:18px 0 0;text-align:center;font-size:13px;color:#16233F}

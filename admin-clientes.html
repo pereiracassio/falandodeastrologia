@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
   <link rel="stylesheet" href="page.css?v=48">
-  <link rel="stylesheet" href="portal.css?v=12">
+  <link rel="stylesheet" href="portal.css?v=13">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=17">
 </head>
@@ -139,7 +139,7 @@
       if (conexaoDrive) app.appendChild(conexaoDrive);
 
       Promise.all([
-        P.client.from('clientes').select('id,nome,email,whatsapp').order('nome'),
+        P.client.from('clientes').select('id,nome,email,whatsapp,retificacao_fatos_em,retificacao_fatos_vistos_em').order('nome'),
         P.client.from('cliente_codigos').select('cliente_id,codigo')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
@@ -160,8 +160,20 @@
           achados.forEach(function (c) {
             var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
             abrir.addEventListener('click', function () { paginaDoCliente(user, c); });
+            /* selinho "fatos enviados" (retificação): fica até o administrador tocar nele */
+            var selo = null;
+            if (c.retificacao_fatos_em && !c.retificacao_fatos_vistos_em) {
+              selo = el('button', { type: 'button', class: 'portal-selo', text: 'fatos enviados', title: 'O cliente enviou os fatos da vida. Toque para tirar o selinho.' });
+              selo.addEventListener('click', function () {
+                P.client.from('clientes').update({ retificacao_fatos_vistos_em: new Date().toISOString() }).eq('id', c.id).then(function (u) {
+                  if (u.error) { alert('Não foi possível tirar o selinho.'); return; }
+                  c.retificacao_fatos_vistos_em = new Date().toISOString();
+                  desenhar();
+                });
+              });
+            }
             lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (c.codigo ? c.codigo + ' · ' : '') + c.nome }), el('span', { class: 'portal-item-data', text: c.email })]), abrir
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (c.codigo ? c.codigo + ' · ' : '') + c.nome }), selo, el('span', { class: 'portal-item-data', text: c.email })]), abrir
             ])]));
           });
         }

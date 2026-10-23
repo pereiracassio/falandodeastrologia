@@ -84,7 +84,17 @@ module.exports = async (req, res) => {
       aviso = 'erro ao criar a pasta';
     }
 
-    res.status(200).json({ ok: true, cliente_id: cliente.id, criado, codigo: codigoGravado, pasta, compartilhada, aviso });
+    /* 4) retificação: o aviso chega DEPOIS que o cliente enviou os fatos da vida (o formulário só avisa no fim); marca o cliente pro painel mostrar o selinho "fatos enviados".
+       Falha aqui (ex.: colunas ainda não criadas) nunca desfaz o resto. */
+    let selinho = false;
+    if (/retifica/i.test(String(corpo.servico || ''))) {
+      try {
+        await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ retificacao_fatos_em: new Date().toISOString(), retificacao_fatos_vistos_em: null }) });
+        selinho = true;
+      } catch (e) { console.error('novo-cliente selinho:', e.message); }
+    }
+
+    res.status(200).json({ ok: true, cliente_id: cliente.id, criado, codigo: codigoGravado, pasta, compartilhada, aviso, selinho });
   } catch (e) {
     console.error('novo-cliente:', e.message);
     res.status(500).json({ erro: 'erro no servidor' });
