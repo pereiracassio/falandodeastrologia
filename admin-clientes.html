@@ -158,13 +158,14 @@
           var achados = clientes.filter(function (c) { return !t || (c.codigo + ' ' + c.nome + ' ' + c.email).toLowerCase().indexOf(t) >= 0; });
           if (!achados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum cliente encontrado.' }));
           achados.forEach(function (c) {
-            var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
-            abrir.addEventListener('click', function () { paginaDoCliente(user, c); });
+            /* a linha inteira é o botão: tocar no cliente abre a página dele */
+            var abrir = function () { paginaDoCliente(user, c); };
             /* selinho "fatos enviados" (retificação): fica até o administrador tocar nele */
             var selo = null;
             if (c.retificacao_fatos_em && !c.retificacao_fatos_vistos_em) {
               selo = el('button', { type: 'button', class: 'portal-selo', text: 'fatos enviados', title: 'O cliente enviou os fatos da vida. Toque para tirar o selinho.' });
-              selo.addEventListener('click', function () {
+              selo.addEventListener('click', function (ev) {
+                ev.stopPropagation(); /* tirar o selinho não abre o cliente */
                 P.client.from('clientes').update({ retificacao_fatos_vistos_em: new Date().toISOString() }).eq('id', c.id).then(function (u) {
                   if (u.error) { alert('Não foi possível tirar o selinho.'); return; }
                   c.retificacao_fatos_vistos_em = new Date().toISOString();
@@ -172,9 +173,12 @@
                 });
               });
             }
-            lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (c.codigo ? c.codigo + ' · ' : '') + c.nome }), selo, el('span', { class: 'portal-item-data', text: c.email })]), abrir
-            ])]));
+            var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (c.codigo ? c.codigo + ' · ' : '') + c.nome }), selo, el('span', { class: 'portal-item-data', text: c.email })])
+            ])]);
+            linha.addEventListener('click', abrir);
+            linha.addEventListener('keydown', function (ev) { if (ev.target === linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(); } });
+            lista.appendChild(linha);
           });
         }
         busca.addEventListener('input', desenhar);
