@@ -147,7 +147,31 @@
       ant.addEventListener('click', function () { mover(-1); });
       prox.addEventListener('click', function () { mover(1); });
       cartao.appendChild(divisa());
-      cartao.appendChild(el('div', { class: 'fin-mes' }, [ant, el('span', { class: 'fin-fixo fin-mes-nome', text: MESES[mes.mes] + ' ' + mes.ano }), prox]));
+      var nomeMes = el('span', { class: 'fin-fixo fin-mes-nome', role: 'button', tabindex: '0', title: 'Escolher outro mês e ano', text: MESES[mes.mes] + ' ' + mes.ano + ' ▾', style: 'cursor:pointer' });
+      cartao.appendChild(el('div', { class: 'fin-mes' }, [ant, nomeMes, prox]));
+      /* tocar no mês abre a escolha direta de ano e mês (sem o calendário dos dias) */
+      var painelMes = el('div', { style: 'display:none;margin:12px 0 4px' });
+      var anoEscolha = mes.ano;
+      function desenharPainel() {
+        painelMes.textContent = '';
+        var maisAno = function (d, rot) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: rot, 'aria-label': d < 0 ? 'Ano anterior' : 'Próximo ano' }); b.addEventListener('click', function () { anoEscolha += d; desenharPainel(); }); return b; };
+        painelMes.appendChild(el('div', { class: 'fin-mes' }, [maisAno(-1, '‹'), el('span', { class: 'fin-fixo fin-mes-nome', text: String(anoEscolha) }), maisAno(1, '›')]));
+        var grade = el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:8px' });
+        MESES.forEach(function (nome, m) {
+          var atual = anoEscolha === mes.ano && m === mes.mes;
+          var c = el('div', { role: 'button', tabindex: '0', text: nome, style: 'padding:12px 4px;text-align:center;cursor:pointer;border-bottom:1px solid rgba(31,95,163,.5);font-weight:700;color:' + (atual ? '#B5852F' : '#1034A6') });
+          var ir = function () { mes = { ano: anoEscolha, mes: m }; carregar(); };
+          c.addEventListener('click', ir);
+          c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ir(); } });
+          grade.appendChild(c);
+        });
+        painelMes.appendChild(grade);
+      }
+      nomeMes.addEventListener('click', function () {
+        if (painelMes.style.display === 'none') { anoEscolha = mes.ano; desenharPainel(); painelMes.style.display = ''; } else painelMes.style.display = 'none';
+      });
+      nomeMes.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); nomeMes.click(); } });
+      cartao.appendChild(painelMes);
       cartao.appendChild(divisa());
 
       /* total do mês em destaque e, embaixo, cada área com a sua porcentagem */
