@@ -79,7 +79,7 @@
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     var FORMAS = ['Pix', 'Cartão de crédito', 'Cartão de débito', 'Dinheiro', 'Transferência', 'Outro'];
-    var nomeAdmin = '', userId = '', areas = [], entradas = [], todas = [], clientes = [], mes = null, abertasGraficos = [], escopoGraf = 'ano';
+    var nomeAdmin = '', userId = '', areas = [], entradas = [], todas = [], servicosCad = [], clientes = [], mes = null, abertasGraficos = [], escopoGraf = 'ano';
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
@@ -132,7 +132,8 @@
         C.from('fin_entradas').select('*').gte('data', iv.ini).lt('data', iv.fim).order('data').order('criado_em'),
         C.from('clientes').select('id,nome').order('nome'),
         C.from('cliente_codigos').select('cliente_id,codigo'),
-        C.from('fin_entradas').select('data,valor,area_id,produto,cliente_nome,forma_pagamento').order('data').range(0, 9999)
+        C.from('fin_entradas').select('data,valor,area_id,produto,cliente_nome,forma_pagamento').order('data').range(0, 9999),
+        C.from('fin_servicos').select('*').order('nome')
       ]).then(function (r) {
         if (r[0].error || r[1].error) {
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Não consegui abrir o Financeiro (as tabelas ainda não foram criadas no Supabase).' })]));
@@ -142,6 +143,7 @@
         var codigos = {}; ((r[3] && r[3].data) || []).forEach(function (c) { codigos[c.cliente_id] = c.codigo; });
         clientes.forEach(function (c) { c.codigo = codigos[c.id] || ''; });
         todas = (r[4] && r[4].data) || [];
+        servicosCad = (r[5] && !r[5].error && r[5].data) || [];
         tela();
       });
     }
@@ -157,10 +159,12 @@
 
       var novo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Entrada' });
       var gerir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Áreas' });
+      var servs = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Serviços' });
       var areaForm = el('div');
       novo.addEventListener('click', function () { formEntrada(areaForm, null); });
       gerir.addEventListener('click', function () { formAreas(areaForm); });
-      cartao.appendChild(el('div', { class: 'portal-acoes' }, [gerir, novo]));
+      servs.addEventListener('click', function () { formServicos(areaForm); });
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [servs, gerir, novo]));
       cartao.appendChild(areaForm);
 
       /* mês: setas dos lados e o nome no meio */
@@ -613,26 +617,26 @@
         return clientes.map(function (c) { return { valor: c.nome, rotulo: (c.codigo ? c.codigo + ' · ' : '') + c.nome, busca: (c.codigo + ' ' + c.nome).toLowerCase(), id: c.id }; });
       }, function (i) { cliente.value = i.valor; escolhido = i.id; }, false);
       var produto = el('input', { type: 'text', autocomplete: 'off', value: e ? (e.produto || '') : '' });
-      var servicos = window.Carrinho.servicos;
       var valor = el('input', { type: 'text', inputmode: 'decimal', placeholder: '0,00', value: e ? String(e.valor).replace('.', ',') : '' });
-      /* serviço que já existe no site puxa o valor dele, escolhido na lista ou escrito por inteiro. O valor continua editável: só é trocado
-         se estiver vazio ou ainda for o que o serviço anterior colocou (se você já digitou outro, ele não mexe) */
-      var valorAuto = '';
-      function aplicarPreco(titulo) {
-        var t = String(titulo || '').trim().toLowerCase();
-        var k = Object.keys(servicos).filter(function (x) { return !/^teste/.test(x) && servicos[x].titulo.toLowerCase() === t; })[0];
-        if (!k) return;
-        var novo = String(servicos[k].centavos / 100).replace('.', ',');
-        if (!valor.value.trim() || valor.value === valorAuto) { valor.value = novo; valorAuto = novo; }
-      }
-      var blocoServico = combo(produto, function () {
-        return Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).map(function (k) { return { valor: servicos[k].titulo, rotulo: servicos[k].titulo, busca: servicos[k].titulo.toLowerCase() }; });
-      }, function (i) { produto.value = i.valor; aplicarPreco(i.valor); }, true);
-      produto.addEventListener('input', function () { aplicarPreco(produto.value); });
-      produto.addEventListener('change', function () { aplicarPreco(produto.value); });
       var area = el('select');
       area.appendChild(el('option', { value: '', text: 'Sem área' }));
       areas.forEach(function (a) { var o = el('option', { value: a.id, text: a.nome }); if (e && e.area_id === a.id) o.selected = true; area.appendChild(o); });
+      /* serviço cadastrado (botão Serviços) ou do site: puxa o valor e a área dele, escolhido na lista ou escrito por inteiro. Valor e área continuam
+         editáveis: só são trocados se estiverem vazios ou ainda forem o que o serviço anterior colocou (se você já mexeu, ele não mexe) */
+      var valorAuto = '', areaAuto = '';
+      function aplicarServico(titulo) {
+        var t = String(titulo || '').trim().toLowerCase();
+        var sv = todosServicos().filter(function (x) { return x.nome.toLowerCase() === t; })[0];
+        if (!sv) return;
+        var novoV = sv.valor != null ? String(sv.valor).replace('.', ',') : '';
+        if (novoV && (!valor.value.trim() || valor.value === valorAuto)) { valor.value = novoV; valorAuto = novoV; }
+        if (sv.area_id && (!area.value || area.value === areaAuto)) { area.value = sv.area_id; areaAuto = sv.area_id; }
+      }
+      var blocoServico = combo(produto, function () {
+        return todosServicos().map(function (x) { return { valor: x.nome, rotulo: x.nome + (x.valor != null ? ' · ' + moeda(x.valor) : ''), busca: x.nome.toLowerCase() }; });
+      }, function (i) { produto.value = i.valor; aplicarServico(i.valor); }, true);
+      produto.addEventListener('input', function () { aplicarServico(produto.value); });
+      produto.addEventListener('change', function () { aplicarServico(produto.value); });
       var forma = el('select');
       forma.appendChild(el('option', { value: '', text: 'Não informada' }));
       FORMAS.forEach(function (f) { var o = el('option', { value: f, text: f }); if (e && e.forma_pagamento === f) o.selected = true; forma.appendChild(o); });
@@ -676,6 +680,71 @@
         });
       });
       destino.appendChild(form);
+    }
+
+    /* serviços cadastrados por você + os do site que ainda não estão na sua lista (esses só trazem o valor) */
+    function todosServicos() {
+      var lista = servicosCad.map(function (x) { return { nome: x.nome, valor: x.valor, area_id: x.area_id }; });
+      var tem = {}; lista.forEach(function (x) { tem[x.nome.toLowerCase()] = true; });
+      var site = window.Carrinho.servicos;
+      Object.keys(site).filter(function (k) { return !/^teste/.test(k); }).forEach(function (k) {
+        if (!tem[site[k].titulo.toLowerCase()]) lista.push({ nome: site[k].titulo, valor: site[k].centavos / 100, area_id: null });
+      });
+      return lista;
+    }
+
+    /* cadastro de serviços: nome, valor e área. Ao lançar uma entrada, escolher o serviço já preenche o valor e a área */
+    function formServicos(destino) {
+      destino.textContent = '';
+      var porArea = {}; areas.forEach(function (a) { porArea[a.id] = a; });
+      var caixa = el('div', { style: 'margin-top:18px' }, [el('p', { class: 'portal-item-titulo', text: 'Serviços' }),
+        el('p', { text: 'Cadastre cada serviço com o valor e a área. Na hora de lançar uma entrada, ao escolher o serviço, o valor e a área já vêm preenchidos.' })]);
+      var msg = el('p', { class: 'portal-msg' });
+      function aviso(r) { if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return false; } return true; }
+      var editando = null;
+      servicosCad.forEach(function (x) {
+        var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
+        var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Apagar' });
+        editar.addEventListener('click', function () { editando = x; nome.value = x.nome; valor.value = String(x.valor).replace('.', ','); area.value = x.area_id || ''; add.textContent = 'Salvar'; nome.focus(); });
+        apagar.addEventListener('click', function () {
+          if (!window.confirm('Apagar o serviço "' + x.nome + '"? As entradas já lançadas não mudam.')) return;
+          C.from('fin_servicos').delete().eq('id', x.id).then(function (r) { if (aviso(r)) carregar(); });
+        });
+        caixa.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+          el('div', {}, [el('span', { class: 'portal-item-titulo', text: x.nome }),
+            el('span', { class: 'portal-item-data', text: moeda(x.valor) + (x.area_id && porArea[x.area_id] ? ' · ' + porArea[x.area_id].nome : '') })]),
+          el('div', { class: 'portal-acoes' }, [editar, apagar])])]));
+      });
+      if (!servicosCad.length) caixa.appendChild(el('p', { text: 'Nenhum serviço cadastrado ainda.' }));
+      var nome = el('input', { type: 'text', placeholder: 'Nome do serviço' });
+      var valor = el('input', { type: 'text', inputmode: 'decimal', placeholder: 'Valor (0,00)' });
+      var area = el('select');
+      area.appendChild(el('option', { value: '', text: 'Sem área' }));
+      areas.forEach(function (a) { area.appendChild(el('option', { value: a.id, text: a.nome })); });
+      var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
+      var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
+      fechar.addEventListener('click', function () { destino.textContent = ''; });
+      /* traz de uma vez os serviços do site (os que ainda não estão cadastrados), na área Astrologia */
+      var trazer = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trazer os serviços do site' });
+      trazer.addEventListener('click', function () {
+        var astro = areas.filter(function (a) { return /astrolog/i.test(a.nome); })[0];
+        var site = todosServicos().filter(function (x) { return !servicosCad.some(function (c) { return c.nome.toLowerCase() === x.nome.toLowerCase(); }); });
+        if (!site.length) { P.mensagem(msg, 'Os serviços do site já estão na sua lista.', 'ok'); return; }
+        C.from('fin_servicos').insert(site.map(function (x) { return { nome: x.nome, valor: x.valor, area_id: astro ? astro.id : null }; })).then(function (r) { if (aviso(r)) carregar(); });
+      });
+      var f = el('form', { style: 'margin-top:14px' }, [el('label', { text: 'Nome' }), nome, el('label', { text: 'Valor (R$)' }), valor, el('label', { text: 'Área' }), area,
+        msg, el('div', { class: 'portal-acoes' }, [add, trazer, fechar])]);
+      f.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var v = lerValor(valor.value);
+        if (!nome.value.trim()) { P.mensagem(msg, 'Escreva o nome do serviço.', 'erro'); return; }
+        if (v == null) { P.mensagem(msg, 'Digite o valor (por exemplo 135,00).', 'erro'); return; }
+        var reg = { nome: nome.value.trim(), valor: v, area_id: area.value || null };
+        var req = editando ? C.from('fin_servicos').update(reg).eq('id', editando.id) : C.from('fin_servicos').insert(reg);
+        req.then(function (r) { if (aviso(r)) carregar(); });
+      });
+      caixa.appendChild(f);
+      destino.appendChild(caixa);
     }
 
     function formAreas(destino) {
