@@ -26,15 +26,15 @@
 
   var style = document.createElement("style");
   style.textContent =
-    ".sidemenu-toggle{position:fixed;top:14px;left:14px;z-index:1001;width:42px;height:42px;border-radius:10px;border:1px solid rgba(181,133,47,.65);background:rgba(10,19,48,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}" +
-    ".sidemenu-toggle:hover{border-color:#B5852F;background:rgba(10,19,48,.88)}" +
-    ".cart-toggle{position:fixed;top:14px;right:14px;z-index:1001;width:42px;height:42px;border-radius:10px;border:1px solid rgba(181,133,47,.65);background:rgba(10,19,48,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#f1e6c6;text-decoration:none}" +
-    ".cart-toggle:hover{border-color:#B5852F;background:rgba(10,19,48,.88)}" +
-    ".cart-toggle svg{width:22px;height:22px}" +
+    ".sidemenu-toggle{position:fixed;top:14px;left:14px;z-index:1001;width:42px;height:42px;border:0;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}" +
+    ".sidemenu-toggle:hover span,.sidemenu-toggle:hover span::before,.sidemenu-toggle:hover span::after{background:#8f6a24!important}" +
+    ".cart-toggle{position:fixed;top:14px;right:14px;z-index:1001;width:42px;height:42px;border:0;background:none;display:flex;align-items:center;justify-content:center;color:#B5852F;text-decoration:none}" +
+    ".cart-toggle:hover{color:#8f6a24}" +
+    ".cart-toggle svg{width:30px;height:30px}" +
     ".cart-count{position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#A03E25;color:#fff;font:700 12px/19px sans-serif;text-align:center}" +
-    ".sidemenu-toggle span,.sidemenu-toggle span::before,.sidemenu-toggle span::after{content:\"\";display:block;width:20px;height:2px;background:#f1e6c6;position:relative}" +
-    ".sidemenu-toggle span::before{position:absolute;top:-6px}" +
-    ".sidemenu-toggle span::after{position:absolute;top:6px}" +
+    ".sidemenu-toggle span,.sidemenu-toggle span::before,.sidemenu-toggle span::after{content:\"\";display:block;width:24px;height:3px;background:#B5852F;position:relative}" +
+    ".sidemenu-toggle span::before{position:absolute;top:-8px}" +
+    ".sidemenu-toggle span::after{position:absolute;top:8px}" +
     ".sidemenu-overlay{position:fixed;inset:0;background:rgba(5,9,25,.6);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:1002}" +
     ".sidemenu-overlay.is-open{opacity:1;pointer-events:auto}" +
     ".sidemenu-panel{position:fixed;top:0;left:0;bottom:0;overflow:hidden;width:290px;max-width:84vw;transform:translateX(-100%);transition:transform .25s ease;z-index:1003;display:flex;flex-direction:column;--moldura-m:.28;padding:calc(130px*var(--moldura-m) + 6px) calc(80px*var(--moldura-m) + 8px) calc(130px*var(--moldura-m) + 6px);font-family:'Cinzel',Georgia,serif;border-right:1px solid transparent;" +
@@ -94,7 +94,7 @@
   cart.className = "cart-toggle";
   cart.href = "/carrinho.html";
   cart.setAttribute("aria-label", "Meu carrinho");
-  cart.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h3l2.4 12.2a1.5 1.5 0 0 0 1.5 1.2h8.7a1.5 1.5 0 0 0 1.5-1.1L21 8H6"/><circle cx="9.5" cy="20" r="1.4"/><circle cx="17.5" cy="20" r="1.4"/></svg>';
+  cart.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1.5 3h3.2l.7 2.5H22l-2.2 8.2a1.6 1.6 0 0 1-1.5 1.2H8.3l.4 1.6H19v2.2H7.2L4 5.2H1.5z"/><circle cx="9" cy="21" r="1.6"/><circle cx="17.5" cy="21" r="1.6"/></svg>';
   // a página do carrinho chama isto quando a pessoa tira um serviço
   window.atualizarContadorCarrinho = function () {
     var antigo = cart.querySelector(".cart-count");

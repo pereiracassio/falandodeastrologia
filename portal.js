@@ -395,17 +395,19 @@
      abertas = lista (compartilhada) das chaves abertas; o que está aberto fica guardado no endereço (#abertas=dados,atividades) e sobrevive ao recarregar. */
   function sanfona(abertas, chave, titulo, filhos) {
     filhos.forEach(function (f) { var h2 = f.querySelector && f.querySelector(':scope > h2'); if (h2) h2.remove(); }); /* o título agora é a barra */
-    var corpo = el('div', {}, filhos);
+    var corpo = el('div', { class: 'sanfona-corpo' }, filhos);
     var sinal = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif' });
     var barra = el('button', { type: 'button' }, [el('span', { text: titulo }), sinal]);
+    /* sem quadro: uma linha em cima e outra embaixo; aberta, a de baixo desce para o fim do conteúdo e fecha a seção */
+    var caixa = el('div', { class: 'sanfona', style: 'border-top:2px solid #1F5FA3;border-bottom:2px solid #1F5FA3;margin:0' }, [barra, corpo]);
+    barra.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;background:transparent;border:0;border-radius:0;cursor:pointer;padding:14px 2px;' +
+      'font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:#A03E25;margin:0';
     function pintar() {
       var aberta = abertas.indexOf(chave) >= 0;
       corpo.style.display = aberta ? '' : 'none';
+      corpo.style.paddingBottom = aberta ? '10px' : '';
       sinal.textContent = aberta ? '−' : '+';
       barra.setAttribute('aria-expanded', aberta ? 'true' : 'false');
-      barra.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;background:transparent;border-radius:12px;cursor:pointer;' +
-        'font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:#A03E25;margin:0 0 14px;' +
-        (aberta ? 'border:3px solid #1F5FA3;padding:12px 16px' : 'border:1px solid #1F5FA3;padding:14px 18px');
     }
     barra.addEventListener('click', function () {
       var i = abertas.indexOf(chave);
@@ -414,7 +416,7 @@
       pintar();
     });
     pintar();
-    return el('div', {}, [barra, corpo]);
+    return caixa;
   }
   function guardarPasta(chave, pastaId) { return client.from('drive_pastas').upsert({ chave: chave, pasta_id: pastaId }, { onConflict: 'chave' }); }
   function botaoPasta(texto, aoClicar, sec) {

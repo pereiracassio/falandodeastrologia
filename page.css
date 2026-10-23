@@ -97,21 +97,21 @@ body:has(.pagina-papiro)::before,body:has(.pagina-papiro)::after{display:none}
 .cab-papiro{text-align:center;margin:0 auto 6px;max-width:700px}
 .cab-logo{display:block;margin:0 auto;max-width:270px}
 .cab-logo img{display:block;width:100%;height:auto}
-.cab-nav{display:flex;border:1.5px solid #1034A6;margin:16px 0 0;font:700 13px 'Cinzel',serif;letter-spacing:.03em}
+.cab-nav{display:flex;border:0;margin:16px 0 0;font:700 13px 'Cinzel',serif;letter-spacing:.03em}
 .cab-nav a{flex:1;padding:9px 0;color:var(--terracota,#A03E25);text-decoration:none}
-.cab-nav a+a{border-left:1.5px solid #1034A6}
+.cab-nav a+a{border-left:2px solid #1F5FA3}
 .cab-nav a.atual{color:#B5852F}
 .cab-linha{border:0;height:2px;background:#1F5FA3;margin:16px 0 6px}
 /* menu e carrinho: peças pequenas de papiro, dentro da moldura, sem canto arredondado */
 html body:has(.pagina-papiro) .sidemenu-toggle,html body:has(.pagina-papiro) .cart-toggle{
   top:calc(130px*var(--moldura-m))!important;width:34px!important;height:34px!important;border-radius:0!important;background:none!important;
-  border:1px solid #1034A6!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;color:#1034A6!important}
+  border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;color:#B5852F!important}
 html body:has(.pagina-papiro) .sidemenu-toggle{left:calc(80px*var(--moldura-m) + 4px)!important}
 html body:has(.pagina-papiro) .cart-toggle{right:calc(80px*var(--moldura-m) + 4px)!important}
-html body:has(.pagina-papiro) .sidemenu-toggle span,html body:has(.pagina-papiro) .sidemenu-toggle span::before,html body:has(.pagina-papiro) .sidemenu-toggle span::after{background:#1034A6!important;width:16px!important;height:1.5px!important}
-html body:has(.pagina-papiro) .sidemenu-toggle span::before{top:-5px!important}
-html body:has(.pagina-papiro) .sidemenu-toggle span::after{top:5px!important}
-html body:has(.pagina-papiro) .cart-toggle svg{stroke:#1034A6;width:18px!important;height:18px!important}
+html body:has(.pagina-papiro) .sidemenu-toggle span,html body:has(.pagina-papiro) .sidemenu-toggle span::before,html body:has(.pagina-papiro) .sidemenu-toggle span::after{background:#B5852F!important;width:22px!important;height:3px!important}
+html body:has(.pagina-papiro) .sidemenu-toggle span::before{top:-7px!important}
+html body:has(.pagina-papiro) .sidemenu-toggle span::after{top:7px!important}
+html body:has(.pagina-papiro) .cart-toggle svg{stroke:none;fill:#B5852F;width:28px!important;height:28px!important}
 /* texto justificado; subtítulos sem linha, como no blog */
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"]{text-align:justify!important}
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"]{font-size:15px!important}
@@ -179,10 +179,10 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 .pagina-papiro #foto-sobre,.pagina-papiro [style*="border-radius: 50%"]{border-radius:50%!important}
 /* ABAS DO PORTAL = mesmo desenho do retângulo de três botões do topo (um bloco só, divisas internas); só muda a cor do texto: azul, e a selecionada em ocre.
    Azul egípcio ESCURO (#1034A6) em todas as linhas. */
-.pagina-papiro .portal-abas{display:flex;gap:0!important;border:1.5px solid #1034A6!important;margin:0 0 18px!important;padding:0!important}
-.pagina-papiro .portal-aba{flex:1 1 0;border:0!important;border-left:1.5px solid #1034A6!important;padding:9px 2px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;color:#1034A6!important;background:transparent!important}
+.pagina-papiro .portal-abas{display:flex;gap:0!important;border:0!important;margin:0 0 18px!important;padding:0!important}
+.pagina-papiro .portal-aba{flex:1 1 0;border:0!important;border-left:2px solid #1F5FA3!important;padding:9px 2px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;color:#1034A6!important;background:transparent!important}
 .pagina-papiro .portal-aba:first-child{border-left:0!important}
-.pagina-papiro .portal-aba.ativa{color:#B5852F!important;border-width:0!important;border-left-width:1.5px!important;padding:9px 2px!important}
+.pagina-papiro .portal-aba.ativa{color:#B5852F!important;border-width:0!important;border-left-width:2px!important;padding:9px 2px!important}
 .pagina-papiro .portal-aba.ativa:first-child{border-left-width:0!important}
 @media(min-width:701px){.pagina-papiro .portal-aba{font-size:clamp(13px,1.1vw,17px)!important;padding:clamp(9px,.9vw,14px) 0!important}}
 /* botões não mexem nem encolhem quando o mouse passa: só a cor muda */
@@ -197,8 +197,8 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 /* barra do painel e do aluno (Aplicações, Alunos, Clientes..., Sair): o mesmo retângulo dividido, com a linha embaixo */
 .pagina-papiro .portal-topo{position:relative;margin-bottom:36px!important}
 .pagina-papiro .portal-topo::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:2px;background:#1F5FA3}
-.pagina-papiro .portal-topo .portal-grupo{display:flex!important;gap:0!important;flex-wrap:nowrap!important;border:1.5px solid #1034A6;max-width:100%;overflow-x:auto}
-.pagina-papiro .portal-topo .portal-grupo>*{flex:1 1 auto;border:0!important;border-left:1.5px solid #1034A6!important;padding:9px 14px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;white-space:nowrap;background:transparent!important;color:#1034A6!important;text-align:center;box-shadow:none!important}
+.pagina-papiro .portal-topo .portal-grupo{display:flex!important;gap:0!important;flex-wrap:nowrap!important;border:0;max-width:100%;overflow-x:auto}
+.pagina-papiro .portal-topo .portal-grupo>*{flex:1 1 auto;border:0!important;border-left:2px solid #1F5FA3!important;padding:9px 14px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;white-space:nowrap;background:transparent!important;color:#1034A6!important;text-align:center;box-shadow:none!important}
 .pagina-papiro .portal-topo .portal-grupo>*:first-child{border-left:0!important}
 .pagina-papiro .portal-topo .portal-grupo>[aria-current="page"]{color:#B5852F!important}
 @media(min-width:701px){.pagina-papiro .portal-topo .portal-grupo>*{font-size:clamp(13px,1.1vw,17px)!important}}
@@ -248,3 +248,7 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 html body .pagina-papiro .portal-btn-meet{display:flex!important;align-items:center;justify-content:center;gap:12px;background:transparent!important;border:0!important;color:#16233F!important;padding:4px 0!important}
 .pagina-papiro .portal-btn-meet img{display:block;width:40px;height:40px}
 html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important;color:#A03E25!important}
+/* sanfona sem quadro: o conteúdo de dentro não repete a linha de cima */
+.pagina-papiro .sanfona-corpo .portal-cartao{border-top:0!important;padding-top:6px!important}
+.pagina-papiro .sanfona-corpo>*:first-child{margin-top:0}
+.pagina-papiro .sanfona+.sanfona{border-top:0!important}

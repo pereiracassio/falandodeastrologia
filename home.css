@@ -162,9 +162,9 @@ html,body{max-width:100%;overflow-x:hidden}
 .barra-wrap{max-width:460px;margin:18px auto 28px;padding:0 4vw;filter:drop-shadow(0 6px 8px rgba(70,45,15,.3))}
 .barra-topo{padding:18px 7% 16px;background:var(--papiro-fundo);
   clip-path:polygon(0 4%,4% 0,18% 2%,36% 0,55% 2.4%,74% 0,92% 2%,100% 4%,98.6% 24%,100% 42%,98.8% 62%,100% 80%,99% 96%,92% 100%,78% 97.6%,60% 100%,40% 97.8%,20% 100%,5% 98%,0 96%,1.4% 76%,0 56%,1.2% 34%,0 18%)}
-.cab-nav{display:flex;border:1.5px solid #1034A6;margin:6px 0 0;font:700 13px 'Cinzel',serif;letter-spacing:.03em;text-align:center}
+.cab-nav{display:flex;border:0;margin:6px 0 0;font:700 13px 'Cinzel',serif;letter-spacing:.03em;text-align:center}
 .cab-nav a{flex:1;padding:9px 0;color:var(--terracota);text-decoration:none}
-.cab-nav a+a{border-left:1.5px solid #1034A6}
+.cab-nav a+a{border-left:2px solid #1F5FA3}
 .cab-nav a.atual{color:#B5852F}
 .cab-linha{border:0;height:2px;background:#1F5FA3;margin:14px 0 12px}
 .barra-topo .social-bar{margin:0}
