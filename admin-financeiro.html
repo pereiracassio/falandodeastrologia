@@ -398,10 +398,21 @@
       var produto = el('input', { type: 'text', autocomplete: 'off', value: e ? (e.produto || '') : '' });
       var servicos = window.Carrinho.servicos;
       var valor = el('input', { type: 'text', inputmode: 'decimal', placeholder: '0,00', value: e ? String(e.valor).replace('.', ',') : '' });
-      /* escolher um serviço do carrinho já sugere o valor dele (só se o valor ainda está vazio) */
+      /* serviço que já existe no site puxa o valor dele, escolhido na lista ou escrito por inteiro. O valor continua editável: só é trocado
+         se estiver vazio ou ainda for o que o serviço anterior colocou (se você já digitou outro, ele não mexe) */
+      var valorAuto = '';
+      function aplicarPreco(titulo) {
+        var t = String(titulo || '').trim().toLowerCase();
+        var k = Object.keys(servicos).filter(function (x) { return !/^teste/.test(x) && servicos[x].titulo.toLowerCase() === t; })[0];
+        if (!k) return;
+        var novo = String(servicos[k].centavos / 100).replace('.', ',');
+        if (!valor.value.trim() || valor.value === valorAuto) { valor.value = novo; valorAuto = novo; }
+      }
       var blocoServico = combo(produto, function () {
-        return Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).map(function (k) { return { valor: servicos[k].titulo, rotulo: servicos[k].titulo, busca: servicos[k].titulo.toLowerCase(), centavos: servicos[k].centavos }; });
-      }, function (i) { produto.value = i.valor; if (!valor.value.trim()) valor.value = String(i.centavos / 100).replace('.', ','); }, true);
+        return Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).map(function (k) { return { valor: servicos[k].titulo, rotulo: servicos[k].titulo, busca: servicos[k].titulo.toLowerCase() }; });
+      }, function (i) { produto.value = i.valor; aplicarPreco(i.valor); }, true);
+      produto.addEventListener('input', function () { aplicarPreco(produto.value); });
+      produto.addEventListener('change', function () { aplicarPreco(produto.value); });
       var area = el('select');
       area.appendChild(el('option', { value: '', text: 'Sem área' }));
       areas.forEach(function (a) { var o = el('option', { value: a.id, text: a.nome }); if (e && e.area_id === a.id) o.selected = true; area.appendChild(o); });
