@@ -16,6 +16,26 @@
   <link rel="stylesheet" href="portal.css?v=12">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=17">
+  <style>
+    /* tela do Financeiro: mesma ideia do Astro Hellenic (total em destaque, áreas com porcentagem, lista de linhas), nas regras do site:
+       sem fundo nem canto redondo, contorno azul egípcio, Cinzel no que é fixo e letra à mão no que a pessoa escreve */
+    .fin-fixo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
+    .fin-divisa{border:0;border-top:1px solid #1F5FA3;margin:14px 0}
+    .fin-mes{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .fin-mes-nome{font-size:18px;font-weight:700;color:#A03E25;text-align:center}
+    .fin-rotulo{font-size:13px;color:#16233F;letter-spacing:.04em}
+    .fin-total{font-size:30px;font-weight:700;color:#A03E25;margin:2px 0 10px}
+    .fin-area{display:flex;justify-content:space-between;gap:12px;font-size:15px;padding:6px 0;border-bottom:1px solid rgba(31,95,163,.5);color:#16233F}
+    .fin-area:last-of-type{border-bottom:0}
+    .fin-pct{opacity:.75}
+    .fin-area strong{color:#1034A6;font-size:14px}
+    .fin-linha{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(31,95,163,.5);cursor:pointer}
+    .fin-linha:hover .fin-nome{color:#A03E25}
+    .fin-data{font-size:12px;opacity:.85}
+    .fin-nome{font-size:16px;font-weight:700;color:#1034A6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fin-det{font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fin-valor{font-size:14px;font-weight:700;white-space:nowrap;color:#16233F}
+  </style>
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -105,16 +125,29 @@
       app.appendChild(topo(nomeAdmin));
       var porArea = {}; areas.forEach(function (a) { porArea[a.id] = a; });
       var total = entradas.reduce(function (s, e) { return s + Number(e.valor || 0); }, 0);
+      function divisa() { return el('hr', { class: 'fin-divisa' }); }
 
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Entradas' })]);
 
-      var novo = el('button', { type: 'button', class: 'portal-btn', text: '+ Entrada' });
+      var novo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Entrada' });
       var gerir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Áreas' });
       var areaForm = el('div');
       novo.addEventListener('click', function () { formEntrada(areaForm, null); });
       gerir.addEventListener('click', function () { formAreas(areaForm); });
-      cartao.appendChild(el('div', { class: 'portal-acoes' }, [novo, gerir]));
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [gerir, novo]));
       cartao.appendChild(areaForm);
+
+      /* mês: setas dos lados e o nome no meio */
+      var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Mês anterior' });
+      var prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo mês' });
+      function mover(d) { mes.mes += d; if (mes.mes < 0) { mes.mes = 11; mes.ano--; } if (mes.mes > 11) { mes.mes = 0; mes.ano++; } carregar(); }
+      ant.addEventListener('click', function () { mover(-1); });
+      prox.addEventListener('click', function () { mover(1); });
+      cartao.appendChild(divisa());
+      cartao.appendChild(el('div', { class: 'fin-mes' }, [ant, el('span', { class: 'fin-fixo fin-mes-nome', text: MESES[mes.mes] + ' ' + mes.ano }), prox]));
+      cartao.appendChild(divisa());
+
+      /* total do mês em destaque e, embaixo, cada área com a sua porcentagem */
       var pdfMes = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'PDF deste mês' });
       var pdfTudo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'PDF de todos os meses' });
       var msgPdf = el('p', { class: 'portal-msg' });
@@ -124,38 +157,33 @@
       }
       pdfMes.addEventListener('click', function () { baixar(false); });
       pdfTudo.addEventListener('click', function () { baixar(true); });
-      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:10px' }, [pdfMes, pdfTudo]));
-      cartao.appendChild(msgPdf);
-
-      var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Mês anterior' });
-      var prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo mês' });
-      function mover(d) { mes.mes += d; if (mes.mes < 0) { mes.mes = 11; mes.ano--; } if (mes.mes > 11) { mes.mes = 0; mes.ano++; } carregar(); }
-      ant.addEventListener('click', function () { mover(-1); });
-      prox.addEventListener('click', function () { mover(1); });
-      cartao.appendChild(el('div', { class: 'portal-item-linha', style: 'margin:18px 0 6px' }, [ant,
-        el('span', { class: 'portal-item-titulo', text: MESES[mes.mes] + ' ' + mes.ano }), prox]));
-
-      cartao.appendChild(el('div', { class: 'portal-item' }, [el('span', { class: 'portal-item-data', text: 'Total do mês' }),
-        el('span', { class: 'portal-item-titulo', style: 'font-size:24px;color:#A03E25', text: moeda(total) })]));
-
+      cartao.appendChild(el('div', { class: 'fin-rotulo fin-fixo', text: 'Total do mês' }));
+      cartao.appendChild(el('div', { class: 'fin-total fin-fixo', text: moeda(total) }));
       var sub = {};
       entradas.forEach(function (e) { var k = e.area_id && porArea[e.area_id] ? e.area_id : '_sem'; sub[k] = (sub[k] || 0) + Number(e.valor || 0); });
       Object.keys(sub).forEach(function (k) {
         var nome = k === '_sem' ? 'Sem área' : porArea[k].nome, pct = total > 0 ? Math.round(sub[k] / total * 100) : 0;
-        cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-          el('span', { text: nome + ' (' + pct + '%)' }), el('strong', { text: moeda(sub[k]) })])]));
+        cartao.appendChild(el('div', { class: 'fin-area' }, [
+          el('span', {}, [document.createTextNode(nome + ' '), el('span', { class: 'fin-pct', text: '(' + pct + '%)' })]),
+          el('strong', { class: 'fin-fixo', text: moeda(sub[k]) })]));
       });
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [pdfMes, pdfTudo]));
+      cartao.appendChild(msgPdf);
+      cartao.appendChild(divisa());
 
+      /* lista: data, cliente com o detalhe embaixo e valor; tocar na linha abre a entrada */
       if (!entradas.length) cartao.appendChild(el('p', { text: 'Nenhuma entrada em ' + MESES[mes.mes] + ' de ' + mes.ano + '.' }));
       entradas.forEach(function (e) {
         var area = e.area_id && porArea[e.area_id] ? porArea[e.area_id].nome : '';
         var det = [area, [e.produto, e.observacao].filter(Boolean).join(' — '), e.forma_pagamento].filter(Boolean).join(' · ');
-        var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Abrir' });
-        abrir.addEventListener('click', function () { formEntrada(areaForm, e); areaForm.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-        cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-          el('div', {}, [el('span', { class: 'portal-item-titulo', text: dataBR(e.data) + ' · ' + (e.cliente_nome || 'Sem cliente') }),
-            el('span', { class: 'portal-item-data', text: det })]),
-          el('div', { class: 'portal-acoes' }, [el('strong', { text: moeda(e.valor) }), abrir])])]));
+        var linha = el('div', { class: 'fin-linha', role: 'button', tabindex: '0' }, [
+          el('div', { class: 'fin-data fin-fixo', text: dataBR(e.data) }),
+          el('div', { style: 'min-width:0' }, [el('div', { class: 'fin-nome', text: e.cliente_nome || 'Sem cliente' }), el('div', { class: 'fin-det', text: det })]),
+          el('div', { class: 'fin-valor fin-fixo', text: moeda(e.valor) })]);
+        function abrir() { formEntrada(areaForm, e); areaForm.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        linha.addEventListener('click', abrir);
+        linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+        cartao.appendChild(linha);
       });
       app.appendChild(cartao);
     }
