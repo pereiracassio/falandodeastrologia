@@ -225,3 +225,26 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 @media(max-width:700px){.pagina-papiro{--bpx:10px}}
 .pagina-papiro .portal-btn:not(.portal-grupo>*),.pagina-papiro .portal-btn:not(.portal-grupo>*):hover,.pagina-papiro .portal-btn:not(.portal-grupo>*):active,.pagina-papiro .portal-btn:not(.portal-grupo>*):focus{padding:12px var(--bpx)!important;border-width:1.5px!important}
 .pagina-papiro .blog-botao,.pagina-papiro .blog-botao:hover,.pagina-papiro .blog-botao:active{border-width:1.5px!important;padding:12px 24px!important;transform:none!important}
+
+/* ===== Alunos e Seu espaço mais leves (23/10/2026, pedido do astrólogo) ===== */
+/* sem retângulos: cada parte é separada só por uma linha, como nas páginas de serviço e nas postagens */
+.pagina-papiro .portal-cartao{border:0!important;border-top:1px solid #1F5FA3!important;padding:26px 0 8px!important;margin:0 0 10px!important}
+.pagina-papiro .portal-topo::after{display:none}
+.pagina-papiro .portal-topo{margin-bottom:26px!important}
+.pagina-papiro .portal-topo+.portal-cartao,.pagina-papiro #app>.portal-cartao:first-child{border-top:0!important;padding-top:0!important}
+.pagina-papiro .portal-cartao h2{font-size:15px;margin:0 0 12px}
+.pagina-papiro .portal-item{padding:16px 0}
+/* botões com preenchimento: continuam como eram, só com menos espaço entre a letra e a borda */
+.pagina-papiro{--bpx:10px}
+@media(max-width:700px){.pagina-papiro{--bpx:8px}}
+html body .pagina-papiro .portal-btn:not(.portal-grupo>*),html body .pagina-papiro .portal-btn:not(.portal-grupo>*):hover{padding:5px var(--bpx)!important}
+/* botões só de contorno (Sair, Voltar, Baixar, Cancelar...): sem contorno, fica só a palavra */
+html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*),html body .pagina-papiro .portal-btn-perigo,
+html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;border:0!important;box-shadow:none!important;color:#1034A6!important;padding:6px 14px 6px 0!important}
+html body .pagina-papiro .portal-btn-perigo{color:#A03E25!important}
+html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*):hover,html body .pagina-papiro .portal-btn-perigo:hover,
+html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;box-shadow:none!important;color:#A03E25!important}
+/* Entrar no encontro/atendimento: o ícone do Meet em ocre (como o do WhatsApp) e a frase ao lado */
+html body .pagina-papiro .portal-btn-meet{display:flex!important;align-items:center;justify-content:center;gap:12px;background:transparent!important;border:0!important;color:#16233F!important;padding:4px 0!important}
+.pagina-papiro .portal-btn-meet img{display:block;width:40px;height:40px}
+html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important;color:#A03E25!important}

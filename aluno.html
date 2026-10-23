@@ -15,7 +15,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=18">
-  <link rel="stylesheet" href="page.css?v=48">
+  <link rel="stylesheet" href="page.css?v=49">
   <link rel="stylesheet" href="portal.css?v=13">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=17">
@@ -234,7 +234,7 @@
         }
         // link fixo do encontro semanal (Google Meet), acima das abas
         var meetLink = P.linkSeguro(aluno.meet_link);
-        if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetLink, target: '_blank', rel: 'noopener', text: 'Entrar no encontro (Google Meet)' }));
+        if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetLink, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
         P.client.from('itens').select('id,aluno_id,bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
