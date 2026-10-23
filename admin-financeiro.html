@@ -290,7 +290,9 @@
         ordem.sort();
         var grupos = ordem.map(function (k) { return porMes[k]; });
         var t0 = grupos[0], t1 = grupos[grupos.length - 1];
-        var periodo = grupos.length === 1 ? MESES[t0.mes] + ' de ' + t0.ano : MESES[t0.mes] + ' de ' + t0.ano + '\na ' + MESES[t1.mes] + ' de ' + t1.ano;
+        var periodo = grupos.length === 1 ? MESES[t0.mes] + ' de ' + t0.ano
+          : t0.ano === t1.ano ? MESES[t0.mes] + ' a ' + MESES[t1.mes] + ' de ' + t0.ano
+          : MESES[t0.mes] + ' de ' + t0.ano + ' a ' + MESES[t1.mes] + ' de ' + t1.ano;
         var comCapa = todos;
         return Promise.all([
           carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', function () { return !!(window.jspdf && window.jspdf.jsPDF); }),
@@ -298,7 +300,7 @@
           comCapa ? carregarScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', function () { return !!window.html2canvas; }) : null,
           comCapa ? carregarScript('capa.js?v=7', function () { return !!window.capaFolha; }) : null
         ]).then(function (x) {
-          return (comCapa ? capaComoImagem('Registro das entradas,\nmês a mês', periodo) : Promise.resolve(null)).then(function (capa) { return [x, capa]; });
+          return (comCapa ? capaComoImagem('Registro de entradas', periodo) : Promise.resolve(null)).then(function (capa) { return [x, capa]; });
         }).then(function (xc) {
           var x = xc[0], capa = xc[1];
           var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
