@@ -32,6 +32,9 @@
   function novoDoc(base64s) {
     var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
     FONTES.forEach(function (f, i) { doc.addFileToVFS(f[0], base64s[i]); doc.addFont(f[0], f[1], f[2]); });
+    /* o PDF não tem a fonte dos ícones astrológicos: eles saem como o NOME ("Sol", "Áries") em vez de quadradinho */
+    var limpa = function (s) { return Array.isArray(s) ? s.map(limpa) : (typeof s === 'string' ? window.portal.semIcones(s) : s); };
+    ['text', 'splitTextToSize', 'getTextWidth'].forEach(function (n) { var f = doc[n]; doc[n] = function (s) { var r = Array.prototype.slice.call(arguments); r[0] = limpa(s); return f.apply(doc, r); }; });
     return doc;
   }
 

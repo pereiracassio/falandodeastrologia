@@ -683,7 +683,41 @@
   /* "entrou por link de recuperação de senha" — o Supabase limpa o # logo depois de ler, então decide já no carregamento */
   var emRecuperacao = /type=recovery/.test(location.hash);
 
+  /* Ícones astrológicos (fonte AstroIcones, U+E000 a U+E020): paletaIcones(campo) põe um botão "Ícones" embaixo do campo; ele abre a fileira
+     de ícones e cada toque coloca o ícone onde está o cursor. semIcones(texto) troca os ícones pelo NOME (PDF e lugares sem a fonte). */
+  var NOMES_ICONES = ["Sol", "Lua", "Mercúrio", "Vênus", "Marte", "Júpiter", "Saturno", "Fortuna", "Espírito", "Necessidade", "Eros", "Coragem", "Vitória", "Nêmesis", "Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes", "Lunação pré-natal", "Nodo Norte", "Nodo Sul", "Ascendente", "Descendente", "Meio do Céu", "Fundo do Céu"];
+  function semIcones(t) { return String(t == null ? '' : t).replace(/[\uE000-\uE020]/g, function (c) { return NOMES_ICONES[c.charCodeAt(0) - 0xE000] + ' '; }); }
+  function paletaIcones(campo) {
+    if (!campo || campo.getAttribute('data-icones')) return;
+    campo.setAttribute('data-icones', '1');
+    var abre = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ícones' });
+    var fileira = el('div', { class: 'portal-acoes', style: 'gap:4px;margin:0 0 8px;display:none' });
+    NOMES_ICONES.forEach(function (nome, i) {
+      var ch = String.fromCharCode(0xE000 + i);
+      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', title: nome, 'aria-label': nome, text: ch });
+      b.style.cssText = 'min-width:44px;padding:6px 8px;font-size:24px;line-height:1;font-family:AstroIcones,sans-serif!important';
+      b.addEventListener('click', function () {
+        var t = campo.value, ini = campo.selectionStart == null ? t.length : campo.selectionStart, fim = campo.selectionEnd == null ? ini : campo.selectionEnd;
+        campo.value = t.slice(0, ini) + ch + t.slice(fim);
+        campo.focus(); campo.selectionStart = campo.selectionEnd = ini + 1;
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      fileira.appendChild(b);
+    });
+    abre.style.cssText = 'margin:-6px 0 10px';
+    abre.addEventListener('click', function () { var aberta = fileira.style.display !== 'none'; fileira.style.display = aberta ? 'none' : ''; abre.textContent = aberta ? 'Ícones' : 'Fechar ícones'; });
+    var pai = campo.parentNode; if (!pai) return;
+    pai.insertBefore(fileira, campo.nextSibling); pai.insertBefore(abre, campo.nextSibling);
+  }
+  /* põe a paleta em todo campo de texto grande (textarea) que aparecer dentro de "raiz", agora e depois (as telas são montadas por JS) */
+  function iconesNosCampos(raiz) {
+    function varrer(no) { if (no.nodeType !== 1) return; if (no.tagName === 'TEXTAREA') paletaIcones(no); Array.prototype.forEach.call(no.querySelectorAll ? no.querySelectorAll('textarea') : [], paletaIcones); }
+    varrer(raiz);
+    new MutationObserver(function (ms) { ms.forEach(function (m) { Array.prototype.forEach.call(m.addedNodes, varrer); }); }).observe(raiz, { childList: true, subtree: true });
+  }
+
   window.portal = {
+    paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
