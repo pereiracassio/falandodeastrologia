@@ -15,7 +15,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=52">
+  <link rel="stylesheet" href="page.css?v=53">
   <link rel="stylesheet" href="portal.css?v=14">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=17">
@@ -255,7 +255,7 @@
           var titulo = el('input', { type: 'text', id: 'it' + id + 'T', required: '' });
           var data = el('input', { type: 'date', id: 'it' + id + 'D' });
           var descricao = el('textarea', { id: 'it' + id + 'S', rows: '4', placeholder: o.placeholder });
-          var link = el('input', { type: 'url', id: 'it' + id + 'L', placeholder: 'https://drive.google.com/...', required: '' });
+          var link = el('input', { type: 'url', id: 'it' + id + 'L', placeholder: 'https://drive.google.com/... ou https://archive.org/...', required: '' });
           if (item) { titulo.value = item.titulo; data.value = item.data || ''; descricao.value = item.descricao || ''; link.value = item.link; }
           var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Salvar' });
           var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
@@ -266,7 +266,7 @@
             el('label', { for: 'it' + id + 'T', text: 'Título' }), titulo,
             el('label', { for: 'it' + id + 'D', text: 'Data (opcional)' }), data,
             el('label', { for: 'it' + id + 'S', text: 'Descrição (opcional)' }), descricao,
-            el('label', { for: 'it' + id + 'L', text: 'Link do Drive' }), link, P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email, 'aluno:' + aluno.id), msg,
+            el('label', { for: 'it' + id + 'L', text: o.bloco === 'materiais' ? 'Link (do Drive ou de outro site, como o Archive.org)' : 'Link do Drive' }), link, P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email, 'aluno:' + aluno.id), msg,
             el('div', { class: 'portal-acoes' }, [salvar, cancelar])
           ]);
           form.addEventListener('submit', function (ev) {

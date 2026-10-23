@@ -15,7 +15,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=52">
+  <link rel="stylesheet" href="page.css?v=53">
   <link rel="stylesheet" href="portal.css?v=14">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=17">
@@ -139,13 +139,19 @@
       if (item.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(item.data) }));
       var linha = el('div', { class: 'portal-item-linha' }, [titulo]);
       var player = bloco === 'gravacoes' && seguro ? P.playerGravacao(seguro, anotarAbertura) : null;
+      /* material que mora em outro site (livro de acesso livre, por exemplo): não é arquivo do Drive, então o aluno vê onde ele está e vai até lá */
+      var siteFora = '';
+      if (bloco === 'materiais' && seguro) {
+        try { var h = new URL(seguro).hostname.replace(/^www\./, ''); if (!/(^|\.)google\.com$/.test(h)) siteFora = h; } catch (e) { /* link inválido: abre normal */ }
+      }
       if (seguro && !player) {
-        var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : 'Abrir';
+        var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : siteFora ? 'Ir para a página' : 'Abrir';
         var abrir = el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto });
         abrir.addEventListener('click', anotarAbertura);
         linha.appendChild(abrir);
       }
       var caixa = el('div', { class: 'portal-item' }, [linha]);
+      if (siteFora) caixa.appendChild(el('p', { class: 'portal-descricao', text: 'Material disponível em ' + siteFora + '.' }));
       if (player) caixa.appendChild(player);
       if (item.descricao) caixa.appendChild(el('p', { class: 'portal-descricao', text: item.descricao }));
       return caixa;
