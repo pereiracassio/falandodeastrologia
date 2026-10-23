@@ -147,31 +147,22 @@
       ant.addEventListener('click', function () { mover(-1); });
       prox.addEventListener('click', function () { mover(1); });
       cartao.appendChild(divisa());
-      var nomeMes = el('span', { class: 'fin-fixo fin-mes-nome', role: 'button', tabindex: '0', title: 'Escolher outro mês e ano', text: MESES[mes.mes] + ' ' + mes.ano + ' ▾', style: 'cursor:pointer' });
-      cartao.appendChild(el('div', { class: 'fin-mes' }, [ant, nomeMes, prox]));
-      /* tocar no mês abre a escolha direta de ano e mês (sem o calendário dos dias) */
-      var painelMes = el('div', { style: 'display:none;margin:12px 0 4px' });
-      var anoEscolha = mes.ano;
-      function desenharPainel() {
-        painelMes.textContent = '';
-        var maisAno = function (d, rot) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: rot, 'aria-label': d < 0 ? 'Ano anterior' : 'Próximo ano' }); b.addEventListener('click', function () { anoEscolha += d; desenharPainel(); }); return b; };
-        painelMes.appendChild(el('div', { class: 'fin-mes' }, [maisAno(-1, '‹'), el('span', { class: 'fin-fixo fin-mes-nome', text: String(anoEscolha) }), maisAno(1, '›')]));
-        var grade = el('div', { style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:8px' });
-        MESES.forEach(function (nome, m) {
-          var atual = anoEscolha === mes.ano && m === mes.mes;
-          var c = el('div', { role: 'button', tabindex: '0', text: nome, style: 'padding:12px 4px;text-align:center;cursor:pointer;border-bottom:1px solid rgba(31,95,163,.5);font-weight:700;color:' + (atual ? '#B5852F' : '#1034A6') });
-          var ir = function () { mes = { ano: anoEscolha, mes: m }; carregar(); };
-          c.addEventListener('click', ir);
-          c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ir(); } });
-          grade.appendChild(c);
-        });
-        painelMes.appendChild(grade);
+      /* tocar no mês abre a lista nativa de mês e ano (rola para cima e para baixo), sem os dias: o campo de mês fica por cima do nome, invisível */
+      var nomeMes = el('span', { class: 'fin-fixo fin-mes-nome', text: MESES[mes.mes] + ' ' + mes.ano + ' ▾', style: 'position:relative;display:inline-block;cursor:pointer' });
+      var campoMes = el('input', { type: 'month', 'aria-label': 'Escolher mês e ano', value: mes.ano + '-' + String(mes.mes + 1).padStart(2, '0'),
+        style: 'position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;padding:0;border:0;font-size:16px' });
+      nomeMes.appendChild(campoMes);
+      /* o iPad avisa a cada giro da roda; só vai para o mês escolhido quando a roda fecha (ou 1,5 s sem mexer), senão a tela recarregava no meio da escolha */
+      var esperaMes = null;
+      function irParaMes() {
+        clearTimeout(esperaMes);
+        var m = /^(\d{4})-(\d{2})$/.exec(campoMes.value || '');
+        if (!m || (Number(m[1]) === mes.ano && Number(m[2]) - 1 === mes.mes)) return;
+        mes = { ano: Number(m[1]), mes: Number(m[2]) - 1 }; carregar();
       }
-      nomeMes.addEventListener('click', function () {
-        if (painelMes.style.display === 'none') { anoEscolha = mes.ano; desenharPainel(); painelMes.style.display = ''; } else painelMes.style.display = 'none';
-      });
-      nomeMes.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); nomeMes.click(); } });
-      cartao.appendChild(painelMes);
+      campoMes.addEventListener('change', function () { clearTimeout(esperaMes); esperaMes = setTimeout(irParaMes, 1500); });
+      campoMes.addEventListener('blur', irParaMes);
+      cartao.appendChild(el('div', { class: 'fin-mes' }, [ant, nomeMes, prox]));
       cartao.appendChild(divisa());
 
       /* total do mês em destaque e, embaixo, cada área com a sua porcentagem */
