@@ -352,37 +352,41 @@
     function formEntrada(destino, e) {
       destino.textContent = '';
       var data = el('input', { type: 'date', value: e ? String(e.data).slice(0, 10) : hojeISO() });
-      /* Cliente: campo comum (digita, apaga, escreve o que quiser); embaixo aparecem os cadastrados que combinam com o nome OU o código */
+      /* Cliente e Serviço (igual ao Financeiro do Astro Hellenic): campo comum onde se digita, apaga e escreve o que quiser; embaixo abre uma lista só de texto
+         com o que combina. No Serviço a lista abre já ao tocar no campo; no Cliente, enquanto você digita o nome ou o código. Escrever algo que não está na lista vale. */
+      function combo(input, itens, aoEscolher, mostrarTudoNoFoco) {
+        var lista = el('div', { style: 'display:none;margin:-8px 0 14px;border-top:2px solid #1F5FA3' });
+        function fechar() { lista.style.display = 'none'; lista.textContent = ''; }
+        function abrir() {
+          var t = input.value.trim().toLowerCase();
+          var achados = itens().filter(function (i) { return t ? (i.busca.indexOf(t) >= 0 && i.valor.toLowerCase() !== t) : mostrarTudoNoFoco; }).slice(0, 8);
+          lista.textContent = '';
+          if (!achados.length) { lista.style.display = 'none'; return; }
+          achados.forEach(function (i) {
+            var l = el('div', { text: i.rotulo, style: 'padding:10px 4px;border-bottom:1px solid rgba(31,95,163,.5);cursor:pointer;font-size:16px;font-weight:700' });
+            l.addEventListener('pointerdown', function (ev) { ev.preventDefault(); aoEscolher(i); fechar(); });
+            lista.appendChild(l);
+          });
+          lista.style.display = '';
+        }
+        input.addEventListener('input', abrir);
+        if (mostrarTudoNoFoco) input.addEventListener('focus', abrir);
+        input.addEventListener('blur', function () { setTimeout(fechar, 200); });
+        return [input, lista];
+      }
       var cliente = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Nome ou código', value: e ? (e.cliente_nome || '') : '' });
       var escolhido = e ? e.cliente_id : null;
-      var achadosCli = el('div', { class: 'portal-acoes', style: 'margin:-6px 0 14px' });
-      function miniBotao(texto, aoTocar) {
-        var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: texto });
-        b.style.padding = '6px 10px'; b.style.fontSize = '13px';
-        b.addEventListener('click', aoTocar);
-        return b;
-      }
-      function mostrarAchados() {
-        achadosCli.textContent = '';
-        var t = cliente.value.trim().toLowerCase();
-        if (!t) return;
-        clientes.filter(function (c) { return c.nome.toLowerCase() !== t && (c.codigo + ' ' + c.nome).toLowerCase().indexOf(t) >= 0; }).slice(0, 6).forEach(function (c) {
-          achadosCli.appendChild(miniBotao((c.codigo ? c.codigo + ' · ' : '') + c.nome, function () { cliente.value = c.nome; escolhido = c.id; achadosCli.textContent = ''; }));
-        });
-      }
-      cliente.addEventListener('input', function () { escolhido = null; mostrarAchados(); });
-      /* Serviço: também campo comum; os serviços de hoje são atalhos embaixo (um serviço antigo é só digitar) */
+      cliente.addEventListener('input', function () { escolhido = null; });
+      var blocoCliente = combo(cliente, function () {
+        return clientes.map(function (c) { return { valor: c.nome, rotulo: (c.codigo ? c.codigo + ' · ' : '') + c.nome, busca: (c.codigo + ' ' + c.nome).toLowerCase(), id: c.id }; });
+      }, function (i) { cliente.value = i.valor; escolhido = i.id; }, false);
       var produto = el('input', { type: 'text', autocomplete: 'off', value: e ? (e.produto || '') : '' });
       var servicos = window.Carrinho.servicos;
-      var atalhosServ = el('div', { class: 'portal-acoes', style: 'margin:-6px 0 14px' });
       var valor = el('input', { type: 'text', inputmode: 'decimal', placeholder: '0,00', value: e ? String(e.valor).replace('.', ',') : '' });
       /* escolher um serviço do carrinho já sugere o valor dele (só se o valor ainda está vazio) */
-      Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).forEach(function (k) {
-        atalhosServ.appendChild(miniBotao(servicos[k].titulo, function () {
-          produto.value = servicos[k].titulo;
-          if (!valor.value.trim()) valor.value = String(servicos[k].centavos / 100).replace('.', ',');
-        }));
-      });
+      var blocoServico = combo(produto, function () {
+        return Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).map(function (k) { return { valor: servicos[k].titulo, rotulo: servicos[k].titulo, busca: servicos[k].titulo.toLowerCase(), centavos: servicos[k].centavos }; });
+      }, function (i) { produto.value = i.valor; if (!valor.value.trim()) valor.value = String(i.centavos / 100).replace('.', ','); }, true);
       var area = el('select');
       area.appendChild(el('option', { value: '', text: 'Sem área' }));
       areas.forEach(function (a) { var o = el('option', { value: a.id, text: a.nome }); if (e && e.area_id === a.id) o.selected = true; area.appendChild(o); });
@@ -407,7 +411,7 @@
         acoes.push(apagar);
       }
       var form = el('form', { style: 'margin-top:18px' }, [el('p', { class: 'portal-item-titulo', text: e ? 'Entrada' : 'Nova entrada' })]
-        .concat(campo('Data do recebimento', data), campo('Cliente', cliente), [achadosCli], campo('Serviço', produto), [atalhosServ],
+        .concat(campo('Data do recebimento', data), [el('label', { text: 'Cliente' })].concat(blocoCliente, [el('label', { text: 'Serviço' })], blocoServico),
           campo('Valor (R$)', valor), campo('Área', area), campo('Forma de pagamento', forma), campo('Observação', obs),
           [msg, el('div', { class: 'portal-acoes' }, acoes)]));
       form.addEventListener('submit', function (ev) {
