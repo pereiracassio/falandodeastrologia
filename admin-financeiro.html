@@ -183,7 +183,22 @@
       }));
     }
 
-    function montarPdf(doc, grupos, titulo, sub, totalGeral) {
+    /* a capa é desenho (papiro), então vira uma imagem; é a mesma folha das outras capas do site (capa.js) */
+    function capaComoImagem(subtitulo, nome) {
+      var F = window.capaFormato('a4');
+      var palco = el('div'); palco.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + F.w + 'px;height:' + F.h + 'px';
+      palco.appendChild(window.capaFolha({ titulo: 'Financeiro', subtitulo: subtitulo, nome: nome, tamanho: 'm', powered: false, formato: 'a4' }));
+      document.body.appendChild(palco);
+      var pronto = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+      var imagens = Array.prototype.map.call(palco.querySelectorAll('img'), function (i) { return i.complete ? 1 : new Promise(function (ok) { i.onload = i.onerror = ok; }); });
+      return Promise.all([pronto].concat(imagens)).then(function () {
+        return document.fonts && document.fonts.load ? Promise.all([document.fonts.load('800 48px Cinzel'), document.fonts.load('700 26px Cinzel')]) : null;
+      }).then(function () {
+        return window.html2canvas(palco.firstChild, { scale: 2, useCORS: true, backgroundColor: null, width: F.w, height: F.h, windowWidth: F.w });
+      }).then(function (c) { palco.remove(); return c.toDataURL('image/jpeg', 0.92); }, function (e) { palco.remove(); throw e; });
+    }
+
+    function montarPdf(doc, grupos, titulo, sub, totalGeral, capaImg) {
       var y = M, porArea = {}; areas.forEach(function (a) { porArea[a.id] = a; });
       function nova() { doc.addPage(); y = M; }
       function cabe(h) { if (y + h > LIMITE) nova(); }
@@ -198,6 +213,8 @@
         cabe(18); doc.setFont('Carlito', o.negrito ? 'bold' : 'normal'); doc.setFontSize(o.tam || 12); cor(o.cor || COR.texto);
         doc.text(rotulo, M, y + 12); doc.text(valor, M + LARGURA, y + 12, { align: 'right' }); y += 18;
       }
+      /* capa (só no PDF de todos os meses): fica fora da contagem, a página 1 é a primeira depois dela */
+      if (capaImg) { doc.addImage(capaImg, 'JPEG', 0, 0, A4.w, A4.h); nova(); }
       /* título do documento */
       doc.setFont('Cinzel', 'bold'); doc.setFontSize(22); cor(COR.terracota);
       doc.text(titulo.toUpperCase(), M, y + 18); y += 28;
@@ -247,11 +264,11 @@
       }
 
       /* rodapé em todas as páginas: o nome do site + o número da página */
-      var n = doc.getNumberOfPages();
-      for (var i = 1; i <= n; i++) {
+      var n = doc.getNumberOfPages(), primeira = capaImg ? 2 : 1;
+      for (var i = primeira; i <= n; i++) {
         doc.setPage(i); doc.setFont('Carlito', 'normal'); doc.setFontSize(9.5); cor(COR.azul);
         doc.text('Falando de Astrologia Helenística', M, A4.h - 34);
-        doc.text(String(i), M + LARGURA, A4.h - 34, { align: 'right' });
+        doc.text(String(i - primeira + 1), M + LARGURA, A4.h - 34, { align: 'right' });
       }
     }
 
@@ -272,15 +289,22 @@
         });
         ordem.sort();
         var grupos = ordem.map(function (k) { return porMes[k]; });
+        var t0 = grupos[0], t1 = grupos[grupos.length - 1];
+        var periodo = grupos.length === 1 ? MESES[t0.mes] + ' de ' + t0.ano : MESES[t0.mes] + ' de ' + t0.ano + '\na ' + MESES[t1.mes] + ' de ' + t1.ano;
+        var comCapa = todos;
         return Promise.all([
           carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', function () { return !!(window.jspdf && window.jspdf.jsPDF); }),
-          baixarFontes()
+          baixarFontes(),
+          comCapa ? carregarScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', function () { return !!window.html2canvas; }) : null,
+          comCapa ? carregarScript('capa.js?v=7', function () { return !!window.capaFolha; }) : null
         ]).then(function (x) {
+          return (comCapa ? capaComoImagem('Registro das entradas,\nmês a mês', periodo) : Promise.resolve(null)).then(function (capa) { return [x, capa]; });
+        }).then(function (xc) {
+          var x = xc[0], capa = xc[1];
           var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
           FONTES.forEach(function (f, i) { doc.addFileToVFS(f[0], x[1][i]); doc.addFont(f[0], f[1], f[2]); });
-          var t0 = grupos[0], t1 = grupos[grupos.length - 1];
           var sub = todos ? (grupos.length === 1 ? MESES[t0.mes] + ' ' + t0.ano : MESES[t0.mes] + ' ' + t0.ano + ' a ' + MESES[t1.mes] + ' ' + t1.ano) : MESES[mes.mes] + ' ' + mes.ano;
-          montarPdf(doc, grupos, 'Financeiro', sub, todos && grupos.length > 1);
+          montarPdf(doc, grupos, 'Financeiro', sub, todos && grupos.length > 1, capa);
           doc.save(todos ? 'financeiro-todos-os-meses.pdf' : 'financeiro-' + mes.ano + '-' + String(mes.mes + 1).padStart(2, '0') + '.pdf');
           aviso('Pronto! O PDF foi baixado. Procure em Arquivos (Downloads).', 'ok');
         });
