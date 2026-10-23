@@ -74,7 +74,7 @@
 
     function listaDeClientes(user) {
       var h = P.estado.ler();
-      var abertas = (!h.cliente && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : ['clientes'];
+      var abertas = (!h.cliente && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : [];
       P.estado.gravar({ abertas: abertas.join(',') || '-' });
       limpar();
       app.appendChild(topo(nomeAdmin));

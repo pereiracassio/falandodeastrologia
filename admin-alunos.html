@@ -76,7 +76,7 @@
 
     function listaDeAlunos(user) {
       var h = P.estado.ler();
-      var abertas = (!h.aluno && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : ['alunos'];
+      var abertas = (!h.aluno && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : [];
       P.estado.gravar({ abertas: abertas.join(',') || '-' });
       limpar();
       app.appendChild(topo(nomeAdmin));
@@ -183,8 +183,8 @@
     function paginaDoAluno(user, aluno) {
       var h = P.estado.ler(); /* se veio de um recarregamento, "atividade" diz qual atividade estava aberta */
       var atividadeAberta = h.aluno === aluno.id ? h.atividade : '';
-      /* seções abertas: as que você deixou abertas (guardadas no endereço); na primeira vez, só "Atividades" */
-      var abertas = (h.aluno === aluno.id && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : ['atividades'];
+      /* seções abertas: as que você deixou abertas (guardadas no endereço); na primeira vez, tudo fechado */
+      var abertas = (h.aluno === aluno.id && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : [];
       if (atividadeAberta && abertas.indexOf('atividades') < 0) abertas.push('atividades');
       P.estado.gravar({ aluno: aluno.id, abertas: abertas.join(',') || '-' });
       limpar();
