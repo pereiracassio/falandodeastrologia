@@ -79,7 +79,7 @@
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     var FORMAS = ['Pix', 'Cartão de crédito', 'Cartão de débito', 'Dinheiro', 'Transferência', 'Outro'];
-    var nomeAdmin = '', userId = '', areas = [], entradas = [], todas = [], servicosCad = [], clientes = [], mes = null, abertasGraficos = [], escopoGraf = 'ano';
+    var nomeAdmin = '', userId = '', areas = [], entradas = [], todas = [], servicosCad = [], clientes = [], alunos = [], mes = null, abertasGraficos = [], escopoGraf = 'ano';
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
@@ -133,7 +133,9 @@
         C.from('clientes').select('id,nome').order('nome'),
         C.from('cliente_codigos').select('cliente_id,codigo'),
         C.from('fin_entradas').select('data,valor,area_id,produto,cliente_nome,forma_pagamento').order('data').range(0, 9999),
-        C.from('fin_servicos').select('*').order('nome')
+        C.from('fin_servicos').select('*').order('nome'),
+        C.from('alunos').select('id,nome').order('nome'),
+        C.from('aluno_codigos').select('aluno_id,codigo')
       ]).then(function (r) {
         if (r[0].error || r[1].error) {
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Não consegui abrir o Financeiro (as tabelas ainda não foram criadas no Supabase).' })]));
@@ -144,6 +146,9 @@
         clientes.forEach(function (c) { c.codigo = codigos[c.id] || ''; });
         todas = (r[4] && r[4].data) || [];
         servicosCad = (r[5] && !r[5].error && r[5].data) || [];
+        alunos = (r[6] && !r[6].error && r[6].data) || [];
+        var codAl = {}; ((r[7] && r[7].data) || []).forEach(function (c) { codAl[c.aluno_id] = c.codigo; });
+        alunos.forEach(function (a) { a.codigo = codAl[a.id] || ''; });
         tela();
       });
     }
@@ -613,8 +618,22 @@
       var cliente = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Nome ou código', value: e ? (e.cliente_nome || '') : '' });
       var escolhido = e ? e.cliente_id : null;
       cliente.addEventListener('input', function () { escolhido = null; });
+      /* clientes e alunos juntos; o campo fica com "código - nome" (como nas entradas antigas). Quem é as duas coisas aparece uma vez só */
+      function rotuloPessoa(p) { return p.codigo ? p.codigo + ' - ' + p.nome : p.nome; }
+      function pessoas() {
+        var lista = clientes.map(function (c) { return { id: c.id, nome: c.nome, codigo: c.codigo, tipo: 'cliente' }; });
+        var porNome = {}; lista.forEach(function (p) { porNome[p.nome.toLowerCase()] = p; });
+        alunos.forEach(function (a) {
+          var igual = porNome[a.nome.toLowerCase()];
+          if (igual) { if (!igual.codigo && a.codigo) igual.codigo = a.codigo; return; }
+          lista.push({ id: null, nome: a.nome, codigo: a.codigo, tipo: 'aluno' });
+        });
+        return lista.sort(function (x, y) { return x.nome.localeCompare(y.nome, 'pt-BR'); });
+      }
       var blocoCliente = combo(cliente, function () {
-        return clientes.map(function (c) { return { valor: c.nome, rotulo: (c.codigo ? c.codigo + ' · ' : '') + c.nome, busca: (c.codigo + ' ' + c.nome).toLowerCase(), id: c.id }; });
+        return pessoas().map(function (p) {
+          return { valor: rotuloPessoa(p), rotulo: (p.codigo ? p.codigo + ' · ' : '') + p.nome + (p.tipo === 'aluno' ? ' (aluno)' : ''), busca: (p.codigo + ' ' + p.nome).toLowerCase(), id: p.id };
+        });
       }, function (i) { cliente.value = i.valor; escolhido = i.id; }, false);
       var produto = el('input', { type: 'text', autocomplete: 'off', value: e ? (e.produto || '') : '' });
       var valor = el('input', { type: 'text', inputmode: 'decimal', placeholder: '0,00', value: e ? String(e.valor).replace('.', ',') : '' });
@@ -667,7 +686,7 @@
         if (v == null) { P.mensagem(msg, 'Digite o valor (por exemplo 335,00).', 'erro'); return; }
         if (!data.value) { P.mensagem(msg, 'Escolha a data.', 'erro'); return; }
         var nomeCli = cliente.value.trim();
-        var achado = clientes.filter(function (c) { return escolhido ? c.id === escolhido : c.nome === nomeCli; })[0];
+        var achado = clientes.filter(function (c) { return escolhido ? c.id === escolhido : false; })[0];
         var reg = { data: data.value, cliente_nome: nomeCli || null, cliente_id: achado ? achado.id : null, produto: produto.value.trim() || null,
           valor: v, area_id: area.value || null, forma_pagamento: forma.value || null, observacao: obs.value.trim() || null };
         salvar.disabled = true;
