@@ -53,13 +53,24 @@
       })();
       </script>
       <script>
-      /* porta discreta: três toques seguidos na foto abrem a entrada do painel (um ou dois toques não fazem nada) */
-      (function () {
-        var f = document.getElementById('foto-sobre'), n = 0, t = 0;
-        f.style.touchAction = 'manipulation';
-        f.addEventListener('dragstart', function (e) { e.preventDefault(); });
-        f.addEventListener('click', function () { var a = Date.now(); n = (a - t < 700) ? n + 1 : 1; t = a; if (n >= 3) location.href = 'admin-alunos.html'; });
-      })();
+      /* porta discreta: três toques seguidos na foto abrem a entrada do painel (um ou dois toques não fazem nada).
+           Sem seleção azul: a foto e o que está em volta não selecionam, e a seleção é limpa antes de sair. */
+        (function () {
+            var f = document.getElementById('foto-sobre'), n = 0, t = 0;
+            var area = f.parentNode;
+            [f, area].forEach(function (e) { e.style.cssText += ';-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent'; });
+            f.style.touchAction = 'manipulation';
+            f.addEventListener('dragstart', function (e) { e.preventDefault(); });
+            area.addEventListener('selectstart', function (e) { e.preventDefault(); });
+            f.addEventListener('mousedown', function (e) { if (e.detail > 1) e.preventDefault(); });
+            f.addEventListener('click', function () {
+                var a = Date.now(); n = (a - t < 700) ? n + 1 : 1; t = a;
+                if (n >= 3) {
+                    try { window.getSelection().removeAllRanges(); } catch (e) { /* sem seleção */ }
+                    setTimeout(function () { location.href = 'admin-alunos.html'; }, 250);
+                }
+            });
+        })();
       </script>
     </div>
 
