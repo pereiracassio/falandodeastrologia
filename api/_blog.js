@@ -120,7 +120,7 @@ const CABECALHO_ANTIGO = `  <header style="display:flex; justify-content:space-b
 const CABECALHO_POST = `<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
   <div class="cab-papiro">
     <a href="/index.html" class="cab-logo"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
-    <nav class="cab-nav"><a href="/aluno.html">Alunos</a><a href="/index.html#servicos">Serviços</a><a href="/blog.html" class="atual">Blog</a><a href="/sobre.html">Cássio</a></nav>
+    <nav class="cab-nav"><a href="/blog.html" class="atual">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
     <hr class="cab-linha">
   </div>`;
 
@@ -129,7 +129,7 @@ const CABECALHO_HOME = `<div class="barra-wrap">
   <div class="barra-topo papiro-moldura">
     <a href="/index.html" class="cab-logo"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
     <hr class="cab-linha">
-    <nav class="cab-nav"><a href="/aluno.html">Alunos</a><a href="/index.html#servicos">Serviços</a><a href="/blog.html" class="atual">Blog</a><a href="/sobre.html">Cássio</a></nav>
+    <nav class="cab-nav"><a href="/blog.html" class="atual">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
     <div class="social-bar">
       <a href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Estava%20no%20seu%20site%20e%20queria%20tirar%20uma%20dúvida%20sobre" target="_blank" rel="noopener" title="WhatsApp"><img alt="WhatsApp" src="/img/rede-whatsapp.svg" width="44" height="44"></a>
       <a href="https://youtube.com/@falandodeastrologia?si=YEtKppUWaDVqL7uA" target="_blank" rel="noopener" title="YouTube"><img alt="YouTube" src="/img/rede-youtube.svg" width="44" height="44"></a>
