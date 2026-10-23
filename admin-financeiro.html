@@ -35,6 +35,27 @@
     .fin-nome{font-size:16px;font-weight:700;color:#1034A6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fin-det{font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fin-valor{font-size:14px;font-weight:700;white-space:nowrap;color:#16233F}
+    /* gráficos: só tinta, sem fundo; fixo em Cinzel, o que veio das entradas (nomes) à mão */
+    .fin-graficos{padding-top:6px}
+    .fin-graf-titulo{margin:22px 0 8px;font-size:18px}
+    .fin-graficos svg{display:block;overflow:visible}
+    .fin-eixo{font-family:var(--fonte-titulo);font-size:11px;fill:#16233F;text-transform:lowercase}
+    .fin-eixo-forte{font-weight:700;fill:#A03E25}
+    .fin-valor-graf{font-family:var(--fonte-titulo);font-size:10.5px;fill:#16233F;text-transform:lowercase}
+    .fin-valor-lado{font-size:12px}
+    .fin-rotulo-graf{font-family:var(--fonte-mao);font-size:14px;fill:#16233F}
+    .fin-sobre-cor{font-family:var(--fonte-titulo);font-size:15px;font-weight:700}
+    .fin-leitura{min-height:1.6em;font-size:14px;color:#16233F;margin:8px 0 0}
+    .fin-legenda{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 8px;font-size:14px;color:#16233F}
+    .fin-legenda-item{display:inline-flex;align-items:center;gap:6px}
+    .fin-amostra{display:inline-block;width:12px;height:12px}
+    .fin-graf-vazio{font-size:14px;opacity:.8}
+    .fin-barra rect,.fin-ponto{cursor:pointer}
+    .fin-barra:focus,.fin-ponto:focus{outline:2px solid #1034A6;outline-offset:1px}
+    .fin-barra:hover rect[fill]:not([fill=transparent]){opacity:.85}
+    .fin-escopo-rotulo{font-size:13px;margin:6px 0 8px}
+    /* botão de contorno agora é só a palavra; o período escolhido leva um traço ocre embaixo */
+    html body .pagina-papiro .portal-btn.fin-escopo-atual{text-decoration:underline;text-decoration-color:#B5852F;text-decoration-thickness:3px;text-underline-offset:7px}
   </style>
 </head>
 <body>
@@ -58,7 +79,7 @@
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     var FORMAS = ['Pix', 'Cartão de crédito', 'Cartão de débito', 'Dinheiro', 'Transferência', 'Outro'];
-    var nomeAdmin = '', userId = '', areas = [], entradas = [], clientes = [], mes = null;
+    var nomeAdmin = '', userId = '', areas = [], entradas = [], todas = [], clientes = [], mes = null, abertasGraficos = [], escopoGraf = 'ano';
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
@@ -110,7 +131,8 @@
         C.from('fin_areas').select('*').order('ordem').order('nome'),
         C.from('fin_entradas').select('*').gte('data', iv.ini).lt('data', iv.fim).order('data').order('criado_em'),
         C.from('clientes').select('id,nome').order('nome'),
-        C.from('cliente_codigos').select('cliente_id,codigo')
+        C.from('cliente_codigos').select('cliente_id,codigo'),
+        C.from('fin_entradas').select('data,valor,area_id,produto,cliente_nome,forma_pagamento').order('data').range(0, 9999)
       ]).then(function (r) {
         if (r[0].error || r[1].error) {
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Não consegui abrir o Financeiro (as tabelas ainda não foram criadas no Supabase).' })]));
@@ -119,6 +141,7 @@
         areas = r[0].data || []; entradas = r[1].data || []; clientes = (r[2] && r[2].data) || [];
         var codigos = {}; ((r[3] && r[3].data) || []).forEach(function (c) { codigos[c.cliente_id] = c.codigo; });
         clientes.forEach(function (c) { c.codigo = codigos[c.id] || ''; });
+        todas = (r[4] && r[4].data) || [];
         tela();
       });
     }
@@ -204,6 +227,200 @@
         cartao.appendChild(linha);
       });
       app.appendChild(cartao);
+      app.appendChild(P.sanfona(abertasGraficos, 'graficos', 'Gráficos', [montarGraficos()]));
+    }
+
+
+    /* ---------- GRÁFICOS (SVG feito aqui, sem biblioteca) ----------
+       Cores = a paleta de época do Astro Hellenic (temas.css): azul egípcio, terracota, ocre e verde, na ordem das áreas (a cor segue a área,
+       nunca a posição no gráfico). A 5ª área em diante e "Sem área" saem em cinza. Quadrados, sem canto redondo, sem fundo (o papiro aparece). */
+    var PALETA_AREAS = ['#1F5FA3', '#A03E25', '#B5852F', '#4A7C59'], COR_CINZA = '#6B7780', COR_TEXTO = '#16233F', COR_LINHA = '#1F5FA3';
+    var MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    var SVGNS = 'http://www.w3.org/2000/svg';
+
+    function sv(tag, attrs, texto) {
+      var n = document.createElementNS(SVGNS, tag);
+      Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+      if (texto != null) n.textContent = texto;
+      return n;
+    }
+    function corDaArea(id) {
+      var i = areas.findIndex(function (a) { return a.id === id; });
+      return i >= 0 && i < PALETA_AREAS.length ? PALETA_AREAS[i] : COR_CINZA;
+    }
+    function nomeDaArea(id) { var a = areas.filter(function (x) { return x.id === id; })[0]; return a ? a.nome : 'Sem área'; }
+    function chaveArea(e) { return e.area_id && areas.some(function (a) { return a.id === e.area_id; }) ? e.area_id : '_sem'; }
+    function compacto(n) {
+      n = Number(n || 0);
+      if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.', ',') + ' mi';
+      if (n >= 1000) return (n / 1000).toFixed(1).replace('.', ',').replace(',0', '') + ' mil';
+      return String(Math.round(n));
+    }
+    /* escala "bonita": até onde vai o eixo e de quanto em quanto */
+    function escalaEixo(max) {
+      if (max <= 0) return { topo: 100, passo: 25 };
+      var bruto = max / 4, pot = Math.pow(10, Math.floor(Math.log10(bruto))), f = bruto / pot;
+      var passo = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * pot;
+      return { topo: Math.ceil(max / passo) * passo, passo: passo };
+    }
+    function larguraGraf() { return Math.max(280, Math.min(720, app.clientWidth - 48)); }
+    function subtitulo(t) { return el('h3', { class: 'fin-graf-titulo', text: t }); }
+    function leitura() { return el('p', { class: 'fin-leitura', text: ' ' }); }
+    function legenda(itens) {
+      return el('div', { class: 'fin-legenda' }, itens.map(function (i) {
+        return el('span', { class: 'fin-legenda-item' }, [el('span', { class: 'fin-amostra', style: 'background:' + i.cor }), document.createTextNode(i.nome)]);
+      }));
+    }
+    function vazio(t) { return el('p', { class: 'fin-graf-vazio', text: t }); }
+
+    function entradasDoEscopo() {
+      if (escopoGraf === 'mes') return todas.filter(function (e) { var d = String(e.data).slice(0, 7); return d === mes.ano + '-' + String(mes.mes + 1).padStart(2, '0'); });
+      if (escopoGraf === 'ano') return todas.filter(function (e) { return String(e.data).slice(0, 4) === String(mes.ano); });
+      return todas;
+    }
+    function rotuloEscopo() { return escopoGraf === 'mes' ? MESES[mes.mes] + ' de ' + mes.ano : escopoGraf === 'ano' ? 'ano de ' + mes.ano : 'todos os meses'; }
+
+    /* 1) Barras por mês: os 12 meses até o mês aberto, cada barra dividida por área */
+    function graficoMeses() {
+      var caixa = el('div', {}, [subtitulo('Entradas por mês')]);
+      var meses = [], a = mes.ano, m = mes.mes;
+      for (var i = 0; i < 12; i++) { meses.unshift({ ano: a, mes: m, tot: {}, soma: 0 }); m--; if (m < 0) { m = 11; a--; } }
+      var idx = {}; meses.forEach(function (x) { idx[x.ano + '-' + String(x.mes + 1).padStart(2, '0')] = x; });
+      todas.forEach(function (e) {
+        var x = idx[String(e.data).slice(0, 7)]; if (!x) return;
+        var k = chaveArea(e); x.tot[k] = (x.tot[k] || 0) + Number(e.valor || 0); x.soma += Number(e.valor || 0);
+      });
+      var max = Math.max.apply(null, meses.map(function (x) { return x.soma; }));
+      if (!(max > 0)) { caixa.appendChild(vazio('Ainda não há entradas nestes 12 meses.')); return caixa; }
+      var usadas = areas.map(function (x) { return x.id; }).concat(['_sem']).filter(function (k) { return meses.some(function (x) { return x.tot[k]; }); });
+      caixa.appendChild(legenda(usadas.map(function (k) { return { nome: nomeDaArea(k), cor: k === '_sem' ? COR_CINZA : corDaArea(k) }; })));
+      var W = larguraGraf(), H = 230, mE = 40, mD = 6, mT = 18, mB = 26, esc = escalaEixo(max), lido = leitura();
+      var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 'Entradas por mês, divididas por área' });
+      for (var v = 0; v <= esc.topo + 0.001; v += esc.passo) {
+        var y = mT + (H - mT - mB) * (1 - v / esc.topo);
+        svg.appendChild(sv('line', { x1: mE, x2: W - mD, y1: y, y2: y, stroke: COR_LINHA, 'stroke-opacity': v === 0 ? 0.9 : 0.25, 'stroke-width': v === 0 ? 1.5 : 1 }));
+        svg.appendChild(sv('text', { x: mE - 6, y: y + 4, 'text-anchor': 'end', class: 'fin-eixo' }, compacto(v)));
+      }
+      var passoX = (W - mE - mD) / 12, larg = Math.min(34, passoX * 0.7);
+      meses.forEach(function (x, i) {
+        var cx = mE + passoX * i + passoX / 2, yBase = H - mB;
+        var g = sv('g', { class: 'fin-barra', tabindex: '0' });
+        var topoY = yBase;
+        usadas.forEach(function (k) {
+          var vv = x.tot[k] || 0; if (!vv) return;
+          var h = (H - mT - mB) * vv / esc.topo, hh = Math.max(1, h - 2);
+          topoY -= h;
+          g.appendChild(sv('rect', { x: cx - larg / 2, y: topoY + 1, width: larg, height: hh, fill: k === '_sem' ? COR_CINZA : corDaArea(k) }));
+        });
+        g.appendChild(sv('rect', { x: cx - passoX / 2, y: mT, width: passoX, height: H - mT - mB, fill: 'transparent' }));
+        var ehAtual = x.ano === mes.ano && x.mes === mes.mes;
+        svg.appendChild(g);
+        svg.appendChild(sv('text', { x: cx, y: H - 8, 'text-anchor': 'middle', class: 'fin-eixo' + (ehAtual ? ' fin-eixo-forte' : '') }, MES_CURTO[x.mes]));
+        if (x.soma > 0 && passoX >= 26) svg.appendChild(sv('text', { x: cx, y: topoY - 5, 'text-anchor': 'middle', class: 'fin-valor-graf' }, compacto(x.soma)));
+        function mostrar() {
+          lido.textContent = MESES[x.mes] + ' ' + x.ano + ': ' + moeda(x.soma) + (usadas.length > 1 ? ' (' + usadas.filter(function (k) { return x.tot[k]; }).map(function (k) { return nomeDaArea(k) + ' ' + moeda(x.tot[k]); }).join(' · ') + ')' : '');
+        }
+        g.addEventListener('mouseenter', mostrar); g.addEventListener('click', mostrar); g.addEventListener('focus', mostrar);
+      });
+      caixa.appendChild(svg); caixa.appendChild(lido);
+      return caixa;
+    }
+
+    /* 2) Divisão por área no mês: uma barra única com as porcentagens */
+    function graficoDivisao() {
+      var caixa = el('div', {}, [subtitulo('Divisão por área em ' + MESES[mes.mes] + ' de ' + mes.ano)]);
+      var tot = {}, soma = 0;
+      entradas.forEach(function (e) { var k = chaveArea(e); tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0); });
+      if (!(soma > 0)) { caixa.appendChild(vazio('Nenhuma entrada neste mês.')); return caixa; }
+      var ks = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
+      var W = larguraGraf(), H = 60, svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 'Divisão por área' }), x = 0;
+      ks.forEach(function (k, i) {
+        var w = W * tot[k] / soma, ww = Math.max(1, w - (i < ks.length - 1 ? 2 : 0)), pct = Math.round(tot[k] / soma * 100);
+        svg.appendChild(sv('rect', { x: x, y: 8, width: ww, height: 44, fill: k === '_sem' ? COR_CINZA : corDaArea(k) }));
+        if (w >= 44) svg.appendChild(sv('text', { x: x + ww / 2, y: 36, 'text-anchor': 'middle', class: 'fin-sobre-cor', fill: k !== '_sem' && corDaArea(k) === '#B5852F' ? '#16233F' : '#F3E3B8' }, pct + '%'));
+        x += w;
+      });
+      caixa.appendChild(svg);
+      caixa.appendChild(legenda(ks.map(function (k) { return { nome: nomeDaArea(k) + ' ' + Math.round(tot[k] / soma * 100) + '% · ' + moeda(tot[k]), cor: k === '_sem' ? COR_CINZA : corDaArea(k) }; })));
+      return caixa;
+    }
+
+    /* 3, 4 e 5) Rankings em barras na horizontal (serviços, clientes, forma de pagamento) */
+    function graficoRanking(titulo, campo, semNome, cor) {
+      var caixa = el('div', {}, [subtitulo(titulo + ' · ' + rotuloEscopo())]);
+      var tot = {}, soma = 0;
+      entradasDoEscopo().forEach(function (e) {
+        var k = String(e[campo] || '').trim() || semNome; tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0);
+      });
+      var ks = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
+      if (!ks.length) { caixa.appendChild(vazio('Nenhuma entrada neste período.')); return caixa; }
+      var linhas = ks.slice(0, 8).map(function (k) { return { nome: k, v: tot[k] }; });
+      if (ks.length > 8) linhas.push({ nome: 'Outros (' + (ks.length - 8) + ')', v: ks.slice(8).reduce(function (s, k) { return s + tot[k]; }, 0) });
+      var W = larguraGraf(), alt = 46, H = linhas.length * alt + 4, max = linhas[0].v;
+      linhas.forEach(function (l) { if (l.v > max && l.nome.indexOf('Outros') !== 0) max = l.v; });
+      var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': titulo });
+      var areaBarra = W - 128;
+      linhas.forEach(function (l, i) {
+        var y = 2 + i * alt, w = Math.max(2, areaBarra * l.v / Math.max(max, l.v));
+        svg.appendChild(sv('text', { x: 0, y: y + 14, class: 'fin-rotulo-graf' }, l.nome));
+        svg.appendChild(sv('rect', { x: 0, y: y + 20, width: w, height: 16, fill: l.nome.indexOf('Outros') === 0 ? COR_CINZA : cor }));
+        svg.appendChild(sv('text', { x: w + 6, y: y + 33, class: 'fin-valor-graf fin-valor-lado' }, moeda(l.v) + ' · ' + Math.round(l.v / soma * 100) + '%'));
+      });
+      caixa.appendChild(svg);
+      return caixa;
+    }
+
+    /* 6) Acumulado do ano: linha subindo mês a mês */
+    function graficoAcumulado() {
+      var caixa = el('div', {}, [subtitulo('Acumulado em ' + mes.ano)]);
+      var porMes = []; for (var i = 0; i < 12; i++) porMes.push(0);
+      todas.forEach(function (e) { if (String(e.data).slice(0, 4) === String(mes.ano)) porMes[Number(String(e.data).slice(5, 7)) - 1] += Number(e.valor || 0); });
+      var hoje = new Date(), ultimo = mes.ano < hoje.getFullYear() ? 11 : mes.ano === hoje.getFullYear() ? hoje.getMonth() : -1;
+      for (var j = porMes.length - 1; j >= 0; j--) if (porMes[j] > 0 && j > ultimo) ultimo = j;
+      var acum = [], s = 0; for (var k = 0; k <= ultimo; k++) { s += porMes[k]; acum.push(s); }
+      if (!(s > 0)) { caixa.appendChild(vazio('Ainda não há entradas neste ano.')); return caixa; }
+      var W = larguraGraf(), H = 200, mE = 40, mD = 14, mT = 16, mB = 26, esc = escalaEixo(s), lido = leitura();
+      var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 'Acumulado do ano' });
+      for (var v = 0; v <= esc.topo + 0.001; v += esc.passo) {
+        var y = mT + (H - mT - mB) * (1 - v / esc.topo);
+        svg.appendChild(sv('line', { x1: mE, x2: W - mD, y1: y, y2: y, stroke: COR_LINHA, 'stroke-opacity': v === 0 ? 0.9 : 0.25, 'stroke-width': v === 0 ? 1.5 : 1 }));
+        svg.appendChild(sv('text', { x: mE - 6, y: y + 4, 'text-anchor': 'end', class: 'fin-eixo' }, compacto(v)));
+      }
+      var passoX = (W - mE - mD) / 11, pts = acum.map(function (v2, i2) { return [mE + passoX * i2, mT + (H - mT - mB) * (1 - v2 / esc.topo)]; });
+      for (var t = 0; t < 12; t++) svg.appendChild(sv('text', { x: mE + passoX * t, y: H - 8, 'text-anchor': 'middle', class: 'fin-eixo' + (t === mes.mes ? ' fin-eixo-forte' : '') }, MES_CURTO[t]));
+      svg.appendChild(sv('polyline', { points: pts.map(function (p) { return p[0] + ',' + p[1]; }).join(' '), fill: 'none', stroke: '#1034A6', 'stroke-width': 2, 'stroke-linejoin': 'miter' }));
+      pts.forEach(function (p, i2) {
+        var q = sv('rect', { x: p[0] - 4, y: p[1] - 4, width: 8, height: 8, fill: '#1034A6', class: 'fin-ponto', tabindex: '0' });
+        function mostrar() { lido.textContent = MESES[i2] + ' ' + mes.ano + ': entrou ' + moeda(porMes[i2]) + ' · acumulado ' + moeda(acum[i2]); }
+        q.addEventListener('mouseenter', mostrar); q.addEventListener('click', mostrar); q.addEventListener('focus', mostrar);
+        svg.appendChild(q);
+        svg.appendChild(sv('rect', { x: p[0] - 14, y: mT, width: 28, height: H - mT - mB, fill: 'transparent', class: 'fin-alvo' })).addEventListener('click', mostrar);
+      });
+      caixa.appendChild(svg); caixa.appendChild(lido);
+      return caixa;
+    }
+
+    function montarGraficos() {
+      var raiz = el('div', { class: 'fin-graficos' });
+      function desenhar() {
+        raiz.textContent = '';
+        /* período dos rankings: o mês aberto, o ano dele ou tudo */
+        var botoes = [['mes', 'Mês'], ['ano', 'Ano'], ['tudo', 'Tudo']].map(function (o) {
+          var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec' + (escopoGraf === o[0] ? ' fin-escopo-atual' : ''), text: o[1], 'aria-pressed': escopoGraf === o[0] ? 'true' : 'false' });
+          b.addEventListener('click', function () { escopoGraf = o[0]; desenhar(); });
+          return b;
+        });
+        raiz.appendChild(el('p', { class: 'fin-escopo-rotulo fin-fixo', text: 'Período dos rankings' }));
+        raiz.appendChild(el('div', { class: 'portal-acoes' }, botoes));
+        raiz.appendChild(graficoMeses());
+        raiz.appendChild(graficoDivisao());
+        raiz.appendChild(graficoRanking('Serviços que mais renderam', 'produto', 'Sem serviço', '#1F5FA3'));
+        raiz.appendChild(graficoRanking('Clientes que mais geraram entrada', 'cliente_nome', 'Sem cliente', '#A03E25'));
+        raiz.appendChild(graficoRanking('Forma de pagamento', 'forma_pagamento', 'Não informada', '#B5852F'));
+        raiz.appendChild(graficoAcumulado());
+      }
+      desenhar();
+      return raiz;
     }
 
     /* ---------- PDF (texto de verdade, A4, fundo branco, no padrão do caderno do aluno) ---------- */
