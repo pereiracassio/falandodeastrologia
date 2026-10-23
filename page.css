@@ -253,3 +253,6 @@ html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important
 .pagina-papiro .sanfona-corpo>*:first-child{margin-top:0}
 .pagina-papiro .sanfona+.sanfona{border-top:0!important}
 .pagina-papiro .portal-abas+.portal-cartao,.pagina-papiro .portal-abas+div .portal-cartao:first-child{border-top:0!important;padding-top:6px!important}
+/* linha de lista que abre ao tocar (lista de alunos): sem botão, o nome muda de cor com o mouse */
+.pagina-papiro .portal-item-clicavel{cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+.pagina-papiro .portal-item-clicavel:hover .portal-item-titulo,.pagina-papiro .portal-item-clicavel:focus-visible .portal-item-titulo{color:#A03E25}

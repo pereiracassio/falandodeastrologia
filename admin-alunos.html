@@ -15,7 +15,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=53">
+  <link rel="stylesheet" href="page.css?v=54">
   <link rel="stylesheet" href="portal.css?v=14">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=17">
@@ -167,12 +167,15 @@
           var achados = alunos.filter(function (a) { return !t || (a.codigo + ' ' + a.nome + ' ' + a.email).toLowerCase().indexOf(t) >= 0; });
           if (!achados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno encontrado.' }));
           achados.forEach(function (a) {
-            var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
-            abrir.addEventListener('click', function () { alunoAberto = a; paginaDoAluno(user, a); });
-            lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+            /* a linha inteira é o botão: tocar no aluno abre a página dele */
+            var abrir = function () { alunoAberto = a; paginaDoAluno(user, a); };
+            var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [
               el('div', {}, [el('span', { class: 'portal-item-titulo', text: (a.codigo ? a.codigo + ' · ' : '') + a.nome }), el('span', { class: 'portal-item-data', text: a.email })].concat(
-                paraCorrigir[a.id] ? [el('span', { class: 'portal-item-data', style: 'font-weight:700', text: paraCorrigir[a.id] === 1 ? '1 atividade para corrigir' : paraCorrigir[a.id] + ' atividades para corrigir' })] : [])), abrir
-            ])]));
+                paraCorrigir[a.id] ? [el('span', { class: 'portal-item-data', style: 'font-weight:700', text: paraCorrigir[a.id] === 1 ? '1 atividade para corrigir' : paraCorrigir[a.id] + ' atividades para corrigir' })] : []))
+            ])]);
+            linha.addEventListener('click', abrir);
+            linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+            lista.appendChild(linha);
           });
         }
         busca.addEventListener('input', desenhar);
