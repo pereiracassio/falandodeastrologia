@@ -1,16 +1,14 @@
 /* Recebe o aviso (webhook) do InfinitePay quando um pagamento é aprovado e lança a entrada no Financeiro, sem digitar.
 
-   O endereço (com ?chave=...) fica só na configuração do InfinitePay. Variáveis na Vercel: WEBHOOK_CHAVE e SUPABASE_SERVICE_ROLE_KEY (as mesmas do novo-cliente).
-   Tudo que chega é guardado cru em fin_webhook_log (pra ver o que o InfinitePay realmente manda e conferir depois). A entrada em fin_entradas nasce com
-   id_externo único (o mesmo aviso chegando duas vezes não lança duas vezes). O InfinitePay manda valores em centavos; sem valor, só registra no log. */
+   O endereço deste aviso vai DENTRO do carrinho (carrinho.html, campo webhook_url ao criar cada link de pagamento), ou seja, é público: por isso aqui NÃO
+   entra a WEBHOOK_CHAVE (ela protege o novo-cliente) e ninguém precisa confiar no que chega. Antes de lançar, o servidor pergunta ao próprio InfinitePay
+   (payment_check) se aquele pedido foi mesmo pago e usa o valor que ELE devolve; aviso falso não lança nada.
+   O aviso cru fica em fin_webhook_log (pra ver o que o InfinitePay realmente manda). A entrada nasce com id_externo único (o mesmo aviso duas vezes não
+   lança duas vezes). Valores em centavos. Variável na Vercel: SUPABASE_SERVICE_ROLE_KEY. */
 
-const crypto = require('crypto');
-const { env, supa } = require('./_drive');
+const { supa } = require('./_drive');
 
-const igual = (a, b) => {
-  const x = Buffer.from(String(a)), y = Buffer.from(String(b));
-  return x.length === y.length && crypto.timingSafeEqual(x, y);
-};
+const HANDLE = 'cassiopereira_';
 const q = (v) => encodeURIComponent(v);
 const num = (v) => { const n = Number(v); return isFinite(n) ? n : null; };
 /* dia de hoje no fuso de Brasília (toISOString daria o dia seguinte à noite) */
@@ -22,8 +20,9 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ erro: 'use POST' }); return; }
   let logId = null, corpo = {};
   try {
-    if (!igual((req.query && req.query.chave) || '', env('WEBHOOK_CHAVE'))) { res.status(401).json({ erro: 'chave inválida' }); return; }
     corpo = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    /* só pedidos criados pelo nosso carrinho (order_nsu "fda-...") */
+    if (!/^fda-\d+$/.test(String(corpo.order_nsu || ''))) { res.status(400).json({ erro: 'pedido desconhecido' }); return; }
 
     /* guarda o aviso cru primeiro: se algo abaixo falhar, o que chegou não se perde */
     const log = await supa('/rest/v1/fin_webhook_log', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ corpo, resultado: 'recebido' }) });
@@ -31,8 +30,19 @@ module.exports = async (req, res) => {
     const resultado = async (texto) => { if (logId) { try { await supa('/rest/v1/fin_webhook_log?id=eq.' + q(logId), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ resultado: texto }) }); } catch (e) { /* o log é só apoio */ } } };
 
     const idExterno = String(corpo.transaction_nsu || corpo.invoice_slug || corpo.slug || corpo.order_nsu || '').trim();
-    const centavos = num(corpo.paid_amount != null ? corpo.paid_amount : corpo.amount);
+
+    /* confirma com o InfinitePay que foi pago e pega o valor de lá (nunca o do aviso) */
+    const slug = String(corpo.invoice_slug || corpo.slug || '').trim();
+    const conf = await fetch('https://api.checkout.infinitepay.io/payment_check', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handle: HANDLE, order_nsu: corpo.order_nsu, transaction_nsu: corpo.transaction_nsu, slug })
+    });
+    const textoConf = await conf.text();
+    let dadosConf = {}; try { dadosConf = JSON.parse(textoConf); } catch (e) { /* resposta que não é JSON */ }
+    if (!conf.ok || dadosConf.paid !== true) { await resultado('não confirmado pelo InfinitePay (' + conf.status + '): ' + textoConf.slice(0, 300)); res.status(400).json({ erro: 'pagamento não confirmado' }); return; }
+    const centavos = num(dadosConf.paid_amount != null ? dadosConf.paid_amount : dadosConf.amount);
     if (!idExterno || centavos == null || centavos <= 0) { await resultado('sem entrada: faltou identificador ou valor'); res.status(200).json({ ok: true, entrada: false }); return; }
+    if (dadosConf.capture_method && !corpo.capture_method) corpo.capture_method = dadosConf.capture_method;
 
     const itens = Array.isArray(corpo.items) ? corpo.items : [];
     const produto = itens.map((i) => String(i.description || '').trim()).filter(Boolean).join(' + ') || null;

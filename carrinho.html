@@ -311,6 +311,7 @@
       body: JSON.stringify({
         handle: INFINITEPAY_HANDLE,
         order_nsu: "fda-" + Date.now(),
+        webhook_url: "https://falandodeastrologia.vercel.app/api/infinitepay",
         items: res.linhas.map(function (l) { return { quantity: 1, price: l.final, description: l.titulo }; }),
         redirect_url: redirectUrl,
         customer: { name: nome, email: email, phone_number: telefoneInternacional(whatsapp) }
