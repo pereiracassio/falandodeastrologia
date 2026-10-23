@@ -8,13 +8,14 @@
   var client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   /* Calendário e listas de escolha (data, avaliação, múltipla escolha...) NÃO reabrem sozinhos quando você volta de outra aba ou aplicativo:
-     o campo perde o foco assim que a escolha é feita e quando a página sai da tela (o navegador do iPad/celular reabria o seletor do campo que ficou focado). */
+     a lista perde o foco assim que a escolha é feita e qualquer campo de data/lista perde o foco quando a página sai da tela (o navegador do iPad/celular reabria o seletor do campo que ficou focado). */
   (function () {
     var ehSeletor = function (e) {
       return !!e && (e.tagName === 'SELECT' || (e.tagName === 'INPUT' && /^(date|time|datetime-local|month|week)$/.test(e.type)));
     };
     var soltar = function () { var a = document.activeElement; if (ehSeletor(a)) a.blur(); };
-    document.addEventListener('change', function (ev) { if (ehSeletor(ev.target)) setTimeout(function () { ev.target.blur(); }, 0); }, true);
+    /* só nas listas de escolha: no calendário o iPad avisa a cada giro (ano, mês, dia), e soltar o campo ali fecharia o calendário no meio da escolha */
+    document.addEventListener('change', function (ev) { if (ev.target && ev.target.tagName === 'SELECT') setTimeout(function () { ev.target.blur(); }, 0); }, true);
     document.addEventListener('visibilitychange', function () { soltar(); if (!document.hidden) setTimeout(soltar, 50); });
     window.addEventListener('pagehide', soltar);
     window.addEventListener('pageshow', function () { setTimeout(soltar, 50); });
