@@ -11,9 +11,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="papiro.css?v=4">
-  <link rel="stylesheet" href="home.css?v=18">
-  <link rel="stylesheet" href="page.css?v=49">
-  <link rel="stylesheet" href="portal.css?v=12">
+  <link rel="stylesheet" href="home.css?v=19">
+  <link rel="stylesheet" href="page.css?v=50">
+  <link rel="stylesheet" href="portal.css?v=13">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=17">
 </head>
@@ -31,7 +31,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=39"></script>
+  <script src="portal.js?v=40"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -123,7 +123,7 @@
               el('strong', { text: p.titulo }),
               el('div', { class: 'portal-item-data', text: p.publicado ? 'Publicada em ' + P.dataBR(String(p.publicado_em).slice(0, 10)) : 'Rascunho' })
             ]), editar]);
-          linha.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.35)';
+          linha.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
           area.appendChild(linha);
         });
       });

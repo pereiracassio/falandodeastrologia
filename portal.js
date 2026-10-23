@@ -144,7 +144,7 @@
     var carregouAlguma = false;
     var aspas = function (t) { return String(t).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); };
     function linha(texto, extras) {
-      var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.35)';
+      var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
       l.appendChild(texto); if (extras) l.appendChild(extras);
       return l;
     }

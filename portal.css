@@ -45,7 +45,7 @@
 .portal-topo{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .portal-topo span{font-size:15px}
 .portal-topo>div{display:flex;gap:10px;flex-wrap:wrap}
-.portal-item{padding:12px 0;border-top:1px solid rgba(31,95,163,.35)}
+.portal-item{padding:12px 0;border-top:1px solid rgba(31,95,163,.7)}
 .portal-item:first-of-type{border-top:0;padding-top:0}
 .portal-item-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .portal-item-titulo{font-size:15px;font-weight:700;color:#16233F}

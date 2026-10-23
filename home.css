@@ -74,7 +74,7 @@ body::after{background-image:
 @keyframes brilho{from{opacity:.35}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){body::after{animation:none;opacity:.8}}
 body>*{position:relative;z-index:1}
-.header{display:flex;justify-content:space-between;align-items:center;padding:18px 4vw 18px 76px;border-bottom:1px solid rgba(181,133,47,.55)}
+.header{display:flex;justify-content:space-between;align-items:center;padding:18px 4vw 18px 76px;border-bottom:2px solid rgba(181,133,47,.75)}
 .brand{font-family:'Cinzel',Georgia,serif;font-size:22px;font-weight:700;color:#f6e7b4;text-decoration:none;text-transform:uppercase;letter-spacing:2px}
 .logo-home{text-align:center;padding:22px 4vw 0}
 .logo-home img{display:inline-block;width:min(520px,100%);height:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
@@ -135,7 +135,7 @@ html,body{max-width:100%;overflow-x:hidden}
 .redes-folha{padding:30px 7% 28px;text-align:center;
   background:var(--papiro-fundo);
   clip-path:polygon(0 4%,4% 0,18% 2%,36% 0,55% 2.4%,74% 0,92% 2%,100% 4%,98.6% 24%,100% 42%,98.8% 62%,100% 80%,99% 96%,92% 100%,78% 97.6%,60% 100%,40% 97.8%,20% 100%,5% 98%,0 96%,1.4% 76%,0 56%,1.2% 34%,0 18%)}
-.redes-linha{border:0;border-top:1px solid rgba(31,95,163,.55);margin:22px 0 16px}
+.redes-linha{border:0;border-top:2px solid rgba(31,95,163,.75);margin:22px 0 16px}
 .redes-blog{display:block;text-decoration:none}
 .redes-blog-label{display:block;font-family:'Cardo','GFS Didot',Georgia,serif;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terracota);margin-bottom:10px}
 .redes-blog img{width:100%;height:auto;display:block}
@@ -166,11 +166,11 @@ html,body{max-width:100%;overflow-x:hidden}
 .cab-nav a{flex:1;padding:9px 0;color:var(--terracota);text-decoration:none}
 .cab-nav a+a{border-left:1.5px solid #1034A6}
 .cab-nav a.atual{color:#B5852F}
-.cab-linha{border:0;height:1px;background:#1F5FA3;margin:14px 0 12px}
+.cab-linha{border:0;height:2px;background:#1F5FA3;margin:14px 0 12px}
 .barra-topo .social-bar{margin:0}
 .container{max-width:940px;margin:28px auto}
 .top-banners.um{grid-template-columns:1fr!important;gap:2.5vw;margin:0}
-.linha-ceu{border:0;height:1px;background:rgba(241,230,198,.35);margin:30px auto}
+.linha-ceu{border:0;height:2px;background:rgba(241,230,198,.55);margin:30px auto}
 .services-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 
 /* a barra de papiro também leva a moldura com meandros (todo papiro leva) */
