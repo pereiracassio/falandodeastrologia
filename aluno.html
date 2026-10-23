@@ -151,6 +151,14 @@
         linha.appendChild(abrir);
       }
       var caixa = el('div', { class: 'portal-item' }, [linha]);
+      /* a linha inteira abre o link (como o botão): só quando é "abrir" um link; gravação com player e botões de baixar seguem como estavam */
+      if (seguro && !player) {
+        caixa.className += ' portal-item-clicavel';
+        caixa.setAttribute('role', 'link'); caixa.setAttribute('tabindex', '0');
+        var abrirLinha = function () { anotarAbertura(); window.open(seguro, '_blank', 'noopener'); };
+        caixa.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('a')) return; abrirLinha(); });
+        caixa.addEventListener('keydown', function (ev) { if (ev.target === caixa && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirLinha(); } });
+      }
       if (siteFora) caixa.appendChild(el('p', { class: 'portal-descricao', text: 'Material disponível em ' + siteFora + '.' }));
       if (player) caixa.appendChild(player);
       if (item.descricao) caixa.appendChild(el('p', { class: 'portal-descricao', text: item.descricao }));
