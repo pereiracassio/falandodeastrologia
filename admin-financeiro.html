@@ -628,6 +628,16 @@
           if (igual) { if (!igual.codigo && a.codigo) igual.codigo = a.codigo; return; }
           lista.push({ id: null, nome: a.nome, codigo: a.codigo, tipo: 'aluno' });
         });
+        /* quem já recebeu uma entrada sua, mesmo sem cadastro: o nome fica na lista (cliente recorrente não precisa ser digitado toda vez) */
+        var conhecidos = lista.map(function (p) { return p.nome.toLowerCase(); });
+        var vistos = {};
+        todas.forEach(function (en) {
+          var n = String(en.cliente_nome || '').trim(), k = n.toLowerCase();
+          if (!n || vistos[k]) return;
+          vistos[k] = true;
+          if (conhecidos.some(function (c) { return k.indexOf(c) >= 0; })) return;
+          lista.push({ id: null, nome: n, codigo: '', tipo: 'antigo' });
+        });
         return lista.sort(function (x, y) { return x.nome.localeCompare(y.nome, 'pt-BR'); });
       }
       var blocoCliente = combo(cliente, function () {
