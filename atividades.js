@@ -20,6 +20,14 @@
     });
     return blocos;
   }
+  /* a linha inteira da atividade faz a mesma ação do botão (Ver, Responder, Corrigir...): o botão fica só pra dizer o que vai acontecer */
+  function linhaClicavel(caixa, acao) {
+    caixa.className += ' portal-item-clicavel';
+    caixa.setAttribute('role', 'button'); caixa.setAttribute('tabindex', '0');
+    caixa.addEventListener('click', acao);
+    caixa.addEventListener('keydown', function (ev) { if (ev.target === caixa && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); acao(); } });
+    return caixa;
+  }
   function semMarcas(t) { return String(t).replace(/\*\*(.+?)\*\*/g, '$1'); }
   function comNegrito(pai, t) {
     String(t).split(/(\*\*.+?\*\*)/).forEach(function (parte) {
@@ -291,12 +299,11 @@
       cartao.style.display = '';
       lista.forEach(function (a) {
         var abrir = el('button', { type: 'button', class: 'portal-btn', text: a.somente_leitura ? 'Ler' : a.enviada_em ? 'Ver' : 'Responder' });
-        abrir.addEventListener('click', function () { aoAbrir(a); });
-        cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+        cartao.appendChild(linhaClicavel(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
           el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }),
             el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · Para responder') })]),
           abrir
-        ])]));
+        ])]), function () { aoAbrir(a); }));
       });
     });
     return cartao;
@@ -450,11 +457,10 @@
           /* "Corrigir" só depois que o aluno enviou e enquanto falta corrigir (antiga: enquanto não tem nenhuma correção); senão "Abrir" */
           var falta = a.enviada_em && !a.somente_leitura && (a.antiga ? !x.corrigidas[a.id] : !a.corrigida_em);
           var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: falta ? 'Corrigir' : 'Abrir' });
-          abrir.addEventListener('click', function () { telaDaAtividade(a); });
           var info = el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
-          corpo.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+          corpo.appendChild(linhaClicavel(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
             el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }), info]), abrir
-          ])]));
+          ])]), function () { telaDaAtividade(a); }));
         });
       });
     }
