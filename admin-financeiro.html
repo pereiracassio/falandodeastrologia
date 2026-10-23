@@ -716,8 +716,10 @@
       var lista = servicosCad.map(function (x) { return { nome: x.nome, valor: x.valor, area_id: x.area_id }; });
       var tem = {}; lista.forEach(function (x) { tem[x.nome.toLowerCase()] = true; });
       var site = window.Carrinho.servicos;
+      /* serviço do site que ainda não está na sua lista entra na área Astrologia */
+      var astro = areas.filter(function (a) { return /astrolog/i.test(a.nome); })[0];
       Object.keys(site).filter(function (k) { return !/^teste/.test(k); }).forEach(function (k) {
-        if (!tem[site[k].titulo.toLowerCase()]) lista.push({ nome: site[k].titulo, valor: site[k].centavos / 100, area_id: null });
+        if (!tem[site[k].titulo.toLowerCase()]) lista.push({ nome: site[k].titulo, valor: site[k].centavos / 100, area_id: astro ? astro.id : null });
       });
       return lista;
     }
