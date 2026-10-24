@@ -79,6 +79,9 @@
     var DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Editado'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
+    /* a linha que separa a descrição dos capítulos no YouTube: 51 traços longos, do tamanho certinho da descrição */
+    var LINHA_DESCRICAO = '———————————————————————————————————————————————————';
+    var FIM_DESCRICAO = '\n\n' + LINHA_DESCRICAO + '\nCapítulos\n';
     var REDES = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['shorts', 'Shorts']];
 
     var series = [], videos = [], cortes = [];
@@ -513,7 +516,7 @@
       var data = el('input', { type: 'date' }); data.value = v.data_postar || '';
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
-      var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || '';
+      var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || FIM_DESCRICAO; /* vídeo sem texto ainda já nasce com a linha e a palavra Capítulos */
       var tags = el('input', { type: 'text', placeholder: 'tag1, tag2, tag3' }); tags.value = v.tags || '';
       var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha, no máximo 5, assim: 03:45:12 Título do vídeo do card' }); cardsTxt.value = v.cards || '';
       var cardsLista = el('div', {});
@@ -586,7 +589,11 @@
       else cartao.appendChild(campo('Roteiro', roteiro));
       cartao.appendChild(linkRoteiro);
       cartao.appendChild(campo('Texto que vai junto (vai inteiro para a descrição do YouTube)', texto));
-      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return texto.value; }, 'Copiar o texto')]));
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return texto.value; }, 'Copiar o texto'),
+        botao('Colocar a linha e Capítulos no fim', function () {
+          if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
+          texto.value = texto.value.replace(/\s+$/, '') + FIM_DESCRICAO; texto.dispatchEvent(new Event('input'));
+        })]));
       cartao.appendChild(campo('Tags do YouTube', tags));
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return tags.value.trim(); }, 'Copiar as tags')]));
       cartao.appendChild(campo('Cards (um por linha, no máximo 5)', cardsTxt));
