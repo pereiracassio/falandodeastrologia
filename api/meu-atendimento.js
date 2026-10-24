@@ -17,6 +17,11 @@ async function usuarioDoToken(jwt) {
   return u && u.email ? String(u.email).toLowerCase() : null;
 }
 
+async function souAdmin(jwt) {
+  const resp = await fetch(SUPABASE_URL + '/rest/v1/rpc/sou_admin', { method: 'POST', headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: '{}' });
+  return resp.ok && (await resp.json()) === true;
+}
+
 const semZeros = (c) => String(c || '').trim().replace(/^0+/, '');
 
 module.exports = async (req, res) => {
@@ -28,10 +33,18 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
 
   try {
-    const email = await usuarioDoToken(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+    const jwt = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    const email = await usuarioDoToken(jwt);
     if (!email) { res.status(401).json({ erro: 'sem login' }); return; }
 
-    const cli = await supa('/rest/v1/clientes?email=eq.' + encodeURIComponent(email) + '&select=id');
+    /* ?cliente=ID: o administrador vendo o atendimento de um cliente (painel e "Ver como cliente") */
+    const clienteId = new URL(req.url, 'http://x').searchParams.get('cliente');
+    let filtro = 'email=eq.' + encodeURIComponent(email);
+    if (clienteId) {
+      if (!(await souAdmin(jwt))) { res.status(403).json({ erro: 'só o administrador' }); return; }
+      filtro = 'id=eq.' + encodeURIComponent(clienteId);
+    }
+    const cli = await supa('/rest/v1/clientes?' + filtro + '&select=id');
     if (!cli || !cli[0]) { res.status(200).json({ atendimento: null }); return; }
     const cod = await supa('/rest/v1/cliente_codigos?cliente_id=eq.' + encodeURIComponent(cli[0].id) + '&select=codigo');
     const codigo = semZeros(cod && cod[0] && cod[0].codigo);
@@ -62,7 +75,11 @@ module.exports = async (req, res) => {
     if (!achado) { res.status(200).json({ atendimento: null }); return; }
     const video = ((achado.conferenceData && achado.conferenceData.entryPoints) || []).find((p) => p.entryPointType === 'video');
     const meet = achado.hangoutLink || (video && video.uri) || null;
+    /* título "0158 - Fulano - Mapa Natal Clássico": o que vem depois do nome é o serviço */
+    const partes = String(achado.summary || '').split(/\s+[-–—]\s+/).map((x) => x.trim()).filter(Boolean);
+    const servico = partes.length >= 3 ? partes.slice(2).join(' - ') : null;
     res.status(200).json({ atendimento: {
+      servico,
       inicio: achado.start.dateTime, fim: achado.end && achado.end.dateTime || null, fuso: achado.start.timeZone || 'America/Sao_Paulo',
       meet: meet && /^https:\/\//.test(meet) ? meet : null
     } });

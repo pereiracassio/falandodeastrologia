@@ -733,7 +733,35 @@
     return 'Próximo encontro: ' + dia + ', às ' + hora;
   }
 
+  /* cartão do próximo atendimento de cliente, vindo da Google Agenda (api/meu-atendimento.js). clienteId só para o administrador.
+     Sem atendimento marcado, o cartão nem aparece. paraAdmin = texto "Atendimento: ..." em vez de "Seu ... será ..." */
+  function cartaoAtendimento(clienteId, paraAdmin) {
+    var lugar = el('div', {});
+    client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (!sessao) return;
+      return fetch('https://falandodeastrologia.vercel.app/api/meu-atendimento' + (clienteId ? '?cliente=' + encodeURIComponent(clienteId) : ''), { headers: { Authorization: 'Bearer ' + sessao.access_token } })
+        .then(function (resp) { return resp.ok ? resp.json() : null; })
+        .then(function (d) {
+          var a = d && d.atendimento;
+          if (!a) return;
+          var quando = new Date(a.inicio);
+          var dia = quando.toLocaleDateString('pt-BR', { timeZone: a.fuso, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+          var hora = quando.toLocaleTimeString('pt-BR', { timeZone: a.fuso, hour: '2-digit', minute: '2-digit' }).replace(':00', 'h').replace(':', 'h');
+          var frase = paraAdmin ? (a.servico || 'Atendimento') + ': ' + dia + ', às ' + hora + '.'
+                                : 'Seu ' + (a.servico || 'atendimento') + ' será ' + dia + ', às ' + hora + '.';
+          var cartao = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-proximo', text: frase })]);
+          var link = linkSeguro(a.meet);
+          if (link) cartao.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: link, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no atendimento' })]));
+          else cartao.appendChild(el('p', { text: paraAdmin ? 'Esse compromisso não tem link do Meet.' : 'O link da videochamada chega pelo WhatsApp.' }));
+          lugar.appendChild(cartao);
+        });
+    }).catch(function () { /* sem o cartão, a página segue normal */ });
+    return lugar;
+  }
+
   window.portal = {
+    cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
