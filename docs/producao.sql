@@ -55,3 +55,7 @@ alter table public.prod_videos add column if not exists capa_url text;
 
 -- (24/10) Ligação do vídeo com a postagem do blog (guarda o id da postagem; sem chave estrangeira de propósito).
 alter table public.prod_videos add column if not exists blog_post_id text;
+
+-- (24/10) Tags do YouTube e cards (um por linha) de cada vídeo.
+alter table public.prod_videos add column if not exists tags text;
+alter table public.prod_videos add column if not exists cards text;

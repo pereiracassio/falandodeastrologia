@@ -109,6 +109,74 @@
       });
     }
 
+    /* copia para a área de transferência (com plano B para navegadores que não deixam) */
+    function copiarTexto(txt) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(txt);
+      return new Promise(function (ok, erro) {
+        var t = document.createElement('textarea'); t.value = txt; t.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+        document.body.appendChild(t); t.focus(); t.select();
+        try { document.execCommand('copy') ? ok() : erro(); } catch (e) { erro(e); }
+        document.body.removeChild(t);
+      });
+    }
+    function botaoCopiar(pegar, rotulo) {
+      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: rotulo || 'Copiar' });
+      b.addEventListener('click', function () {
+        var txt = pegar();
+        if (!txt) { b.textContent = 'Vazio'; setTimeout(function () { b.textContent = rotulo || 'Copiar'; }, 1200); return; }
+        copiarTexto(txt).then(function () { b.textContent = 'Copiado!'; }, function () { b.textContent = 'Não consegui copiar'; });
+        setTimeout(function () { b.textContent = rotulo || 'Copiar'; }, 1500);
+      });
+      return b;
+    }
+
+    /* roteiro em tela cheia para ler enquanto grava: letra grande e ajustável, rolagem automática, fundo claro ou escuro */
+    function modoGravacao(titulo, texto) {
+      var tam = 44, vel = 0, escuro = true, rodando = false, timer = null, acum = 0;
+      var tela = el('div', { style: 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column' });
+      var barra = el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-bottom:1px solid #1F5FA3' });
+      var area = el('div', { style: 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:5vh 7vw 40vh' });
+      var corpo = el('div', { style: 'white-space:pre-wrap;line-height:1.5;font-family:var(--fonte-mao)' });
+      corpo.textContent = texto || 'O roteiro está vazio.';
+      area.appendChild(corpo);
+      function pintar() {
+        tela.style.background = escuro ? '#0d1220' : '#F3E3B8'; tela.style.color = escuro ? '#F3E3B8' : '#16233F';
+        barra.style.background = escuro ? '#0d1220' : '#F3E3B8';
+        corpo.style.fontSize = tam + 'px';
+        play.textContent = rodando ? 'Pausar' : 'Rolar sozinho';
+        velTxt.textContent = 'velocidade ' + vel;
+        [].forEach.call(barra.querySelectorAll('button'), function (b) { b.style.cssText = 'background:transparent;border:1px solid #1F5FA3;border-radius:0;padding:10px 14px;font-size:15px;cursor:pointer;color:' + (escuro ? '#F3E3B8' : '#1034A6') + ';font-family:var(--fonte-titulo);text-transform:lowercase'; });
+        velTxt.style.cssText = 'font-size:14px;font-family:var(--fonte-titulo);text-transform:lowercase';
+      }
+      function mexer(d) { return function () { tam = Math.max(20, Math.min(120, tam + d)); pintar(); }; }
+      function ritmo(d) { return function () { vel = Math.max(0, Math.min(10, vel + d)); if (vel === 0) rodando = false; pintar(); }; }
+      function btn(t, f) { var b = el('button', { type: 'button', text: t }); b.addEventListener('click', f); barra.appendChild(b); return b; }
+      var velTxt = el('span', { text: '' });
+      var fechar;
+      btn('A−', mexer(-4)); btn('A+', mexer(4));
+      btn('Devagar', ritmo(-1));
+      barra.appendChild(velTxt);
+      btn('Rápido', ritmo(1));
+      var play = btn('Rolar sozinho', function () { if (vel === 0) vel = 3; rodando = !rodando; pintar(); });
+      btn('Início', function () { area.scrollTop = 0; acum = 0; });
+      btn('Claro/escuro', function () { escuro = !escuro; pintar(); });
+      fechar = btn('Fechar', encerrar);
+      tela.appendChild(barra); tela.appendChild(area);
+      document.body.appendChild(tela);
+      document.body.style.overflow = 'hidden';
+      pintar();
+      timer = setInterval(function () { if (rodando && vel > 0) { acum += vel * 0.6; if (acum >= 1) { area.scrollTop += Math.floor(acum); acum -= Math.floor(acum); } } }, 30);
+      function tecla(e) { if (e.key === 'Escape') encerrar(); }
+      document.addEventListener('keydown', tecla);
+      if (tela.requestFullscreen) tela.requestFullscreen().catch(function () {});
+      function encerrar() {
+        clearInterval(timer); document.removeEventListener('keydown', tecla); document.body.style.overflow = '';
+        if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+        if (tela.parentNode) tela.parentNode.removeChild(tela);
+      }
+      document.addEventListener('fullscreenchange', function aoSair() { if (!document.fullscreenElement) { document.removeEventListener('fullscreenchange', aoSair); if (tela.parentNode) encerrar(); } });
+    }
+
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
     function topo(texto) { return P.navAdmin('producao', texto, sair); }
@@ -427,7 +495,11 @@
       var data = el('input', { type: 'date' }); data.value = v.data_postar || '';
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
-      var texto = el('textarea', { rows: '6', placeholder: 'Texto que vai junto com o vídeo (descrição, legenda)' }); texto.value = v.texto_postagem || '';
+      var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || '';
+      var tags = el('input', { type: 'text', placeholder: 'tag1, tag2, tag3' }); tags.value = v.tags || '';
+      var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha (vá anotando enquanto edita o vídeo)' }); cardsTxt.value = v.cards || '';
+      var cardsLista = el('div', {});
+      var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto), campo('Número na série', numero), campo('Data de postar', data), campo('Link do YouTube', link)]));
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
@@ -455,12 +527,27 @@
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Etapas' }));
       cartao.appendChild(chipsDaEtapa(v));
       cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+      var linkRoteiro = el('div', { class: 'portal-acoes', style: 'margin:0 0 8px' }, [botao('Gravar com o roteiro (tela cheia)', function () { modoGravacao(titulo.value, roteiro.value); }, false)]);
       cartao.appendChild(campo('Roteiro', roteiro));
-      cartao.appendChild(campo('Texto que vai junto', texto));
+      cartao.appendChild(linkRoteiro);
+      cartao.appendChild(campo('Texto que vai junto (vai inteiro para a descrição do YouTube)', texto));
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return texto.value; }, 'Copiar o texto')]));
+      cartao.appendChild(campo('Tags do YouTube', tags));
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return tags.value.trim(); }, 'Copiar as tags')]));
+      cartao.appendChild(campo('Cards (um por linha)', cardsTxt));
+      cartao.appendChild(cardsLista);
+      function desenharCards() {
+        cardsLista.textContent = '';
+        cardsTxt.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).forEach(function (l, i) {
+          cardsLista.appendChild(el('div', { class: 'prod-linha' }, [el('span', { class: 'prod-titulo', text: (i + 1) + '. ' + l }), botaoCopiar(function () { return l; })]));
+        });
+      }
+      desenharCards();
+      cartao.appendChild(estadoSalvo);
       var salvar = botao('Salvar', function () {
         if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
         if (link.value.trim() && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(link.value.trim())) { P.mensagem(msg, 'O link precisa ser do YouTube.', 'erro'); return; }
-        var campos = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value };
+        var campos = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
         var subir = Promise.resolve();
         if (capaNova) {
           P.mensagem(msg, 'Enviando a foto...');
@@ -476,7 +563,21 @@
         }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); } })
           .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto: ' + P.traduzErro(e && e.message), 'erro'); });
       }, false);
-      var voltar = botao('Voltar', function () { irPara('series', serieAberta); });
+      /* salva sozinho enquanto digita (só os textos; a foto da capa só guarda no botão Salvar) */
+      var tempoSalvar = null;
+      function salvarSozinho() {
+        if (!titulo.value.trim()) return;
+        var lk = link.value.trim(), okLink = !lk || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk);
+        var c = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        if (okLink) c.link_youtube = lk || null;
+        estadoSalvo.textContent = 'Salvando...';
+        gravar('prod_videos', videos, v, c).then(function (r) { estadoSalvo.textContent = r && r.error ? 'Não salvou' : 'Salvo automaticamente'; });
+      }
+      [titulo, capaTexto, link, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+        c.addEventListener('input', function () { estadoSalvo.textContent = 'Digitando...'; clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarSozinho, 1200); });
+      });
+      cardsTxt.addEventListener('input', desenharCards);
+      var voltar = botao('Voltar', function () { clearTimeout(tempoSalvar); salvarSozinho(); irPara('series', serieAberta); });
       var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o vídeo' });
       apagar.addEventListener('click', function () {
         if (!window.confirm('Excluir este vídeo e os cortes dele? Não dá para desfazer.')) return;
