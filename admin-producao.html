@@ -394,8 +394,10 @@
         var lista = videos.filter(function (v) { return v.serie_id === s.id; });
         var previstos = Math.max(s.total || 0, lista.length);
         var pct = previstos ? Math.round(100 * lista.filter(function (v) { return v.no_ar; }).length / previstos) : 0;
+        var datasSerie = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort();
+        var periodo = datasSerie.length ? P.dataBR(datasSerie[0]) + (datasSerie.length > 1 && datasSerie[datasSerie.length - 1] !== datasSerie[0] ? ' até ' + P.dataBR(datasSerie[datasSerie.length - 1]) : '') : '';
         var corpo = el('div', {}, [
-          el('span', { class: 'prod-titulo', text: s.nome }),
+          el('span', { class: 'prod-titulo' }, [document.createTextNode(s.nome), periodo ? el('span', { class: 'prod-sub', style: 'display:inline;margin-left:12px;font-weight:400', text: periodo }) : null]),
           el('span', { class: 'prod-sub', text: resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
           el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
         ]);
@@ -411,18 +413,10 @@
     function novaSerie() {
       var nome = window.prompt('Nome da série:');
       if (!nome || !nome.trim()) return;
-      C.from('prod_series').insert({ nome: nome.trim(), dia_semana: 5 }).select('*').single().then(function (r) {
+      C.from('prod_series').insert({ nome: nome.trim() }).select('*').single().then(function (r) {
         if (r.error) { window.alert('Não consegui criar: ' + P.traduzErro(r.error.message)); return; }
         series.push(r.data); irPara('series', r.data.id);
       });
-    }
-
-    /* data de cada vídeo da série: o primeiro no dia da semana escolhido, depois um por semana, na ordem do número */
-    function datasDaSerie(s, lista) {
-      if (!s.inicio || s.dia_semana == null) return null;
-      var d = proximoDiaDaSemana(s.inicio, s.dia_semana), mapa = {};
-      lista.slice().sort(function (a, b) { return (a.numero || 0) - (b.numero || 0); }).forEach(function (v) { mapa[v.id] = d; d = somarDias(d, 7); });
-      return mapa;
     }
 
     function telaSerie(area, id) {
@@ -436,23 +430,19 @@
       if (s) {
         var nome = el('input', { type: 'text', maxlength: '120' }); nome.value = s.nome;
         var assunto = el('input', { type: 'text', maxlength: '60', placeholder: 'Assunto do blog (geralmente o nome da série)' }); assunto.value = s.assunto || '';
-        var dia = el('select', {}); DIAS.forEach(function (d, i) { var o = el('option', { value: String(i), text: d }); if (s.dia_semana === i) o.selected = true; dia.appendChild(o); });
-        var inicio = el('input', { type: 'date' }); inicio.value = s.inicio || '';
         var total = el('input', { type: 'number', min: '1', max: '200', placeholder: 'Quantos vídeos' }); total.value = s.total || '';
-        cab.appendChild(fila([1, 1, 1], [campo('Nome', nome), campo('Assunto no blog', assunto), campo('Dia da semana', dia)]));
-        cab.appendChild(fila([1, 1, 1], [campo('Primeiro vídeo a partir de', inicio), campo('Quantos vídeos terá', total), el('div', {})]));
+        cab.appendChild(fila([1.4, 1.4, 0.8], [campo('Nome', nome), campo('Assunto no blog', assunto), campo('Quantos vídeos terá', total)]));
         var salvar = botao('Salvar a série', function () {
           if (!nome.value.trim()) { P.mensagem(msg, 'Escreva o nome da série.', 'erro'); return; }
-          gravar('prod_series', series, s, { nome: nome.value.trim(), assunto: assunto.value.trim() || null, dia_semana: +dia.value, inicio: inicio.value || null, total: total.value ? +total.value : null })
+          gravar('prod_series', series, s, { nome: nome.value.trim(), assunto: assunto.value.trim() || null, total: total.value ? +total.value : null })
             .then(function (r) { if (!r.error) { P.mensagem(msg, 'Salvo.', 'ok'); tela(); } });
         }, false);
+        /* a série começa na data do primeiro vídeo: os outros ficam uma semana depois um do outro (os que já estão no ar não mudam) */
         var datas = botao('Ajustar as datas dos vídeos', function () {
-          var mapa = datasDaSerie({ inicio: inicio.value, dia_semana: +dia.value }, lista.filter(function (v) { return !v.no_ar; }));
-          if (!mapa) { P.mensagem(msg, 'Escolha o dia da semana e o dia do primeiro vídeo.', 'erro'); return; }
-          /* conta a partir do primeiro vídeo da série, mas só mexe nos que ainda não foram ao ar */
-          var todas = datasDaSerie({ inicio: inicio.value, dia_semana: +dia.value }, lista);
-          var mudar = lista.filter(function (v) { return !v.no_ar && todas[v.id]; });
-          Promise.all(mudar.map(function (v) { return gravar('prod_videos', videos, v, { data_postar: todas[v.id] }); })).then(function () { P.mensagem(msg, 'Datas ajustadas (os que já estão no ar não mudam).', 'ok'); tela(); });
+          var primeiro = lista[0];
+          if (!primeiro || !primeiro.data_postar) { P.mensagem(msg, 'Coloque primeiro a data de publicação do primeiro vídeo. Os outros vêm uma semana depois, um do outro.', 'erro'); return; }
+          var mudar = lista.map(function (v, i) { return { v: v, d: somarDias(primeiro.data_postar, 7 * i) }; }).filter(function (x) { return x.v !== primeiro && !x.v.no_ar; });
+          Promise.all(mudar.map(function (x) { return gravar('prod_videos', videos, x.v, { data_postar: x.d }); })).then(function () { P.mensagem(msg, 'Datas ajustadas a partir do primeiro vídeo.', 'ok'); tela(); });
         });
         var mais = botao('Criar os vídeos que faltam', function () {
           var n = total.value ? +total.value : 0;
