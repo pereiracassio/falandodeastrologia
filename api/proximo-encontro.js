@@ -44,13 +44,13 @@ module.exports = async (req, res) => {
       filtro = 'id=eq.' + encodeURIComponent(alunoId);
     }
     const al = await supa('/rest/v1/alunos?' + filtro + '&select=id,email');
-    if (!al || !al[0]) { res.status(200).json({ encontro: null }); return; }
+    if (!al || !al[0]) { res.status(200).json({ encontro: null, motivo: 'aluno não encontrado' }); return; }
     const emailAluno = String(al[0].email || '').toLowerCase();
     const cod = await supa('/rest/v1/aluno_codigos?aluno_id=eq.' + encodeURIComponent(al[0].id) + '&select=codigo');
     const codigo = semZeros(cod && cod[0] && cod[0].codigo);
 
     const conexao = await lerConexao();
-    if (!conexao) { res.status(200).json({ encontro: null }); return; }
+    if (!conexao) { res.status(200).json({ encontro: null, motivo: 'o Google Drive não está conectado' }); return; }
     const t = await tokenDeAcesso(conexao);
     const agora = new Date();
     const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?' + new URLSearchParams({
@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
       fields: 'items(summary,status,start,end,hangoutLink,attendees(email),conferenceData/entryPoints(entryPointType,uri))'
     });
     const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + t.valor } });
-    if (!resp.ok) { console.error('proximo-encontro google:', resp.status); res.status(200).json({ encontro: null }); return; }
+    if (!resp.ok) { console.error('proximo-encontro google:', resp.status); res.status(200).json({ encontro: null, motivo: resp.status === 403 ? 'a conexão com o Google ainda não tem a permissão da agenda: conecte o Google Drive de novo' : 'o Google respondeu erro ' + resp.status }); return; }
     const dados = await resp.json();
     const achado = (dados.items || []).find((ev) => {
       if (ev.status === 'cancelled' || !ev.start || !ev.start.dateTime) return false;
@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
       const m = String(ev.summary || '').match(/^\s*(\d{3,6})\b/);
       return !!(codigo && m && semZeros(m[1]) === codigo);
     });
-    if (!achado) { res.status(200).json({ encontro: null }); return; }
+    if (!achado) { res.status(200).json({ encontro: null, motivo: 'nenhum evento nos próximos ' + DIAS_A_FRENTE + ' dias com o código ' + (codigo || '(aluno sem código)') + ' no começo do título' }); return; }
     const video = ((achado.conferenceData && achado.conferenceData.entryPoints) || []).find((p) => p.entryPointType === 'video');
     const meet = achado.hangoutLink || (video && video.uri) || null;
     res.status(200).json({ encontro: {
@@ -76,6 +76,6 @@ module.exports = async (req, res) => {
     } });
   } catch (e) {
     console.error('proximo-encontro:', e.message);
-    res.status(200).json({ encontro: null });
+    res.status(200).json({ encontro: null, motivo: 'erro no servidor: ' + e.message });
   }
 };

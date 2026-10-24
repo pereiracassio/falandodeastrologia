@@ -723,7 +723,7 @@
       if (!sessao) return null;
       return fetch('https://falandodeastrologia.vercel.app/api/proximo-encontro' + (alunoId ? '?aluno=' + encodeURIComponent(alunoId) : ''), { headers: { Authorization: 'Bearer ' + sessao.access_token } })
         .then(function (resp) { return resp.ok ? resp.json() : null; })
-        .then(function (d) { return d && d.encontro || null; });
+        .then(function (d) { if (d && !d.encontro && d.motivo && alunoId) console.warn('próximo encontro:', d.motivo); return d && d.encontro ? d.encontro : (alunoId && d && d.motivo ? { motivo: d.motivo } : null); });
     }).catch(function () { return null; });
   }
   function textoEncontro(e) {
