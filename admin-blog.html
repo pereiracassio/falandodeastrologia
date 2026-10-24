@@ -276,7 +276,10 @@
             }
             return inserir();
           }).then(function () {
-            if (doVideo && id && !doVideo.ligado) { doVideo.ligado = true; return C.from('prod_videos').update({ blog_post_id: String(id), blog_ok: true }).eq('id', doVideo.video.id); }
+            if (doVideo && id && !doVideo.ligado) { doVideo.ligado = true; return C.from('prod_videos').update({ blog_post_id: String(id) }).eq('id', doVideo.video.id); }
+          }).then(function () {
+            /* "No blog" acompanha a postagem: marcado quando ela está publicada, desmarcado se voltar a rascunho (só o vídeo ligado a ela) */
+            if (id) return C.from('prod_videos').update({ blog_ok: !!publicar }).eq('blog_post_id', String(id));
           }).then(function () {
             if (imagemAntiga && imagemAntiga !== imagemUrl) removerImagemLivre(imagemAntiga);
             listaAposGravar();
@@ -305,6 +308,7 @@
             C.from('blog_posts').delete().eq('id', id).then(function (r) {
               if (r.error) { travar(false); P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
               removerImagemLivre(imagemAntiga);
+              C.from('prod_videos').update({ blog_ok: false, blog_post_id: null }).eq('blog_post_id', String(id)).then(function () {});
               listaAposGravar();
             });
           });

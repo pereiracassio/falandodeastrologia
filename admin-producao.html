@@ -376,8 +376,9 @@
       });
     }
 
-    function chip(texto, ligado, aoClicar) {
+    function chip(texto, ligado, aoClicar, atributos) {
       var b = el('button', { type: 'button', class: 'prod-chip prod-fixo' + (ligado ? ' on' : ''), text: texto, 'aria-pressed': ligado ? 'true' : 'false' });
+      Object.keys(atributos || {}).forEach(function (k) { b.setAttribute(k, atributos[k]); });
       b.addEventListener('click', function () { aoClicar(b); });
       return b;
     }
@@ -390,13 +391,28 @@
         });
       }));
     }
+    /* repinta todos os botões de etapa deste vídeo que estiverem na tela (o do roteiro lá embaixo e os de cima) */
+    function pintarEtapas(v) {
+      [].forEach.call(document.querySelectorAll('[data-video="' + v.id + '"][data-etapa]'), function (b) {
+        var on = !!v[b.getAttribute('data-etapa')];
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+    /* marcar "No YouTube" marca também o que vem antes (roteiro, gravado, editado); desmarcar não mexe nos outros.
+       "Cortes feitos" e "No blog" ficam de fora: cortes é você que marca, e o blog pode sair antes do vídeo. */
+    var ANTES_DO_YOUTUBE = ['roteiro_ok', 'gravado', 'editado'];
+    function marcarEtapa(v, campo, valor) {
+      var campos = {}; campos[campo] = valor;
+      if (campo === 'no_ar' && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
+      Object.keys(campos).forEach(function (k) { v[k] = campos[k]; });
+      pintarEtapas(v);
+      return gravar('prod_videos', videos, v, campos);
+    }
     function chipsDaEtapa(v, aoMudar) {
       return el('div', { class: 'prod-chips' }, ETAPAS.map(function (et) {
-        return chip(et[1], !!v[et[0]], function (b) {
-          var novo = !v[et[0]], campos = {}; campos[et[0]] = novo;
-          b.classList.toggle('on', novo); b.setAttribute('aria-pressed', novo ? 'true' : 'false');
-          gravar('prod_videos', videos, v, campos).then(function () { if (aoMudar) aoMudar(); });
-        });
+        return chip(et[1], !!v[et[0]], function () {
+          marcarEtapa(v, et[0], !v[et[0]]).then(function () { if (aoMudar) aoMudar(); });
+        }, { 'data-video': v.id, 'data-etapa': et[0] });
       }));
     }
     function botao(texto, aoClicar, sec) {
@@ -760,6 +776,8 @@
       }, 'Copiar o roteiro todo')]);
       if (usaBlocos) { cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Roteiro' })); desenharBlocos(); cartao.appendChild(areaBlocos); }
       else cartao.appendChild(campo('Roteiro', roteiro));
+      /* o roteiro só vira "pronto" quando você disser que terminou (às vezes ainda está sendo escrito) */
+      cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' })]));
       cartao.appendChild(linkRoteiro);
       cartao.appendChild(campo('Texto que vai junto (vai inteiro para a descrição do YouTube)', texto));
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return texto.value; }, 'Copiar o texto'),
@@ -858,6 +876,13 @@
         gravar('prod_videos', videos, v, c).then(function (r) { estadoSalvo.textContent = r && r.error ? 'Não salvou' : 'Salvo automaticamente'; });
       }
       function agendarSalvar() { estadoSalvo.textContent = 'Digitando...'; clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarSozinho, 1200); }
+      /* link do YouTube preenchido = o vídeo já está no YouTube (e tudo o que vem antes está feito) */
+      link.addEventListener('change', function () {
+        var lk = link.value.trim();
+        if (/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk) && !v.no_ar) {
+          marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
+        }
+      });
       [titulo, capaTexto, link, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
       });
