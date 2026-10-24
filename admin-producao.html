@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Produção - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="stylesheet" href="page.css?v=54">
+  <link rel="stylesheet" href="portal.css?v=14">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="tipografia.css?v=18">
+  <style>
+    /* Produção de vídeos: nas regras do site (papiro sem fundo próprio, contorno azul egípcio, canto reto).
+       Cinzel no que já vem pronto (rótulos, etapas, botões de marcar); letra à mão no que o Cássio escreve. */
+    .prod-fixo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
+    .prod-divisa{border:0;border-top:2px solid #1F5FA3;margin:16px 0}
+    .prod-rotulo{display:block;font-size:13px;color:#16233F;letter-spacing:.04em;margin:0 0 4px}
+    .prod-grupo{margin:0 0 6px;font-size:18px;font-weight:700;color:#A03E25}
+    .prod-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)}
+    .prod-linha:last-child{border-bottom:0}
+    .prod-titulo{font-weight:700;color:#16233F;font-size:15px}
+    .prod-sub{display:block;font-size:13px;color:#A03E25}
+    .prod-chips{display:flex;flex-wrap:wrap;gap:6px}
+    /* botão de marcar (etapa, rede): contorno fino; marcado = contorno grosso e texto terracota, nunca fundo */
+    .prod-chip{background:transparent;border:1px solid #1F5FA3;border-radius:0;color:#1034A6;padding:6px 10px;font-size:12px;cursor:pointer;line-height:1.2}
+    .prod-chip.on{border:3px solid #1F5FA3;padding:4px 8px;color:#A03E25;font-weight:700}
+    .prod-chip:hover{color:#A03E25}
+    .prod-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px}
+    .prod-corte{border-bottom:1px solid rgba(31,95,163,.7);padding:10px 0}
+    .prod-corte input{margin-bottom:8px}
+    .prod-corte-topo{display:grid;grid-template-columns:1fr 160px;gap:0 10px}
+    @media(max-width:560px){.prod-corte-topo{grid-template-columns:1fr}}
+    .prod-cal{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #1F5FA3;border-left:1px solid #1F5FA3}
+    .prod-cal>*{border-right:1px solid #1F5FA3;border-bottom:1px solid #1F5FA3;min-height:64px;padding:3px;font-size:11px;overflow:hidden;box-sizing:border-box}
+    .prod-cal .cab{min-height:0;text-align:center;font-size:11px;color:#1034A6;padding:5px 0}
+    .prod-cal .dia{cursor:pointer;text-align:left;background:transparent;border-radius:0;appearance:none;-webkit-appearance:none;font:inherit;margin:0;color:#16233F;border-top:0;border-left:0;width:100%;min-height:78px;vertical-align:top}
+    .prod-cal .dia.hoje{box-shadow:inset 0 0 0 3px #1F5FA3}
+    .prod-cal .dia.sel{color:#A03E25;box-shadow:inset 0 0 0 3px #A03E25}
+    .prod-cal .dia b{display:block;font-size:12px;color:#16233F}
+    .prod-cal .vid{display:block;color:#A03E25;font-weight:700;line-height:1.15;margin-top:2px}
+    .prod-cal .cor{display:block;color:#1034A6;line-height:1.15;margin-top:2px}
+    .prod-barra{height:8px;border:1px solid #1F5FA3;margin:6px 0 2px}
+    .prod-barra i{display:block;height:100%;background:#1F5FA3}
+    .prod-acoes-topo{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+    .prod-vazio{color:#16233F;opacity:.75;font-size:14px;margin:6px 0}
+  </style>
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/blog.html">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Produção</h1>
+    <p class="portal-sub">Acesso restrito ao administrador</p>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=49"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '';
+    var DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    var DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Editado'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
+    var REDES = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['shorts', 'Shorts']];
+
+    var series = [], videos = [], cortes = [];
+    var aba = 'hoje', serieAberta = null, videoAberto = null; /* serieAberta: id, 'soltos' ou null */
+    var mesCal = { ano: new Date().getFullYear(), mes: new Date().getMonth() }, diaCal = null;
+
+    /* ---------- datas (sempre texto aaaa-mm-dd, sem fuso) ---------- */
+    function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function deIso(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+    function somarDias(s, n) { var d = deIso(s); d.setDate(d.getDate() + n); return iso(d); }
+    function hoje() { return iso(new Date()); }
+    function curta(s) { return s ? deIso(s).getDate() + '/' + String(deIso(s).getMonth() + 1).padStart(2, '0') : ''; }
+    function comDia(s) { return s ? DIAS_CURTOS[deIso(s).getDay()] + ' ' + curta(s) : 'sem data'; }
+    function proximoDiaDaSemana(s, dia) { var d = deIso(s); while (d.getDay() !== dia) d.setDate(d.getDate() + 1); return iso(d); }
+    function proximoDiaUtil(s) { var d = deIso(s); while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1); return iso(d); }
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('producao', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          var e = P.estado.ler();
+          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null;
+          carregar();
+        });
+      });
+    }
+    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto }); }
+
+    function carregar() {
+      Promise.all([
+        C.from('prod_series').select('*').order('criado_em'),
+        C.from('prod_videos').select('*').order('numero').order('criado_em'),
+        C.from('prod_cortes').select('*').order('ordem').order('criado_em')
+      ]).then(function (r) {
+        if (r[0].error || r[1].error || r[2].error) {
+          limpar(); app.appendChild(topo(nomeAdmin));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Não consegui abrir a Produção (as tabelas ainda não foram criadas no Supabase).' })]));
+          return;
+        }
+        series = r[0].data || []; videos = r[1].data || []; cortes = r[2].data || [];
+        tela();
+      });
+    }
+
+    var achar = function (lista, id) { for (var i = 0; i < lista.length; i++) if (lista[i].id === id) return lista[i]; return null; };
+    var serieDe = function (v) { return v.serie_id ? achar(series, v.serie_id) : null; };
+    var nomeVideo = function (v) { var s = serieDe(v); return (s ? s.nome + ' · ' : '') + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
+    var cortesDe = function (vid) { return cortes.filter(function (c) { return c.video_id === vid; }); };
+    var cortePendente = function (c) { return !(c.instagram && c.tiktok && c.shorts); };
+
+    /* grava um campo ou vários e atualiza a cópia em memória */
+    function gravar(tabela, lista, obj, campos) {
+      Object.keys(campos).forEach(function (k) { obj[k] = campos[k]; });
+      return C.from(tabela).update(campos).eq('id', obj.id).then(function (r) {
+        if (r.error) window.alert('Não consegui salvar: ' + P.traduzErro(r.error.message));
+        return r;
+      });
+    }
+
+    function chip(texto, ligado, aoClicar) {
+      var b = el('button', { type: 'button', class: 'prod-chip prod-fixo' + (ligado ? ' on' : ''), text: texto, 'aria-pressed': ligado ? 'true' : 'false' });
+      b.addEventListener('click', function () { aoClicar(b); });
+      return b;
+    }
+    function chipsDoCorte(c) {
+      return el('div', { class: 'prod-chips' }, REDES.map(function (rd) {
+        return chip(rd[1], !!c[rd[0]], function (b) {
+          var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
+          b.classList.toggle('on', novo); b.setAttribute('aria-pressed', novo ? 'true' : 'false');
+          gravar('prod_cortes', cortes, c, campos);
+        });
+      }));
+    }
+    function chipsDaEtapa(v, aoMudar) {
+      return el('div', { class: 'prod-chips' }, ETAPAS.map(function (et) {
+        return chip(et[1], !!v[et[0]], function (b) {
+          var novo = !v[et[0]], campos = {}; campos[et[0]] = novo;
+          b.classList.toggle('on', novo); b.setAttribute('aria-pressed', novo ? 'true' : 'false');
+          gravar('prod_videos', videos, v, campos).then(function () { if (aoMudar) aoMudar(); });
+        });
+      }));
+    }
+    function botao(texto, aoClicar, sec) {
+      var b = el('button', { type: 'button', class: 'portal-btn' + (sec === false ? '' : ' portal-btn-sec'), text: texto });
+      b.addEventListener('click', aoClicar); return b;
+    }
+    function campo(rotulo, entrada) { return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
+    function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; guardarEstado(); tela(); window.scrollTo(0, 0); }
+
+    /* ---------- estrutura: abas ---------- */
+    function tela() {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var barra = el('div', { class: 'portal-abas', role: 'tablist' });
+      [['hoje', 'Hoje'], ['series', 'Séries'], ['calendario', 'Calendário']].forEach(function (d) {
+        var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] ? ' ativa' : ''), text: d[1] });
+        b.addEventListener('click', function () { irPara(d[0]); });
+        barra.appendChild(b);
+      });
+      app.appendChild(barra);
+      var area = el('div', {}); app.appendChild(area);
+      if (aba === 'series') {
+        if (videoAberto && achar(videos, videoAberto)) telaVideo(area, achar(videos, videoAberto));
+        else if (serieAberta) telaSerie(area, serieAberta);
+        else telaSeries(area);
+      } else if (aba === 'calendario') telaCalendario(area);
+      else telaHoje(area);
+    }
+
+    /* ---------- HOJE ---------- */
+    function linhaCorte(c, mostrarData) {
+      var v = achar(videos, c.video_id);
+      return el('div', { class: 'prod-linha' }, [
+        el('div', {}, [
+          el('span', { class: 'prod-titulo', text: c.titulo || 'Corte sem título' }),
+          el('span', { class: 'prod-sub', text: (mostrarData ? comDia(c.data) + ' · ' : '') + (v ? nomeVideo(v) : '') })
+        ]),
+        chipsDoCorte(c)
+      ]);
+    }
+    function telaHoje(area) {
+      var h = hoje(), cartao = el('div', { class: 'portal-cartao' });
+      area.appendChild(cartao);
+
+      var atrasados = cortes.filter(function (c) { return c.data && c.data < h && cortePendente(c); }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
+      var doDia = cortes.filter(function (c) { return c.data === h; });
+      cartao.appendChild(el('h2', { text: 'Hoje, ' + comDia(h) }));
+      if (!doDia.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte marcado para hoje.' }));
+      doDia.forEach(function (c) { cartao.appendChild(linhaCorte(c, false)); });
+      if (atrasados.length) {
+        cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+        cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Ficaram para trás' }));
+        atrasados.forEach(function (c) { cartao.appendChild(linhaCorte(c, true)); });
+      }
+
+      /* vídeos grandes que ainda não foram ao ar, com data até daqui a 14 dias (ou já passada) */
+      var limite = somarDias(h, 14);
+      var proxVideos = videos.filter(function (v) { return !v.no_ar && v.data_postar && v.data_postar <= limite; }).sort(function (a, b) { return a.data_postar < b.data_postar ? -1 : 1; });
+      cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+      cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Vídeos grandes que estão chegando' }));
+      if (!proxVideos.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum vídeo marcado para as próximas duas semanas.' }));
+      proxVideos.forEach(function (v) {
+        var falta = ETAPAS.slice(0, 4).filter(function (e) { return !v[e[0]]; })[0];
+        var linha = el('div', { class: 'prod-linha' }, [
+          el('div', {}, [
+            el('span', { class: 'prod-titulo', text: nomeVideo(v) }),
+            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + (v.data_postar < h ? ' · atrasado' : '') + (falta ? ' · falta: ' + falta[1].toLowerCase() : '') })
+          ])
+        ]);
+        linha.appendChild(botao('Abrir', function () { irPara('series', v.serie_id || 'soltos', v.id); }));
+        cartao.appendChild(linha);
+      });
+
+      /* cortes dos próximos 7 dias */
+      var proxCortes = cortes.filter(function (c) { return c.data && c.data > h && c.data <= somarDias(h, 7); }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
+      cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+      cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Cortes dos próximos 7 dias' }));
+      if (!proxCortes.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte marcado.' }));
+      proxCortes.forEach(function (c) { cartao.appendChild(linhaCorte(c, true)); });
+
+      /* fila do blog: já foi ao ar e ainda não virou postagem */
+      var fila = videos.filter(function (v) { return v.no_ar && !v.blog_ok; });
+      cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+      cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Fila do blog' }));
+      if (!fila.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nada esperando para virar postagem.' }));
+      var porSerie = {};
+      fila.forEach(function (v) { var k = v.serie_id || 'soltos'; (porSerie[k] = porSerie[k] || []).push(v); });
+      Object.keys(porSerie).forEach(function (k) {
+        var s = achar(series, k);
+        cartao.appendChild(el('span', { class: 'prod-sub', text: s ? s.nome + (s.assunto ? ' (assunto: ' + s.assunto + ')' : '') : 'Vídeos soltos' }));
+        porSerie[k].forEach(function (v) {
+          var linha = el('div', { class: 'prod-linha' }, [el('span', { class: 'prod-titulo', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') })]);
+          linha.appendChild(chip('Já está no blog', false, function () { gravar('prod_videos', videos, v, { blog_ok: true }).then(tela); }));
+          cartao.appendChild(linha);
+        });
+      });
+    }
+
+    /* ---------- SÉRIES ---------- */
+    function resumoSerie(lista) {
+      var n = lista.length;
+      var conta = function (campo) { return lista.filter(function (v) { return v[campo]; }).length; };
+      return n ? conta('roteiro_ok') + ' roteiros · ' + conta('gravado') + ' gravados · ' + conta('no_ar') + ' no ar · ' + conta('blog_ok') + ' no blog' : 'Nenhum vídeo ainda';
+    }
+    function telaSeries(area) {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Séries' })]);
+      area.appendChild(cartao);
+      cartao.appendChild(el('div', { class: 'prod-acoes-topo' }, [botao('Nova série', function () { novaSerie(); }, false)]));
+      series.forEach(function (s) {
+        var lista = videos.filter(function (v) { return v.serie_id === s.id; });
+        var previstos = Math.max(s.total || 0, lista.length);
+        var pct = previstos ? Math.round(100 * lista.filter(function (v) { return v.no_ar; }).length / previstos) : 0;
+        var corpo = el('div', {}, [
+          el('span', { class: 'prod-titulo', text: s.nome }),
+          el('span', { class: 'prod-sub', text: resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
+          el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
+        ]);
+        var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo]), botao('Abrir', function () { irPara('series', s.id); })]);
+        linha.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') irPara('series', s.id); });
+        cartao.appendChild(linha);
+      });
+      var soltos = videos.filter(function (v) { return !v.serie_id; });
+      var ls = el('div', { class: 'prod-linha' }, [el('div', {}, [el('span', { class: 'prod-titulo', text: 'Vídeos soltos' }), el('span', { class: 'prod-sub', text: resumoSerie(soltos) })]), botao('Abrir', function () { irPara('series', 'soltos'); })]);
+      cartao.appendChild(ls);
+    }
+
+    function novaSerie() {
+      var nome = window.prompt('Nome da série:');
+      if (!nome || !nome.trim()) return;
+      C.from('prod_series').insert({ nome: nome.trim(), dia_semana: 5 }).select('*').single().then(function (r) {
+        if (r.error) { window.alert('Não consegui criar: ' + P.traduzErro(r.error.message)); return; }
+        series.push(r.data); irPara('series', r.data.id);
+      });
+    }
+
+    /* data de cada vídeo da série: o primeiro no dia da semana escolhido, depois um por semana, na ordem do número */
+    function datasDaSerie(s, lista) {
+      if (!s.inicio || s.dia_semana == null) return null;
+      var d = proximoDiaDaSemana(s.inicio, s.dia_semana), mapa = {};
+      lista.slice().sort(function (a, b) { return (a.numero || 0) - (b.numero || 0); }).forEach(function (v) { mapa[v.id] = d; d = somarDias(d, 7); });
+      return mapa;
+    }
+
+    function telaSerie(area, id) {
+      var s = id === 'soltos' ? null : achar(series, id);
+      if (id !== 'soltos' && !s) { serieAberta = null; guardarEstado(); return telaSeries(area); }
+      var lista = videos.filter(function (v) { return (v.serie_id || null) === (s ? s.id : null); }).sort(function (a, b) { return (a.numero || 0) - (b.numero || 0); });
+      var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: s ? s.nome : 'Vídeos soltos' })]);
+      area.appendChild(cab);
+      var msg = el('p', { class: 'portal-msg' });
+
+      if (s) {
+        var nome = el('input', { type: 'text', maxlength: '120' }); nome.value = s.nome;
+        var assunto = el('input', { type: 'text', maxlength: '60', placeholder: 'Assunto do blog (geralmente o nome da série)' }); assunto.value = s.assunto || '';
+        var dia = el('select', {}); DIAS.forEach(function (d, i) { var o = el('option', { value: String(i), text: d }); if (s.dia_semana === i) o.selected = true; dia.appendChild(o); });
+        var inicio = el('input', { type: 'date' }); inicio.value = s.inicio || '';
+        var total = el('input', { type: 'number', min: '1', max: '200', placeholder: 'Quantos vídeos' }); total.value = s.total || '';
+        cab.appendChild(el('div', { class: 'prod-campos' }, [campo('Nome', nome), campo('Assunto no blog', assunto), campo('Dia da semana', dia), campo('Primeiro vídeo a partir de', inicio), campo('Quantos vídeos terá', total)]));
+        var salvar = botao('Salvar a série', function () {
+          if (!nome.value.trim()) { P.mensagem(msg, 'Escreva o nome da série.', 'erro'); return; }
+          gravar('prod_series', series, s, { nome: nome.value.trim(), assunto: assunto.value.trim() || null, dia_semana: +dia.value, inicio: inicio.value || null, total: total.value ? +total.value : null })
+            .then(function (r) { if (!r.error) { P.mensagem(msg, 'Salvo.', 'ok'); tela(); } });
+        }, false);
+        var datas = botao('Ajustar as datas dos vídeos', function () {
+          var mapa = datasDaSerie({ inicio: inicio.value, dia_semana: +dia.value }, lista.filter(function (v) { return !v.no_ar; }));
+          if (!mapa) { P.mensagem(msg, 'Escolha o dia da semana e o dia do primeiro vídeo.', 'erro'); return; }
+          /* conta a partir do primeiro vídeo da série, mas só mexe nos que ainda não foram ao ar */
+          var todas = datasDaSerie({ inicio: inicio.value, dia_semana: +dia.value }, lista);
+          var mudar = lista.filter(function (v) { return !v.no_ar && todas[v.id]; });
+          Promise.all(mudar.map(function (v) { return gravar('prod_videos', videos, v, { data_postar: todas[v.id] }); })).then(function () { P.mensagem(msg, 'Datas ajustadas (os que já estão no ar não mudam).', 'ok'); tela(); });
+        });
+        var mais = botao('Criar os vídeos que faltam', function () {
+          var n = total.value ? +total.value : 0;
+          if (!n || n <= lista.length) { P.mensagem(msg, 'Escreva em "Quantos vídeos terá" um número maior que os vídeos que já existem.', 'erro'); return; }
+          var novos = [];
+          for (var i = lista.length + 1; i <= n; i++) novos.push({ serie_id: s.id, numero: i, titulo: 'Vídeo ' + i });
+          C.from('prod_videos').insert(novos).select('*').then(function (r) {
+            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+            (r.data || []).forEach(function (v) { videos.push(v); }); tela();
+          });
+        });
+        var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir a série' });
+        apagar.addEventListener('click', function () {
+          if (!window.confirm('Excluir a série "' + s.nome + '" com todos os vídeos e cortes? Não dá para desfazer.')) return;
+          C.from('prod_series').delete().eq('id', s.id).then(function (r) {
+            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+            var ids = videos.filter(function (v) { return v.serie_id === s.id; }).map(function (v) { return v.id; });
+            videos = videos.filter(function (v) { return v.serie_id !== s.id; });
+            cortes = cortes.filter(function (c) { return ids.indexOf(c.video_id) < 0; });
+            series = series.filter(function (x) { return x.id !== s.id; });
+            irPara('series');
+          });
+        });
+        cab.appendChild(el('div', { class: 'portal-acoes' }, [salvar, datas, mais]));
+        cab.appendChild(msg);
+        cab.appendChild(el('div', { class: 'portal-acoes' }, [apagar]));
+      } else cab.appendChild(msg);
+
+      var vc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Vídeos' })]);
+      area.appendChild(vc);
+      vc.appendChild(el('div', { class: 'prod-acoes-topo' }, [
+        botao('Novo vídeo', function () {
+          var prox = lista.reduce(function (m, v) { return Math.max(m, v.numero || 0); }, 0) + 1;
+          C.from('prod_videos').insert({ serie_id: s ? s.id : null, numero: prox, titulo: 'Vídeo ' + prox }).select('*').single().then(function (r) {
+            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+            videos.push(r.data); irPara('series', serieAberta, r.data.id);
+          });
+        }, false),
+        botao('Voltar às séries', function () { irPara('series'); })
+      ]));
+      if (!lista.length) vc.appendChild(el('p', { class: 'prod-vazio', text: s ? 'Nenhum vídeo ainda. Escreva "Quantos vídeos terá" e toque em "Criar os vídeos que faltam", ou use "Novo vídeo".' : 'Nenhum vídeo solto.' }));
+      lista.forEach(function (v) {
+        var nc = cortesDe(v.id).length;
+        var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [
+          el('div', { style: 'flex:1;min-width:200px' }, [
+            el('span', { class: 'prod-titulo', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }),
+            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
+          ]),
+          chipsDaEtapa(v)
+        ]);
+        var abrir = botao('Abrir', function () { irPara('series', serieAberta, v.id); });
+        linha.appendChild(abrir);
+        linha.addEventListener('click', function (e) { if (!/BUTTON/.test(e.target.tagName)) irPara('series', serieAberta, v.id); });
+        vc.appendChild(linha);
+      });
+    }
+
+    /* ---------- UM VÍDEO ---------- */
+    function telaVideo(area, v) {
+      var s = serieDe(v), msg = el('p', { class: 'portal-msg' });
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
+      area.appendChild(cartao);
+
+      var titulo = el('input', { type: 'text', maxlength: '160' }); titulo.value = v.titulo || '';
+      var numero = el('input', { type: 'number', min: '1' }); numero.value = v.numero || '';
+      var data = el('input', { type: 'date' }); data.value = v.data_postar || '';
+      var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
+      var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
+      var texto = el('textarea', { rows: '6', placeholder: 'Texto que vai junto com o vídeo (descrição, legenda)' }); texto.value = v.texto_postagem || '';
+      cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título', titulo), campo('Número na série', numero), campo('Data de postar', data), campo('Link do YouTube', link)]));
+      cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Etapas' }));
+      cartao.appendChild(chipsDaEtapa(v));
+      cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+      cartao.appendChild(campo('Roteiro', roteiro));
+      cartao.appendChild(campo('Texto que vai junto', texto));
+      var salvar = botao('Salvar', function () {
+        if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
+        if (link.value.trim() && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(link.value.trim())) { P.mensagem(msg, 'O link precisa ser do YouTube.', 'erro'); return; }
+        gravar('prod_videos', videos, v, { titulo: titulo.value.trim(), numero: numero.value ? +numero.value : null, data_postar: data.value || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value })
+          .then(function (r) { if (!r.error) P.mensagem(msg, 'Salvo.', 'ok'); });
+      }, false);
+      var voltar = botao('Voltar', function () { irPara('series', serieAberta); });
+      var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o vídeo' });
+      apagar.addEventListener('click', function () {
+        if (!window.confirm('Excluir este vídeo e os cortes dele? Não dá para desfazer.')) return;
+        C.from('prod_videos').delete().eq('id', v.id).then(function (r) {
+          if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+          videos = videos.filter(function (x) { return x.id !== v.id; }); cortes = cortes.filter(function (c) { return c.video_id !== v.id; });
+          irPara('series', serieAberta);
+        });
+      });
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [salvar, voltar, apagar]));
+      cartao.appendChild(msg);
+
+      /* cortes */
+      var cc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cortes' })]);
+      area.appendChild(cc);
+      var lista = cortesDe(v.id);
+      var inicioEsp = el('input', { type: 'date' }); inicioEsp.value = v.data_postar ? somarDias(v.data_postar, 1) : '';
+      var msgC = el('p', { class: 'portal-msg' });
+      cc.appendChild(el('div', { class: 'prod-acoes-topo' }, [botao('+ corte', function () {
+        var ordem = lista.reduce(function (m, c) { return Math.max(m, c.ordem || 0); }, 0) + 1;
+        C.from('prod_cortes').insert({ video_id: v.id, ordem: ordem, titulo: 'Corte ' + ordem }).select('*').single().then(function (r) {
+          if (r.error) { P.mensagem(msgC, P.traduzErro(r.error.message), 'erro'); return; }
+          cortes.push(r.data); tela();
+        });
+      }, false)]));
+      if (!lista.length) cc.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte ainda. Toque em "+ corte" para cada trecho que você tirar do vídeo.' }));
+      lista.forEach(function (c) {
+        var t = el('input', { type: 'text', maxlength: '160', placeholder: 'Título ou ideia do corte' }); t.value = c.titulo || '';
+        var d = el('input', { type: 'date' }); d.value = c.data || '';
+        t.addEventListener('change', function () { gravar('prod_cortes', cortes, c, { titulo: t.value.trim() || null }); });
+        d.addEventListener('change', function () { gravar('prod_cortes', cortes, c, { data: d.value || null }); });
+        var tirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir' });
+        tirar.addEventListener('click', function () {
+          if (!window.confirm('Excluir este corte?')) return;
+          C.from('prod_cortes').delete().eq('id', c.id).then(function (r) {
+            if (r.error) { P.mensagem(msgC, P.traduzErro(r.error.message), 'erro'); return; }
+            cortes = cortes.filter(function (x) { return x.id !== c.id; }); tela();
+          });
+        });
+        cc.appendChild(el('div', { class: 'prod-corte' }, [
+          el('div', { class: 'prod-corte-topo' }, [t, d]),
+          el('div', { class: 'prod-linha', style: 'border:0;padding:0' }, [chipsDoCorte(c), tirar])
+        ]));
+      });
+      if (lista.length) {
+        cc.appendChild(el('hr', { class: 'prod-divisa' }));
+        cc.appendChild(campo('Espalhar os cortes de segunda a sexta, a partir de', inicioEsp));
+        cc.appendChild(el('div', { class: 'portal-acoes' }, [botao('Espalhar as datas', function () {
+          if (!inicioEsp.value) { P.mensagem(msgC, 'Escolha o dia em que o primeiro corte sai.', 'erro'); return; }
+          var d = proximoDiaUtil(inicioEsp.value), ops = [];
+          lista.slice().sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); }).forEach(function (c) {
+            ops.push(gravar('prod_cortes', cortes, c, { data: d }));
+            d = proximoDiaUtil(somarDias(d, 1));
+          });
+          Promise.all(ops).then(function () { tela(); });
+        })]));
+      }
+      cc.appendChild(msgC);
+    }
+
+    /* ---------- CALENDÁRIO ---------- */
+    function telaCalendario(area) {
+      var cartao = el('div', { class: 'portal-cartao' });
+      area.appendChild(cartao);
+      var ant = botao('Anterior', function () { mesCal.mes--; if (mesCal.mes < 0) { mesCal.mes = 11; mesCal.ano--; } tela(); });
+      var prox = botao('Próximo', function () { mesCal.mes++; if (mesCal.mes > 11) { mesCal.mes = 0; mesCal.ano++; } tela(); });
+      cartao.appendChild(el('div', { class: 'prod-linha', style: 'border:0' }, [ant, el('span', { class: 'prod-grupo', style: 'margin:0', text: MESES[mesCal.mes] + ' ' + mesCal.ano }), prox]));
+      var grade = el('div', { class: 'prod-cal' });
+      DIAS_CURTOS.forEach(function (d) { grade.appendChild(el('div', { class: 'cab prod-fixo', text: d })); });
+      var primeiro = new Date(mesCal.ano, mesCal.mes, 1), nDias = new Date(mesCal.ano, mesCal.mes + 1, 0).getDate(), h = hoje();
+      for (var i = 0; i < primeiro.getDay(); i++) grade.appendChild(el('div', {}));
+      for (var n = 1; n <= nDias; n++) {
+        (function (n) {
+          var s = mesCal.ano + '-' + String(mesCal.mes + 1).padStart(2, '0') + '-' + String(n).padStart(2, '0');
+          var vs = videos.filter(function (v) { return v.data_postar === s; }), cs = cortes.filter(function (c) { return c.data === s; });
+          var cel = el('button', { type: 'button', class: 'dia' + (s === h ? ' hoje' : '') + (s === diaCal ? ' sel' : '') }, [el('b', { text: String(n) })]);
+          vs.forEach(function (v) { cel.appendChild(el('span', { class: 'vid', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || '') })); });
+          if (cs.length) cel.appendChild(el('span', { class: 'cor', text: cs.length + (cs.length === 1 ? ' corte' : ' cortes') }));
+          cel.addEventListener('click', function () { diaCal = s; tela(); });
+          grade.appendChild(cel);
+        })(n);
+      }
+      cartao.appendChild(grade);
+      if (diaCal) {
+        cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+        cartao.appendChild(el('p', { class: 'prod-grupo', text: comDia(diaCal) }));
+        var vs = videos.filter(function (v) { return v.data_postar === diaCal; }), cs = cortes.filter(function (c) { return c.data === diaCal; });
+        if (!vs.length && !cs.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nada marcado neste dia.' }));
+        vs.forEach(function (v) {
+          cartao.appendChild(el('div', { class: 'prod-linha' }, [
+            el('div', {}, [el('span', { class: 'prod-titulo', text: nomeVideo(v) }), el('span', { class: 'prod-sub', text: 'vídeo grande' + (v.no_ar ? ' · já está no ar' : '') })]),
+            botao('Abrir', function () { irPara('series', v.serie_id || 'soltos', v.id); })
+          ]));
+        });
+        cs.forEach(function (c) { cartao.appendChild(linhaCorte(c, false)); });
+      }
+    }
+
+    C.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>
