@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=15">
+  <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -48,15 +48,13 @@
       var q = new URLSearchParams(location.search), f = new URLSearchParams();
       if (!q.get('u') || !q.get('servico')) return null;
       ['u', 'servico', 'sa', 'agenda', 'nome', 'whatsapp', 'email'].forEach(function (k) { if (q.get(k)) f.set(k, q.get(k)); });
-      var endereco = FORM_BASE + '?' + f.toString();
-      var quadro = el('iframe', { class: 'portal-form', src: endereco, title: 'Seus dados para o atendimento', scrolling: 'no' });
+      var quadro = el('iframe', { class: 'portal-form', src: FORM_BASE + '?' + f.toString(), title: 'Seus dados para o atendimento', scrolling: 'no' });
       window.addEventListener('message', function (ev) {
         if (ev.source !== quadro.contentWindow || !ev.data || ev.data.tipo !== 'astrohellenic-altura') return;
         var h = Number(ev.data.altura);
         if (h > 100 && h < 8000) quadro.style.height = h + 'px';
       });
-      return el('div', { class: 'portal-form-caixa' }, [el('h2', { class: 'portal-form-titulo', text: 'Seus dados para o atendimento' }), quadro,
-        el('p', { class: 'portal-form-alt' }, [el('a', { href: endereco, target: '_blank', rel: 'noopener', text: 'Abrir o formulário em outra página' })])]);
+      return el('div', { class: 'portal-form-caixa' }, [quadro]);
     }
     function mostrarLogin() {
       limpar();
