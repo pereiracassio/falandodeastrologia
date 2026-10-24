@@ -59,3 +59,8 @@
 /* Janela do Google Drive (Picker): o site força "body>*{position:relative}", o que jogava a janela pra baixo da página e travava a tela */
 body>.picker-dialog-bg{position:absolute!important;z-index:1000!important}
 body>.picker-dialog{position:absolute!important;z-index:1001!important}
+
+/* formulário do Astro Hellenic embutido no Seu espaço: sem caixa em volta (o formulário já traz a dele) */
+.portal-form-caixa{margin-bottom:18px}
+.portal-form-titulo{font-family:'Cinzel',serif;font-size:16px;color:#A03E25;margin:0 0 10px;letter-spacing:.5px}
+.portal-form{display:block;width:100%;height:760px;border:0;background:transparent}

@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=13">
+  <link rel="stylesheet" href="portal.css?v=14">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -41,8 +41,24 @@
     function limpar() { app.textContent = ''; }
     function sair() { P.client.auth.signOut().then(mostrarLogin); }
 
+    /* formulário do Astro Hellenic embutido: a volta do pagamento traz os dados na URL (u, servico, sa, agenda, nome, whatsapp, email);
+       a página de dentro avisa a altura dela por postMessage. Sem esses dados na URL, o cartão nem aparece. */
+    var FORM_BASE = 'https://astrohellenic.github.io/formulario.html';
+    function cartaoFormulario() {
+      var q = new URLSearchParams(location.search), f = new URLSearchParams();
+      if (!q.get('u') || !q.get('servico')) return null;
+      ['u', 'servico', 'sa', 'agenda', 'nome', 'whatsapp', 'email'].forEach(function (k) { if (q.get(k)) f.set(k, q.get(k)); });
+      var quadro = el('iframe', { class: 'portal-form', src: FORM_BASE + '?' + f.toString(), title: 'Seus dados para o atendimento', scrolling: 'no' });
+      window.addEventListener('message', function (ev) {
+        if (ev.source !== quadro.contentWindow || !ev.data || ev.data.tipo !== 'astrohellenic-altura') return;
+        var h = Number(ev.data.altura);
+        if (h > 100 && h < 8000) quadro.style.height = h + 'px';
+      });
+      return el('div', { class: 'portal-form-caixa' }, [el('h2', { class: 'portal-form-titulo', text: 'Seus dados para o atendimento' }), quadro]);
+    }
     function mostrarLogin() {
       limpar();
+      var form = cartaoFormulario(); if (form) app.appendChild(form);
       var entrar = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
       entrar.addEventListener('click', function () { P.entrarComGoogle('/cliente.html'); });
       app.appendChild(el('div', { class: 'portal-cartao' }, [
@@ -114,6 +130,7 @@
     /* verId = o administrador vendo como o cliente vê (cliente.html?ver=ID); nada é salvo nem enviado */
     function mostrarPortal(user, verId) {
       limpar();
+      var form = cartaoFormulario(); if (form) app.appendChild(form);
       var email = String(user.email || '').toLowerCase();
       var sairBtn = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       sairBtn.addEventListener('click', sair);

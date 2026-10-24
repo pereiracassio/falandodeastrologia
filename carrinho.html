@@ -208,7 +208,8 @@
   desenhar();
 
   // ---- Pagamento (um único link da InfinitePay com todos os serviços) ----
-  var FORM_URL = "https://astrohellenic.github.io/formulario.html?u=87101e7e-657c-4ca6-ab73-495e00af149f";
+  // depois de pagar, a pessoa volta para o Seu espaço, que traz o formulário do Astro Hellenic embutido (ver cliente.html)
+  var FORM_URL = location.origin + "/cliente.html?u=87101e7e-657c-4ca6-ab73-495e00af149f";
   var INFINITEPAY_HANDLE = "cassiopereira_";
   var INFINITEPAY_API = "https://api.checkout.infinitepay.io/links";
 

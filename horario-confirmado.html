@@ -33,7 +33,10 @@
     .confirmado .botoes a { box-sizing: border-box; display: inline-block; width: 100%; max-width: 320px; padding: 12px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; text-decoration: none; }
     .confirmado .btn-wpp { border: 2px solid #4A7C59; color: #4A7C59; }
     .confirmado .btn-home { background: #1F5FA3; color: #f6e7b4; }
+  /* dentro do quadro do Seu espaço (depois do formulário/agenda do Astro Hellenic): só a confirmação, sem cabeçalho nem botões de navegação */
+    html.embutido .cab-papiro, html.embutido .confirmado .material, html.embutido .confirmado .btn-home { display: none; }
   </style>
+  <script>if (window.parent !== window) document.documentElement.classList.add('embutido');</script>
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
