@@ -397,7 +397,7 @@
         var datasSerie = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort();
         var periodo = datasSerie.length ? P.dataBR(datasSerie[0]) + (datasSerie.length > 1 && datasSerie[datasSerie.length - 1] !== datasSerie[0] ? ' até ' + P.dataBR(datasSerie[datasSerie.length - 1]) : '') : '';
         var corpo = el('div', {}, [
-          el('span', { class: 'prod-titulo' }, [document.createTextNode(s.nome), periodo ? el('span', { class: 'prod-sub', style: 'display:inline;margin-left:12px;font-weight:400', text: periodo }) : null]),
+          el('span', { class: 'prod-titulo' }, [document.createTextNode(s.nome), periodo ? el('span', { class: 'prod-sub', style: 'display:inline;margin-left:12px;font-weight:400;color:#B5852F', text: periodo }) : null]),
           el('span', { class: 'prod-sub', text: resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
           el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
         ]);
