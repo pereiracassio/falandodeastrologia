@@ -191,6 +191,16 @@
       document.addEventListener('fullscreenchange', function aoSair() { if (!document.fullscreenElement) { document.removeEventListener('fullscreenchange', aoSair); if (tela.parentNode) encerrar(); } });
     }
 
+    /* aviso fixo no pé da tela: aparece mesmo que a página esteja rolada para qualquer lugar */
+    var tempoAviso = null;
+    function avisoFlutuante(texto, erro) {
+      var a = document.getElementById('prod-aviso');
+      if (!a) { a = el('div', { id: 'prod-aviso' }); document.body.appendChild(a); }
+      a.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99998;padding:12px 22px;border:3px solid #1F5FA3;border-radius:0;background:#F3E3B8;color:' + (erro ? '#A03E25' : '#16233F') + ';font-family:var(--fonte-titulo);text-transform:lowercase;font-size:16px;font-weight:700';
+      a.textContent = texto; a.style.display = 'block';
+      clearTimeout(tempoAviso); tempoAviso = setTimeout(function () { a.style.display = 'none'; }, 2200);
+    }
+
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
     function topo(texto) { return P.navAdmin('producao', texto, sair); }
@@ -472,16 +482,7 @@
 
       var vc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Vídeos' })]);
       area.appendChild(vc);
-      vc.appendChild(el('div', { class: 'prod-acoes-topo' }, [
-        botao('Novo vídeo', function () {
-          var prox = lista.reduce(function (m, v) { return Math.max(m, v.numero || 0); }, 0) + 1;
-          C.from('prod_videos').insert({ serie_id: s ? s.id : null, numero: prox, titulo: 'Vídeo ' + prox }).select('*').single().then(function (r) {
-            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
-            videos.push(r.data); irPara('series', serieAberta, r.data.id);
-          });
-        }, false),
-        botao('Voltar às séries', function () { irPara('series'); })
-      ]));
+      vc.appendChild(el('div', { class: 'prod-acoes-topo' }, [botao('Voltar às séries', function () { irPara('series'); })]));
       if (!lista.length) vc.appendChild(el('p', { class: 'prod-vazio', text: s ? 'Nenhum vídeo ainda. Escreva "Quantos vídeos terá" e toque em "Criar os vídeos que faltam", ou use "Novo vídeo".' : 'Nenhum vídeo solto.' }));
       lista.forEach(function (v) {
         var nc = cortesDe(v.id).length;
@@ -502,6 +503,19 @@
         linha.addEventListener('click', function (e) { if (!/^(BUTTON|A)$/.test(e.target.tagName)) irPara('series', serieAberta, v.id); });
         vc.appendChild(linha);
       });
+      /* o botão fica depois do último vídeo; o novo já vem com o número seguinte e a data uma semana depois do último */
+      vc.appendChild(el('div', { class: 'prod-acoes-topo', style: 'margin-top:14px' }, [
+        botao('Novo vídeo', function () {
+          var prox = lista.reduce(function (m, v) { return Math.max(m, v.numero || 0); }, 0) + 1;
+          var ultima = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort().pop();
+          var novoVideo = { serie_id: s ? s.id : null, numero: prox, titulo: 'Vídeo ' + prox };
+          if (ultima) novoVideo.data_postar = somarDias(ultima, 7);
+          C.from('prod_videos').insert(novoVideo).select('*').single().then(function (r) {
+            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+            videos.push(r.data); irPara('series', serieAberta, r.data.id);
+          });
+        }, false)
+      ]));
     }
 
     /* ---------- UM VÍDEO ---------- */
@@ -630,7 +644,14 @@
       }
       desenharCards();
       cartao.appendChild(estadoSalvo);
+      /* salvar não pode jogar a página para o topo (o teclado fechando no iPad faz isso): guarda onde estava e volta para o mesmo ponto */
+      var yAntes = null;
+      function voltarAoPonto() {
+        if (yAntes == null) return; var y = yAntes;
+        [0, 120, 350, 800].forEach(function (ms) { setTimeout(function () { if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); }, ms); });
+      }
       var salvar = botao('Salvar', function () {
+        if (yAntes == null) yAntes = window.scrollY;
         if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
         if (link.value.trim() && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(link.value.trim())) { P.mensagem(msg, 'O link precisa ser do YouTube.', 'erro'); return; }
         var campos = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
@@ -647,8 +668,11 @@
         subir.then(function () {
           campos.capa_url = capaUrl || null;
           return gravar('prod_videos', videos, v, campos);
-        }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); } })
-          .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto: ' + P.traduzErro(e && e.message), 'erro'); });
+        }).then(function (r) {
+          if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); avisoFlutuante('Salvo'); }
+          else avisoFlutuante('Não salvou', true);
+          voltarAoPonto();
+        }).catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto: ' + P.traduzErro(e && e.message), 'erro'); avisoFlutuante('Não salvou', true); voltarAoPonto(); });
       }, false);
       /* salva sozinho enquanto digita (só os textos; a foto da capa só guarda no botão Salvar) */
       var tempoSalvar = null;
@@ -666,6 +690,8 @@
         c.addEventListener('input', agendarSalvar);
       });
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
+      salvar.addEventListener('pointerdown', function () { yAntes = window.scrollY; });
+      salvar.addEventListener('touchstart', function () { yAntes = window.scrollY; }, { passive: true });
       var voltar = botao('Voltar', function () { clearTimeout(tempoSalvar); salvarSozinho(); irPara('series', serieAberta); });
       var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o vídeo' });
       apagar.addEventListener('click', function () {
