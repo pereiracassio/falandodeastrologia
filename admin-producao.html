@@ -308,6 +308,14 @@
       });
       return caixa;
     }
+    /* "← voltar" em terracota (em cima e embaixo da tela do vídeo): guarda o que estiver digitando e abre a lista no fim */
+    function botaoVoltar() {
+      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
+      b.style.cssText = 'color:#A03E25!important;font-weight:700';
+      b.addEventListener('click', function () { if (voltarDoVideo) voltarDoVideo(); });
+      return b;
+    }
+    var voltarDoVideo = null;
     function campo(rotulo, entrada) { return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
     function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; guardarEstado(); tela(); window.scrollTo(0, 0); }
 
@@ -543,7 +551,7 @@
     /* ---------- UM VÍDEO ---------- */
     function telaVideo(area, v) {
       var s = serieDe(v), msg = el('p', { class: 'portal-msg' });
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
+      var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin:0 0 6px' }, [botaoVoltar()]), el('h2', { text: nomeVideo(v) })]);
       area.appendChild(cartao);
 
       var titulo = el('input', { type: 'text', maxlength: '160' }); titulo.value = v.titulo || '';
@@ -713,9 +721,10 @@
         c.addEventListener('input', agendarSalvar);
       });
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
+      voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; irPara('series', serieAberta); };
       salvar.addEventListener('pointerdown', function () { yAntes = window.scrollY; });
       salvar.addEventListener('touchstart', function () { yAntes = window.scrollY; }, { passive: true });
-      var voltar = botao('Voltar', function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; irPara('series', serieAberta); });
+      var voltar = botaoVoltar();
       var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o vídeo' });
       apagar.addEventListener('click', function () {
         if (!window.confirm('Excluir este vídeo e os cortes dele? Não dá para desfazer.')) return;
