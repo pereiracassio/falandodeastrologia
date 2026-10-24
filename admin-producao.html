@@ -751,7 +751,11 @@
       }
       var linkRoteiro = el('div', { class: 'portal-acoes', style: 'margin:0 0 8px' }, [botao('Gravar com o roteiro (tela cheia)', function () {
         modoGravacao(titulo.value, usaBlocos ? itensBlocos() : [{ nome: '', texto: roteiro.value }]);
-      }, false)]);
+      }, false), botaoCopiar(function () {
+        /* o roteiro inteiro em um texto só: cada bloco com o nome em cima (Gancho, Bloco 1, ..., Conclusão); blocos vazios ficam de fora */
+        if (!usaBlocos) return roteiro.value.trim();
+        return itensBlocos().filter(function (i) { return i.texto.trim(); }).map(function (i) { return i.nome + '\n' + i.texto.trim(); }).join('\n\n');
+      }, 'Copiar o roteiro todo')]);
       if (usaBlocos) { cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Roteiro' })); desenharBlocos(); cartao.appendChild(areaBlocos); }
       else cartao.appendChild(campo('Roteiro', roteiro));
       cartao.appendChild(linkRoteiro);
