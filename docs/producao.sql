@@ -62,3 +62,7 @@ alter table public.prod_videos add column if not exists cards text;
 
 -- (24/10) Roteiro em blocos (gancho, blocos 1..n, conclusão) para os vídeos novos; o campo "roteiro" antigo continua valendo para os já escritos.
 alter table public.prod_videos add column if not exists roteiro_blocos jsonb;
+
+-- (24/10) Público ou de membros: na série (os vídeos novos herdam) e em cada vídeo (pode ser diferente da série).
+alter table public.prod_series add column if not exists acesso text not null default 'publico' check (acesso in ('publico','membros'));
+alter table public.prod_videos add column if not exists acesso text not null default 'publico' check (acesso in ('publico','membros'));

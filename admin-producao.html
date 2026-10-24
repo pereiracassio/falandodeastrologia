@@ -288,6 +288,21 @@
       f.style.gridTemplateColumns = cols.map(function (c) { return 'minmax(0,' + c + 'fr)'; }).join(' ');
       return f;
     }
+    /* público ou de membros: dois botões de escolha única; guarda na hora que toca */
+    var rotuloAcesso = function (v) { return (v && v.acesso) === 'membros' ? 'membros' : 'público'; };
+    function escolhaAcesso(atual, aoEscolher) {
+      var valor = atual === 'membros' ? 'membros' : 'publico', botoes = [];
+      var caixa = el('div', { class: 'prod-chips', style: 'margin:0 0 14px' });
+      [['publico', 'Público'], ['membros', 'Membros']].forEach(function (o) {
+        var b = chip(o[1], valor === o[0], function () {
+          valor = o[0];
+          botoes.forEach(function (x) { var on = x.cod === valor; x.b.classList.toggle('on', on); x.b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+          aoEscolher(valor);
+        });
+        botoes.push({ cod: o[0], b: b }); caixa.appendChild(b);
+      });
+      return caixa;
+    }
     function campo(rotulo, entrada) { return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
     function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; guardarEstado(); tela(); window.scrollTo(0, 0); }
 
@@ -348,7 +363,7 @@
         var linha = el('div', { class: 'prod-linha' }, [
           el('div', {}, [
             el('span', { class: 'prod-titulo', text: nomeVideo(v) }),
-            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + (v.data_postar < h ? ' · atrasado' : '') + (falta ? ' · falta: ' + falta[1].toLowerCase() : '') })
+            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + rotuloAcesso(v) + (v.data_postar < h ? ' · atrasado' : '') + (falta ? ' · falta: ' + falta[1].toLowerCase() : '') })
           ])
         ]);
         linha.appendChild(botao('Abrir', function () { irPara('series', v.serie_id || 'soltos', v.id); }));
@@ -398,7 +413,7 @@
         var periodo = datasSerie.length ? P.dataBR(datasSerie[0]) + (datasSerie.length > 1 && datasSerie[datasSerie.length - 1] !== datasSerie[0] ? ' até ' + P.dataBR(datasSerie[datasSerie.length - 1]) : '') : '';
         var corpo = el('div', {}, [
           el('span', { class: 'prod-titulo' }, [document.createTextNode(s.nome), periodo ? el('span', { class: 'prod-sub', style: 'display:inline;margin-left:12px;font-weight:400;color:#B5852F', text: periodo }) : null]),
-          el('span', { class: 'prod-sub', text: resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
+          el('span', { class: 'prod-sub', text: rotuloAcesso(s) + ' · ' + resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
           el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
         ]);
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo]), botao('Abrir', function () { irPara('series', s.id); })]);
@@ -432,6 +447,8 @@
         var assunto = el('input', { type: 'text', maxlength: '60', placeholder: 'Assunto do blog (geralmente o nome da série)' }); assunto.value = s.assunto || '';
         var total = el('input', { type: 'number', min: '1', max: '200', placeholder: 'Quantos vídeos' }); total.value = s.total || '';
         cab.appendChild(fila([1.4, 1.4, 0.8], [campo('Nome', nome), campo('Assunto no blog', assunto), campo('Quantos vídeos terá', total)]));
+        cab.appendChild(campo('Série pública ou de membros', escolhaAcesso(s.acesso, function (v) { gravar('prod_series', series, s, { acesso: v }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
+        cab.appendChild(el('p', { class: 'prod-vazio', style: 'margin:-8px 0 14px', text: 'Os vídeos novos já nascem assim, mas cada vídeo pode ser diferente (por exemplo, o primeiro público).' }));
         var salvar = botao('Salvar a série', function () {
           if (!nome.value.trim()) { P.mensagem(msg, 'Escreva o nome da série.', 'erro'); return; }
           gravar('prod_series', series, s, { nome: nome.value.trim(), assunto: assunto.value.trim() || null, total: total.value ? +total.value : null })
@@ -448,7 +465,7 @@
           var n = total.value ? +total.value : 0;
           if (!n || n <= lista.length) { P.mensagem(msg, 'Escreva em "Quantos vídeos terá" um número maior que os vídeos que já existem.', 'erro'); return; }
           var novos = [];
-          for (var i = lista.length + 1; i <= n; i++) novos.push({ serie_id: s.id, numero: i, titulo: 'Vídeo ' + i });
+          for (var i = lista.length + 1; i <= n; i++) novos.push({ serie_id: s.id, numero: i, titulo: 'Vídeo ' + i, acesso: s.acesso || 'publico' });
           C.from('prod_videos').insert(novos).select('*').then(function (r) {
             if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
             (r.data || []).forEach(function (v) { videos.push(v); }); tela();
@@ -484,7 +501,7 @@
           miniatura,
           el('div', { style: 'flex:1;min-width:200px' }, [
             el('span', { class: 'prod-titulo', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }),
-            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
+            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + rotuloAcesso(v) + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
           ]),
           chipsDaEtapa(v),
           assistir
@@ -504,7 +521,7 @@
         botao('Novo vídeo', function () {
           var prox = lista.reduce(function (m, v) { return Math.max(m, v.numero || 0); }, 0) + 1;
           var ultima = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort().pop();
-          var novoVideo = { serie_id: s ? s.id : null, numero: prox, titulo: 'Vídeo ' + prox };
+          var novoVideo = { serie_id: s ? s.id : null, numero: prox, titulo: 'Vídeo ' + prox, acesso: s ? (s.acesso || 'publico') : 'publico' };
           if (ultima) novoVideo.data_postar = somarDias(ultima, 7);
           C.from('prod_videos').insert(novoVideo).select('*').single().then(function (r) {
             if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
@@ -534,6 +551,7 @@
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
       cartao.appendChild(fila([0.7, 1.1, 2], [campo('Número na série', numero), campo('Data de publicação', data), campo('Link do YouTube', link)]));
+      cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
@@ -783,7 +801,7 @@
         if (!vs.length && !cs.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nada marcado neste dia.' }));
         vs.forEach(function (v) {
           cartao.appendChild(el('div', { class: 'prod-linha' }, [
-            el('div', {}, [el('span', { class: 'prod-titulo', text: nomeVideo(v) }), el('span', { class: 'prod-sub', text: 'vídeo grande' + (v.no_ar ? ' · já está no ar' : '') })]),
+            el('div', {}, [el('span', { class: 'prod-titulo', text: nomeVideo(v) }), el('span', { class: 'prod-sub', text: 'vídeo grande · ' + rotuloAcesso(v) + (v.no_ar ? ' · já está no ar' : '') })]),
             botao('Abrir', function () { irPara('series', v.serie_id || 'soltos', v.id); })
           ]));
         });
