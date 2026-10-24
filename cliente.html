@@ -47,6 +47,8 @@
     function cartaoFormulario() {
       var q = new URLSearchParams(location.search), f = new URLSearchParams();
       if (!q.get('u') || !q.get('servico')) return null;
+      /* quem chega aqui já pagou: o carrinho se esvazia (senão a bolinha do carrinho continua mostrando o serviço comprado) */
+      try { localStorage.removeItem('fda_carrinho'); localStorage.removeItem('fda_carrinho_saida'); } catch (e) { /* sem armazenamento */ }
       ['u', 'servico', 'sa', 'agenda', 'nome', 'whatsapp', 'email'].forEach(function (k) { if (q.get(k)) f.set(k, q.get(k)); });
       var quadro = el('iframe', { class: 'portal-form', src: FORM_BASE + '?' + f.toString(), title: 'Seus dados para o atendimento', scrolling: 'no' });
       window.addEventListener('message', function (ev) {

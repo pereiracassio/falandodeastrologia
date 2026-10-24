@@ -74,7 +74,9 @@ module.exports = async (req, res) => {
         /* na lista do Financeiro o cliente aparece como "código - nome" quando já tem código */
         let codigo = null;
         try { const cods = await supa('/rest/v1/cliente_codigos?cliente_id=eq.' + q(cliente.id) + '&select=codigo'); codigo = cods && cods[0] && cods[0].codigo; } catch (e) { /* sem código ainda */ }
-        nome = (codigo ? codigo + ' - ' : '') + (cliente.nome || ped.nome);
+        /* o nome é o que a pessoa digitou no carrinho (pode comprar para outra pessoa, com o mesmo e-mail); o código só entra se for a mesma pessoa da ficha */
+        const mesmaPessoa = String(cliente.nome || '').trim().toLowerCase() === String(ped.nome).trim().toLowerCase();
+        nome = (codigo && mesmaPessoa ? codigo + ' - ' : '') + ped.nome;
         clienteCadastrado = cliente.id;
       }
     } catch (e) { console.error('infinitepay cadastro:', e.message); }

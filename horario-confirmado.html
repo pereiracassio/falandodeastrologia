@@ -35,6 +35,9 @@
     .confirmado .btn-home { background: #1F5FA3; color: #f6e7b4; }
   /* dentro do quadro do Seu espaço (depois do formulário/agenda do Astro Hellenic): só a confirmação, sem cabeçalho nem botões de navegação */
     html.embutido .cab-papiro, html.embutido .confirmado .material, html.embutido .confirmado .btn-home { display: none; }
+    html.embutido, html.embutido body { background: transparent !important; }
+    html.embutido .folha-pagina::after { display: none; }
+    html.embutido .pagina-papiro .folha-pagina { padding: 0; min-height: 0; }
   </style>
   <script>if (window.parent !== window) document.documentElement.classList.add('embutido');</script>
 
@@ -71,7 +74,7 @@
     </div>
 
     <div class="botoes">
-      <a class="btn-wpp" href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Acabei%20de%20confirmar%20meu%20horário." target="_blank" rel="noopener">Falar pelo WhatsApp</a>
+      <a class="icone-whats" href="https://wa.me/5511970404508?text=Oi%20Cássio!%20Acabei%20de%20confirmar%20meu%20horário." target="_blank" rel="noopener" title="WhatsApp" aria-label="Falar pelo WhatsApp"><img src="img/rede-whatsapp.svg" alt="WhatsApp" width="44" height="44"></a>
       <a class="btn-home" href="index.html">Voltar ao site</a>
     </div>
   </div>
@@ -133,6 +136,7 @@
     }
   })();
 </script>
-<script src="menu.js?v=28" defer></script>
+<script>/* dentro do quadro do Seu espaço não entram o menu lateral nem o carrinho: a página de fora já tem os dela */
+if (window.parent === window) { var m = document.createElement("script"); m.src = "menu.js?v=28"; document.body.appendChild(m); }</script>
 </body>
 </html>
