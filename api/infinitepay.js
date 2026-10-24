@@ -4,9 +4,14 @@
    entra a WEBHOOK_CHAVE (ela protege o novo-cliente) e ninguém precisa confiar no que chega. Antes de lançar, o servidor pergunta ao próprio InfinitePay
    (payment_check) se aquele pedido foi mesmo pago e usa o valor que ELE devolve; aviso falso não lança nada.
    O aviso cru fica em fin_webhook_log (pra ver o que o InfinitePay realmente manda). A entrada nasce com id_externo único (o mesmo aviso duas vezes não
-   lança duas vezes). Valores em centavos. Variável na Vercel: SUPABASE_SERVICE_ROLE_KEY. */
+   lança duas vezes). Valores em centavos. Variável na Vercel: SUPABASE_SERVICE_ROLE_KEY.
+
+   O carrinho guarda quem comprou (nome, e-mail, WhatsApp) na tabela `pedidos`, ligado ao order_nsu. Aqui, com o pagamento confirmado, o cliente é cadastrado
+   (se ainda não existe), ganha o acesso ao Seu espaço e a entrada já sai com o nome dele. A pasta no Drive e o código continuam vindo do novo-cliente
+   (aviso do Astro Hellenic, quando ele envia o formulário). Falha no cadastro nunca impede de lançar a entrada. */
 
 const { supa } = require('./_drive');
+const { criarAcesso } = require('./_acesso');
 
 const HANDLE = 'cassiopereira_';
 const q = (v) => encodeURIComponent(v);
@@ -47,7 +52,32 @@ module.exports = async (req, res) => {
     const itens = Array.isArray(corpo.items) ? corpo.items : [];
     const produto = itens.map((i) => String(i.description || '').trim()).filter(Boolean).join(' + ') || null;
     const cli = corpo.customer || {};
-    const nome = String(cli.name || corpo.customer_name || '').trim() || null;
+    let nome = String(cli.name || corpo.customer_name || '').trim() || null;
+
+    /* quem comprou: vem do que o carrinho guardou (o aviso do InfinitePay não traz o nome) */
+    let clienteCadastrado = null;
+    try {
+      const achados = await supa('/rest/v1/pedidos?order_nsu=eq.' + q(corpo.order_nsu) + '&select=order_nsu,nome,email,whatsapp');
+      const ped = achados && achados[0];
+      if (ped && ped.email && ped.nome) {
+        const email = String(ped.email).trim().toLowerCase();
+        let linhas = await supa('/rest/v1/clientes?email=eq.' + q(email) + '&select=id,nome,whatsapp');
+        let cliente = linhas && linhas[0];
+        if (!cliente) {
+          const novo = await supa('/rest/v1/clientes', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ email, nome: ped.nome, whatsapp: ped.whatsapp || null }) });
+          cliente = novo[0];
+        } else if (ped.whatsapp && !cliente.whatsapp) {
+          try { await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ whatsapp: ped.whatsapp }) }); } catch (e) { console.error('infinitepay whatsapp:', e.message); }
+        }
+        try { await criarAcesso(email, ped.nome); } catch (e) { console.error('infinitepay acesso:', e.message); }
+        await supa('/rest/v1/pedidos?order_nsu=eq.' + q(corpo.order_nsu), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pago_em: new Date().toISOString(), cliente_id: cliente.id }) });
+        /* na lista do Financeiro o cliente aparece como "código - nome" quando já tem código */
+        let codigo = null;
+        try { const cods = await supa('/rest/v1/cliente_codigos?cliente_id=eq.' + q(cliente.id) + '&select=codigo'); codigo = cods && cods[0] && cods[0].codigo; } catch (e) { /* sem código ainda */ }
+        nome = (codigo ? codigo + ' - ' : '') + (cliente.nome || ped.nome);
+        clienteCadastrado = cliente.id;
+      }
+    } catch (e) { console.error('infinitepay cadastro:', e.message); }
     const forma = FORMAS[String(corpo.capture_method || '').toLowerCase()] || null;
     const observacao = corpo.receipt_url ? 'Comprovante: ' + corpo.receipt_url : null;
 
@@ -68,7 +98,7 @@ module.exports = async (req, res) => {
       method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
       body: JSON.stringify({ data: hojeBR(), cliente_nome: nome, produto, valor: Math.round(centavos) / 100, area_id: areaId, forma_pagamento: forma, observacao, origem: 'infinitepay', id_externo: 'infinitepay-' + idExterno })
     });
-    await resultado('entrada lançada');
+    await resultado('entrada lançada' + (clienteCadastrado ? ' e cliente cadastrado' : ''));
     res.status(200).json({ ok: true, entrada: true });
   } catch (e) {
     console.error('infinitepay:', e.message);

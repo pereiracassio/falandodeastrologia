@@ -243,6 +243,13 @@
       if (!emailEl.value.trim()) emailEl.value = sessao.user.email || "";
       btn.style.display = "none";
       info.textContent = "Conectado com o Google. Confira os dados abaixo.";
+      // quem já é cliente: traz o nome e o WhatsApp que já estão guardados, para não digitar de novo
+      P.client.from("clientes").select("nome,whatsapp").eq("email", String(sessao.user.email || "").toLowerCase()).maybeSingle().then(function (rc) {
+        var c = rc && rc.data; if (!c) return;
+        var zapEl = document.getElementById("cli-whatsapp");
+        if (c.nome) nomeEl.value = c.nome;
+        if (c.whatsapp && !zapEl.value.trim()) zapEl.value = c.whatsapp;
+      }, function () {});
     });
   })();
 
@@ -302,26 +309,36 @@
       erro.textContent = "Não foi possível abrir o pagamento agora. Tente de novo em instantes.";
       erro.style.display = "block";
     };
-    var controle = new AbortController();
-    var timer = setTimeout(function () { controle.abort(); }, 8000);
+    // guarda quem está comprando (nome, e-mail, WhatsApp) ligado ao número do pedido; o servidor cadastra o cliente quando o InfinitePay confirmar o pagamento
+    var pedido = "fda-" + Date.now();
+    var guardado = new Promise(function (ok) {
+      setTimeout(ok, 2500); // nunca atrasa o pagamento por causa disso
+      try {
+        window.portal.client.from("pedidos").insert({ order_nsu: pedido, nome: nome, email: email.toLowerCase(), whatsapp: whatsapp, servicos: titulos.slice(0, 900) }).then(ok, ok);
+      } catch (e) { ok(); }
+    });
+    guardado.then(function () {
+      var controle = new AbortController();
+      var timer = setTimeout(function () { controle.abort(); }, 8000);
 
-    fetch(INFINITEPAY_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: controle.signal,
-      body: JSON.stringify({
-        handle: INFINITEPAY_HANDLE,
-        order_nsu: "fda-" + Date.now(),
-        webhook_url: "https://falandodeastrologia.vercel.app/api/infinitepay",
-        items: res.linhas.map(function (l) { return { quantity: 1, price: l.final, description: l.titulo }; }),
-        redirect_url: redirectUrl,
-        customer: { name: nome, email: email, phone_number: telefoneInternacional(whatsapp) }
-      })
-    }).then(function (r) { return r.json(); }).then(function (j) {
-      clearTimeout(timer);
-      var url = acharEnderecoPagamento(j);
-      if (url) { Carrinho.marcarSaida(); window.location.href = url; } else { reserva(); }
-    }).catch(function () { clearTimeout(timer); reserva(); });
+      fetch(INFINITEPAY_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controle.signal,
+        body: JSON.stringify({
+          handle: INFINITEPAY_HANDLE,
+          order_nsu: pedido,
+          webhook_url: "https://falandodeastrologia.vercel.app/api/infinitepay",
+          items: res.linhas.map(function (l) { return { quantity: 1, price: l.final, description: l.titulo }; }),
+          redirect_url: redirectUrl,
+          customer: { name: nome, email: email, phone_number: telefoneInternacional(whatsapp) }
+        })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        clearTimeout(timer);
+        var url = acharEnderecoPagamento(j);
+        if (url) { Carrinho.marcarSaida(); window.location.href = url; } else { reserva(); }
+      }).catch(function () { clearTimeout(timer); reserva(); });
+    });
   });
 </script>
 
