@@ -33,6 +33,9 @@
     .prod-chip{background:transparent;border:1px solid #1F5FA3;border-radius:0;color:#1034A6;padding:6px 10px;font-size:12px;cursor:pointer;line-height:1.2}
     .prod-chip.on{border:3px solid #1F5FA3;padding:4px 8px;color:#A03E25;font-weight:700}
     .prod-chip:hover{color:#A03E25}
+    .prod-fila{display:grid;gap:0 14px}
+    .prod-fila :is(input,select){height:46px}
+    @media(max-width:560px){.prod-fila{grid-template-columns:1fr!important}}
     .prod-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px}
     .prod-corte{border-bottom:1px solid rgba(31,95,163,.7);padding:10px 0}
     .prod-corte input{margin-bottom:8px}
@@ -265,6 +268,12 @@
       var b = el('button', { type: 'button', class: 'portal-btn' + (sec === false ? '' : ' portal-btn-sec'), text: texto });
       b.addEventListener('click', aoClicar); return b;
     }
+    /* uma fileira de campos que nunca quebra para a linha de baixo (só no celular bem estreito): cols = largura relativa de cada um */
+    function fila(cols, campos) {
+      var f = el('div', { class: 'prod-fila' }, campos);
+      f.style.gridTemplateColumns = cols.map(function (c) { return 'minmax(0,' + c + 'fr)'; }).join(' ');
+      return f;
+    }
     function campo(rotulo, entrada) { return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
     function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; guardarEstado(); tela(); window.scrollTo(0, 0); }
 
@@ -416,7 +425,8 @@
         var dia = el('select', {}); DIAS.forEach(function (d, i) { var o = el('option', { value: String(i), text: d }); if (s.dia_semana === i) o.selected = true; dia.appendChild(o); });
         var inicio = el('input', { type: 'date' }); inicio.value = s.inicio || '';
         var total = el('input', { type: 'number', min: '1', max: '200', placeholder: 'Quantos vídeos' }); total.value = s.total || '';
-        cab.appendChild(el('div', { class: 'prod-campos' }, [campo('Nome', nome), campo('Assunto no blog', assunto), campo('Dia da semana', dia), campo('Primeiro vídeo a partir de', inicio), campo('Quantos vídeos terá', total)]));
+        cab.appendChild(fila([1, 1, 1], [campo('Nome', nome), campo('Assunto no blog', assunto), campo('Dia da semana', dia)]));
+        cab.appendChild(fila([1, 1, 1], [campo('Primeiro vídeo a partir de', inicio), campo('Quantos vídeos terá', total), el('div', {})]));
         var salvar = botao('Salvar a série', function () {
           if (!nome.value.trim()) { P.mensagem(msg, 'Escreva o nome da série.', 'erro'); return; }
           gravar('prod_series', series, s, { nome: nome.value.trim(), assunto: assunto.value.trim() || null, dia_semana: +dia.value, inicio: inicio.value || null, total: total.value ? +total.value : null })
@@ -509,7 +519,8 @@
       var cardsLista = el('div', {});
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
-      cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto), campo('Número na série', numero), campo('Data em que o vídeo fica público', data), campo('Link do YouTube', link)]));
+      cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
+      cartao.appendChild(fila([0.7, 1.1, 2], [campo('Número na série', numero), campo('Data de publicação', data), campo('Link do YouTube', link)]));
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
