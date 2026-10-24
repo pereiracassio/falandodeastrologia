@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=45"></script>
+  <script src="portal.js?v=46"></script>
   <script src="atividades.js?v=25"></script>
   <script>
   (function () {
@@ -66,7 +66,7 @@
     function restaurar(user) {
       var h = P.estado.ler();
       if (!h.aluno) { listaDeAlunos(user); return; }
-      Promise.all([P.client.from('alunos').select('id,nome,email,meet_link,whatsapp,proximo_encontro').eq('id', h.aluno).maybeSingle(),
+      Promise.all([P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').eq('id', h.aluno).maybeSingle(),
                    P.client.from('aluno_codigos').select('codigo').eq('aluno_id', h.aluno).maybeSingle()]).then(function (r) {
         if (r[0].error || !r[0].data) { listaDeAlunos(user); return; }
         var a = r[0].data; a.codigo = (r[1].data && r[1].data.codigo) || '';
@@ -142,7 +142,7 @@
 
       /* lista */
       Promise.all([
-        P.client.from('alunos').select('id,nome,email,meet_link,whatsapp,proximo_encontro').order('nome'),
+        P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').order('nome'),
         P.client.from('aluno_codigos').select('aluno_id,codigo'),
         /* atividades que o aluno já enviou e que ainda esperam a sua correção */
         P.client.from('atividades').select('aluno_id').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
@@ -214,13 +214,14 @@
 
       /* entrar no encontro e dia do próximo, sem procurar o link */
       var meetAdmin = P.linkSeguro(aluno.meet_link);
+      var lugarEncontro = el('p', { class: 'portal-proximo', style: 'display:none' });
       if (meetAdmin) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetAdmin, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
-      var proxAdmin = aluno.proximo_encontro ? new Date(aluno.proximo_encontro) : null;
-      if (proxAdmin) {
-        var diaA = proxAdmin.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
-        var horaA = proxAdmin.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(':00', 'h').replace(':', 'h');
-        app.appendChild(el('p', { class: 'portal-proximo', text: (proxAdmin.getTime() > Date.now() - 2 * 3600 * 1000 ? 'Próximo encontro: ' : 'Último encontro marcado: ') + diaA + ', às ' + horaA }));
-      }
+      app.appendChild(lugarEncontro);
+      P.proximoEncontro(aluno.id).then(function (e) { /* puxado da Google Agenda */
+        if (!e) return;
+        lugarEncontro.textContent = P.textoEncontro(e); lugarEncontro.style.display = '';
+        if (!meetAdmin && e.meet) lugarEncontro.parentNode.insertBefore(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: e.meet, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]), lugarEncontro);
+      });
 
       /* dados do aluno: código, nome, WhatsApp, link do Meet e pasta no Drive (o código só o administrador vê) */
       var msgDados = el('p', { class: 'portal-msg' });
@@ -232,8 +233,6 @@
       whatsInput.value = aluno.whatsapp || '';
       var meet = el('input', { type: 'url', id: 'alunoMeet', placeholder: 'https://meet.google.com/...' });
       meet.value = aluno.meet_link || '';
-      var proxInput = el('input', { type: 'datetime-local', id: 'alunoProximo' });
-      if (aluno.proximo_encontro) { var dp = new Date(aluno.proximo_encontro); dp.setMinutes(dp.getMinutes() - dp.getTimezoneOffset()); proxInput.value = dp.toISOString().slice(0, 16); }
       var salvarDados = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
       var pastaDrive = P.cartaoPastaDrive({ plural: 'alunos', tipo: 'aluno', id: aluno.id, email: aluno.email, dentroDeOutroBloco: true,
         codigo: function () { return aluno.codigo; },
@@ -244,7 +243,6 @@
         el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
         el('label', { for: 'alunoWhats', text: 'WhatsApp' }), whatsInput,
         el('label', { for: 'alunoMeet', text: 'Link do Meet' }), meet,
-        el('label', { for: 'alunoProximo', text: 'Próximo encontro (dia e horário)' }), proxInput,
         pastaDrive, msgDados, salvarDados
       ]);
       formDados.addEventListener('submit', function (ev) {
@@ -256,7 +254,7 @@
         if (!novoNome) { P.mensagem(msgDados, 'Escreva o nome.', 'erro'); return; }
         if (linkMeet && !seguro) { P.mensagem(msgDados, 'O link do Meet precisa começar com https://', 'erro'); return; }
         salvarDados.disabled = true;
-        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null, meet_link: seguro, proximo_encontro: proxInput.value ? new Date(proxInput.value).toISOString() : null }).eq('id', aluno.id).then(function (r1) {
+        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null, meet_link: seguro }).eq('id', aluno.id).then(function (r1) {
           if (r1.error) { salvarDados.disabled = false; P.mensagem(msgDados, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('aluno_codigos').upsert({ aluno_id: aluno.id, codigo: valor }, { onConflict: 'aluno_id' })
@@ -264,7 +262,7 @@
           pedido.then(function (r2) {
             salvarDados.disabled = false;
             if (r2.error) { P.mensagem(msgDados, /duplicate|unique/i.test(r2.error.message) ? 'Nome salvo, mas esse código já é de outro aluno.' : P.traduzErro(r2.error.message), 'erro'); return; }
-            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.meet_link = seguro; aluno.proximo_encontro = proxInput.value ? new Date(proxInput.value).toISOString() : null;
+            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.meet_link = seguro;
             paginaDoAluno(user, aluno);
           });
         });

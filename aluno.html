@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=45"></script>
+  <script src="portal.js?v=46"></script>
   <script src="atividades.js?v=25"></script>
   <script src="caderno.js?v=10"></script>
   <script>
@@ -213,7 +213,7 @@
       limpar();
       app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       var email = String(user.email || '').toLowerCase();
-      P.client.from('alunos').select('id,nome,meet_link,proximo_encontro').eq('email', email).maybeSingle().then(function (r) {
+      P.client.from('alunos').select('id,nome,meet_link').eq('email', email).maybeSingle().then(function (r) {
         limpar();
         if (r.error) {
           app.appendChild(topo(user, email));
@@ -249,13 +249,14 @@
         // link fixo do encontro semanal (Google Meet), acima das abas
         var meetLink = P.linkSeguro(aluno.meet_link);
         if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetLink, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
-        // dia e horário do próximo encontro (marcado pelo administrador); some quando já passou
-        var prox = aluno.proximo_encontro ? new Date(aluno.proximo_encontro) : null;
-        if (prox && prox.getTime() > Date.now() - 2 * 3600 * 1000) {
-          var dia = prox.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
-          var hora = prox.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(':00', 'h').replace(':', 'h');
-          app.appendChild(el('p', { class: 'portal-proximo', text: 'Próximo encontro: ' + dia + ', às ' + hora }));
-        }
+        // dia e horário do próximo encontro, puxados da Google Agenda do Cássio (o Meet do compromisso vale se o link fixo não existir)
+        var lugarEncontro = el('p', { class: 'portal-proximo', style: 'display:none' });
+        app.appendChild(lugarEncontro);
+        P.proximoEncontro(previa ? aluno.id : null).then(function (e) {
+          if (!e) return;
+          lugarEncontro.textContent = P.textoEncontro(e); lugarEncontro.style.display = '';
+          if (!meetLink && e.meet) lugarEncontro.parentNode.insertBefore(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: e.meet, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]), lugarEncontro);
+        });
         P.client.from('itens').select('id,aluno_id,bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
@@ -291,7 +292,7 @@
       app.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       P.client.rpc('sou_admin').then(function (ra) {
         if (ra.error || ra.data !== true) { mostrarPortal(user); return; }
-        P.client.from('alunos').select('id,nome,meet_link,proximo_encontro').eq('id', alunoId).maybeSingle().then(function (r) {
+        P.client.from('alunos').select('id,nome,meet_link').eq('id', alunoId).maybeSingle().then(function (r) {
           if (r.error || !r.data) { limpar(); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Aluno não encontrado.' })); return; }
           desenharPaginaDoAluno(user, r.data, true);
         });

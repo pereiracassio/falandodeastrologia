@@ -716,7 +716,25 @@
     new MutationObserver(function (ms) { ms.forEach(function (m) { Array.prototype.forEach.call(m.addedNodes, varrer); }); }).observe(raiz, { childList: true, subtree: true });
   }
 
+  /* próximo encontro puxado da Google Agenda (api/proximo-encontro.js); alunoId só para o administrador. Resolve com {inicio,fuso,meet} ou null */
+  function proximoEncontro(alunoId) {
+    return client.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (!sessao) return null;
+      return fetch('https://falandodeastrologia.vercel.app/api/proximo-encontro' + (alunoId ? '?aluno=' + encodeURIComponent(alunoId) : ''), { headers: { Authorization: 'Bearer ' + sessao.access_token } })
+        .then(function (resp) { return resp.ok ? resp.json() : null; })
+        .then(function (d) { return d && d.encontro || null; });
+    }).catch(function () { return null; });
+  }
+  function textoEncontro(e) {
+    var q = new Date(e.inicio), fuso = e.fuso || 'America/Sao_Paulo';
+    var dia = q.toLocaleDateString('pt-BR', { timeZone: fuso, weekday: 'long', day: '2-digit', month: 'long' });
+    var hora = q.toLocaleTimeString('pt-BR', { timeZone: fuso, hour: '2-digit', minute: '2-digit' }).replace(':00', 'h').replace(':', 'h');
+    return 'Próximo encontro: ' + dia + ', às ' + hora;
+  }
+
   window.portal = {
+    proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
