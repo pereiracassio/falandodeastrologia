@@ -497,8 +497,9 @@
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
       var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || '';
       var tags = el('input', { type: 'text', placeholder: 'tag1, tag2, tag3' }); tags.value = v.tags || '';
-      var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha (vá anotando enquanto edita o vídeo)' }); cardsTxt.value = v.cards || '';
+      var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha, no máximo 5 (vá anotando enquanto edita o vídeo)' }); cardsTxt.value = v.cards || '';
       var cardsLista = el('div', {});
+      var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto), campo('Número na série', numero), campo('Data de postar', data), campo('Link do YouTube', link)]));
       var capaUrl = v.capa_url || '', capaNova = null;
@@ -534,9 +535,21 @@
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return texto.value; }, 'Copiar o texto')]));
       cartao.appendChild(campo('Tags do YouTube', tags));
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return tags.value.trim(); }, 'Copiar as tags')]));
-      cartao.appendChild(campo('Cards (um por linha)', cardsTxt));
+      cartao.appendChild(campo('Cards (um por linha, no máximo 5)', cardsTxt));
+      cartao.appendChild(avisoCards);
       cartao.appendChild(cardsLista);
+      /* o YouTube aceita no máximo 5 cards: o que passar disso é cortado */
+      function limitarCards() {
+        var vistas = 0, corte = false, linhas = cardsTxt.value.split('\n').filter(function (l) {
+          if (!l.trim()) return true;
+          if (vistas >= 5) { corte = true; return false; }
+          vistas++; return true;
+        });
+        if (corte) cardsTxt.value = linhas.join('\n');
+        avisoCards.textContent = corte ? 'O limite é de 5 cards. O que passou disso foi tirado.' : vistas + ' de 5 cards';
+      }
       function desenharCards() {
+        limitarCards();
         cardsLista.textContent = '';
         cardsTxt.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).forEach(function (l, i) {
           cardsLista.appendChild(el('div', { class: 'prod-linha' }, [el('span', { class: 'prod-titulo', text: (i + 1) + '. ' + l }), botaoCopiar(function () { return l; })]));
@@ -576,7 +589,7 @@
       [titulo, capaTexto, link, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', function () { estadoSalvo.textContent = 'Digitando...'; clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarSozinho, 1200); });
       });
-      cardsTxt.addEventListener('input', desenharCards);
+      cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
       var voltar = botao('Voltar', function () { clearTimeout(tempoSalvar); salvarSozinho(); irPara('series', serieAberta); });
       var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o vídeo' });
       apagar.addEventListener('click', function () {
