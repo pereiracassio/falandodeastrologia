@@ -84,7 +84,7 @@
     var DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     var DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Editado'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
+    var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
     /* a linha que separa a descrição dos capítulos no YouTube: 51 traços longos, do tamanho certinho da descrição */
     var LINHA_DESCRICAO = '———————————————————————————————————————————————————';
     /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
@@ -148,6 +148,15 @@
         }
       });
       return achadas.sort(function (x, y) { return x[0] - y[0]; });
+    }
+    /* bloco azul "dd/mm/aa, horários de Júpiter" com um horário por linha; vazio se não há data */
+    function jupiterAzul(caixa, isoD) {
+      caixa.textContent = '';
+      if (!isoD) return;
+      var p = isoD.split('-'), h = horasDeJupiter(isoD);
+      caixa.appendChild(el('div', { style: 'font-weight:700', text: p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de Júpiter' }));
+      if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
+      h.forEach(function (x) { caixa.appendChild(el('div', { text: hhmm(x[0]) + ' a ' + hhmm(x[1]) })); });
     }
     function hhmm(min) { var m = ((min % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
     function textoJupiter(isoD) {
@@ -398,9 +407,9 @@
         b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
     }
-    /* marcar "No YouTube" marca também o que vem antes (roteiro, gravado, editado); desmarcar não mexe nos outros.
+    /* marcar "No YouTube" marca também o que vem antes (roteiro, gravado, as duas edições); desmarcar não mexe nos outros.
        "Cortes feitos" e "No blog" ficam de fora: cortes é você que marca, e o blog pode sair antes do vídeo. */
-    var ANTES_DO_YOUTUBE = ['roteiro_ok', 'gravado', 'editado'];
+    var ANTES_DO_YOUTUBE = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina'];
     function marcarEtapa(v, campo, valor) {
       var campos = {}; campos[campo] = valor;
       if (campo === 'no_ar' && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
@@ -506,7 +515,7 @@
       cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Vídeos grandes que estão chegando' }));
       if (!proxVideos.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum vídeo marcado para as próximas duas semanas.' }));
       proxVideos.forEach(function (v) {
-        var falta = ETAPAS.slice(0, 4).filter(function (e) { return !v[e[0]]; })[0];
+        var falta = ETAPAS.slice(0, 5).filter(function (e) { return !v[e[0]]; })[0];
         var linha = el('div', { class: 'prod-linha' }, [
           el('div', {}, [
             el('span', { class: 'prod-titulo', text: nomeVideo(v) }),
@@ -936,12 +945,23 @@
             cortes = cortes.filter(function (x) { return x.id !== c.id; }); tela();
           });
         });
-        var jupC = el('span', { class: 'prod-jup', text: textoJupiter(c.data) });
-        d.addEventListener('change', function () { jupC.textContent = textoJupiter(d.value); });
+        /* o corte não tem roteiro, mas tem o texto e as tags do YouTube Shorts; depois das tags, a data e os horários de Júpiter */
+        var tx = el('textarea', { rows: '4', placeholder: 'Texto do corte (descrição, legenda)' }); tx.value = c.texto || '';
+        var tg = el('input', { type: 'text', placeholder: 'tag1, tag2, tag3' }); tg.value = c.tags || '';
+        var tempoC = null;
+        function agendarCorte() { clearTimeout(tempoC); tempoC = setTimeout(function () { gravar('prod_cortes', cortes, c, { texto: tx.value, tags: tg.value.trim() || null }); }, 1000); }
+        tx.addEventListener('input', agendarCorte); tg.addEventListener('input', agendarCorte);
+        var jupC = el('div', { style: 'margin:6px 0 4px;color:#1034A6;font-size:16px;line-height:1.5' });
+        jupiterAzul(jupC, c.data);
+        d.addEventListener('change', function () { jupiterAzul(jupC, d.value); });
         cc.appendChild(el('div', { class: 'prod-corte' }, [
           el('div', { class: 'prod-corte-topo' }, [t, d]),
-          jupC,
-          el('div', { class: 'prod-linha', style: 'border:0;padding:0' }, [chipsDoCorte(c), tirar])
+          el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
+          campo('Texto do corte', tx),
+          el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [botaoCopiar(function () { return tx.value; }, 'Copiar o texto')]),
+          campo('Tags do YouTube Shorts', tg),
+          el('div', { class: 'portal-acoes', style: 'margin:0 0 6px' }, [botaoCopiar(function () { return tg.value.trim(); }, 'Copiar as tags')]),
+          jupC
         ]));
       });
       if (lista.length) {
