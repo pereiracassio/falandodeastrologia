@@ -87,7 +87,9 @@
     var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Editado'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
     /* a linha que separa a descrição dos capítulos no YouTube: 51 traços longos, do tamanho certinho da descrição */
     var LINHA_DESCRICAO = '———————————————————————————————————————————————————';
-    var FIM_DESCRICAO = '\n\n' + LINHA_DESCRICAO + '\nCapítulos\n00:00 Início\n';
+    /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
+    var BLOCO_FIXO_DESCRICAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
+    var FIM_DESCRICAO = '\n\n' + BLOCO_FIXO_DESCRICAO + LINHA_DESCRICAO + '\nCapítulos\n00:00 Início\n';
     var REDES = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['shorts', 'Shorts']];
 
     var series = [], videos = [], cortes = [];

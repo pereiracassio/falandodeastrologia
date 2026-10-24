@@ -155,7 +155,7 @@
       if (doVideo) { /* preenchido com o que já está no vídeo da Produção (tudo editável) */
         var dv = doVideo.video, ds = doVideo.serie;
         post.titulo = dv.titulo || ''; post.assunto = ds ? (ds.assunto || ds.nome || '') : ''; post.video_url = dv.link_youtube || '';
-        post.corpo = String(dv.texto_postagem || '').split(/\n[—-]{20,}[ \t]*(?:\n|$)/)[0].trim() /* o que vem depois da linha (capítulos, hashtags) é só do YouTube */; post.imagem_url = dv.capa_url || '';
+        post.corpo = String(dv.texto_postagem || '').split(/(?:^|\n)(?=✨ Atendimentos e Consultas)|\n[—-]{20,}[ \t]*(?:\n|$)/)[0].trim() /* o que vem depois (parte fixa do canal, capítulos, hashtags) é só do YouTube */; post.imagem_url = dv.capa_url || '';
       }
       if (!id) montar(); else {
         cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
