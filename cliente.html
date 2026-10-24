@@ -66,12 +66,19 @@
       }
       var formulario = FORM_BASE + '?' + f.toString();
       var pedido = q.get('pedido') || '';
-      var podeIrDireto = q.get('agenda') !== '0' && !/sinastria|retifica/i.test(q.get('servico')) && /^fda-\d+$/.test(pedido);
+      var teste = q.get('teste') === '1'; /* administrador testando: usa o e-mail da URL, abre a agenda em modo teste (não grava horário) e não exige pedido */
+      var podeIrDireto = q.get('agenda') !== '0' && !/sinastria|retifica/i.test(q.get('servico')) && (/^fda-\d+$/.test(pedido) || teste);
       if (!podeIrDireto) { abrir(formulario); return caixa; }
       /* resposta imediata; se demorar mais de 3 s ou falhar, abre o formulário (o cliente nunca fica esperando) */
       var controle = new AbortController();
       var limite = setTimeout(function () { controle.abort(); }, 3000);
-      fetch('https://falandodeastrologia.vercel.app/api/cliente-agenda?pedido=' + encodeURIComponent(pedido), { signal: controle.signal })
+      var pergunta = teste
+        ? P.client.auth.getSession().then(function (r) {
+            var sessao = r.data && r.data.session;
+            return fetch('https://falandodeastrologia.vercel.app/api/cliente-agenda?email=' + encodeURIComponent(q.get('email') || ''), { signal: controle.signal, headers: sessao ? { Authorization: 'Bearer ' + sessao.access_token } : {} });
+          })
+        : fetch('https://falandodeastrologia.vercel.app/api/cliente-agenda?pedido=' + encodeURIComponent(pedido), { signal: controle.signal });
+      pergunta
         .then(function (r) { return r.ok ? r.json() : null; })
         .catch(function () { return null; })
         .then(function (d) {
@@ -79,6 +86,7 @@
           if (d && d.agenda) {
             var a = new URLSearchParams({ u: q.get('u'), c: d.agenda, s: q.get('servico').slice(0, 400) });
             if (q.get('sa')) a.set('sa', q.get('sa').slice(0, 400));
+            if (teste) a.set('teste', '1');
             abrir(AGENDA_BASE + '?' + a.toString());
           } else abrir(formulario);
         });

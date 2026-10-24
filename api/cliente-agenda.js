@@ -5,21 +5,36 @@
    O e-mail vem do pedido que o carrinho guardou (pedidos), nunca da URL. É a mesma exposição que o formulário do Astro Hellenic já tem
    (reconhecer o cadastro pelo e-mail). Sem dependências. */
 
-const { supa } = require('./_drive');
+const { SUPABASE_URL, SUPABASE_ANON, supa } = require('./_drive');
 const ORIGENS_PERMITIDAS = ['https://falandodeastrologia.com.br', 'https://www.falandodeastrologia.com.br'];
 const q = (v) => encodeURIComponent(v);
+
+/* modo teste do administrador: com o login dele (Authorization) pergunta direto por um e-mail, sem pedido nem pagamento */
+async function souAdmin(jwt) {
+  if (!jwt) return false;
+  const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/sou_admin', { method: 'POST', headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: '{}' });
+  return r.ok && (await r.json()) === true;
+}
 
 module.exports = async (req, res) => {
   const origem = req.headers.origin;
   if (origem && ORIGENS_PERMITIDAS.includes(origem)) res.setHeader('Access-Control-Allow-Origin', origem);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization');
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   try {
-    const pedido = String((req.query && req.query.pedido) || '');
-    if (!/^fda-\d+$/.test(pedido)) { res.status(400).json({ erro: 'pedido inválido' }); return; }
-    const linhas = await supa('/rest/v1/pedidos?order_nsu=eq.' + q(pedido) + '&select=email');
-    const email = linhas && linhas[0] && String(linhas[0].email || '').trim().toLowerCase();
+    let email = null;
+    const emailTeste = String((req.query && req.query.email) || '').trim().toLowerCase();
+    if (emailTeste) {
+      if (!(await souAdmin(String(req.headers.authorization || '').replace(/^Bearer /i, '')))) { res.status(403).json({ erro: 'só o administrador' }); return; }
+      email = emailTeste;
+    } else {
+      const pedido = String((req.query && req.query.pedido) || '');
+      if (!/^fda-\d+$/.test(pedido)) { res.status(400).json({ erro: 'pedido inválido' }); return; }
+      const linhas = await supa('/rest/v1/pedidos?order_nsu=eq.' + q(pedido) + '&select=email');
+      email = linhas && linhas[0] && String(linhas[0].email || '').trim().toLowerCase();
+    }
     let agenda = null;
     if (email) {
       const c = await supa('/rest/v1/clientes?email=eq.' + q(email) + '&select=agenda_id');
