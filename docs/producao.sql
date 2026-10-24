@@ -59,3 +59,6 @@ alter table public.prod_videos add column if not exists blog_post_id text;
 -- (24/10) Tags do YouTube e cards (um por linha) de cada vídeo.
 alter table public.prod_videos add column if not exists tags text;
 alter table public.prod_videos add column if not exists cards text;
+
+-- (24/10) Roteiro em blocos (gancho, blocos 1..n, conclusão) para os vídeos novos; o campo "roteiro" antigo continua valendo para os já escritos.
+alter table public.prod_videos add column if not exists roteiro_blocos jsonb;
