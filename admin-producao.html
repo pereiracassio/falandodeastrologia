@@ -27,6 +27,7 @@
     .prod-linha:last-child{border-bottom:0}
     .prod-titulo{font-weight:700;color:#16233F;font-size:15px}
     .prod-sub{display:block;font-size:13px;color:#A03E25}
+    .prod-mini{width:96px;height:54px;object-fit:cover;border:1px solid #1F5FA3;flex:none}
     .prod-chips{display:flex;flex-wrap:wrap;gap:6px}
     /* botão de marcar (etapa, rede): contorno fino; marcado = contorno grosso e texto terracota, nunca fundo */
     .prod-chip{background:transparent;border:1px solid #1F5FA3;border-radius:0;color:#1034A6;padding:6px 10px;font-size:12px;cursor:pointer;line-height:1.2}
@@ -395,16 +396,21 @@
       if (!lista.length) vc.appendChild(el('p', { class: 'prod-vazio', text: s ? 'Nenhum vídeo ainda. Escreva "Quantos vídeos terá" e toque em "Criar os vídeos que faltam", ou use "Novo vídeo".' : 'Nenhum vídeo solto.' }));
       lista.forEach(function (v) {
         var nc = cortesDe(v.id).length;
+        var miniatura = v.capa_url ? el('img', { class: 'prod-mini', src: v.capa_url, alt: '' }) : null;
+        var link = P.linkSeguro(v.link_youtube);
+        var assistir = link ? el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Ver no YouTube' }) : null;
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [
+          miniatura,
           el('div', { style: 'flex:1;min-width:200px' }, [
             el('span', { class: 'prod-titulo', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }),
             el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
           ]),
-          chipsDaEtapa(v)
+          chipsDaEtapa(v),
+          assistir
         ]);
         var abrir = botao('Abrir', function () { irPara('series', serieAberta, v.id); });
         linha.appendChild(abrir);
-        linha.addEventListener('click', function (e) { if (!/BUTTON/.test(e.target.tagName)) irPara('series', serieAberta, v.id); });
+        linha.addEventListener('click', function (e) { if (!/^(BUTTON|A)$/.test(e.target.tagName)) irPara('series', serieAberta, v.id); });
         vc.appendChild(linha);
       });
     }
