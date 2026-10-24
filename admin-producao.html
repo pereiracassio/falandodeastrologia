@@ -91,6 +91,23 @@
     function proximoDiaDaSemana(s, dia) { var d = deIso(s); while (d.getDay() !== dia) d.setDate(d.getDate() + 1); return iso(d); }
     function proximoDiaUtil(s) { var d = deIso(s); while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1); return iso(d); }
 
+    /* imagem da capa: mesma preparação do blog (largura máxima 1600, JPEG) e mesma pasta (bucket "site"), para o blog poder usar o mesmo endereço */
+    var LARGURA = 1600;
+    function prepararImagem(arquivo) {
+      return new Promise(function (ok, erro) {
+        var url = URL.createObjectURL(arquivo), img = new Image();
+        img.onload = function () {
+          var f = Math.min(1, LARGURA / img.naturalWidth), w = Math.round(img.naturalWidth * f), h = Math.round(img.naturalHeight * f);
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          c.toBlob(function (blob) { blob ? ok(blob) : erro(new Error('imagem')); }, 'image/jpeg', 0.85);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); erro(new Error('imagem')); };
+        img.src = url;
+      });
+    }
+
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
     function topo(texto) { return P.navAdmin('producao', texto, sair); }
@@ -399,12 +416,36 @@
       area.appendChild(cartao);
 
       var titulo = el('input', { type: 'text', maxlength: '160' }); titulo.value = v.titulo || '';
+      var capaTexto = el('input', { type: 'text', maxlength: '160', placeholder: 'O que está escrito na capa do vídeo' }); capaTexto.value = v.capa_texto || '';
       var numero = el('input', { type: 'number', min: '1' }); numero.value = v.numero || '';
       var data = el('input', { type: 'date' }); data.value = v.data_postar || '';
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
       var texto = el('textarea', { rows: '6', placeholder: 'Texto que vai junto com o vídeo (descrição, legenda)' }); texto.value = v.texto_postagem || '';
-      cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título', titulo), campo('Número na série', numero), campo('Data de postar', data), campo('Link do YouTube', link)]));
+      cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto), campo('Número na série', numero), campo('Data de postar', data), campo('Link do YouTube', link)]));
+      var capaUrl = v.capa_url || '', capaNova = null;
+      var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
+      var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
+      var botImg = el('button', { type: 'button', class: 'portal-btn portal-btn-sec' });
+      var botTirar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Tirar a foto' });
+      function mostrarCapa() {
+        previa.style.display = capaUrl ? 'block' : 'none'; if (capaUrl) previa.src = capaUrl;
+        botImg.textContent = capaUrl ? 'Trocar a foto da capa' : 'Escolher a foto da capa';
+        botTirar.style.display = capaUrl ? '' : 'none';
+      }
+      botImg.addEventListener('click', function () { escolher.click(); });
+      botTirar.addEventListener('click', function () { capaUrl = ''; capaNova = null; mostrarCapa(); });
+      escolher.addEventListener('change', function () {
+        var arq = escolher.files && escolher.files[0]; escolher.value = '';
+        if (!arq) return;
+        P.mensagem(msg, 'Preparando a imagem...');
+        prepararImagem(arq).then(function (blob) { capaNova = blob; capaUrl = URL.createObjectURL(blob); mostrarCapa(); P.mensagem(msg, 'Foto escolhida. Toque em Salvar para guardar.'); })
+          .catch(function () { P.mensagem(msg, 'Não consegui ler essa imagem. Tente outra (JPEG ou PNG).', 'erro'); });
+      });
+      cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Foto da capa (a mesma que vai para o blog)' }));
+      cartao.appendChild(previa);
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [botImg, botTirar, escolher]));
+      mostrarCapa();
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Etapas' }));
       cartao.appendChild(chipsDaEtapa(v));
       cartao.appendChild(el('hr', { class: 'prod-divisa' }));
@@ -413,8 +454,21 @@
       var salvar = botao('Salvar', function () {
         if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
         if (link.value.trim() && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(link.value.trim())) { P.mensagem(msg, 'O link precisa ser do YouTube.', 'erro'); return; }
-        gravar('prod_videos', videos, v, { titulo: titulo.value.trim(), numero: numero.value ? +numero.value : null, data_postar: data.value || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value })
-          .then(function (r) { if (!r.error) P.mensagem(msg, 'Salvo.', 'ok'); });
+        var campos = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value };
+        var subir = Promise.resolve();
+        if (capaNova) {
+          P.mensagem(msg, 'Enviando a foto...');
+          var caminho = 'blog-' + Date.now() + '.jpg';
+          subir = C.storage.from('site').upload(caminho, capaNova, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
+            if (r.error) throw r.error;
+            capaUrl = C.storage.from('site').getPublicUrl(caminho).data.publicUrl; capaNova = null;
+          });
+        }
+        subir.then(function () {
+          campos.capa_url = capaUrl || null;
+          return gravar('prod_videos', videos, v, campos);
+        }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); } })
+          .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto: ' + P.traduzErro(e && e.message), 'erro'); });
       }, false);
       var voltar = botao('Voltar', function () { irPara('series', serieAberta); });
       var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o vídeo' });

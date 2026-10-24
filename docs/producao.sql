@@ -48,3 +48,7 @@ create policy prod_cortes_admin on public.prod_cortes for all to authenticated u
 
 grant select, insert, update, delete on public.prod_series, public.prod_videos, public.prod_cortes to authenticated;
 grant all on public.prod_series, public.prod_videos, public.prod_cortes to service_role;
+
+-- (24/10) Capa do vídeo: texto escrito na capa e a foto (mesma pasta e mesmo endereço que o blog usa).
+alter table public.prod_videos add column if not exists capa_texto text;
+alter table public.prod_videos add column if not exists capa_url text;
