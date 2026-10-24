@@ -52,3 +52,6 @@ grant all on public.prod_series, public.prod_videos, public.prod_cortes to servi
 -- (24/10) Capa do vídeo: texto escrito na capa e a foto (mesma pasta e mesmo endereço que o blog usa).
 alter table public.prod_videos add column if not exists capa_texto text;
 alter table public.prod_videos add column if not exists capa_url text;
+
+-- (24/10) Ligação do vídeo com a postagem do blog (guarda o id da postagem; sem chave estrangeira de propósito).
+alter table public.prod_videos add column if not exists blog_post_id text;

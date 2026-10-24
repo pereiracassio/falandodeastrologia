@@ -52,7 +52,16 @@
         }
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
-          lista();
+          var ent = P.estado.ler();
+          if (ent.novo) { /* veio da Produção: postagem nova a partir de um vídeo */
+            P.estado.gravar({});
+            Promise.all([C.from('prod_videos').select('*').eq('id', ent.novo).maybeSingle()]).then(function (rv) {
+              var v = rv[0].data;
+              if (!v) { lista(); return; }
+              (v.serie_id ? C.from('prod_series').select('*').eq('id', v.serie_id).maybeSingle() : Promise.resolve({ data: null })).then(function (rs) { editor(null, { video: v, serie: rs.data }); });
+            });
+          } else if (ent.editar) { P.estado.gravar({}); editor(ent.editar); }
+          else lista();
         });
       });
     }
@@ -64,6 +73,13 @@
     }
     var caminhoDe = function (url) { var i = String(url || '').indexOf('/object/public/site/'); return i >= 0 ? decodeURIComponent(String(url).slice(i + '/object/public/site/'.length).split('?')[0]) : null; };
 
+    /* só apaga a imagem da pasta se nenhum vídeo da Produção usa a mesma foto de capa */
+    function removerImagemLivre(url) {
+      var velha = caminhoDe(url); if (!velha) return;
+      C.from('prod_videos').select('id').eq('capa_url', url).then(function (r) {
+        if (!r.error && !(r.data && r.data.length)) C.storage.from('site').remove([velha]);
+      });
+    }
     /* reduz a imagem (mantém a proporção) e salva em JPEG */
     function prepararImagem(arquivo) {
       return new Promise(function (ok, erro) {
@@ -130,12 +146,17 @@
     }
 
     /* id nulo = postagem nova */
-    function editor(id) {
+    function editor(id, doVideo) {
       limpar();
       app.appendChild(topo(nomeAdmin));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: id ? 'Editar postagem' : 'Nova postagem' })]);
       app.appendChild(cartao);
       var post = { titulo: '', resumo: '', corpo: '', imagem_url: '', publicado: false, slug: null, publicado_em: null };
+      if (doVideo) { /* preenchido com o que já está no vídeo da Produção (tudo editável) */
+        var dv = doVideo.video, ds = doVideo.serie;
+        post.titulo = dv.titulo || ''; post.assunto = ds ? (ds.assunto || ds.nome || '') : ''; post.video_url = dv.link_youtube || '';
+        post.corpo = dv.texto_postagem || ''; post.imagem_url = dv.capa_url || '';
+      }
       if (!id) montar(); else {
         cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
         C.from('blog_posts').select('*').eq('id', id).maybeSingle().then(function (r) {
@@ -147,6 +168,15 @@
       function montar() {
         var msg = el('p', { class: 'portal-msg' });
         var titulo = el('input', { type: 'text', placeholder: 'Título', maxlength: '160' }); titulo.value = post.titulo || '';
+        var escolhaTitulo = null;
+        if (doVideo) {
+          var opcoes = [['Título do vídeo', doVideo.video.titulo], ['Texto da capa', doVideo.video.capa_texto]].filter(function (o) { return o[1]; });
+          escolhaTitulo = el('div', { style: 'margin:0 0 10px' }, [el('span', { class: 'portal-vazio', text: 'Usar como título da postagem:' }), el('div', { class: 'portal-acoes' }, opcoes.map(function (o) {
+            var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: o[0] });
+            b.addEventListener('click', function () { titulo.value = o[1]; titulo.focus(); });
+            return b;
+          })), el('span', { class: 'portal-vazio', text: 'Ou escreva outro título no campo abaixo.' })]);
+        }
         var assunto = el('input', { type: 'text', list: 'blog-assuntos', placeholder: 'Assunto (ex.: Casas) — escolha um que já existe ou escreva um novo', maxlength: '60' }); assunto.value = post.assunto || '';
         var sugestoes = el('datalist', { id: 'blog-assuntos' });
         C.from('blog_posts').select('assunto').not('assunto', 'is', null).then(function (r) {
@@ -159,7 +189,7 @@
         corpo.style.minHeight = '260px';
 
         /* imagem */
-        var imagemUrl = post.imagem_url || '', imagemNova = null, imagemAntiga = post.imagem_url || '';
+        var imagemUrl = post.imagem_url || '', imagemNova = null, imagemAntiga = doVideo ? '' : (post.imagem_url || '');
         var previa = el('img', { alt: '' }); previa.style.cssText = 'display:none;width:100%;max-width:420px;height:auto;border-radius:6px;margin:0 0 10px;border:1px solid #1F5FA3';
         var escolher = el('input', { type: 'file', accept: 'image/*' }); escolher.style.display = 'none';
         var botImg = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: imagemUrl ? 'Trocar a imagem' : 'Escolher uma imagem' });
@@ -246,7 +276,9 @@
             }
             return inserir();
           }).then(function () {
-            if (imagemAntiga && imagemAntiga !== imagemUrl) { var velha = caminhoDe(imagemAntiga); if (velha) C.storage.from('site').remove([velha]); }
+            if (doVideo && id && !doVideo.ligado) { doVideo.ligado = true; return C.from('prod_videos').update({ blog_post_id: String(id), blog_ok: true }).eq('id', doVideo.video.id); }
+          }).then(function () {
+            if (imagemAntiga && imagemAntiga !== imagemUrl) removerImagemLivre(imagemAntiga);
             listaAposGravar();
           }).catch(function (e) {
             if (enviada) C.storage.from('site').remove([enviada]);
@@ -272,13 +304,14 @@
             travar(true);
             C.from('blog_posts').delete().eq('id', id).then(function (r) {
               if (r.error) { travar(false); P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
-              var velha = caminhoDe(imagemAntiga); if (velha) C.storage.from('site').remove([velha]);
+              removerImagemLivre(imagemAntiga);
               listaAposGravar();
             });
           });
           botoes.appendChild(excluir);
         }
 
+        if (escolhaTitulo) cartao.appendChild(escolhaTitulo);
         cartao.appendChild(titulo); cartao.appendChild(assunto); cartao.appendChild(sugestoes); cartao.appendChild(palavras); cartao.appendChild(resumo);
         cartao.appendChild(previa); cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [botImg, botTirar, escolher]));
         cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:8px' }, [botSub]));

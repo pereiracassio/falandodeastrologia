@@ -480,7 +480,11 @@
           irPara('series', serieAberta);
         });
       });
-      cartao.appendChild(el('div', { class: 'portal-acoes' }, [salvar, voltar, apagar]));
+      var blogBtn = v.blog_post_id
+        ? el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-blog.html#editar=' + encodeURIComponent(v.blog_post_id), text: 'Abrir a postagem no blog' })
+        : el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-blog.html#novo=' + encodeURIComponent(v.id), text: 'Criar postagem do blog' });
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [salvar, blogBtn, voltar, apagar]));
+      cartao.appendChild(el('p', { class: 'prod-vazio', text: v.blog_post_id ? 'Este vídeo já tem postagem no blog.' : 'Salve antes de criar a postagem: ela já vem com o título, o link do YouTube, a foto de capa, o assunto da série e o texto que vai junto.' }));
       cartao.appendChild(msg);
 
       /* cortes */
