@@ -43,7 +43,7 @@
 
     /* O que o Astro Hellenic mostra depois do pagamento, embutido aqui. A volta do pagamento traz os dados na URL (u, servico, sa, agenda, nome, whatsapp, email, pedido);
        a página de dentro avisa a altura dela por postMessage. Sem esses dados na URL, o cartão nem aparece.
-       Quem JÁ TEM CADASTRO no site (e o pagamento foi confirmado) vai direto pra AGENDA; quem não tem passa pelo formulário, que depois leva à agenda.
+       Quem JÁ TEM CADASTRO no site vai direto pra AGENDA; quem não tem passa pelo formulário, que depois leva à agenda.
        Sinastria e retificação sempre passam pelo formulário (precisam de dados novos). */
     var FORM_BASE = 'https://astrohellenic.com/formulario.html';
     var AGENDA_BASE = 'https://astrohellenic.com/agendar.html';
@@ -68,24 +68,20 @@
       var pedido = q.get('pedido') || '';
       var podeIrDireto = q.get('agenda') !== '0' && !/sinastria|retifica/i.test(q.get('servico')) && /^fda-\d+$/.test(pedido);
       if (!podeIrDireto) { abrir(formulario); return caixa; }
-      caixa.appendChild(el('p', { class: 'portal-vazio', text: 'Confirmando o seu pagamento...' }));
-      var tentativas = 0;
-      (function perguntar() {
-        fetch('https://falandodeastrologia.vercel.app/api/cliente-agenda?pedido=' + encodeURIComponent(pedido))
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .catch(function () { return null; })
-          .then(function (d) {
-            if (d && d.pago) {
-              if (d.agenda) {
-                var a = new URLSearchParams({ u: q.get('u'), c: d.agenda, s: q.get('servico').slice(0, 400) });
-                if (q.get('sa')) a.set('sa', q.get('sa').slice(0, 400));
-                abrir(AGENDA_BASE + '?' + a.toString());
-              } else abrir(formulario);
-              return;
-            }
-            if (++tentativas < 8) setTimeout(perguntar, 2000); else abrir(formulario);
-          });
-      })();
+      /* resposta imediata; se demorar mais de 3 s ou falhar, abre o formulário (o cliente nunca fica esperando) */
+      var controle = new AbortController();
+      var limite = setTimeout(function () { controle.abort(); }, 3000);
+      fetch('https://falandodeastrologia.vercel.app/api/cliente-agenda?pedido=' + encodeURIComponent(pedido), { signal: controle.signal })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (d) {
+          clearTimeout(limite);
+          if (d && d.agenda) {
+            var a = new URLSearchParams({ u: q.get('u'), c: d.agenda, s: q.get('servico').slice(0, 400) });
+            if (q.get('sa')) a.set('sa', q.get('sa').slice(0, 400));
+            abrir(AGENDA_BASE + '?' + a.toString());
+          } else abrir(formulario);
+        });
       return caixa;
     }
 

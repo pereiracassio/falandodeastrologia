@@ -1,8 +1,9 @@
 /* Depois do pagamento, o Seu espaço pergunta aqui: "esse cliente já tem cadastro no site? então qual é o número dele na agenda?".
    Com o número, o Seu espaço abre a AGENDA direto; sem ele, abre o formulário (que depois leva à agenda).
 
-   Só responde para pedido PAGO (pedidos.pago_em, preenchido pelo api/infinitepay.js quando o InfinitePay confirma): quem não pagou não consegue
-   descobrir o número de ninguém. O e-mail vem do próprio pedido, nunca da URL. Sem dependências. */
+   A resposta é imediata: não espera a confirmação do pagamento (o cliente não pode ficar parado numa tela de espera, ele fecha a página).
+   O e-mail vem do pedido que o carrinho guardou (pedidos), nunca da URL. É a mesma exposição que o formulário do Astro Hellenic já tem
+   (reconhecer o cadastro pelo e-mail). Sem dependências. */
 
 const { supa } = require('./_drive');
 const ORIGENS_PERMITIDAS = ['https://falandodeastrologia.com.br', 'https://www.falandodeastrologia.com.br'];
@@ -17,17 +18,16 @@ module.exports = async (req, res) => {
   try {
     const pedido = String((req.query && req.query.pedido) || '');
     if (!/^fda-\d+$/.test(pedido)) { res.status(400).json({ erro: 'pedido inválido' }); return; }
-    const linhas = await supa('/rest/v1/pedidos?order_nsu=eq.' + q(pedido) + '&select=pago_em,cliente_id');
-    const p = linhas && linhas[0];
-    if (!p || !p.pago_em) { res.status(200).json({ pago: false, agenda: null }); return; }
+    const linhas = await supa('/rest/v1/pedidos?order_nsu=eq.' + q(pedido) + '&select=email');
+    const email = linhas && linhas[0] && String(linhas[0].email || '').trim().toLowerCase();
     let agenda = null;
-    if (p.cliente_id) {
-      const c = await supa('/rest/v1/clientes?id=eq.' + q(p.cliente_id) + '&select=agenda_id');
+    if (email) {
+      const c = await supa('/rest/v1/clientes?email=eq.' + q(email) + '&select=agenda_id');
       agenda = c && c[0] && c[0].agenda_id ? String(c[0].agenda_id) : null;
     }
-    res.status(200).json({ pago: true, agenda });
+    res.status(200).json({ agenda });
   } catch (e) {
     console.error('cliente-agenda:', e.message);
-    res.status(200).json({ pago: false, agenda: null });
+    res.status(200).json({ agenda: null });
   }
 };
