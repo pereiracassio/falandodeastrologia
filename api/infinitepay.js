@@ -66,7 +66,8 @@ module.exports = async (req, res) => {
         if (!cliente) {
           const novo = await supa('/rest/v1/clientes', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ email, nome: ped.nome, whatsapp: ped.whatsapp || null }) });
           cliente = novo[0];
-        } else if (ped.whatsapp && !cliente.whatsapp) {
+        } else if (ped.whatsapp && String(ped.whatsapp).replace(/\D/g, '') !== String(cliente.whatsapp || '').replace(/\D/g, '')) {
+          /* WhatsApp diferente do da ficha: a pessoa acabou de digitar, então o número mais recente vale (as pessoas trocam de número) */
           try { await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ whatsapp: ped.whatsapp }) }); } catch (e) { console.error('infinitepay whatsapp:', e.message); }
         }
         try { await criarAcesso(email, ped.nome); } catch (e) { console.error('infinitepay acesso:', e.message); }
