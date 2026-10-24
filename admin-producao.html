@@ -497,7 +497,7 @@
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
       var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || '';
       var tags = el('input', { type: 'text', placeholder: 'tag1, tag2, tag3' }); tags.value = v.tags || '';
-      var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha, no máximo 5 (vá anotando enquanto edita o vídeo)' }); cardsTxt.value = v.cards || '';
+      var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha, no máximo 5, assim: 03:45:12 Título do vídeo do card' }); cardsTxt.value = v.cards || '';
       var cardsLista = el('div', {});
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
@@ -548,11 +548,23 @@
         if (corte) cardsTxt.value = linhas.join('\n');
         avisoCards.textContent = corte ? 'O limite é de 5 cards. O que passou disso foi tirado.' : vistas + ' de 5 cards';
       }
+      /* "3:45:12 Título", "03:45 Título" ou "03.45.12 Título": minuto, segundo e frame (frame 00 se faltar) */
+      function lerCard(l) {
+        var m = /^(\d{1,3})\s*[:.]\s*(\d{1,2})(?:\s*[:.]\s*(\d{1,2}))?\s*[-–—]?\s*(.*)$/.exec(l);
+        return m ? { m: +m[1], s: +m[2], f: m[3] ? +m[3] : 0, titulo: m[4] } : null;
+      }
       function desenharCards() {
         limitarCards();
         cardsLista.textContent = '';
         cardsTxt.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).forEach(function (l, i) {
-          cardsLista.appendChild(el('div', { class: 'prod-linha' }, [el('span', { class: 'prod-titulo', text: (i + 1) + '. ' + l }), botaoCopiar(function () { return l; })]));
+          var c = lerCard(l);
+          var dois = function (n) { return String(n).padStart(2, '0'); };
+          var tempo = c ? dois(c.m) + ':' + dois(c.s) + ':' + dois(c.f) : '';
+          var corpo = el('div', {}, [
+            el('span', { class: 'prod-titulo', text: (i + 1) + '. ' + (tempo || 'falta a minutagem') }),
+            el('span', { class: 'prod-sub', text: c ? c.titulo : l })
+          ]);
+          cardsLista.appendChild(el('div', { class: 'prod-linha' }, [corpo, tempo ? botaoCopiar(function () { return tempo; }, 'Copiar minutagem') : null]));
         });
       }
       desenharCards();
