@@ -249,7 +249,7 @@
     function gravar(tabela, lista, obj, campos) {
       Object.keys(campos).forEach(function (k) { obj[k] = campos[k]; });
       return C.from(tabela).update(campos).eq('id', obj.id).then(function (r) {
-        if (r.error) window.alert('Não consegui salvar: ' + P.traduzErro(r.error.message));
+        if (r.error) window.alert('Não consegui salvar (' + r.error.message + ')');
         return r;
       });
     }
@@ -672,7 +672,7 @@
           if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); avisoFlutuante('Salvo'); }
           else avisoFlutuante('Não salvou', true);
           voltarAoPonto();
-        }).catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto: ' + P.traduzErro(e && e.message), 'erro'); avisoFlutuante('Não salvou', true); voltarAoPonto(); });
+        }).catch(function (e) { var motivo = e && e.message ? e.message : String(e || 'erro desconhecido'); P.mensagem(msg, (capaNova ? 'Não consegui enviar a foto' : 'Não consegui salvar') + ' (' + motivo + ')', 'erro'); avisoFlutuante('Não salvou', true); voltarAoPonto(); });
       }, false);
       /* salva sozinho enquanto digita (só os textos; a foto da capa só guarda no botão Salvar) */
       var tempoSalvar = null;
