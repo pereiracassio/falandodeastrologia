@@ -85,6 +85,7 @@
     var REDES = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['shorts', 'Shorts']];
 
     var series = [], videos = [], cortes = [];
+    var rolarParaFimDaLista = false; /* ao voltar de um vídeo, a lista abre no fim (onde ficam os vídeos mais novos) */
     var aba = 'hoje', serieAberta = null, videoAberto = null; /* serieAberta: id, 'soltos' ou null */
     var mesCal = { ano: new Date().getFullYear(), mes: new Date().getMonth() }, diaCal = null;
 
@@ -503,6 +504,11 @@
         linha.addEventListener('click', function (e) { if (!/^(BUTTON|A)$/.test(e.target.tagName)) irPara('series', serieAberta, v.id); });
         vc.appendChild(linha);
       });
+      if (rolarParaFimDaLista) { /* depois do desenho da tela: leva o fim da lista (último vídeo e Novo vídeo) para dentro da tela */
+        rolarParaFimDaLista = false;
+        setTimeout(function () { vc.scrollIntoView({ block: 'end' }); }, 0);
+        setTimeout(function () { vc.scrollIntoView({ block: 'end' }); }, 150);
+      }
       /* o botão fica depois do último vídeo; o novo já vem com o número seguinte e a data uma semana depois do último */
       vc.appendChild(el('div', { class: 'prod-acoes-topo', style: 'margin-top:14px' }, [
         botao('Novo vídeo', function () {
@@ -692,7 +698,7 @@
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
       salvar.addEventListener('pointerdown', function () { yAntes = window.scrollY; });
       salvar.addEventListener('touchstart', function () { yAntes = window.scrollY; }, { passive: true });
-      var voltar = botao('Voltar', function () { clearTimeout(tempoSalvar); salvarSozinho(); irPara('series', serieAberta); });
+      var voltar = botao('Voltar', function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; irPara('series', serieAberta); });
       var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o vídeo' });
       apagar.addEventListener('click', function () {
         if (!window.confirm('Excluir este vídeo e os cortes dele? Não dá para desfazer.')) return;
