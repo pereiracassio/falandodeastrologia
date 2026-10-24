@@ -90,7 +90,8 @@
     /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
     var BLOCO_FIXO_DESCRICAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
     var FIM_DESCRICAO = '\n\n' + BLOCO_FIXO_DESCRICAO + LINHA_DESCRICAO + '\nCapítulos\n00:00 Início\n';
-    var REDES = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['shorts', 'Shorts']];
+    /* etapas de cada corte, na ordem: cortar, legendar, SEO e, no fim, onde foi postado */
+    var ETAPAS_CORTE = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
 
     var series = [], videos = [], cortes = [];
     var rolarParaFimDaLista = false; /* ao voltar de um vídeo, a lista abre no fim (onde ficam os vídeos mais novos) */
@@ -392,7 +393,7 @@
       return b;
     }
     function chipsDoCorte(c) {
-      return el('div', { class: 'prod-chips' }, REDES.map(function (rd) {
+      return el('div', { class: 'prod-chips' }, ETAPAS_CORTE.map(function (rd) {
         return chip(rd[1], !!c[rd[0]], function (b) {
           var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
           b.classList.toggle('on', novo); b.setAttribute('aria-pressed', novo ? 'true' : 'false');

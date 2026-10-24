@@ -72,3 +72,8 @@ alter table public.prod_videos add column if not exists edicao_fina boolean not 
 update public.prod_videos set edicao_fina = true where editado = true;  -- quem já estava "editado" fica com as duas edições feitas
 alter table public.prod_cortes add column if not exists texto text;
 alter table public.prod_cortes add column if not exists tags text;
+
+-- (24/10) Etapas do corte: cortar, legendar e SEO (as de postar, instagram/tiktok/shorts, já existiam).
+alter table public.prod_cortes add column if not exists corte_ok boolean not null default false;
+alter table public.prod_cortes add column if not exists legenda_ok boolean not null default false;
+alter table public.prod_cortes add column if not exists seo_ok boolean not null default false;
