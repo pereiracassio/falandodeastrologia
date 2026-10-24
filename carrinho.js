@@ -11,7 +11,9 @@
     "revolucao-solar": { titulo: "Revolução Solar Clássica e Profecção Anual", centavos: 33500, agenda: true, fixo: "https://checkout.infinitepay.io/cassiopereira_/6I2u5POpKN" },
     // Retificação: não aparece no site, só entra no carrinho pelo link que o astrólogo manda
     "retificacao-avulsa": { titulo: "Retificação de Mapa Avulsa", centavos: 33500, agenda: false, restrito: true },
-    "retificacao-combo":  { titulo: "Combo: Retificação + Mapa Natal Clássico", centavos: 59900, agenda: true, restrito: true }
+    "retificacao-combo":  { titulo: "Combo: Retificação + Mapa Natal Clássico", centavos: 59900, agenda: true, restrito: true },
+    // TESTE (24/10/2026): serviço de R$ 1,00 que não é nenhum serviço de verdade. Só pelo link ?add=servico-teste. REMOVER depois de testar.
+    "servico-teste":      { titulo: "Serviço teste", centavos: 100, agenda: false, restrito: true }
   };
   // Mapa Natal + Retificação avulsa no mesmo carrinho viram o combo
   var CARRINHO_RETIFICACAO_MAPA = ["mapa-natal", "retificacao-avulsa"];
