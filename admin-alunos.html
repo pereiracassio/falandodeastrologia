@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=14">
+  <link rel="stylesheet" href="portal.css?v=15">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -66,7 +66,7 @@
     function restaurar(user) {
       var h = P.estado.ler();
       if (!h.aluno) { listaDeAlunos(user); return; }
-      Promise.all([P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').eq('id', h.aluno).maybeSingle(),
+      Promise.all([P.client.from('alunos').select('id,nome,email,meet_link,whatsapp,proximo_encontro').eq('id', h.aluno).maybeSingle(),
                    P.client.from('aluno_codigos').select('codigo').eq('aluno_id', h.aluno).maybeSingle()]).then(function (r) {
         if (r[0].error || !r[0].data) { listaDeAlunos(user); return; }
         var a = r[0].data; a.codigo = (r[1].data && r[1].data.codigo) || '';
@@ -142,15 +142,18 @@
 
       /* lista */
       Promise.all([
-        P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').order('nome'),
+        P.client.from('alunos').select('id,nome,email,meet_link,whatsapp,proximo_encontro').order('nome'),
         P.client.from('aluno_codigos').select('aluno_id,codigo'),
         /* atividades que o aluno já enviou e que ainda esperam a sua correção */
-        P.client.from('atividades').select('aluno_id').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false)
+        P.client.from('atividades').select('aluno_id').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
+        P.client.from('aluno_pagamentos').select('aluno_id,ultimo_pagamento,proximo_pagamento')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
         var paraCorrigir = {}, totalParaCorrigir = 0;
         ((res[2] && res[2].data) || []).forEach(function (x) { paraCorrigir[x.aluno_id] = (paraCorrigir[x.aluno_id] || 0) + 1; totalParaCorrigir++; });
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
+        var pagamentos = {};
+        ((res[3] && res[3].data) || []).forEach(function (x) { pagamentos[x.aluno_id] = x; });
         var codigos = {};
         (rc.data || []).forEach(function (c) { codigos[c.aluno_id] = c.codigo; });
         r.data.forEach(function (a) { a.codigo = codigos[a.id] || ''; });
@@ -171,6 +174,7 @@
             var abrir = function () { alunoAberto = a; paginaDoAluno(user, a); };
             var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [
               el('div', {}, [el('span', { class: 'portal-item-titulo', text: (a.codigo ? a.codigo + ' · ' : '') + a.nome }), el('span', { class: 'portal-item-data', text: a.email })].concat(
+                pagamentos[a.id] ? [el('span', { class: 'portal-item-data', text: textoPagamento(pagamentos[a.id].ultimo_pagamento, pagamentos[a.id].proximo_pagamento) })] : []).concat(
                 paraCorrigir[a.id] ? [el('span', { class: 'portal-item-data', style: 'font-weight:700', text: paraCorrigir[a.id] === 1 ? '1 atividade para corrigir' : paraCorrigir[a.id] + ' atividades para corrigir' })] : []))
             ])]);
             linha.addEventListener('click', abrir);
@@ -181,6 +185,17 @@
         busca.addEventListener('input', desenhar);
         desenhar();
       });
+    }
+
+    function dataISO(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    /* "Pago até 24/11", "Vence hoje", "Atrasado há 5 dias"... a partir das duas datas (aaaa-mm-dd) */
+    function textoPagamento(ultimo, proximo) {
+      if (!proximo) return ultimo ? 'Último pagamento em ' + P.dataBR(ultimo) + '. Sem data do próximo.' : 'Nenhum pagamento registrado.';
+      var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      var v = new Date(proximo + 'T00:00:00'), dias = Math.round((v - hoje) / 86400000);
+      if (dias > 0) return 'Em dia. Próximo pagamento em ' + P.dataBR(proximo) + (dias === 1 ? ' (amanhã).' : ' (em ' + dias + ' dias).');
+      if (dias === 0) return 'Vence hoje (' + P.dataBR(proximo) + ').';
+      return 'Atrasado: venceu em ' + P.dataBR(proximo) + ' (há ' + (-dias) + (dias === -1 ? ' dia).' : ' dias).');
     }
 
     function paginaDoAluno(user, aluno) {
@@ -197,6 +212,16 @@
       var verComoAluno = el('a', { class: 'portal-btn', href: 'aluno.html?ver=' + encodeURIComponent(aluno.id), target: '_blank', rel: 'noopener', text: 'Ver como aluno' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoAluno]));
 
+      /* entrar no encontro e dia do próximo, sem procurar o link */
+      var meetAdmin = P.linkSeguro(aluno.meet_link);
+      if (meetAdmin) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetAdmin, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
+      var proxAdmin = aluno.proximo_encontro ? new Date(aluno.proximo_encontro) : null;
+      if (proxAdmin) {
+        var diaA = proxAdmin.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+        var horaA = proxAdmin.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(':00', 'h').replace(':', 'h');
+        app.appendChild(el('p', { class: 'portal-proximo', text: (proxAdmin.getTime() > Date.now() - 2 * 3600 * 1000 ? 'Próximo encontro: ' : 'Último encontro marcado: ') + diaA + ', às ' + horaA }));
+      }
+
       /* dados do aluno: código, nome, WhatsApp, link do Meet e pasta no Drive (o código só o administrador vê) */
       var msgDados = el('p', { class: 'portal-msg' });
       var codInput = el('input', { type: 'text', id: 'alunoCodigo', placeholder: 'Ex.: 0147' });
@@ -207,6 +232,8 @@
       whatsInput.value = aluno.whatsapp || '';
       var meet = el('input', { type: 'url', id: 'alunoMeet', placeholder: 'https://meet.google.com/...' });
       meet.value = aluno.meet_link || '';
+      var proxInput = el('input', { type: 'datetime-local', id: 'alunoProximo' });
+      if (aluno.proximo_encontro) { var dp = new Date(aluno.proximo_encontro); dp.setMinutes(dp.getMinutes() - dp.getTimezoneOffset()); proxInput.value = dp.toISOString().slice(0, 16); }
       var salvarDados = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
       var pastaDrive = P.cartaoPastaDrive({ plural: 'alunos', tipo: 'aluno', id: aluno.id, email: aluno.email, dentroDeOutroBloco: true,
         codigo: function () { return aluno.codigo; },
@@ -217,6 +244,7 @@
         el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
         el('label', { for: 'alunoWhats', text: 'WhatsApp' }), whatsInput,
         el('label', { for: 'alunoMeet', text: 'Link do Meet' }), meet,
+        el('label', { for: 'alunoProximo', text: 'Próximo encontro (dia e horário)' }), proxInput,
         pastaDrive, msgDados, salvarDados
       ]);
       formDados.addEventListener('submit', function (ev) {
@@ -228,7 +256,7 @@
         if (!novoNome) { P.mensagem(msgDados, 'Escreva o nome.', 'erro'); return; }
         if (linkMeet && !seguro) { P.mensagem(msgDados, 'O link do Meet precisa começar com https://', 'erro'); return; }
         salvarDados.disabled = true;
-        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null, meet_link: seguro }).eq('id', aluno.id).then(function (r1) {
+        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null, meet_link: seguro, proximo_encontro: proxInput.value ? new Date(proxInput.value).toISOString() : null }).eq('id', aluno.id).then(function (r1) {
           if (r1.error) { salvarDados.disabled = false; P.mensagem(msgDados, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('aluno_codigos').upsert({ aluno_id: aluno.id, codigo: valor }, { onConflict: 'aluno_id' })
@@ -236,7 +264,7 @@
           pedido.then(function (r2) {
             salvarDados.disabled = false;
             if (r2.error) { P.mensagem(msgDados, /duplicate|unique/i.test(r2.error.message) ? 'Nome salvo, mas esse código já é de outro aluno.' : P.traduzErro(r2.error.message), 'erro'); return; }
-            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.meet_link = seguro;
+            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.meet_link = seguro; aluno.proximo_encontro = proxInput.value ? new Date(proxInput.value).toISOString() : null;
             paginaDoAluno(user, aluno);
           });
         });
@@ -331,7 +359,40 @@
         return P.sanfona(abertas, o.chave, o.titulo, [cartao]);
       }
 
-      /* ordem na tela: Dados do aluno, Atividades, Materiais, Gravações dos encontros */
+      /* pagamento: só o administrador vê (tabela própria, o aluno não lê) */
+      var msgPag = el('p', { class: 'portal-msg' });
+      var statusPag = el('p', { class: 'portal-item-titulo', style: 'display:block;margin:0 0 14px' });
+      var ultimoIn = el('input', { type: 'date', id: 'pagUltimo' });
+      var proximoIn = el('input', { type: 'date', id: 'pagProximo' });
+      var salvarPag = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar pagamento' });
+      var pagouHoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Pagou hoje (próximo em 1 mês)' });
+      function mostrarStatus() { statusPag.textContent = textoPagamento(ultimoIn.value, proximoIn.value); }
+      ultimoIn.addEventListener('input', mostrarStatus); proximoIn.addEventListener('input', mostrarStatus);
+      function gravarPag() {
+        salvarPag.disabled = pagouHoje.disabled = true;
+        P.client.from('aluno_pagamentos').upsert({ aluno_id: aluno.id, ultimo_pagamento: ultimoIn.value || null, proximo_pagamento: proximoIn.value || null }, { onConflict: 'aluno_id' }).then(function (r) {
+          salvarPag.disabled = pagouHoje.disabled = false;
+          if (r.error) P.mensagem(msgPag, P.traduzErro(r.error.message), 'erro'); else { P.mensagem(msgPag, 'Pagamento salvo.', 'ok'); mostrarStatus(); }
+        });
+      }
+      salvarPag.addEventListener('click', gravarPag);
+      pagouHoje.addEventListener('click', function () {
+        var hoje = new Date(), prox = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
+        if (prox.getDate() !== hoje.getDate()) prox = new Date(hoje.getFullYear(), hoje.getMonth() + 2, 0);
+        ultimoIn.value = dataISO(hoje); proximoIn.value = dataISO(prox); gravarPag();
+      });
+      P.client.from('aluno_pagamentos').select('ultimo_pagamento,proximo_pagamento').eq('aluno_id', aluno.id).maybeSingle().then(function (r) {
+        if (r.data) { ultimoIn.value = r.data.ultimo_pagamento || ''; proximoIn.value = r.data.proximo_pagamento || ''; }
+        mostrarStatus();
+      });
+      app.appendChild(P.sanfona(abertas, 'pagamento', 'Pagamento', [el('div', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Pagamento' }), statusPag,
+        el('label', { for: 'pagUltimo', text: 'Último pagamento' }), ultimoIn,
+        el('label', { for: 'pagProximo', text: 'Próximo pagamento' }), proximoIn,
+        msgPag, el('div', { class: 'portal-acoes' }, [salvarPag, pagouHoje])
+      ])]));
+
+      /* ordem na tela: Dados do aluno, Pagamento, Atividades, Materiais, Gravações dos encontros */
       app.appendChild(secAtividades);
       app.appendChild(secaoDeItens({ chave: 'materiais', titulo: 'Materiais', bloco: 'materiais', blocos: ['materiais', 'caderno'], rotuloNovo: 'Adicionar novo material',
         placeholder: 'Ex.: texto de apoio da aula', vazio: 'Nenhum material adicionado ainda.' }));
