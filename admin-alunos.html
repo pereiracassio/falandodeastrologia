@@ -364,7 +364,7 @@
       var ultimoIn = el('input', { type: 'date', id: 'pagUltimo' });
       var proximoIn = el('input', { type: 'date', id: 'pagProximo' });
       var salvarPag = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar pagamento' });
-      var pagouHoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Pagou hoje (próximo em 1 mês)' });
+      var pagouHoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Pagou (próximo vencimento 1 mês depois)' });
       function mostrarStatus() { statusPag.textContent = textoPagamento(ultimoIn.value, proximoIn.value); }
       ultimoIn.addEventListener('input', mostrarStatus); proximoIn.addEventListener('input', mostrarStatus);
       function gravarPag() {
@@ -375,9 +375,11 @@
         });
       }
       salvarPag.addEventListener('click', gravarPag);
+      /* o dia do vencimento é fixo: o próximo é sempre 1 mês depois do vencimento anterior (pagar atrasado não muda o dia); sem vencimento ainda, 1 mês depois de hoje */
       pagouHoje.addEventListener('click', function () {
-        var hoje = new Date(), prox = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
-        if (prox.getDate() !== hoje.getDate()) prox = new Date(hoje.getFullYear(), hoje.getMonth() + 2, 0);
+        var hoje = new Date(), base = proximoIn.value ? new Date(proximoIn.value + 'T00:00:00') : hoje;
+        var prox = new Date(base.getFullYear(), base.getMonth() + 1, base.getDate());
+        if (prox.getDate() !== base.getDate()) prox = new Date(base.getFullYear(), base.getMonth() + 2, 0);
         ultimoIn.value = dataISO(hoje); proximoIn.value = dataISO(prox); gravarPag();
       });
       P.client.from('aluno_pagamentos').select('ultimo_pagamento,proximo_pagamento').eq('aluno_id', aluno.id).maybeSingle().then(function (r) {
