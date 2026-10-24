@@ -760,6 +760,18 @@
     return lugar;
   }
 
+  /* Não contar as visitas de quem administra: o contador (GoatCounter) ignora o aparelho que tem skipgc = 't' guardado. Quem é administrador (função sou_admin
+     do Supabase) ganha essa marca em qualquer navegador ou app em que abrir uma tela com login; a marca vale para o site todo naquele aparelho. */
+  (function () {
+    try { if (localStorage.getItem('skipgc') === 't') return; } catch (e) { return; }
+    client.auth.getSession().then(function (r) {
+      if (!(r.data && r.data.session)) return;
+      return client.rpc('sou_admin').then(function (x) {
+        if (x && x.data === true) { try { localStorage.setItem('skipgc', 't'); } catch (e) { /* sem armazenamento */ } }
+      });
+    }).catch(function () {});
+  })();
+
   /* ---------- avisos no celular (Web Push) ----------
      Quem manda é o servidor (api/push.js); aqui o aparelho só pede permissão, se cadastra e conta que algo aconteceu.
      No iPhone/iPad só funciona no app instalado pela tela inicial. */
