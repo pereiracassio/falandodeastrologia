@@ -34,8 +34,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=49"></script>
-  <script src="atividades.js?v=25"></script>
+  <script src="portal.js?v=50"></script>
+  <script src="atividades.js?v=26"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -139,6 +139,7 @@
       app.appendChild(P.cartaoPastaBase('alunos'));
       var conexaoDrive = P.cartaoConexaoDrive();
       if (conexaoDrive) app.appendChild(conexaoDrive);
+      app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
 
       /* lista */
       Promise.all([

@@ -1,0 +1,8 @@
+{
+  "name": "falandodeastrologia",
+  "private": true,
+  "description": "Servidor (Vercel) do site Falando de Astrologia. O site em si é estático (GitHub Pages).",
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}

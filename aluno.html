@@ -41,8 +41,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=49"></script>
-  <script src="atividades.js?v=25"></script>
+  <script src="portal.js?v=50"></script>
+  <script src="atividades.js?v=26"></script>
   <script src="caderno.js?v=10"></script>
   <script>
   (function () {
@@ -284,6 +284,7 @@
             var caixaCaderno = window.caderno.botao(aluno);
             caixaCaderno.style.display = 'none';
             app.appendChild(caixaCaderno);
+            app.appendChild(P.avisos.cartao('aluno')); /* ativar os avisos de atividade nova e correção neste aparelho */
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })

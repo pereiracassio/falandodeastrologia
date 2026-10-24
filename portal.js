@@ -760,12 +760,105 @@
     return lugar;
   }
 
+  /* ---------- avisos no celular (Web Push) ----------
+     Quem manda é o servidor (api/push.js); aqui o aparelho só pede permissão, se cadastra e conta que algo aconteceu.
+     No iPhone/iPad só funciona no app instalado pela tela inicial. */
+  var API_PUSH = 'https://falandodeastrologia.vercel.app/api/push';
+  var suportaAvisos = function () { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; };
+  var ehIOS = function () { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); };
+  var appInstalado = function () { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; };
+  var chaveEmBytes = function (b64) {
+    var pad = '='.repeat((4 - b64.length % 4) % 4), base = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/'), raw = atob(base), out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  };
+  function chamarPush(acao, corpo) {
+    return client.auth.getSession().then(function (r) {
+      var jwt = r.data && r.data.session && r.data.session.access_token;
+      if (!jwt) throw new Error('sem login');
+      return fetch(API_PUSH + '?acao=' + acao, { method: 'POST', headers: { Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+    }).then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { return { ok: resp.ok, dados: d }; }); });
+  }
+  var registrarAvisos = function () { return navigator.serviceWorker.register('/sw.js').then(function () { return navigator.serviceWorker.ready; }); };
+  function jaAtivado() {
+    if (!suportaAvisos() || Notification.permission !== 'granted') return Promise.resolve(false);
+    return navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) { return !!sub; }, function () { return false; });
+  }
+  function ativarAvisos() {
+    /* o pedido de permissão tem de sair direto do toque (regra do iPhone) */
+    return Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') throw new Error('negado');
+      return registrarAvisos();
+    }).then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (sub) {
+        if (sub) return sub;
+        /* a chave pública dos avisos vem do servidor (ele mesmo a criou) */
+        return fetch(API_PUSH + '?acao=chave', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
+          if (!d || !d.chave) throw new Error('servidor');
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveEmBytes(d.chave) });
+        });
+      });
+    }).then(function (sub) {
+      return chamarPush('inscrever', { subscription: sub.toJSON(), aparelho: navigator.userAgent.slice(0, 160) }).then(function (r) { if (!r.ok) throw new Error('servidor'); });
+    });
+  }
+  function desativarAvisos() {
+    return navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+      if (!sub) return;
+      var endpoint = sub.endpoint;
+      return chamarPush('desinscrever', { endpoint: endpoint }).catch(function () {}).then(function () { return sub.unsubscribe(); });
+    });
+  }
+  /* conta ao servidor que algo aconteceu (evento: 'enviada', 'nova' ou 'corrigida'); se falhar, ninguém precisa saber: o resto continua funcionando */
+  function avisar(evento, atividadeId) {
+    if (!atividadeId) return Promise.resolve();
+    return chamarPush('avisar', { evento: evento, atividade_id: atividadeId }).then(function (r) { if (!r.ok && window.console) console.warn('Aviso não enviado', r.dados); }, function () {});
+  }
+  /* cartão "Avisos no celular": papel 'admin' ou 'aluno' só muda o texto de explicação */
+  function cartaoAvisos(papel) {
+    var corpo = el('div', {});
+    var caixa = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avisos no celular' }), corpo]);
+    var explicacao = papel === 'admin' ? 'Receba um aviso quando um aluno enviar uma atividade.' : 'Receba um aviso quando tiver uma atividade nova ou quando o Cássio corrigir a sua.';
+    function desenhar() {
+      corpo.textContent = '';
+      var msg = el('p', { class: 'portal-msg' });
+      if (!suportaAvisos()) {
+        corpo.appendChild(el('p', { text: ehIOS() && !appInstalado() ? 'No iPhone e no iPad os avisos funcionam depois de instalar o app: no Safari, toque em Compartilhar e em Adicionar à Tela de Início. Depois abra por lá e volte aqui.' : 'Este navegador não permite avisos.' }));
+        return;
+      }
+      if (Notification.permission === 'denied') { corpo.appendChild(el('p', { text: 'Os avisos estão bloqueados neste aparelho. Para receber, libere as notificações deste site nas configurações do navegador.' })); return; }
+      jaAtivado().then(function (ativo) {
+        if (ativo) {
+          var desligar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Desativar neste aparelho' });
+          desligar.addEventListener('click', function () { desligar.disabled = true; desativarAvisos().then(desenhar, desenhar); });
+          corpo.appendChild(el('p', { text: 'Avisos ativados neste aparelho.' }));
+          corpo.appendChild(el('div', { class: 'portal-acoes' }, [desligar]));
+          return;
+        }
+        var ligar = el('button', { type: 'button', class: 'portal-btn', text: 'Ativar avisos neste aparelho' });
+        ligar.addEventListener('click', function () {
+          ligar.disabled = true; mensagem(msg, 'Ativando...');
+          ativarAvisos().then(desenhar, function (e) {
+            ligar.disabled = false;
+            mensagem(msg, e && e.message === 'negado' ? 'Sem a sua permissão não dá para avisar. Toque de novo e escolha Permitir.' : 'Não consegui ativar agora. Tente de novo em instantes.', 'erro');
+          });
+        });
+        corpo.appendChild(el('p', { text: explicacao }));
+        corpo.appendChild(el('div', { class: 'portal-acoes' }, [ligar]));
+        corpo.appendChild(msg);
+      });
+    }
+    desenhar();
+    return caixa;
+  }
+
   window.portal = {
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
-    emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle
+    emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
+    avisos: { avisar: avisar, cartao: cartaoAvisos }
   };
 })();

@@ -401,6 +401,7 @@
         salvarTudo().then(function () { return C.rpc('enviar_atividade', { p_id: atividade.id }); }).then(function (r) {
           if (r && r.error) throw r.error;
           atividade.enviada_em = new Date().toISOString();
+          P.avisos.avisar('enviada', atividade.id); /* o Cássio recebe o aviso no celular (sem depender do WhatsApp) */
           telaDaAtividadeAluno(app, atividade, aoVoltar, previa);
         }).catch(function (e) { enviar.disabled = false; salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
@@ -637,6 +638,7 @@
           return imagemEscolhida ? enviarImagem(idNova, imagemEscolhida, null).then(function () { return null; }, function () { return 'imagem'; }) : null;
         }).then(function (falhou) {
           if (falhou === 'imagem') { alert('A atividade foi salva, mas a imagem não subiu. Abra a atividade e anexe a imagem de novo.'); lista(); return; }
+          if (!antiga) P.avisos.avisar('nova', idNova); /* o aluno recebe o aviso no celular; o servidor ignora material de data passada */
           if (antiga || leitura) lista(); else avisarNovaAtividade(titulo.value.trim());
         }).catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
@@ -910,9 +912,11 @@
             /* atividade nova: a data da correção é a de hoje; antiga: só se você preencheu */
             var quando = dCorr.value || (a.antiga ? null : (a.corrigida_em || hojeISO()));
             if (!quando || quando === a.corrigida_em) return;
+            var primeiraCorrecao = !a.corrigida_em && !a.antiga;
             return C.from('atividades').update({ corrigida_em: quando }).eq('id', a.id).then(function (r2) {
               if (r2.error) throw r2.error;
               a.corrigida_em = quando; dCorr.value = quando;
+              if (primeiraCorrecao) P.avisos.avisar('corrigida', a.id); /* o aluno recebe "o Cássio já corrigiu" no celular, só na primeira vez */
             });
           });
         }
