@@ -455,6 +455,7 @@
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: s ? s.nome : 'Vídeos soltos' })]);
       area.appendChild(cab);
       var msg = el('p', { class: 'portal-msg' });
+      var apagar = null;
 
       if (s) {
         var nome = el('input', { type: 'text', maxlength: '120' }); nome.value = s.nome;
@@ -485,9 +486,11 @@
             (r.data || []).forEach(function (v) { videos.push(v); }); tela();
           });
         });
-        var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir a série' });
+        /* discreto de propósito: fica no fim da tela, longe dos outros botões, como texto pequeno */
+        apagar = el('button', { type: 'button', text: 'Excluir esta série' });
+        apagar.style.cssText = 'background:transparent;border:0;border-radius:0;padding:6px;font-size:12px;color:#16233F;opacity:.6;text-decoration:underline;cursor:pointer;font-family:var(--fonte-mao)';
         apagar.addEventListener('click', function () {
-          if (!window.confirm('Excluir a série "' + s.nome + '" com todos os vídeos e cortes? Não dá para desfazer.')) return;
+          if (!window.confirm('Excluir a série "' + s.nome + '" com ' + lista.length + (lista.length === 1 ? ' vídeo' : ' vídeos') + ' e todos os cortes? Não dá para desfazer.')) return;
           C.from('prod_series').delete().eq('id', s.id).then(function (r) {
             if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
             var ids = videos.filter(function (v) { return v.serie_id === s.id; }).map(function (v) { return v.id; });
@@ -499,7 +502,6 @@
         });
         cab.appendChild(el('div', { class: 'portal-acoes' }, [salvar, datas, mais]));
         cab.appendChild(msg);
-        cab.appendChild(el('div', { class: 'portal-acoes' }, [apagar]));
       } else cab.appendChild(msg);
 
       var vc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Vídeos' })]);
@@ -546,6 +548,7 @@
           });
         }, false)
       ]));
+      if (apagar) area.appendChild(el('div', { style: 'margin:56px 0 8px;text-align:center' }, [apagar]));
     }
 
     /* ---------- UM VÍDEO ---------- */
