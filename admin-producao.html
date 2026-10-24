@@ -28,6 +28,11 @@
     .prod-titulo{font-weight:700;color:#16233F;font-size:15px}
     .prod-sub{display:block;font-size:13px;color:#A03E25}
     .prod-mini{width:96px;height:54px;object-fit:cover;border:1px solid #1F5FA3;flex:none}
+    /* listas: nome em terracota, datas em azul, o resto em preto (azul-noite) */
+    .prod-nome{display:block;font-weight:700;color:#A03E25;font-size:16px}
+    .prod-data{color:#1034A6}
+    .prod-info{color:#16233F;font-size:14px}
+    .prod-data{font-size:15px}
     .prod-chips{display:flex;flex-wrap:wrap;gap:6px}
     /* botão de marcar (etapa, rede): contorno fino; marcado = contorno grosso e texto terracota, nunca fundo */
     .prod-chip{background:transparent;border:1px solid #1F5FA3;border-radius:0;color:#1034A6;padding:6px 10px;font-size:12px;cursor:pointer;line-height:1.2}
@@ -412,8 +417,9 @@
         var datasSerie = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort();
         var periodo = datasSerie.length ? P.dataBR(datasSerie[0]) + (datasSerie.length > 1 && datasSerie[datasSerie.length - 1] !== datasSerie[0] ? ' até ' + P.dataBR(datasSerie[datasSerie.length - 1]) : '') : '';
         var corpo = el('div', {}, [
-          el('span', { class: 'prod-titulo' }, [document.createTextNode(s.nome), periodo ? el('span', { class: 'prod-sub', style: 'display:inline;margin-left:12px;font-weight:400;color:#B5852F', text: periodo }) : null]),
-          el('span', { class: 'prod-sub', text: rotuloAcesso(s) + ' · ' + resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
+          el('span', { class: 'prod-nome', text: s.nome }),
+          periodo ? el('span', { class: 'prod-data', style: 'display:block', text: periodo }) : null,
+          el('span', { class: 'prod-info', style: 'display:block', text: rotuloAcesso(s) + ' · ' + resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
           el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
         ]);
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo]), botao('Abrir', function () { irPara('series', s.id); })]);
@@ -500,8 +506,11 @@
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [
           miniatura,
           el('div', { style: 'flex:1;min-width:200px' }, [
-            el('span', { class: 'prod-titulo', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }),
-            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + rotuloAcesso(v) + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
+            el('span', { class: 'prod-nome', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }),
+            el('span', { style: 'display:block' }, [
+              el('span', { class: 'prod-data', text: comDia(v.data_postar) }),
+              el('span', { class: 'prod-info', text: ' · ' + rotuloAcesso(v) + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
+            ])
           ]),
           chipsDaEtapa(v),
           assistir
