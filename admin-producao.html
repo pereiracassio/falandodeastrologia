@@ -309,10 +309,10 @@
       return caixa;
     }
     /* "← voltar" em terracota (em cima e embaixo da tela do vídeo): guarda o que estiver digitando e abre a lista no fim */
-    function botaoVoltar() {
+    function botaoVoltar(aoClicar) {
       var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
       b.style.cssText = 'color:#A03E25!important;font-weight:700';
-      b.addEventListener('click', function () { if (voltarDoVideo) voltarDoVideo(); });
+      b.addEventListener('click', function () { if (aoClicar) aoClicar(); else if (voltarDoVideo) voltarDoVideo(); });
       return b;
     }
     var voltarDoVideo = null;
@@ -504,7 +504,7 @@
 
       var vc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Vídeos' })]);
       area.appendChild(vc);
-      vc.appendChild(el('div', { class: 'prod-acoes-topo' }, [botao('Voltar às séries', function () { irPara('series'); })]));
+      vc.appendChild(el('div', { class: 'prod-acoes-topo' }, [botaoVoltar(function () { irPara('series'); })]));
       if (!lista.length) vc.appendChild(el('p', { class: 'prod-vazio', text: s ? 'Nenhum vídeo ainda. Escreva "Quantos vídeos terá" e toque em "Criar os vídeos que faltam", ou use "Novo vídeo".' : 'Nenhum vídeo solto.' }));
       lista.forEach(function (v) {
         var nc = cortesDe(v.id).length;
