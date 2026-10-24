@@ -98,7 +98,15 @@
     /* ---------- horas planetárias: sugestão dos horários de Júpiter ----------
        Mesmo cálculo da ferramenta Horas do Astro Hellenic (nascer e pôr do sol arredondados ao minuto, 12 horas de dia e 12 de noite,
        ordem caldaica a partir do regente do dia), copiado para cá. Lugar fixo: Jacareí, fuso -3 (sem pedir localização). */
-    var LOCAL_HORAS = { lat: -23.3053, lon: -45.9658, fuso: -3 };
+    var LOCAL_HORAS = { nome: 'Jacareí', lat: -23.3053, lon: -45.9658, fuso: -3 };
+    var LOCAIS = [
+      ['Jacareí', -23.3053, -45.9658, -3], ['São Paulo', -23.5505, -46.6333, -3], ['Guarulhos', -23.4543, -46.5333, -3], ['São José dos Campos', -23.1896, -45.8841, -3],
+      ['Campinas', -22.9099, -47.0626, -3], ['Santos', -23.9608, -46.3336, -3], ['Rio de Janeiro', -22.9068, -43.1729, -3], ['Belo Horizonte', -19.9167, -43.9345, -3],
+      ['Brasília', -15.7939, -47.8828, -3], ['Curitiba', -25.4284, -49.2733, -3], ['Porto Alegre', -30.0346, -51.2177, -3], ['Florianópolis', -27.5954, -48.548, -3],
+      ['Vitória', -20.3155, -40.3128, -3], ['Goiânia', -16.6869, -49.2648, -3], ['Salvador', -12.9777, -38.5016, -3], ['Recife', -8.0476, -34.877, -3],
+      ['Fortaleza', -3.7319, -38.5267, -3], ['Natal', -5.7945, -35.211, -3], ['Belém', -1.4558, -48.4902, -3], ['Manaus', -3.119, -60.0217, -4],
+      ['Cuiabá', -15.6014, -56.0979, -4], ['Campo Grande', -20.4697, -54.6201, -4], ['Porto Velho', -8.7612, -63.9004, -4]
+    ];
     var CALDAICA = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
     var REGENTE_DO_DIA = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
     function solEmMinutos(ano, mes, dia) { /* minutos desde a meia-noite local: nascer e pôr do sol */
@@ -259,6 +267,55 @@
       clearTimeout(tempoAviso); tempoAviso = setTimeout(function () { a.style.display = 'none'; }, 2200);
     }
 
+    /* lugar das horas planetárias: texto pequeno no pé da tela; ao tocar abre a troca (lista de cidades, outro lugar ou a localização do aparelho, só quando você pedir) */
+    function rodapeLocal() {
+      var caixa = el('div', { style: 'margin:28px 0 6px;text-align:center' });
+      var texto = el('span', { style: 'font-size:12px;color:#16233F;opacity:.7', text: 'Horas planetárias calculadas para ' + LOCAL_HORAS.nome + ' · ' });
+      var trocar = el('button', { type: 'button', text: 'trocar lugar' });
+      trocar.style.cssText = 'background:transparent;border:0;border-radius:0;padding:4px;font-size:12px;color:#16233F;opacity:.7;text-decoration:underline;cursor:pointer;font-family:var(--fonte-mao)';
+      caixa.appendChild(texto); caixa.appendChild(trocar);
+      var painel = el('div', { style: 'display:none;margin:12px auto 0;max-width:560px;text-align:left' });
+      caixa.appendChild(painel);
+      trocar.addEventListener('click', function () {
+        if (painel.style.display === 'block') { painel.style.display = 'none'; return; }
+        painel.style.display = 'block'; painel.textContent = '';
+        var lista = el('select', {});
+        LOCAIS.forEach(function (l, i) { var o = el('option', { value: String(i), text: l[0] }); if (l[0] === LOCAL_HORAS.nome) o.selected = true; lista.appendChild(o); });
+        var outro = el('option', { value: 'outro', text: 'Outro lugar (digitar)' }); if (!LOCAIS.some(function (l) { return l[0] === LOCAL_HORAS.nome; })) outro.selected = true; lista.appendChild(outro);
+        var nomeC = el('input', { type: 'text', placeholder: 'Nome do lugar' }); nomeC.value = LOCAL_HORAS.nome;
+        var latC = el('input', { type: 'number', step: 'any', placeholder: 'Latitude (sul é negativo)' }); latC.value = LOCAL_HORAS.lat;
+        var lonC = el('input', { type: 'number', step: 'any', placeholder: 'Longitude (oeste é negativo)' }); lonC.value = LOCAL_HORAS.lon;
+        var fusoC = el('input', { type: 'number', step: 'any', placeholder: 'Fuso (Brasília é -3)' }); fusoC.value = LOCAL_HORAS.fuso;
+        var manual = el('div', { style: 'display:none' }, [campo('Nome', nomeC), campo('Latitude', latC), campo('Longitude', lonC), campo('Fuso (horas em relação a Greenwich)', fusoC)]);
+        function mostrarManual() { manual.style.display = lista.value === 'outro' ? 'block' : 'none'; }
+        lista.addEventListener('change', mostrarManual); mostrarManual();
+        var msgL = el('p', { class: 'portal-msg' });
+        var aqui = botao('Usar a localização deste aparelho agora', function () {
+          if (!navigator.geolocation) { P.mensagem(msgL, 'Este aparelho não informa a localização.', 'erro'); return; }
+          P.mensagem(msgL, 'Pedindo a localização...');
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            lista.value = 'outro'; mostrarManual();
+            nomeC.value = 'localização do aparelho'; latC.value = pos.coords.latitude.toFixed(4); lonC.value = pos.coords.longitude.toFixed(4); fusoC.value = String(-new Date().getTimezoneOffset() / 60);
+            P.mensagem(msgL, 'Pronto. Confira e toque em Salvar o lugar.', 'ok');
+          }, function () { P.mensagem(msgL, 'Não consegui a localização. Escolha na lista ou digite.', 'erro'); }, { timeout: 10000 });
+        });
+        var gravarLocal = botao('Salvar o lugar', function () {
+          var novo;
+          if (lista.value === 'outro') {
+            novo = { nome: nomeC.value.trim() || 'outro lugar', lat: parseFloat(latC.value), lon: parseFloat(lonC.value), fuso: parseFloat(fusoC.value) };
+            if (!isFinite(novo.lat) || !isFinite(novo.lon) || !isFinite(novo.fuso) || Math.abs(novo.lat) > 66 || Math.abs(novo.lon) > 180 || Math.abs(novo.fuso) > 14) { P.mensagem(msgL, 'Confira a latitude, a longitude e o fuso. Perto dos polos o sol pode não nascer e a conta não funciona.', 'erro'); return; }
+          } else { var l = LOCAIS[+lista.value]; novo = { nome: l[0], lat: l[1], lon: l[2], fuso: l[3] }; }
+          C.from('site_config').upsert({ chave: 'prod_local_horas', valor: JSON.stringify(novo), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (r) {
+            if (r.error) { P.mensagem(msgL, 'Não consegui salvar (' + r.error.message + ')', 'erro'); return; }
+            LOCAL_HORAS = novo; avisoFlutuante('Lugar salvo'); tela();
+          });
+        }, false);
+        painel.appendChild(campo('Lugar', lista)); painel.appendChild(manual);
+        painel.appendChild(el('div', { class: 'portal-acoes' }, [gravarLocal, aqui])); painel.appendChild(msgL);
+      });
+      return caixa;
+    }
+
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
     function topo(texto) { return P.navAdmin('producao', texto, sair); }
@@ -285,7 +342,8 @@
       Promise.all([
         C.from('prod_series').select('*').order('criado_em'),
         C.from('prod_videos').select('*').order('numero').order('criado_em'),
-        C.from('prod_cortes').select('*').order('ordem').order('criado_em')
+        C.from('prod_cortes').select('*').order('ordem').order('criado_em'),
+        C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle()
       ]).then(function (r) {
         if (r[0].error || r[1].error || r[2].error) {
           limpar(); app.appendChild(topo(nomeAdmin));
@@ -293,6 +351,10 @@
           return;
         }
         series = r[0].data || []; videos = r[1].data || []; cortes = r[2].data || [];
+        try { /* lugar usado nas horas planetárias (guardado no Supabase, vale em qualquer aparelho) */
+          var salvo = r[3] && r[3].data && r[3].data.valor ? JSON.parse(r[3].data.valor) : null;
+          if (salvo && isFinite(salvo.lat) && isFinite(salvo.lon) && isFinite(salvo.fuso)) LOCAL_HORAS = { nome: String(salvo.nome || 'outro lugar'), lat: +salvo.lat, lon: +salvo.lon, fuso: +salvo.fuso };
+        } catch (e) { /* fica em Jacareí */ }
         tela();
       });
     }
@@ -383,6 +445,7 @@
       });
       app.appendChild(barra);
       var area = el('div', {}); app.appendChild(area);
+      app.appendChild(rodapeLocal());
       if (aba === 'series') {
         if (videoAberto && achar(videos, videoAberto)) telaVideo(area, achar(videos, videoAberto));
         else if (serieAberta) telaSerie(area, serieAberta);
