@@ -53,6 +53,13 @@ module.exports = async (req, res) => {
     /* 1b) acesso (login) do cliente: só quem foi cliente consegue entrar no Seu espaço (o cadastro aberto do Supabase fica desligado) */
     try { await criarAcesso(email, nome); } catch (e) { console.error('novo-cliente acesso:', e.message); }
 
+    /* 1c) número do cliente na agenda (cliente_id do aviso): guardado pra, na próxima compra, o Seu espaço abrir a agenda direto, sem o formulário.
+       Sinastria e retificação ficam de fora (o número delas é de outro cadastro e elas sempre passam pelo formulário). */
+    if (/^[0-9a-f-]{36}$/i.test(String(corpo.cliente_id || '')) && !/sinastria|retifica/i.test(String(corpo.servico || ''))) {
+      try { await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ agenda_id: String(corpo.cliente_id) }) }); }
+      catch (e) { console.error('novo-cliente agenda_id:', e.message); }
+    }
+
     /* 2) código (se já é de outro cliente, não mexe: o banco recusa duplicado) */
     let codigoGravado = false;
     if (codigo) {
