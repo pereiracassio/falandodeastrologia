@@ -501,7 +501,7 @@
       var cardsLista = el('div', {});
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
-      cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto), campo('Número na série', numero), campo('Data de postar', data), campo('Link do YouTube', link)]));
+      cartao.appendChild(el('div', { class: 'prod-campos' }, [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto), campo('Número na série', numero), campo('Data em que o vídeo fica público', data), campo('Link do YouTube', link)]));
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
