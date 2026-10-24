@@ -802,6 +802,19 @@
         });
       }
       desenharCards();
+      /* no fim da tela, depois da minutagem: a data de publicação e os horários de Júpiter dela, em azul (para não precisar voltar ao topo) */
+      var jupFim = el('div', { style: 'margin:14px 0 18px;color:#1034A6;font-size:16px;line-height:1.5' });
+      function pintarJupFim() {
+        jupFim.textContent = '';
+        var d = data.value, h = d ? horasDeJupiter(d) : [];
+        if (!d) return;
+        var p = d.split('-'), curta = p[2] + '/' + p[1] + '/' + p[0].slice(2);
+        jupFim.appendChild(el('div', { style: 'font-weight:700', text: curta + ', horários de Júpiter' }));
+        if (!h.length) jupFim.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
+        h.forEach(function (x) { jupFim.appendChild(el('div', { text: hhmm(x[0]) + ' a ' + hhmm(x[1]) })); });
+      }
+      data.addEventListener('change', pintarJupFim); pintarJupFim();
+      cartao.appendChild(jupFim);
       cartao.appendChild(estadoSalvo);
       /* salvar não pode jogar a página para o topo (o teclado fechando no iPad faz isso): guarda onde estava e volta para o mesmo ponto */
       var yAntes = null;
