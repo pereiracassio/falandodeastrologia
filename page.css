@@ -280,4 +280,9 @@ html body .pagina-papiro .portal-apagar:hover{opacity:.9}
 .pagina-papiro .aluno-dentro .portal-abas::after{bottom:-12px}
 .pagina-papiro .aluno-dentro #app>p[style*="font-weight:700"]{margin:0 0 8px!important;font-size:14px!important}
 .pagina-papiro .aluno-dentro .portal-topo>div{margin:0}
-.pagina-papiro .aluno-dentro .portal-topo>.portal-meet{margin:0 0 0 auto}
+/* prévia: Voltar à esquerda e "entrar no encontro" CENTRALIZADO na mesma linha */
+.pagina-papiro .aluno-dentro .portal-topo:has(>.portal-meet){display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.pagina-papiro .aluno-dentro .portal-topo:has(>.portal-meet)>span{grid-column:1/-1}
+.pagina-papiro .aluno-dentro .portal-topo:has(>.portal-meet)>div{grid-column:1;grid-row:2;justify-self:start;white-space:nowrap}
+.pagina-papiro .aluno-dentro .portal-topo>.portal-meet{grid-column:2;grid-row:2;margin:0;white-space:nowrap}
+.pagina-papiro .aluno-dentro .portal-topo>.portal-meet span{font-size:13px}
