@@ -114,3 +114,10 @@ Todo botão de voltar do site é o **"← Voltar" em terracota (`#A03E25`), só 
 - **Textos do blog (páginas públicas):** `← Voltar` terracota no topo e no fim do texto, classes `blog-voltar blog-voltar-vermelho` (`blog-voltar-topo` no de cima), em `postagem.html` e em `api/_blog.js`. Mexeu na estrutura gerada: ele precisa tocar em "Atualizar as páginas do blog" (uma vez).
 - O texto é sempre "← Voltar" (não "Voltar às atividades", "← Todos os alunos", "← Aplicações" etc.). Voltar de passo de formulário (`aplicacao.js`, "Voltar"/"Continuar") e "Voltar ao site" de `horario-confirmado.html` NÃO entram: não são navegação de tela.
 - A Produção (`admin-producao.html`) tem a mesma peça (`botaoVoltar` local) e abre a lista de vídeos já no fim (`rolarParaFimDaLista`).
+
+## Apagar / Excluir / Remover / Tirar: SEMPRE discreto (25/10/2026) — regra do astrólogo, vale para TODA tela e peça nova
+
+Botão que apaga é **texto pequeno, apagado e sublinhado** (12px, azul-noite com opacidade .6, sem contorno, sem fundo, sem vermelho), para ninguém tocar sem querer. **Nunca** botão destacado, nunca no meio dos outros botões.
+- Criar sempre com `P.botaoApagar('Apagar')` (`portal.js`; classe `.portal-apagar`, em `portal.css` e no fim de `page.css`). **Nunca** `portal-btn-perigo` nem `portal-btn-sec` com texto "Apagar".
+- Apagar a coisa INTEIRA da tela (aluno, cliente, aplicação, atividade, postagem, série, vídeo): `P.apagarNoFim(app, botao)`, centralizado e bem longe, no fim da tela (depois dos outros botões). Apagar um item de lista ou um pedaço (um comentário, uma pergunta, uma imagem, uma entrada do Financeiro): o mesmo texto discreto, ao lado de "Editar", sem destaque.
+- A confirmação ("Apagar ...? Não dá para desfazer.") continua sendo obrigatória, escrita por quem chama.

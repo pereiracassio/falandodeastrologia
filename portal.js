@@ -816,6 +816,16 @@
     }, function () { return site; });
   }
 
+  /* Apagar / Excluir / Remover / Tirar: SEMPRE assim, discreto (texto pequeno, apagado e sublinhado, sem contorno nem cor de destaque), para ninguém tocar sem querer.
+     Fica longe dos outros botões, no fim da tela (ver apagarNoFim). A confirmação continua sendo de quem chama. */
+  function botaoApagar(texto) {
+    var b = el('button', { type: 'button', class: 'portal-apagar', text: texto });
+    return b;
+  }
+  function apagarNoFim(app, botao) { /* no fim da tela, centralizado e bem afastado */
+    app.appendChild(el('div', { style: 'margin:56px 0 8px;text-align:center' }, [botao]));
+  }
+
   /* ← Voltar no FIM da tela, mesmo que as seções cheguem depois (carregamento assíncrono): fica sempre por último; sai sozinho quando a tela é limpa */
   function voltarNoFim(app, aoClicar) {
     var caixa = el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [botaoVoltar(aoClicar)]);
@@ -927,6 +937,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher
+    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
   };
 })();

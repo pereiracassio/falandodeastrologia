@@ -15,8 +15,8 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=14">
+  <link rel="stylesheet" href="page.css?v=55">
+  <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=54"></script>
+  <script src="portal.js?v=55"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -298,7 +298,7 @@
               add.textContent = 'Salvar alterações'; cancelar.style.display = ''; P.mensagem(msg, 'Editando: ' + e.servico, 'ok');
               form.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
-            var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
+            var apagar = P.botaoApagar('Apagar');
             apagar.addEventListener('click', function () {
               if (!confirm('Apagar "' + e.servico + '"? (Os arquivos no Drive não são apagados.)')) return;
               P.client.from('entregas').delete().eq('id', e.id).then(function (d) {
@@ -349,14 +349,14 @@
           }
         });
 
-      var remover = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Remover este cliente' });
+      var remover = P.botaoApagar('Remover este cliente');
       remover.addEventListener('click', function () {
         if (!confirm('Remover ' + cliente.nome + '? Os serviços dele também somem daqui (os arquivos do Drive ficam).')) return;
         P.client.from('clientes').delete().eq('id', cliente.id).then(function (d) {
           if (d.error) alert('Não foi possível remover.'); else listaDeClientes(user);
         });
       });
-      app.appendChild(remover);
+      P.apagarNoFim(app, remover); /* discreto, no fim da tela */
     }
 
     P.client.auth.getSession().then(function (r) {

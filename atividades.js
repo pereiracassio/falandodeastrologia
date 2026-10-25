@@ -189,7 +189,7 @@
         var caixa = el('div', { class: 'portal-item' }, [el('span', { class: 'portal-item-titulo', text: nomeDe(c) }),
           el('span', { class: 'portal-item-data', text: dataHoraBR(c.criado_em) }), el('p', { class: 'portal-descricao', text: c.texto })]);
         if (!souAluno) { /* o administrador pode apagar qualquer comentário (o aluno não apaga) */
-          var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
+          var apagar = P.botaoApagar('Apagar');
           apagar.style.marginTop = '8px';
           apagar.addEventListener('click', function () {
             if (!confirm('Apagar este comentário?')) return;
@@ -570,7 +570,7 @@
         opcoes.addEventListener('input', atualizarCerta);
         tipo.addEventListener('change', mostrarTipo);
         atualizarCerta(); mostrarTipo();
-        var tirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar esta pergunta' });
+        var tirar = P.botaoApagar('Tirar esta pergunta');
         var titulo = el('strong');
         var bloco = { tipo: tipo, enunciado: enunciado, linhasOpcoes: linhasOpcoes, certa: certa, respTexto: respTexto, respOpcao: respOpcao, sit: sit, com: com, areaAntiga: areaAntiga };
         var cx = el('div', { class: 'portal-cartao' }, [titulo, el('label', { text: 'Tipo' }), tipo, el('label', { text: 'Pergunta' }), enunciado, areaOpcoes, areaAntiga, tirar]);
@@ -725,7 +725,7 @@
               .catch(function (e) { P.mensagem(msgImagem, P.traduzErro(e.message), 'erro'); });
           })]);
           if (a.imagem_caminho) {
-            var tirarImg = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar a imagem' });
+            var tirarImg = P.botaoApagar('Tirar a imagem');
             tirarImg.addEventListener('click', function () {
               if (!confirm('Tirar a imagem desta atividade?')) return;
               removerImagem(a.id, a.imagem_caminho).then(function () { a.imagem_caminho = null; desenharImagem(); P.mensagem(msgImagem, 'Imagem removida.', 'ok'); })
@@ -738,7 +738,7 @@
         desenharImagem();
         area.appendChild(cartaoImagem);
         if (a.somente_leitura) { /* texto para leitura: não tem perguntas nem correção */
-          var apagarTexto = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar este texto' });
+          var apagarTexto = P.botaoApagar('Apagar este texto');
           apagarTexto.addEventListener('click', function () {
             if (!confirm('Apagar o texto "' + a.titulo + '"?')) return;
             C.from('atividades').delete().eq('id', a.id).then(function (r) {
@@ -791,7 +791,7 @@
           /* editar o texto/alternativas (e, na antiga, a resposta do aluno) ou tirar a pergunta */
           var areaEdicao = el('div', { style: 'margin-top:14px' });
           var botEditar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar a pergunta' });
-          var botTirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar esta pergunta' });
+          var botTirar = P.botaoApagar('Tirar esta pergunta');
           botEditar.addEventListener('click', function () {
             if (areaEdicao.firstChild) return; /* já está aberto: só "Cancelar" fecha (tocar de novo não pode apagar o que você escreveu) */
             var f = formularioPergunta({ tipoFixo: true, tipo: p.tipo, enunciado: p.enunciado, opcoes: p.opcoes, certa: certa, comResposta: !!a.antiga, resposta: { texto: r.texto, opcao: r.opcao } });
@@ -844,7 +844,7 @@
         var msgM = el('p', { class: 'portal-msg' });
         var botMais = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Acrescentar uma pergunta' });
         var gravarNovas = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar as perguntas novas' });
-        var descartar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Descartar' });
+        var descartar = P.botaoApagar('Descartar');
         function atualizarNovas() {
           gravarNovas.style.display = descartar.style.display = novas.length ? '' : 'none';
           novas.forEach(function (n, i) { n.titulo.textContent = 'Pergunta nova ' + (i + 1); });
@@ -852,7 +852,7 @@
         botMais.addEventListener('click', function () {
           var f = formularioPergunta({ comResposta: !!a.antiga, comCorrecao: !!a.antiga });
           var titulo = el('p', { class: 'portal-item-titulo' });
-          var tirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar esta' });
+          var tirar = P.botaoApagar('Tirar esta');
           var caixa = el('div', { class: 'portal-item' }, [titulo, f.caixa, el('div', { class: 'portal-acoes', style: 'margin-top:10px' }, [tirar])]);
           var item = { f: f, caixa: caixa, titulo: titulo };
           tirar.addEventListener('click', function () { novas.splice(novas.indexOf(item), 1); caixa.remove(); atualizarNovas(); });
@@ -951,7 +951,7 @@
           });
           acoes.appendChild(reabrir);
         }
-        var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar atividade' });
+        var apagar = P.botaoApagar('Apagar atividade');
         apagar.addEventListener('click', function () {
           if (!confirm('Apagar a atividade "' + a.titulo + '" com as respostas e correções?')) return;
           C.from('atividades').delete().eq('id', a.id).then(function (r) {
@@ -962,7 +962,7 @@
         area.appendChild(msg);
         area.appendChild(avisoCorrecao);
         area.appendChild(acoes);
-        area.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [apagar]));
+        P.apagarNoFim(area, apagar); /* discreto, no fim da tela */
       }).catch(function () {
         area.textContent = '';
         area.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a atividade.' }));

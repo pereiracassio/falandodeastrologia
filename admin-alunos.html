@@ -15,8 +15,8 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=15">
+  <link rel="stylesheet" href="page.css?v=55">
+  <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=54"></script>
+  <script src="portal.js?v=55"></script>
   <script src="atividades.js?v=27"></script>
   <script>
   (function () {
@@ -340,7 +340,7 @@
                 var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
                 editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
                 editar.addEventListener('click', function () { abrirForm(i); });
-                var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Apagar' });
+                var apagar = P.botaoApagar('Apagar');
                 apagar.addEventListener('click', function () {
                   if (!confirm('Apagar "' + i.titulo + '"? (O arquivo no Drive não é apagado.)')) return;
                   P.client.from('itens').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
@@ -414,14 +414,14 @@
         });
       });
 
-      var remover = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Remover este aluno do portal' });
+      var remover = P.botaoApagar('Remover este aluno do portal');
       remover.addEventListener('click', function () {
         if (!confirm('Remover ' + aluno.nome + ' do portal? Os itens dele também somem daqui (os arquivos do Drive ficam).')) return;
         P.client.from('alunos').delete().eq('id', aluno.id).then(function (d) {
           if (d.error) alert('Não foi possível remover.'); else listaDeAlunos(user);
         });
       });
-      app.appendChild(remover);
+      P.apagarNoFim(app, remover); /* discreto, no fim da tela */
     }
 
     P.client.auth.onAuthStateChange(function (ev) { if (ev === 'PASSWORD_RECOVERY') { limpar(); P.montarNovaSenha(app, iniciar); } });

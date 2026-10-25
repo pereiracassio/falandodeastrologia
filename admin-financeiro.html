@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=13">
+  <link rel="stylesheet" href="page.css?v=55">
+  <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
   <style>
@@ -72,7 +72,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=54"></script>
+  <script src="portal.js?v=55"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -668,7 +668,7 @@
       cancelar.addEventListener('click', function () { destino.textContent = ''; });
       var acoes = [salvar, cancelar];
       if (e) {
-        var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Apagar' });
+        var apagar = P.botaoApagar('Apagar');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar esta entrada?')) return;
           C.from('fin_entradas').delete().eq('id', e.id).then(function (r) {
@@ -727,7 +727,7 @@
       var editando = null;
       servicosCad.forEach(function (x) {
         var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
-        var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Apagar' });
+        var apagar = P.botaoApagar('Apagar');
         editar.addEventListener('click', function () { editando = x; nome.value = x.nome; valor.value = String(x.valor).replace('.', ','); area.value = x.area_id || ''; add.textContent = 'Salvar'; nome.focus(); });
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar o serviço "' + x.nome + '"? As entradas já lançadas não mudam.')) return;
@@ -778,7 +778,7 @@
       function aviso(r) { if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return false; } return true; }
       areas.forEach(function (a) {
         var renomear = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Renomear' });
-        var apagar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Apagar' });
+        var apagar = P.botaoApagar('Apagar');
         renomear.addEventListener('click', function () {
           var n = window.prompt('Novo nome da área:', a.nome);
           if (n == null || !n.trim()) return;

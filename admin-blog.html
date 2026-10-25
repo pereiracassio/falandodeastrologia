@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="portal.css?v=14">
+  <link rel="stylesheet" href="page.css?v=55">
+  <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -31,7 +31,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=54"></script>
+  <script src="portal.js?v=55"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -194,7 +194,7 @@
         var previa = el('img', { alt: '' }); previa.style.cssText = 'display:none;width:100%;max-width:420px;height:auto;border-radius:6px;margin:0 0 10px;border:1px solid #1F5FA3';
         var escolher = el('input', { type: 'file', accept: 'image/*' }); escolher.style.display = 'none';
         var botImg = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: imagemUrl ? 'Trocar a imagem' : 'Escolher uma imagem' });
-        var botTirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Tirar a imagem' });
+        var botTirar = P.botaoApagar('Tirar a imagem');
         function atualizarImagem() {
           previa.style.display = imagemUrl ? 'block' : 'none'; if (imagemUrl) previa.src = imagemUrl;
           botImg.textContent = imagemUrl ? 'Trocar a imagem' : 'Escolher uma imagem';
@@ -238,6 +238,7 @@
         });
 
         var botoes = el('div', { class: 'portal-acoes', style: 'margin-top:6px' });
+        var excluirDiscreto = null;
         function travar(v) { Array.prototype.forEach.call(botoes.querySelectorAll('button'), function (b) { b.disabled = v; }); }
 
         /* grava a postagem; publicar: true/false decide o estado */
@@ -301,7 +302,7 @@
         var voltar = P.botaoVoltar(function () { lista(); });
         botoes.appendChild(voltar);
         if (id) {
-          var excluir = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir' });
+          var excluir = P.botaoApagar('Excluir');
           excluir.addEventListener('click', function () {
             if (!window.confirm('Excluir esta postagem de vez? Não dá para desfazer.')) return;
             travar(true);
@@ -312,7 +313,7 @@
               listaAposGravar();
             });
           });
-          botoes.appendChild(excluir);
+          excluirDiscreto = excluir; /* vai para o fim da tela, longe dos outros botões */
         }
 
         if (escolhaTitulo) cartao.appendChild(escolhaTitulo);
@@ -327,6 +328,7 @@
           cartao.appendChild(el('p', { class: 'portal-vazio' }, [el('a', { href: 'postagem.html?p=' + encodeURIComponent(post.slug), target: '_blank', rel: 'noopener', text: 'Ver no site' })]));
         }
         cartao.appendChild(msg); cartao.appendChild(botoes);
+        if (excluirDiscreto) P.apagarNoFim(cartao, excluirDiscreto);
         atualizarImagem();
       }
     }
