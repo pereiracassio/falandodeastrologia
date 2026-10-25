@@ -132,6 +132,19 @@
           corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhuma aula ainda. Toque em "Importar aulas" e escolha o arquivo que o Claude mandou.' })]));
         }
         var dia = function (a) { return String(a.data).slice(0, 10); };
+        /* barra de progresso da SEMANA (segunda a domingo; sábado e domingo mostram a semana que vem): aula concluída = todas as questões respondidas */
+        var base = new Date(hoje + 'T12:00:00'), dow = base.getDay();
+        base.setDate(base.getDate() + (dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow));
+        var iso = function (d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+        var segunda = iso(base); base.setDate(base.getDate() + 6); var domingo = iso(base);
+        var daSemana = aulas.filter(function (a) { return dia(a) >= segunda && dia(a) <= domingo; });
+        if (daSemana.length) {
+          var feitas = daSemana.filter(function (a) { var p = prog[a.id]; return p && p.total > 0 && p.feitas === p.total; }).length, pct = Math.round(feitas * 100 / daSemana.length);
+          var ini = diaCurto(daSemana[0].data), fim = diaCurto(daSemana[daSemana.length - 1].data);
+          var barra = el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('div', { style: 'height:100%;width:' + pct + '%;background:#1F5FA3' })]);
+          corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Semana de ' + ini + ' a ' + fim }), barra,
+            el('p', { class: 'portal-item-data', text: feitas + ' de ' + daSemana.length + ' aulas concluídas (' + pct + '%)' })]));
+        }
         bloco('Hoje', aulas.filter(function (a) { return dia(a) === hoje; }));
         bloco('Próximas', aulas.filter(function (a) { return dia(a) > hoje; }));
         bloco('Anteriores', aulas.filter(function (a) { return dia(a) < hoje; }).reverse());
