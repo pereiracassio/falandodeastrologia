@@ -122,6 +122,7 @@
     var series = [], videos = [], cortes = [];
     var rolarParaFimDaLista = false; /* ao voltar de um vídeo, a lista abre no fim (onde ficam os vídeos mais novos) */
     var abaSerie = 'serie', abaSerieDe = null; /* dentro da série: 'serie' (informações) ou 'videos' (lista de vídeos), e de qual série */
+    var corteAberto = null; /* corte que está aberto para editar (começa no último) */
     var abaVideo = 'video', abaVideoDe = null; /* dentro do vídeo: 'video' ou 'cortes' (e de qual vídeo) */
     var aba = 'hoje', serieAberta = null, videoAberto = null; /* serieAberta: id, 'soltos' ou null */
     var mesCal = { ano: new Date().getFullYear(), mes: new Date().getMonth() }, diaCal = null;
@@ -371,12 +372,12 @@
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
           var e = P.estado.ler();
-          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if (e.vt === 'cortes' && e.video) { abaVideo = 'cortes'; abaVideoDe = e.video; } if (e.st === 'videos' && e.serie) { abaSerie = 'videos'; abaSerieDe = e.serie; }
+          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if ((e.vt === 'cortes' || e.vt === 'corte') && e.video) { abaVideo = e.vt; abaVideoDe = e.video; } if (e.st === 'videos' && e.serie) { abaSerie = 'videos'; abaSerieDe = e.serie; }
           carregar();
         });
       });
     }
-    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo === 'cortes' ? 'cortes' : '', st: serieAberta && abaSerieDe === serieAberta && abaSerie === 'videos' ? 'videos' : '' }); }
+    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo !== 'video' ? abaVideo : '', st: serieAberta && abaSerieDe === serieAberta && abaSerie === 'videos' ? 'videos' : '' }); }
 
     function carregar() {
       Promise.all([
@@ -759,13 +760,21 @@
       var abaAtual = abaVideoDe === v.id ? abaVideo : 'video';
       var botVideo = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Vídeo' });
       var botCortes = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Cortes' });
+      var botCorte = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Corte' });
+      var editores = {}; /* um editor por corte; só o corte aberto aparece, para não editar um em cima do outro */
       function mostrarAbaVideo(qual) {
+        var ultimo = cortesDe(v.id).slice(-1)[0];
+        if (qual === 'corte' && !ultimo) qual = 'cortes';
+        if (qual === 'corte' && !editores[corteAberto]) corteAberto = ultimo.id;
         abaAtual = qual; abaVideo = qual; abaVideoDe = v.id;
-        botVideo.className = 'portal-aba' + (qual === 'video' ? ' ativa' : ''); botCortes.className = 'portal-aba' + (qual === 'cortes' ? ' ativa' : '');
+        botVideo.className = 'portal-aba' + (qual === 'video' ? ' ativa' : ''); botCortes.className = 'portal-aba' + (qual === 'cortes' ? ' ativa' : ''); botCorte.className = 'portal-aba' + (qual === 'corte' ? ' ativa' : '');
         cartao.style.display = blocoApagar.style.display = qual === 'video' ? '' : 'none';
         cc.style.display = qual === 'cortes' ? '' : 'none';
+        ce.style.display = qual === 'corte' ? '' : 'none';
+        Object.keys(editores).forEach(function (id) { editores[id].style.display = id === String(corteAberto) ? '' : 'none'; });
         guardarEstado();
       }
+      botCorte.addEventListener('click', function () { mostrarAbaVideo('corte'); });
       botVideo.addEventListener('click', function () { mostrarAbaVideo('video'); });
       botCortes.addEventListener('click', function () { mostrarAbaVideo('cortes'); });
       function salvarEIr(fn) { clearTimeout(tempoSalvar); salvarSozinho(); fn(); }
@@ -773,7 +782,7 @@
       area.appendChild(barraNivel(null, s
         ? [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }, { nome: 'Série', ir: function () { salvarEIr(function () { rolarParaFimDaLista = false; abaSerie = 'serie'; abaSerieDe = serieAberta; irPara('series', serieAberta); }); } }]
         : [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }],
-        [botVideo, botCortes]));
+        cortesDe(v.id).length ? [botVideo, botCortes, botCorte] : [botVideo, botCortes]));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
       area.appendChild(cartao);
 
@@ -997,6 +1006,8 @@
       /* cortes */
       var cc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cortes' })]);
       area.appendChild(cc);
+      var ce = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Corte' })]); /* o corte aberto para editar */
+      area.appendChild(ce);
       var lista = cortesDe(v.id);
       var inicioEsp = el('input', { type: 'date' }); inicioEsp.value = v.data_postar ? somarDias(v.data_postar, 1) : '';
       var msgC = el('p', { class: 'portal-msg' });
@@ -1004,7 +1015,7 @@
         var ordem = lista.reduce(function (m, c) { return Math.max(m, c.ordem || 0); }, 0) + 1;
         C.from('prod_cortes').insert({ video_id: v.id, ordem: ordem, titulo: 'Corte ' + ordem }).select('*').single().then(function (r) {
           if (r.error) { P.mensagem(msgC, P.traduzErro(r.error.message), 'erro'); return; }
-          cortes.push(r.data); tela();
+          cortes.push(r.data); corteAberto = r.data.id; abaVideo = 'corte'; abaVideoDe = v.id; tela(); /* o corte novo abre sozinho para editar */
         });
       }, false)]));
       /* link do vídeo no Google Fotos, para achar o arquivo fácil: depois de colado vira só o ícone 🔗 (toca e abre no app do Fotos) e um Apagar discreto, para não acumular link no banco */
@@ -1056,7 +1067,7 @@
         var jupC = el('div', { style: 'margin:6px 0 4px;color:#1034A6;font-size:16px;line-height:1.5' });
         jupiterAzul(jupC, c.data);
         d.addEventListener('change', function () { jupiterAzul(jupC, d.value); });
-        cc.appendChild(el('div', { class: 'prod-corte' }, [
+        var editor = el('div', { class: 'prod-corte' }, [
           el('div', { class: 'prod-corte-topo' }, [t, d]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
           campo('Texto do corte', tx),
@@ -1064,7 +1075,13 @@
           campo('Tags do YouTube Shorts', tg),
           el('div', { class: 'portal-acoes', style: 'margin:0 0 6px' }, [botaoCopiar(function () { return tg.value.trim(); }, 'Copiar as tags')]),
           jupC
-        ]));
+        ]);
+        ce.appendChild(editor); editores[c.id] = editor;
+        /* na lista de cortes: uma linha por corte; tocar abre esse corte */
+        var abrirC = function () { corteAberto = c.id; mostrarAbaVideo('corte'); window.scrollTo(0, 0); };
+        var linhaC = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:160px' }, [el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), el('span', { class: 'prod-data', style: 'display:block', text: c.data ? comDia(c.data) : 'sem data' })]), botao('Abrir', abrirC)]);
+        linhaC.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') abrirC(); });
+        cc.appendChild(linhaC);
       });
       if (lista.length) {
         cc.appendChild(el('hr', { class: 'prod-divisa' }));
@@ -1081,6 +1098,7 @@
       }
       cc.appendChild(msgC);
       cc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar()])); /* ← Voltar também embaixo, na aba Cortes */
+      ce.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar()]));
       var blocoApagar = el('div', { style: 'margin:56px 0 8px;text-align:center' }, [apagar]);
       area.appendChild(blocoApagar);
       mostrarAbaVideo(abaAtual);
