@@ -363,13 +363,16 @@
       var statusPag = el('p', { class: 'portal-item-titulo', style: 'display:block;margin:0 0 14px' });
       var ultimoIn = el('input', { type: 'date', id: 'pagUltimo' });
       var proximoIn = el('input', { type: 'date', id: 'pagProximo' });
+      /* pagamento recorrente por cartão: o site não sabe sozinho quem ativou, então você marca aqui; o cancelamento também é você que faz (o aluno avisa) */
+      var recorrenteSel = el('select', { id: 'pagRecorrente' }, [el('option', { value: 'nao', text: 'Não ativo' }), el('option', { value: 'sim', text: 'Ativo' })]);
+      var linkRecIn = el('input', { type: 'url', id: 'pagLinkRec', placeholder: 'Em branco = link novo do site' });
       var salvarPag = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar pagamento' });
       var pagouHoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Pagou (próximo vencimento 1 mês depois)' });
       function mostrarStatus() { statusPag.textContent = textoPagamento(ultimoIn.value, proximoIn.value); }
       ultimoIn.addEventListener('input', mostrarStatus); proximoIn.addEventListener('input', mostrarStatus);
       function gravarPag() {
         salvarPag.disabled = pagouHoje.disabled = true;
-        P.client.from('aluno_pagamentos').upsert({ aluno_id: aluno.id, ultimo_pagamento: ultimoIn.value || null, proximo_pagamento: proximoIn.value || null }, { onConflict: 'aluno_id' }).then(function (r) {
+        P.client.from('aluno_pagamentos').upsert({ aluno_id: aluno.id, ultimo_pagamento: ultimoIn.value || null, proximo_pagamento: proximoIn.value || null, recorrente_ativo: recorrenteSel.value === 'sim', link_recorrente: linkRecIn.value.trim() || null }, { onConflict: 'aluno_id' }).then(function (r) {
           salvarPag.disabled = pagouHoje.disabled = false;
           if (r.error) P.mensagem(msgPag, P.traduzErro(r.error.message), 'erro'); else { P.mensagem(msgPag, 'Pagamento salvo.', 'ok'); mostrarStatus(); }
         });
@@ -382,14 +385,16 @@
         if (prox.getDate() !== base.getDate()) prox = new Date(base.getFullYear(), base.getMonth() + 2, 0);
         ultimoIn.value = dataISO(hoje); proximoIn.value = dataISO(prox); gravarPag();
       });
-      P.client.from('aluno_pagamentos').select('ultimo_pagamento,proximo_pagamento').eq('aluno_id', aluno.id).maybeSingle().then(function (r) {
-        if (r.data) { ultimoIn.value = r.data.ultimo_pagamento || ''; proximoIn.value = r.data.proximo_pagamento || ''; }
+      P.client.from('aluno_pagamentos').select('ultimo_pagamento,proximo_pagamento,recorrente_ativo,link_recorrente').eq('aluno_id', aluno.id).maybeSingle().then(function (r) {
+        if (r.data) { ultimoIn.value = r.data.ultimo_pagamento || ''; proximoIn.value = r.data.proximo_pagamento || ''; recorrenteSel.value = r.data.recorrente_ativo ? 'sim' : 'nao'; linkRecIn.value = r.data.link_recorrente || ''; }
         mostrarStatus();
       });
       app.appendChild(P.sanfona(abertas, 'pagamento', 'Pagamento', [el('div', { class: 'portal-cartao' }, [
         el('h2', { text: 'Pagamento' }), statusPag,
         el('label', { for: 'pagUltimo', text: 'Último pagamento' }), ultimoIn,
         el('label', { for: 'pagProximo', text: 'Próximo pagamento' }), proximoIn,
+        el('label', { for: 'pagRecorrente', text: 'Pagamento recorrente por cartão' }), recorrenteSel,
+        el('label', { for: 'pagLinkRec', text: 'Link do pagamento recorrente deste aluno' }), linkRecIn,
         msgPag, el('div', { class: 'portal-acoes' }, [salvarPag, pagouHoje])
       ])]));
 
