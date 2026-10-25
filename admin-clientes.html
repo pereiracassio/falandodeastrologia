@@ -317,8 +317,10 @@
               'Você pode salvar com você, pra que sempre tenha acesso.' +
               (e.gravacao_link ? ' Não consigo garantir que vou ter a gravação sempre lá, porque às vezes preciso liberar espaço. Por isso recomendo baixar e guardar contigo.' : '') + '\n\n' +
               'Qualquer dúvida, estou à disposição.';
-            var enviar = el('a', { class: 'portal-btn portal-btn-sec', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', text: 'Enviar' });
-            enviar.style.cssText = 'color:#4A7C59;border-color:#4A7C59';
+            /* o ícone do WhatsApp do site (o mesmo da home): deixa claro que é por ali que vai a mensagem */
+            var enviar = el('a', { class: 'icone-whats', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Enviar pelo WhatsApp', 'aria-label': 'Enviar pelo WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '32', height: '32' })]);
+            enviar.style.cssText = 'margin:0 14px 0 0;line-height:0';
+            enviar.firstChild.style.cssText = 'width:32px;height:32px';
             var tem = [e.pdf_link ? 'PDF' : '', e.gravacao_link ? 'gravação' : ''].filter(Boolean).join(' + ');
             var caixaItem = el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
               el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico }),
