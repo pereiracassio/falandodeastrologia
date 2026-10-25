@@ -1014,7 +1014,6 @@
       var ce = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Corte' })]); /* o corte aberto para editar */
       area.appendChild(ce);
       var lista = cortesDe(v.id);
-      var inicioEsp = el('input', { type: 'date' }); inicioEsp.value = v.data_postar ? somarDias(v.data_postar, 1) : '';
       var msgC = el('p', { class: 'portal-msg' });
       cc.appendChild(el('div', { class: 'prod-acoes-topo' }, [botao('+ corte', function () {
         var ordem = lista.reduce(function (m, c) { return Math.max(m, c.ordem || 0); }, 0) + 1;
@@ -1089,19 +1088,6 @@
         linhaC.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') abrirC(); });
         cc.appendChild(linhaC);
       });
-      if (lista.length) {
-        cc.appendChild(el('hr', { class: 'prod-divisa' }));
-        cc.appendChild(campo('Espalhar os cortes de segunda a sexta, a partir de', inicioEsp));
-        cc.appendChild(el('div', { class: 'portal-acoes' }, [botao('Espalhar as datas', function () {
-          if (!inicioEsp.value) { P.mensagem(msgC, 'Escolha o dia em que o primeiro corte sai.', 'erro'); return; }
-          var d = proximoDiaUtil(inicioEsp.value), ops = [];
-          lista.slice().sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); }).forEach(function (c) {
-            ops.push(gravar('prod_cortes', cortes, c, { data: d }));
-            d = proximoDiaUtil(somarDias(d, 1));
-          });
-          Promise.all(ops).then(function () { tela(); });
-        })]));
-      }
       cc.appendChild(msgC);
       cc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar()])); /* ← Voltar também embaixo, na aba Cortes */
       ce.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar()]));
