@@ -114,6 +114,7 @@ Todo botão de voltar do site é o **"← Voltar" em terracota (`#A03E25`), só 
 - **Textos do blog (páginas públicas):** `← Voltar` terracota no topo e no fim do texto, classes `blog-voltar blog-voltar-vermelho` (`blog-voltar-topo` no de cima), em `postagem.html` e em `api/_blog.js`. Mexeu na estrutura gerada: ele precisa tocar em "Atualizar as páginas do blog" (uma vez).
 - O texto é sempre "← Voltar" (não "Voltar às atividades", "← Todos os alunos", "← Aplicações" etc.). Voltar de passo de formulário (`aplicacao.js`, "Voltar"/"Continuar") e "Voltar ao site" de `horario-confirmado.html` NÃO entram: não são navegação de tela.
 - A Produção (`admin-producao.html`) tem a mesma peça (`botaoVoltar` local) e abre a lista de vídeos já no fim (`rolarParaFimDaLista`).
+  **Exceção (26/10/2026, pedido dele):** nas telas de série e de vídeo da Produção a linha de cima NÃO tem mais "← Voltar": quem navega são os níveis (`barraNivel`: séries, série, vídeos / vídeo, cortes; o aberto em ocre, o resto azul, sem separadores, sem nome de série nem de vídeo, cada nível uma vez só). O "← Voltar" fica só embaixo.
 
 ## Apagar / Excluir / Remover / Tirar: SEMPRE discreto (25/10/2026) — regra do astrólogo, vale para TODA tela e peça nova
 

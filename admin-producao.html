@@ -489,7 +489,7 @@
     /* barra única dos níveis, numa linha: ← Voltar, Séries › série › vídeo e, depois, as abas do nível (Série/Vídeos, Vídeo/Cortes) */
     function barraNivel(voltar, partes, abas) {
       var caixa = el('div', { class: 'prod-nivel impresso' });
-      voltar.classList.add('nivel-voltar'); caixa.appendChild(voltar);
+      if (voltar) { voltar.classList.add('nivel-voltar'); caixa.appendChild(voltar); }
       partes.forEach(function (p, i) {
         if (p.ir) { var b = el('button', { type: 'button', text: p.nome }); b.addEventListener('click', p.ir); caixa.appendChild(b); }
         else caixa.appendChild(el('span', { class: 'prod-trilha-atual', text: p.nome }));
@@ -651,7 +651,7 @@
       }
       botSerie.addEventListener('click', function () { mostrarAbaSerie('serie'); });
       botVideos.addEventListener('click', function () { mostrarAbaSerie('videos'); });
-      area.appendChild(barraNivel(botaoVoltar(function () { irPara('series'); }), [{ nome: 'Séries', ir: function () { irPara('series'); } }], s ? [botSerie, botVideos] : []));
+      area.appendChild(barraNivel(null, [{ nome: 'Séries', ir: function () { irPara('series'); } }], s ? [botSerie, botVideos] : []));
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: s ? s.nome : 'Vídeos soltos' })]);
       area.appendChild(cab);
       var msg = el('p', { class: 'portal-msg' });
@@ -770,7 +770,7 @@
       botCortes.addEventListener('click', function () { mostrarAbaVideo('cortes'); });
       function salvarEIr(fn) { clearTimeout(tempoSalvar); salvarSozinho(); fn(); }
       /* cada nível aparece uma vez só, sem repetir: Séries (a lista), Série (leva à série) e as abas do vídeo (Vídeo, Cortes). Nunca o nome da série nem do vídeo */
-      area.appendChild(barraNivel(botaoVoltar(), s
+      area.appendChild(barraNivel(null, s
         ? [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }, { nome: 'Série', ir: function () { salvarEIr(function () { rolarParaFimDaLista = false; abaSerie = 'serie'; abaSerieDe = serieAberta; irPara('series', serieAberta); }); } }]
         : [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }],
         [botVideo, botCortes]));
