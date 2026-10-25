@@ -180,9 +180,9 @@
       return achadas.sort(function (x, y) { return x[0] - y[0]; });
     }
     /* bloco azul "dd/mm/aa, horários de Júpiter" com um horário por linha; vazio se não há data */
-    function jupiterAzul(caixa, isoD) {
+    function jupiterAzul(caixa, isoD, avisoSemData) {
       caixa.textContent = '';
-      if (!isoD) return;
+      if (!isoD) { if (avisoSemData) caixa.appendChild(el('div', { text: avisoSemData })); return; }
       var p = isoD.split('-'), h = horasDeJupiter(isoD);
       caixa.appendChild(el('div', { style: 'font-weight:700', text: p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de Júpiter' }));
       if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
@@ -1070,8 +1070,9 @@
         function agendarCorte() { clearTimeout(tempoC); tempoC = setTimeout(function () { gravar('prod_cortes', cortes, c, { texto: tx.value, tags: tg.value.trim() || null }); }, 1000); }
         tx.addEventListener('input', agendarCorte); tg.addEventListener('input', agendarCorte);
         var jupC = el('div', { style: 'margin:6px 0 4px;color:#1034A6;font-size:16px;line-height:1.5' });
-        jupiterAzul(jupC, c.data);
-        d.addEventListener('change', function () { jupiterAzul(jupC, d.value); });
+        var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
+        jupiterAzul(jupC, c.data, semDataJup);
+        d.addEventListener('change', function () { jupiterAzul(jupC, d.value, semDataJup); });
         var editor = el('div', { class: 'prod-corte' }, [
           el('div', { class: 'prod-corte-topo' }, [t, d]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
