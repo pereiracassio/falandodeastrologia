@@ -963,6 +963,30 @@
           cortes.push(r.data); tela();
         });
       }, false)]));
+      /* link do vídeo no Google Fotos, para achar o arquivo fácil: depois de colado vira só o ícone 🔗 (toca e abre no app do Fotos) e um Apagar discreto, para não acumular link no banco */
+      var caixaFotos = el('div', { style: 'margin:0 0 16px' });
+      function desenharFotos() {
+        caixaFotos.textContent = '';
+        var u = P.linkSeguro(v.link_fotos);
+        if (u) {
+          var abrir = el('a', { class: 'portal-btn portal-btn-sec', href: u, target: '_blank', rel: 'noopener', title: 'Abrir no Google Fotos', 'aria-label': 'Abrir no Google Fotos', text: '\uD83D\uDD17' });
+          abrir.style.cssText = 'font-size:26px;line-height:1;padding:4px 10px';
+          var ap = P.botaoApagar('Apagar');
+          ap.addEventListener('click', function () { gravar('prod_videos', videos, v, { link_fotos: null }).then(function (r) { if (!r.error) desenharFotos(); }); });
+          caixaFotos.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px' }, [abrir, ap]));
+        } else {
+          var campoL = el('input', { type: 'url', placeholder: 'Colar o link do vídeo no Google Fotos', style: 'margin:0' });
+          campoL.addEventListener('change', function () {
+            var t = campoL.value.trim();
+            if (!t) return;
+            if (!P.linkSeguro(t)) { P.mensagem(msgC, 'Esse link não parece certo. Cole o endereço inteiro, começando com https://', 'erro'); return; }
+            gravar('prod_videos', videos, v, { link_fotos: t }).then(function (r) { if (!r.error) desenharFotos(); });
+          });
+          caixaFotos.appendChild(campoL);
+        }
+      }
+      desenharFotos();
+      cc.appendChild(caixaFotos);
       if (!lista.length) cc.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte ainda. Toque em "+ corte" para cada trecho que você tirar do vídeo.' }));
       lista.forEach(function (c) {
         var t = el('input', { type: 'text', maxlength: '160', placeholder: 'Título ou ideia do corte' }); t.value = c.titulo || '';
