@@ -295,7 +295,9 @@ html body .pagina-papiro .portal-apagar:hover{opacity:.9}
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao{padding-top:6px!important}
 .pagina-papiro .portal-abas-rola{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .pagina-papiro .portal-abas-rola::-webkit-scrollbar{display:none}
-.pagina-papiro .portal-abas-rola .portal-abas{width:166.667%;margin:0!important}
+.pagina-papiro .portal-abas-rola .portal-abas{width:max-content;min-width:100%;margin:0!important}
+/* cada aba leva o tamanho do próprio nome (nunca corta a palavra, como "Mensalidade"); se sobrar espaço elas se repartem, se faltar a barra corre */
+.pagina-papiro .portal-abas-rola .portal-aba,.pagina-papiro .portal-abas-rola .portal-aba.ativa{flex:1 0 auto!important;padding:9px 14px!important;white-space:nowrap;overflow:visible}
 .pagina-papiro .portal-abas-rola .portal-abas::after{display:none}
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-top:0!important;padding-top:0!important;margin:0!important}
 
