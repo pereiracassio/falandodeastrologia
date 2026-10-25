@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=52"></script>
+  <script src="portal.js?v=53"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -146,8 +146,9 @@
       busca.then(function (r) {
         var nome = r.data ? r.data.nome : (P.nomeDoGoogle(user) || email);
         if (verId) {
-          var voltarPainel = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-clientes.html', text: '← Voltar ao painel' });
-          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + nome + ' vê (modo administrador)' }), el('div', {}, [voltarPainel])]));
+          var paraOPainel = function () { location.href = 'admin-clientes.html'; };
+          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + nome + ' vê (modo administrador)' }), el('div', {}, [P.botaoVoltar(paraOPainel)])]));
+          P.voltarNoFim(app, paraOPainel);
         } else {
           app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Olá, ' + nome + '!' }), sairBtn]));
         }

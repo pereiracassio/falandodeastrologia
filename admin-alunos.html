@@ -34,8 +34,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=52"></script>
-  <script src="atividades.js?v=26"></script>
+  <script src="portal.js?v=53"></script>
+  <script src="atividades.js?v=27"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -208,10 +208,10 @@
       P.estado.gravar({ aluno: aluno.id, abertas: abertas.join(',') || '-' });
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os alunos' });
-      voltar.addEventListener('click', function () { listaDeAlunos(user); });
+      var voltar = P.botaoVoltar(function () { listaDeAlunos(user); });
       var verComoAluno = el('a', { class: 'portal-btn', href: 'aluno.html?ver=' + encodeURIComponent(aluno.id), target: '_blank', rel: 'noopener', text: 'Ver como aluno' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoAluno]));
+      P.voltarNoFim(app, function () { listaDeAlunos(user); });
 
       /* entrar no encontro e dia do próximo, sem procurar o link */
       var meetAdmin = P.linkSeguro(aluno.meet_link);

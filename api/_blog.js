@@ -191,6 +191,7 @@ function paginaPost(p, todos) {
     titulo: p.titulo, descricao: resumo, url, tipo: 'article',
     extraHead: (p.imagem_url ? '\n  <meta property="og:image" content="' + esc(p.imagem_url) + '">' : '') + '\n  <script type="application/ld+json">' + ldJson + '</script>',
     corpo: `  <article class="blog" id="post">
+    <a class="blog-voltar blog-voltar-vermelho blog-voltar-topo" href="${slugAssunto ? '/assunto/' + slugAssunto + '.html' : '/blog.html'}">← Voltar</a>
     ${slugAssunto ? '<p class="blog-data" style="text-align:center;margin-bottom:6px"><a class="blog-assunto" href="/assunto/' + slugAssunto + '.html">' + esc(assunto) + '</a></p>' : ''}
     <h1>${esc(p.titulo)}</h1>
     ${p.publicado_em ? '<p class="blog-data" style="text-align:center;margin-bottom:20px">' + esc(dataExtenso(p.publicado_em)) + '</p>' : ''}
@@ -198,7 +199,7 @@ function paginaPost(p, todos) {
 ${corpoHtml(p.corpo, montarLigacoes(todos, p.slug))}
 ${id ? videoHtml(p.video_url) : ''}
 ${FIM_HTML}
-    <a class="blog-voltar" href="${slugAssunto ? '/assunto/' + slugAssunto + '.html' : '/blog.html'}">← ${slugAssunto ? 'Mais textos de ' + esc(assunto) : 'Ver todos os textos'}</a>
+    <a class="blog-voltar blog-voltar-vermelho" href="${slugAssunto ? '/assunto/' + slugAssunto + '.html' : '/blog.html'}">← Voltar</a>
   </article>`
   });
 }

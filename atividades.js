@@ -312,11 +312,10 @@
   /* a atividade aberta: responder (se ainda não enviou) ou ver as respostas e a correção */
   function telaDaAtividadeAluno(app, atividade, aoVoltar, previa) {
     app.textContent = '';
-    var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
-    voltar.addEventListener('click', aoVoltar);
-    app.appendChild(el('div', { class: 'portal-topo' }, [voltar]));
+    app.appendChild(el('div', { class: 'portal-topo' }, [P.botaoVoltar(aoVoltar)]));
     var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
     app.appendChild(corpo);
+    app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [P.botaoVoltar(aoVoltar)])); /* ← Voltar também embaixo (o conteúdo entra em "corpo", acima dele) */
 
     carregar(atividade.id, false).then(function (d) {
       corpo.textContent = '';
@@ -471,8 +470,7 @@
       corpo.textContent = '';
       corpo.appendChild(el('p', { class: 'portal-msg ok', text: 'Atividade salva.' }));
       corpo.appendChild(el('p', { text: 'Quer avisar ' + primeiroNome(aluno.nome) + ' no WhatsApp? A mensagem já vai pronta e você pode mudar antes de enviar.' }));
-      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Voltar às atividades' });
-      voltar.addEventListener('click', lista);
+      var voltar = P.botaoVoltar(lista);
       corpo.appendChild(el('div', { class: 'portal-acoes' }, [
         botaoWhats('Avisar ' + primeiroNome(aluno.nome) + ' no WhatsApp', aluno.whatsapp,
           'Oi ' + primeiroNome(aluno.nome) + '! Deixei uma atividade nova para você na página Alunos: "' + tituloAtividade + '". Quando terminar, é só enviar por lá. ' + SITE_ALUNO),
@@ -662,11 +660,10 @@
     function telaDaAtividade(a) {
       P.estado.mesclar({ atividade: a.id });
       corpo.textContent = '';
-      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Atividades' });
-      voltar.addEventListener('click', lista);
-      corpo.appendChild(voltar);
+      corpo.appendChild(P.botaoVoltar(lista));
       var area = el('div', { style: 'margin-top:14px' }, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
       corpo.appendChild(area);
+      corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [P.botaoVoltar(lista)])); /* ← Voltar também embaixo (o conteúdo entra em "area", acima dele) */
 
       carregar(a.id, true).then(function (d) {
         area.textContent = '';

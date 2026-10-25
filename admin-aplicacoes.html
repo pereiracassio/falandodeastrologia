@@ -31,7 +31,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=52"></script>
+  <script src="portal.js?v=53"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -117,13 +117,13 @@
       P.estado.gravar({ aba: aba, aplicacao: a.id });
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Aplicações' });
-      voltar.addEventListener('click', function () { lista(); });
+      var voltar = P.botaoVoltar(function () { lista(); });
       var texto = a.concluida
         ? 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Recebi a sua aplicação para o Acompanhamento Prático de Astrologia.'
         : 'Oi, ' + primeiro(a.nome) + '! Aqui é o Cássio. Vi que você começou a aplicação para o Acompanhamento Prático de Astrologia e não terminou. Posso te ajudar com alguma dúvida?';
       var whats = el('a', { class: 'portal-btn portal-btn-whats', href: 'https://wa.me/' + numeroWhats(a.whatsapp) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', text: 'Chamar no WhatsApp' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, whats]));
+      P.voltarNoFim(app, function () { lista(); });
 
       var dados = el('div', { class: 'portal-cartao' }, [el('h2', { text: a.nome }),
         el('p', { class: 'portal-item-data', text: dataHora(a.criado_em) + ' · ' + (a.concluida ? 'Aplicação completa' : 'Não concluída (parou no meio)') })]);

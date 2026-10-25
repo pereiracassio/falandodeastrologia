@@ -41,8 +41,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=52"></script>
-  <script src="atividades.js?v=26"></script>
+  <script src="portal.js?v=53"></script>
+  <script src="atividades.js?v=27"></script>
   <script src="caderno.js?v=10"></script>
   <script>
   (function () {
@@ -71,10 +71,9 @@
 
     function trocarSenha(user) {
       limpar();
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(function () { mostrarPortal(user); })]));
       P.montarNovaSenha(app, function () { avisoSenha = true; mostrarPortal(user); }, 'Trocar senha');
-      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Voltar' });
-      voltar.addEventListener('click', function () { mostrarPortal(user); });
-      app.appendChild(voltar);
+      P.voltarNoFim(app, function () { mostrarPortal(user); });
     }
 
     function avisoDeSenha() {
@@ -246,8 +245,9 @@
         limpar();
         titulos(true);
         if (previa) {
-          var voltarPainel = el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-alunos.html', text: '← Voltar ao painel' });
-          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + aluno.nome + ' vê (modo administrador)' }), el('div', {}, [voltarPainel])]));
+          var paraOPainel = function () { location.href = 'admin-alunos.html'; };
+          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + aluno.nome + ' vê (modo administrador)' }), el('div', {}, [P.botaoVoltar(paraOPainel)])]));
+          P.voltarNoFim(app, paraOPainel);
         } else {
           app.appendChild(topo(user, 'Olá, ' + aluno.nome + '!'));
           avisoDeSenha();

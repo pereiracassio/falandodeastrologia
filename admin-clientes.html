@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=52"></script>
+  <script src="portal.js?v=53"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -190,10 +190,10 @@
       P.estado.gravar({ cliente: cliente.id });
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Todos os clientes' });
-      voltar.addEventListener('click', function () { listaDeClientes(user); });
+      var voltar = P.botaoVoltar(function () { listaDeClientes(user); });
       var verComoCliente = el('a', { class: 'portal-btn', href: 'cliente.html?ver=' + encodeURIComponent(cliente.id), target: '_blank', rel: 'noopener', text: 'Ver como cliente' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoCliente]));
+      P.voltarNoFim(app, function () { listaDeClientes(user); });
       app.appendChild(P.cartaoAtendimento(cliente.id, true)); /* próximo atendimento e Meet, sem caçar o link */
 
       /* dados do cliente: código, nome e pasta no Drive (o código só o administrador vê) */

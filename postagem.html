@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=54">
-  <link rel="stylesheet" href="blog.css?v=16">
+  <link rel="stylesheet" href="blog.css?v=17">
   <link rel="stylesheet" href="tipografia.css?v=18">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -66,12 +66,13 @@
       document.head.appendChild(s);
 
       area.textContent = '';
+      area.appendChild(el('a', { class: 'blog-voltar blog-voltar-vermelho blog-voltar-topo', href: 'blog.html', text: '← Voltar' }));
       area.appendChild(el('h1', { text: p.titulo }));
       if (p.publicado_em) area.appendChild(el('p', { class: 'blog-data', style: 'text-align:center;margin-bottom:20px', text: B.dataExtenso(p.publicado_em) }));
       if (p.imagem_url) area.appendChild(el('img', { class: 'blog-capa', src: p.imagem_url, alt: p.titulo }));
       area.appendChild(B.renderizarCorpo(p.corpo, lig));
       area.appendChild(B.renderizarVideo(p.video_url));
-      area.appendChild(el('a', { class: 'blog-voltar', href: 'blog.html', text: '← Ver todos os textos' }));
+      area.appendChild(el('a', { class: 'blog-voltar blog-voltar-vermelho', href: 'blog.html', text: '← Voltar' }));
     }).catch(function () {
       area.textContent = '';
       area.appendChild(el('p', { class: 'blog-vazio', text: 'Não consegui carregar este texto agora. Tente de novo em instantes.' }));

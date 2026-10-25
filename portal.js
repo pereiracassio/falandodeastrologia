@@ -780,6 +780,18 @@
     return b;
   }
 
+  /* ← Voltar no FIM da tela, mesmo que as seções cheguem depois (carregamento assíncrono): fica sempre por último; sai sozinho quando a tela é limpa */
+  function voltarNoFim(app, aoClicar) {
+    var caixa = el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [botaoVoltar(aoClicar)]);
+    app.appendChild(caixa);
+    var obs = new MutationObserver(function () {
+      if (caixa.parentNode !== app) { obs.disconnect(); return; }
+      if (app.lastChild !== caixa) app.appendChild(caixa);
+    });
+    obs.observe(app, { childList: true });
+    return caixa;
+  }
+
   /* ---------- avisos no celular (Web Push) ----------
      Quem manda é o servidor (api/push.js); aqui o aparelho só pede permissão, se cadastra e conta que algo aconteceu.
      No iPhone/iPad só funciona no app instalado pela tela inicial. */
@@ -879,6 +891,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar
+    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim
   };
 })();
