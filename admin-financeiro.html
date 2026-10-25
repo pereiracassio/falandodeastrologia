@@ -72,7 +72,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=53"></script>
+  <script src="portal.js?v=54"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -606,26 +606,7 @@
       var data = el('input', { type: 'date', value: e ? String(e.data).slice(0, 10) : hojeISO() });
       /* Cliente e Serviço (igual ao Financeiro do Astro Hellenic): campo comum onde se digita, apaga e escreve o que quiser; embaixo abre uma lista só de texto
          com o que combina. No Serviço a lista abre já ao tocar no campo; no Cliente, enquanto você digita o nome ou o código. Escrever algo que não está na lista vale. */
-      function combo(input, itens, aoEscolher, mostrarTudoNoFoco) {
-        var lista = el('div', { style: 'display:none;margin:-8px 0 14px;border-top:2px solid #1F5FA3' });
-        function fechar() { lista.style.display = 'none'; lista.textContent = ''; }
-        function abrir() {
-          var t = input.value.trim().toLowerCase();
-          var achados = itens().filter(function (i) { return t ? (i.busca.indexOf(t) >= 0 && i.valor.toLowerCase() !== t) : mostrarTudoNoFoco; }).slice(0, 8);
-          lista.textContent = '';
-          if (!achados.length) { lista.style.display = 'none'; return; }
-          achados.forEach(function (i) {
-            var l = el('div', { text: i.rotulo, style: 'padding:10px 4px;border-bottom:1px solid rgba(31,95,163,.5);cursor:pointer;font-size:16px;font-weight:700' });
-            l.addEventListener('pointerdown', function (ev) { ev.preventDefault(); aoEscolher(i); fechar(); });
-            lista.appendChild(l);
-          });
-          lista.style.display = '';
-        }
-        input.addEventListener('input', abrir);
-        if (mostrarTudoNoFoco) input.addEventListener('focus', abrir);
-        input.addEventListener('blur', function () { setTimeout(fechar, 200); });
-        return [input, lista];
-      }
+      var combo = P.combo; /* a peça comum do portal.js (a mesma da tela de Clientes) */
       var cliente = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Nome ou código', value: e ? (e.cliente_nome || '') : '' });
       var escolhido = e ? e.cliente_id : null;
       cliente.addEventListener('input', function () { escolhido = null; });
@@ -729,7 +710,7 @@
       var site = window.Carrinho.servicos;
       /* serviço do site que ainda não está na sua lista entra na área Astrologia */
       var astro = areas.filter(function (a) { return /astrolog/i.test(a.nome); })[0];
-      Object.keys(site).filter(function (k) { return !/^teste/.test(k); }).forEach(function (k) {
+      Object.keys(site).filter(function (k) { return !/teste/i.test(k); }).forEach(function (k) {
         if (!tem[site[k].titulo.toLowerCase()]) lista.push({ nome: site[k].titulo, valor: site[k].centavos / 100, area_id: astro ? astro.id : null });
       });
       return lista;

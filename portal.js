@@ -780,6 +780,42 @@
     return b;
   }
 
+  /* Campo com lista de escolha, o mesmo do Financeiro: campo comum onde se digita, apaga e escreve o que quiser; embaixo abre uma lista só de texto com o que combina.
+     itens() devolve [{ valor, rotulo, busca }]; aoEscolher(item) roda quando toca num item; mostrarTudoNoFoco abre a lista já ao tocar no campo. Devolve [campo, lista]. */
+  function combo(input, itens, aoEscolher, mostrarTudoNoFoco) {
+    var lista = el('div', { style: 'display:none;margin:-8px 0 14px;border-top:2px solid #1F5FA3' });
+    function fechar() { lista.style.display = 'none'; lista.textContent = ''; }
+    function abrir() {
+      var t = input.value.trim().toLowerCase();
+      var achados = itens().filter(function (i) { return t ? (i.busca.indexOf(t) >= 0 && i.valor.toLowerCase() !== t) : mostrarTudoNoFoco; }).slice(0, 8);
+      lista.textContent = '';
+      if (!achados.length) { lista.style.display = 'none'; return; }
+      achados.forEach(function (i) {
+        var l = el('div', { text: i.rotulo, style: 'padding:10px 4px;border-bottom:1px solid rgba(31,95,163,.5);cursor:pointer;font-size:16px;font-weight:700' });
+        l.addEventListener('pointerdown', function (ev) { ev.preventDefault(); aoEscolher(i); fechar(); });
+        lista.appendChild(l);
+      });
+      lista.style.display = '';
+    }
+    input.addEventListener('input', abrir);
+    if (mostrarTudoNoFoco) input.addEventListener('focus', abrir);
+    input.addEventListener('blur', function () { setTimeout(fechar, 200); });
+    return [input, lista];
+  }
+  /* os serviços para escolher: os cadastrados no Financeiro (fin_servicos) mais os do site que ainda não estão lá (precisa de carrinho.js na página; sem ele, só os cadastrados) */
+  function servicosParaEscolher() {
+    var site = [];
+    try {
+      var s = (window.Carrinho && window.Carrinho.servicos) || {};
+      site = Object.keys(s).filter(function (k) { return !/teste/i.test(k); }).map(function (k) { return { nome: s[k].titulo, valor: s[k].centavos / 100 }; });
+    } catch (e) { /* sem os do site */ }
+    return client.from('fin_servicos').select('nome,valor').order('nome').then(function (r) {
+      var cad = (!r.error && r.data) || [], tem = {};
+      cad.forEach(function (x) { tem[String(x.nome).toLowerCase()] = true; });
+      return cad.map(function (x) { return { nome: x.nome, valor: x.valor }; }).concat(site.filter(function (x) { return !tem[x.nome.toLowerCase()]; }));
+    }, function () { return site; });
+  }
+
   /* ← Voltar no FIM da tela, mesmo que as seções cheguem depois (carregamento assíncrono): fica sempre por último; sai sozinho quando a tela é limpa */
   function voltarNoFim(app, aoClicar) {
     var caixa = el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [botaoVoltar(aoClicar)]);
@@ -891,6 +927,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher
   };
 })();

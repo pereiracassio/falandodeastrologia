@@ -34,7 +34,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=53"></script>
+  <script src="portal.js?v=54"></script>
+  <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -237,13 +238,15 @@
       app.appendChild(formCod);
 
       var msg = el('p', { class: 'portal-msg' });
-      var servico = el('input', { type: 'text', id: 'entServico', required: '', placeholder: 'Escreva o que quiser, ou toque num atalho abaixo' });
-      var atalhos = el('div', { class: 'portal-acoes', style: 'margin:-6px 0 14px' }, ['Mapa Natal Clássico', 'Revolução Solar', 'Previsões Astrológicas', 'Sinastria Clássica', 'Retificação de Mapa', 'Atendimento semanal'].map(function (nome) {
-        var b2 = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: nome });
-        b2.style.padding = '6px 10px'; b2.style.fontSize = '13px';
-        b2.addEventListener('click', function () { servico.value = nome; servico.focus(); });
-        return b2;
-      }));
+      var servico = el('input', { type: 'text', id: 'entServico', required: '', autocomplete: 'off' });
+      /* igual ao Serviço do Financeiro: campo onde se escreve o que quiser; ao tocar, abre a lista (cadastrados no Financeiro + os do site) */
+      var servicosLista = [];
+      P.servicosParaEscolher().then(function (l) { servicosLista = l; });
+      var moedaBR = function (v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); };
+      var blocoServico = P.combo(servico, function () {
+        return servicosLista.map(function (x) { return { valor: x.nome, rotulo: x.nome + (x.valor != null ? ' · ' + moedaBR(x.valor) : ''), busca: x.nome.toLowerCase() }; });
+      }, function (i) { servico.value = i.valor; }, true);
+      var atalhos = blocoServico[1];
       var data = el('input', { type: 'date', id: 'entData' });
       var pdf = el('input', { type: 'url', id: 'entPdf', placeholder: 'https://drive.google.com/...' });
       var gravacao = el('input', { type: 'url', id: 'entGravacao', placeholder: 'https://drive.google.com/...' });
