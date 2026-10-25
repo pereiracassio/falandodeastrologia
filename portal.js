@@ -772,6 +772,14 @@
     }).catch(function () {});
   })();
 
+  /* "← Voltar" em terracota: o botão de voltar padrão das telas do painel (em cima e embaixo de cada tela) */
+  function botaoVoltar(aoClicar) {
+    var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
+    b.style.cssText = 'color:#A03E25!important;font-weight:700';
+    b.addEventListener('click', aoClicar);
+    return b;
+  }
+
   /* ---------- avisos no celular (Web Push) ----------
      Quem manda é o servidor (api/push.js); aqui o aparelho só pede permissão, se cadastra e conta que algo aconteceu.
      No iPhone/iPad só funciona no app instalado pela tela inicial. */
@@ -871,6 +879,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos }
+    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar
   };
 })();

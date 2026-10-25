@@ -31,7 +31,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=51"></script>
+  <script src="portal.js?v=52"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -166,6 +166,7 @@
       }
 
       function montar() {
+        cartao.insertBefore(el('div', { class: 'portal-acoes', style: 'margin:0 0 6px' }, [P.botaoVoltar(function () { lista(); })]), cartao.firstChild); /* ← Voltar em cima e embaixo */
         var msg = el('p', { class: 'portal-msg' });
         var titulo = el('input', { type: 'text', placeholder: 'Título', maxlength: '160' }); titulo.value = post.titulo || '';
         var escolhaTitulo = null;
@@ -297,8 +298,7 @@
           rascunho.addEventListener('click', function () { gravar(false); });
           botoes.appendChild(rascunho);
         }
-        var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Voltar' });
-        voltar.addEventListener('click', lista);
+        var voltar = P.botaoVoltar(function () { lista(); });
         botoes.appendChild(voltar);
         if (id) {
           var excluir = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir' });
