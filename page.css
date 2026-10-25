@@ -298,3 +298,5 @@ html body .pagina-papiro .portal-apagar:hover{opacity:.9}
 .pagina-papiro .portal-abas-rola .portal-abas{width:166.667%;margin:0!important}
 .pagina-papiro .portal-abas-rola .portal-abas::after{display:none}
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-top:0!important;padding-top:0!important;margin:0!important}
+
+.pagina-papiro .engrenagem{font-size:2em;line-height:.5;vertical-align:-.14em;display:inline-block}
