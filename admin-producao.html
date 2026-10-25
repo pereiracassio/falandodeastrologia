@@ -969,8 +969,10 @@
         caixaFotos.textContent = '';
         var u = P.linkSeguro(v.link_fotos);
         if (u) {
-          var abrir = el('a', { class: 'portal-btn portal-btn-sec', href: u, target: '_blank', rel: 'noopener', title: 'Abrir no Google Fotos', 'aria-label': 'Abrir no Google Fotos', text: '\uD83D\uDD17' });
-          abrir.style.cssText = 'font-size:26px;line-height:1;padding:4px 10px';
+          var abrir = el('a', { class: 'portal-btn portal-btn-sec', href: u, target: '_blank', rel: 'noopener', title: 'Abrir no Google Fotos', 'aria-label': 'Abrir no Google Fotos' });
+          /* ícone de elo em traço azul, da família dos outros ícones do site (grade 64, traço redondo) */
+          abrir.innerHTML = '<svg viewBox="0 0 64 64" width="30" height="30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M27 37a11 11 0 0 0 15.5 0l9-9a11 11 0 0 0-15.5-15.5l-3 3"/><path d="M37 27a11 11 0 0 0-15.5 0l-9 9a11 11 0 0 0 15.5 15.5l3-3"/></svg>';
+          abrir.style.cssText = 'padding:6px 10px;color:#1034A6';
           var ap = P.botaoApagar('Apagar');
           ap.addEventListener('click', function () { gravar('prod_videos', videos, v, { link_fotos: null }).then(function (r) { if (!r.error) desenharFotos(); }); });
           caixaFotos.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px' }, [abrir, ap]));
