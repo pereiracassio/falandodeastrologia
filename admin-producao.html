@@ -31,6 +31,10 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
   <style>
+    .prod-vt-topo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:0 0 10px}
+    .prod-vt{display:flex}
+    .pagina-papiro .prod-vt .portal-aba{flex:none;padding:9px 16px!important;white-space:nowrap}
+    .prod-vt-topo .portal-btn{white-space:nowrap}
     /* Produção de vídeos: nas regras do site (papiro sem fundo próprio, contorno azul egípcio, canto reto).
        Cinzel no que já vem pronto (rótulos, etapas, botões de marcar); letra à mão no que o Cássio escreve. */
     .prod-fixo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
@@ -109,6 +113,7 @@
 
     var series = [], videos = [], cortes = [];
     var rolarParaFimDaLista = false; /* ao voltar de um vídeo, a lista abre no fim (onde ficam os vídeos mais novos) */
+    var abaVideo = 'video', abaVideoDe = null; /* dentro do vídeo: 'video' ou 'cortes' (e de qual vídeo) */
     var aba = 'hoje', serieAberta = null, videoAberto = null; /* serieAberta: id, 'soltos' ou null */
     var mesCal = { ano: new Date().getFullYear(), mes: new Date().getMonth() }, diaCal = null;
 
@@ -357,12 +362,12 @@
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
           var e = P.estado.ler();
-          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null;
+          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if (e.vt === 'cortes' && e.video) { abaVideo = 'cortes'; abaVideoDe = e.video; }
           carregar();
         });
       });
     }
-    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto }); }
+    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo === 'cortes' ? 'cortes' : '' }); }
 
     function carregar() {
       Promise.all([
@@ -711,7 +716,21 @@
     /* ---------- UM VÍDEO ---------- */
     function telaVideo(area, v) {
       var s = serieDe(v), msg = el('p', { class: 'portal-msg' });
-      var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin:0 0 6px' }, [botaoVoltar()]), el('h2', { text: nomeVideo(v) })]);
+      /* na mesma linha do ← Voltar: "Vídeo" (tudo o que já havia) e "Cortes" (os cortes do vídeo) */
+      var abaAtual = abaVideoDe === v.id ? abaVideo : 'video';
+      var botVideo = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Vídeo' });
+      var botCortes = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Cortes' });
+      function mostrarAbaVideo(qual) {
+        abaAtual = qual; abaVideo = qual; abaVideoDe = v.id;
+        botVideo.className = 'portal-aba' + (qual === 'video' ? ' ativa' : ''); botCortes.className = 'portal-aba' + (qual === 'cortes' ? ' ativa' : '');
+        cartao.style.display = blocoApagar.style.display = qual === 'video' ? '' : 'none';
+        cc.style.display = qual === 'cortes' ? '' : 'none';
+        guardarEstado();
+      }
+      botVideo.addEventListener('click', function () { mostrarAbaVideo('video'); });
+      botCortes.addEventListener('click', function () { mostrarAbaVideo('cortes'); });
+      area.appendChild(el('div', { class: 'prod-vt-topo' }, [el('div', {}, [botaoVoltar()]), el('div', { class: 'prod-vt', role: 'tablist' }, [botVideo, botCortes]), el('div')]));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
       area.appendChild(cartao);
 
       var titulo = el('input', { type: 'text', maxlength: '160' }); titulo.value = v.titulo || '';
@@ -991,7 +1010,10 @@
         })]));
       }
       cc.appendChild(msgC);
-      area.appendChild(el('div', { style: 'margin:56px 0 8px;text-align:center' }, [apagar]));
+      cc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar()])); /* ← Voltar também embaixo, na aba Cortes */
+      var blocoApagar = el('div', { style: 'margin:56px 0 8px;text-align:center' }, [apagar]);
+      area.appendChild(blocoApagar);
+      mostrarAbaVideo(abaAtual);
     }
 
     /* ---------- CALENDÁRIO ---------- */
