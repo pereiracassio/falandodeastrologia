@@ -487,7 +487,7 @@
       return b;
     }
     var voltarDoVideo = null;
-    function nomeCurto(t, n) { t = String(t || '').trim(); return t.length > (n || 26) ? t.slice(0, (n || 26) - 1).trim() + '…' : t; }
+    function nomeCurto(t, n) { t = String(t || '').trim(); return t.length > (n || 20) ? t.slice(0, (n || 20) - 1).trim() + '…' : t; }
     /* barra única dos níveis, numa linha: ← Voltar, Séries › série › vídeo e, depois, as abas do nível (Série/Vídeos, Vídeo/Cortes) */
     function barraNivel(voltar, partes, abas) {
       var caixa = el('div', { class: 'prod-nivel impresso' });
