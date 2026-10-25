@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Estudos - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="stylesheet" href="page.css?v=67">
+  <link rel="stylesheet" href="portal.css?v=18">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="tipografia.css?v=18">
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo cab-logo-menor"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/blog.html">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Estudos</h1>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=69"></script>
+  <script src="menu.js?v=34" defer></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '';
+    var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('estudos', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function diaCurto(iso) { var p = String(iso).slice(0, 10).split('-'); return Number(p[2]) + ' de ' + MESES[Number(p[1]) - 1]; }
+
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          var ent = P.estado.ler();
+          if (ent.aula) aula(ent.aula); else lista();
+        });
+      });
+    }
+
+    /* texto da explicação: parágrafos separados por linha em branco; "## " no começo da linha = subtítulo. Nada digitado vira HTML. */
+    function textoFormatado(txt) {
+      var caixa = el('div'), atual = [];
+      var fechar = function () {
+        if (!atual.length) return;
+        var p = el('p', { text: atual.join('\n') }); p.style.cssText = 'white-space:pre-line;margin:0 0 10px'; caixa.appendChild(p); atual = [];
+      };
+      String(txt || '').split('\n').forEach(function (linha) {
+        if (/^##\s+/.test(linha)) {
+          fechar();
+          var h = el('h3', { text: linha.replace(/^##\s+/, '') }); h.style.cssText = 'color:#A03E25;margin:18px 0 6px'; caixa.appendChild(h);
+        } else if (!linha.trim()) fechar();
+        else atual.push(linha);
+      });
+      fechar();
+      return caixa;
+    }
+    function botaoOpcao(texto, marcada, aoClicar) {
+      var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
+      b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:#16233F;font:inherit;font-size:16px;cursor:pointer;border-radius:0;margin:0 0 8px;' +
+        (marcada ? 'border:3px solid #1F5FA3;padding:10px 12px' : 'border:1px solid #1F5FA3;padding:12px');
+      if (aoClicar) b.addEventListener('click', aoClicar); else b.style.cursor = 'default';
+      return b;
+    }
+
+    /* ---------- lista ---------- */
+    function lista(aviso) {
+      limpar(); P.estado.gravar({});
+      app.appendChild(topo(nomeAdmin));
+      if (aviso) { var av = el('p', { class: 'portal-msg' }); app.appendChild(av); P.mensagem(av, aviso, 'ok'); }
+      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
+      app.appendChild(corpo);
+      Promise.all([
+        C.from('estudo_aulas').select('id,data,materia,titulo').order('data').order('criado_em'),
+        C.from('estudo_questoes').select('id,aula_id,tipo,correta'),
+        C.from('estudo_respostas').select('questao_id,opcao,texto')
+      ]).then(function (rs) {
+        corpo.textContent = '';
+        var erro = rs[0].error || rs[1].error || rs[2].error;
+        if (erro) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(erro.message) })); return; }
+        var aulas = rs[0].data || [], resp = {};
+        (rs[2].data || []).forEach(function (x) { resp[x.questao_id] = x; });
+        var prog = {};
+        (rs[1].data || []).forEach(function (q) {
+          var p = prog[q.aula_id] = prog[q.aula_id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 };
+          var r = resp[q.id]; p.total++;
+          if (q.tipo === 'multipla') { p.multiplas++; if (r && r.opcao != null) { p.feitas++; if (r.opcao === q.correta) p.certas++; } }
+          else if (r && r.texto) p.feitas++;
+        });
+        var hoje = hojeISO();
+        var linhaDe = function (a) {
+          var p = prog[a.id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 };
+          var feito = p.total > 0 && p.feitas === p.total;
+          var info = p.total ? p.feitas + ' de ' + p.total + ' respondidas' + (p.multiplas ? ' · ' + p.certas + ' certas' : '') : 'sem questões';
+          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: feito ? 'Rever' : (p.feitas ? 'Continuar' : 'Abrir') });
+          abrir.addEventListener('click', function () { aula(a.id); });
+          var l = el('div', { class: 'portal-item' }, [
+            el('div', {}, [el('strong', { text: a.titulo }), el('div', { class: 'portal-item-data', text: diaCurto(a.data) + ' · ' + a.materia + ' · ' + info })]), abrir]);
+          l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
+          return l;
+        };
+        var bloco = function (titulo, itens) {
+          if (!itens.length) return;
+          var c = el('div', { class: 'portal-cartao' }, [el('h2', { text: titulo })]);
+          itens.forEach(function (a) { c.appendChild(linhaDe(a)); });
+          corpo.appendChild(c);
+        };
+        if (!aulas.length) {
+          corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhuma aula ainda. Toque em "Importar aulas" e escolha o arquivo que o Claude mandou.' })]));
+        }
+        var dia = function (a) { return String(a.data).slice(0, 10); };
+        bloco('Hoje', aulas.filter(function (a) { return dia(a) === hoje; }));
+        bloco('Próximas', aulas.filter(function (a) { return dia(a) > hoje; }));
+        bloco('Anteriores', aulas.filter(function (a) { return dia(a) < hoje; }).reverse());
+        var imp = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar aulas' });
+        var arq = el('input', { type: 'file', accept: '.json,application/json' }); arq.style.display = 'none';
+        imp.addEventListener('click', function () { arq.click(); });
+        var msg = el('p', { class: 'portal-msg' });
+        arq.addEventListener('change', function () {
+          if (!arq.files || !arq.files[0]) return;
+          imp.disabled = true; P.mensagem(msg, 'Importando...');
+          arq.files[0].text().then(importar).then(function (n) { lista('Pronto! ' + n + (n === 1 ? ' aula importada.' : ' aulas importadas.')); })
+            .catch(function (e) { imp.disabled = false; P.mensagem(msg, 'Não consegui importar: ' + (e && e.message ? e.message : e), 'erro'); });
+        });
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [imp, arq]));
+        corpo.appendChild(msg);
+      });
+    }
+
+    /* ---------- importar o arquivo de aulas (.json) ---------- */
+    function importar(texto) {
+      var d; try { d = JSON.parse(texto); } catch (e) { throw new Error('o arquivo não está no formato certo.'); }
+      var aulas = d && d.aulas; if (!Array.isArray(aulas) || !aulas.length) throw new Error('não achei aulas no arquivo.');
+      aulas.forEach(function (a, i) {
+        if (!a.codigo || !a.data || !a.materia || !a.titulo) throw new Error('a aula ' + (i + 1) + ' está incompleta (código, data, matéria e título).');
+        (a.questoes || []).forEach(function (q, k) {
+          if (!q.enunciado || (q.tipo !== 'multipla' && q.tipo !== 'dissertativa')) throw new Error('a questão ' + (k + 1) + ' da aula "' + a.titulo + '" está incompleta.');
+          if (q.tipo === 'multipla' && (!Array.isArray(q.opcoes) || q.opcoes.length < 2 || typeof q.correta !== 'number')) throw new Error('a questão ' + (k + 1) + ' da aula "' + a.titulo + '" precisa de alternativas e da certa.');
+        });
+      });
+      var linhas = aulas.map(function (a) { return { codigo: a.codigo, data: a.data, materia: a.materia, titulo: a.titulo, explicacao: a.explicacao || null }; });
+      return C.from('estudo_aulas').upsert(linhas, { onConflict: 'codigo' }).select('id,codigo').then(function (r) {
+        if (r.error) throw new Error(P.traduzErro(r.error.message));
+        var idDe = {}; r.data.forEach(function (x) { idDe[x.codigo] = x.id; });
+        var qs = [], limpezas = [];
+        aulas.forEach(function (a) {
+          var id = idDe[a.codigo], n = (a.questoes || []).length;
+          (a.questoes || []).forEach(function (q, k) {
+            qs.push({ aula_id: id, ordem: k, tipo: q.tipo, enunciado: q.enunciado, opcoes: q.tipo === 'multipla' ? q.opcoes : null, correta: q.tipo === 'multipla' ? q.correta : null, resolucao: q.resolucao || null, espaco_conta: !!q.espaco_conta });
+          });
+          limpezas.push(C.from('estudo_questoes').delete().eq('aula_id', id).gte('ordem', n)); /* sobrou questão antiga que saiu do arquivo */
+        });
+        return (qs.length ? C.from('estudo_questoes').upsert(qs, { onConflict: 'aula_id,ordem' }) : Promise.resolve({})).then(function (rq) {
+          if (rq.error) throw new Error(P.traduzErro(rq.error.message));
+          return Promise.all(limpezas);
+        }).then(function () { return aulas.length; });
+      });
+    }
+
+    /* ---------- uma aula ---------- */
+    function aula(id) {
+      limpar(); P.estado.gravar({ aula: id });
+      app.appendChild(topo(nomeAdmin));
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(lista)]));
+      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
+      app.appendChild(corpo);
+      P.voltarNoFim(app, lista);
+      Promise.all([
+        C.from('estudo_aulas').select('*').eq('id', id).maybeSingle(),
+        C.from('estudo_questoes').select('*').eq('aula_id', id).order('ordem')
+      ]).then(function (rs) {
+        corpo.textContent = '';
+        var a = rs[0].data;
+        if (rs[0].error || rs[1].error || !a) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não achei essa aula.' })); return; }
+        var qs = rs[1].data || [];
+        return C.from('estudo_respostas').select('*').in('questao_id', qs.length ? qs.map(function (q) { return q.id; }) : ['00000000-0000-0000-0000-000000000000']).then(function (rr) {
+          var resp = {}; (rr.data || []).forEach(function (x) { resp[x.questao_id] = x; });
+          var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: a.titulo }), el('p', { class: 'portal-item-data', text: diaCurto(a.data) + ' · ' + a.materia })]);
+          if (a.explicacao) cab.appendChild(textoFormatado(a.explicacao));
+          corpo.appendChild(cab);
+          qs.forEach(function (q, i) { corpo.appendChild(cartaoQuestao(q, i, resp[q.id])); });
+        });
+      });
+    }
+
+
+    /* quadro para fazer a conta à mão (Apple Pencil, dedo ou mouse): o que foi escrito fica guardado como imagem e volta igual em qualquer aparelho */
+    function quadroConta(q, resposta) {
+      var ALTURA = 240, PASSO = 200;
+      var caixa = el('div', { style: 'margin:10px 0 14px' });
+      caixa.appendChild(el('p', { class: 'portal-item-data', text: 'Espaço para a conta' }));
+      var cv = el('canvas'); cv.style.cssText = 'display:block;width:100%;height:' + ALTURA + 'px;border:1px solid #1F5FA3;background:transparent;touch-action:none;cursor:crosshair';
+      caixa.appendChild(cv);
+      var g = cv.getContext('2d'), dpr = Math.max(1, window.devicePixelRatio || 1);
+      var larg = 0, alt = ALTURA, borracha = false, desfazer = [], desenhando = false, ultimo = null, espera = null;
+      var dimensionar = function (h) { larg = cv.clientWidth || 300; alt = h; cv.width = Math.round(larg * dpr); cv.height = Math.round(alt * dpr); cv.style.height = alt + 'px'; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.lineCap = 'round'; g.lineJoin = 'round'; };
+      var guardar = function () {
+        clearTimeout(espera);
+        espera = setTimeout(function () {
+          var vazio = !g.getImageData(0, 0, cv.width, cv.height).data.some(function (v, i) { return i % 4 === 3 && v; });
+          C.from('estudo_respostas').upsert({ questao_id: q.id, desenho: vazio ? null : cv.toDataURL('image/png'), atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function (x) { aviso.textContent = x.error ? P.traduzErro(x.error.message) : ''; });
+        }, 900);
+      };
+      var instantaneo = function () { desfazer.push(g.getImageData(0, 0, cv.width, cv.height)); if (desfazer.length > 15) desfazer.shift(); };
+      var ponto = function (e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * (larg / r.width), y: (e.clientY - r.top) * (alt / r.height), p: e.pressure }; };
+      var traco = function (a, b, e) {
+        g.save();
+        g.globalCompositeOperation = borracha ? 'destination-out' : 'source-over';
+        g.strokeStyle = '#16233F';
+        g.lineWidth = borracha ? 22 : (e.pointerType === 'pen' && b.p ? 1.4 + b.p * 2.6 : 2.4);
+        g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
+      };
+      cv.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) { /* sem captura */ }
+        instantaneo(); desenhando = true; ultimo = ponto(e); traco(ultimo, { x: ultimo.x + 0.01, y: ultimo.y + 0.01, p: ultimo.p }, e);
+      });
+      cv.addEventListener('pointermove', function (e) {
+        if (!desenhando) return; e.preventDefault();
+        var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; if (!evs.length) evs = [e];
+        evs.forEach(function (ev) { var p = ponto(ev); traco(ultimo, p, e); ultimo = p; });
+      });
+      var fim = function () { if (!desenhando) return; desenhando = false; guardar(); };
+      cv.addEventListener('pointerup', fim); cv.addEventListener('pointercancel', fim);
+
+      var botao = function (texto, aoClicar) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: texto }); b.addEventListener('click', aoClicar); return b; };
+      var bCaneta = botao('Caneta', function () { borracha = false; marcar(); }), bBorracha = botao('Borracha', function () { borracha = true; marcar(); });
+      var marcar = function () { [[bCaneta, !borracha], [bBorracha, borracha]].forEach(function (p) { p[0].style.border = p[1] ? '3px solid #1F5FA3' : ''; }); };
+      marcar();
+      var bDesfazer = botao('Desfazer', function () { var s = desfazer.pop(); if (s) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.putImageData(s, 0, 0); g.restore(); guardar(); } });
+      var bMais = botao('Mais espaço', function () {
+        var antes = cv.toDataURL('image/png'), im = new Image();
+        im.onload = function () { dimensionar(alt + PASSO); g.drawImage(im, 0, 0, larg, im.height / dpr); guardar(); };
+        im.src = antes;
+      });
+      var bLimpar = P.botaoApagar('Limpar');
+      bLimpar.addEventListener('click', function () { if (!confirm('Limpar o espaço da conta? Não dá para desfazer.')) return; desfazer = []; g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.restore(); guardar(); });
+      var aviso = el('p', { class: 'portal-msg' });
+      caixa.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:8px;align-items:center' }, [bCaneta, bBorracha, bDesfazer, bMais, bLimpar]));
+      caixa.appendChild(aviso);
+
+      /* carrega o que já estava escrito (a altura cresce se o desenho for maior que o espaço padrão) */
+      var carregar = function () {
+        dimensionar(ALTURA);
+        if (!resposta.desenho) return;
+        var im = new Image();
+        im.onload = function () {
+          var h = Math.max(ALTURA, Math.ceil(im.height * (larg / (im.width / dpr)) / dpr)); /* mesma proporção, na largura de agora */
+          dimensionar(h); g.drawImage(im, 0, 0, larg, im.height * (larg / im.width));
+        };
+        im.src = resposta.desenho;
+      };
+      var esperar = new MutationObserver(function () { if (cv.isConnected) { esperar.disconnect(); carregar(); } });
+      esperar.observe(document.body, { childList: true, subtree: true });
+      setTimeout(function () { if (cv.isConnected && !larg) { esperar.disconnect(); carregar(); } }, 0);
+      return caixa;
+    }
+
+    function cartaoQuestao(q, i, r) {
+      var cartao = el('div', { class: 'portal-cartao' });
+      var enun = el('p', { text: (i + 1) + '. ' + q.enunciado, class: 'portal-item-titulo' }); enun.style.whiteSpace = 'pre-line';
+      cartao.appendChild(enun);
+      var resposta = r || { questao_id: q.id, opcao: null, texto: '' };
+      if (q.espaco_conta) cartao.appendChild(quadroConta(q, resposta));
+      var area = el('div'); cartao.appendChild(area);
+      var resol = el('div'); cartao.appendChild(resol);
+      var mostrarResolucao = function () {
+        resol.textContent = '';
+        if (!q.resolucao) return;
+        var t = textoFormatado(q.resolucao); t.style.marginTop = '8px';
+        resol.appendChild(el('p', { class: 'portal-item-data', text: 'Resolução' })); resol.appendChild(t);
+      };
+      if (q.tipo === 'multipla') {
+        var desenhar = function () {
+          area.textContent = ''; resol.textContent = '';
+          var respondida = resposta.opcao != null;
+          (q.opcoes || []).forEach(function (op, k) {
+            var marca = '';
+            if (respondida && k === q.correta) marca = '  ✓ certa';
+            else if (respondida && k === resposta.opcao) marca = '  ← sua resposta';
+            area.appendChild(botaoOpcao(String.fromCharCode(65 + k) + ') ' + op + marca, respondida && (k === resposta.opcao || k === q.correta), respondida ? null : function () {
+              resposta.opcao = k;
+              C.from('estudo_respostas').upsert({ questao_id: q.id, opcao: k, atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function (x) {
+                if (x.error) { resposta.opcao = null; area.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(x.error.message) })); return; }
+                desenhar();
+              });
+            }));
+          });
+          if (respondida) {
+            area.appendChild(el('p', { class: 'portal-item-data', text: resposta.opcao === q.correta ? 'Certo!' : 'Não foi dessa vez. A certa é a letra ' + String.fromCharCode(65 + q.correta) + '.' }));
+            mostrarResolucao();
+            var refazer = P.botaoApagar('Refazer');
+            refazer.addEventListener('click', function () {
+              C.from('estudo_respostas').upsert({ questao_id: q.id, opcao: null, atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function () { resposta.opcao = null; desenhar(); });
+            });
+            area.appendChild(refazer);
+          }
+        };
+        desenhar();
+      } else {
+        var t = P.escritaLivre(el('textarea', { rows: '4', placeholder: 'Escreva a sua resposta' }));
+        t.value = resposta.texto || '';
+        var estado = el('p', { class: 'portal-item-data', text: '' });
+        var espera = null;
+        var salvar = function () {
+          C.from('estudo_respostas').upsert({ questao_id: q.id, texto: t.value || null, atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function (x) {
+            estado.textContent = x.error ? P.traduzErro(x.error.message) : 'Salvo.';
+          });
+        };
+        t.addEventListener('input', function () { estado.textContent = ''; clearTimeout(espera); espera = setTimeout(salvar, 900); });
+        t.addEventListener('blur', function () { if (espera) { clearTimeout(espera); espera = null; salvar(); } });
+        area.appendChild(t); area.appendChild(estado);
+        if (q.resolucao) {
+          var ver = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ver resolução' });
+          ver.addEventListener('click', function () { if (resol.firstChild) { resol.textContent = ''; ver.textContent = 'Ver resolução'; } else { mostrarResolucao(); ver.textContent = 'Esconder resolução'; } });
+          area.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:8px' }, [ver]));
+        }
+      }
+      return cartao;
+    }
+
+    C.auth.getSession().then(function (r) {
+      var u = r.data && r.data.session && r.data.session.user;
+      if (u) iniciar(u); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>

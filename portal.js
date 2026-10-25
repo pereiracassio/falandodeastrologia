@@ -378,7 +378,7 @@
   }
   /* barra de cima igual em TODAS as telas do painel (Aplicações, Alunos, Clientes, Capa, Sair): a aba em que você está fica destacada */
   function navAdmin(atual, texto, aoSair) {
-    var itens = [['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
+    var itens = [['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* a ⚙ (configurações) é SEMPRE a última aba, mesmo quando entrarem abas novas: abas novas entram na lista acima, nunca depois dela */
     itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
     var botoes = itens.map(function (i) {
