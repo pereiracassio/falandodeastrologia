@@ -651,7 +651,7 @@
       }
       botSerie.addEventListener('click', function () { mostrarAbaSerie('serie'); });
       botVideos.addEventListener('click', function () { mostrarAbaSerie('videos'); });
-      area.appendChild(barraNivel(botaoVoltar(function () { irPara('series'); }), [], s ? [botSerie, botVideos] : []));
+      area.appendChild(barraNivel(botaoVoltar(function () { irPara('series'); }), [{ nome: 'Séries', ir: function () { irPara('series'); } }], s ? [botSerie, botVideos] : []));
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: s ? s.nome : 'Vídeos soltos' })]);
       area.appendChild(cab);
       var msg = el('p', { class: 'portal-msg' });
@@ -769,10 +769,10 @@
       botVideo.addEventListener('click', function () { mostrarAbaVideo('video'); });
       botCortes.addEventListener('click', function () { mostrarAbaVideo('cortes'); });
       function salvarEIr(fn) { clearTimeout(tempoSalvar); salvarSozinho(); fn(); }
-      /* cada nível aparece uma vez só, sem repetir: Série (leva à série) e as abas do vídeo (Vídeo, Cortes). Nunca o nome da série nem do vídeo */
+      /* cada nível aparece uma vez só, sem repetir: Séries (a lista), Série (leva à série) e as abas do vídeo (Vídeo, Cortes). Nunca o nome da série nem do vídeo */
       area.appendChild(barraNivel(botaoVoltar(), s
-        ? [{ nome: 'Série', ir: function () { salvarEIr(function () { rolarParaFimDaLista = false; abaSerie = 'serie'; abaSerieDe = serieAberta; irPara('series', serieAberta); }); } }]
-        : [],
+        ? [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }, { nome: 'Série', ir: function () { salvarEIr(function () { rolarParaFimDaLista = false; abaSerie = 'serie'; abaSerieDe = serieAberta; irPara('series', serieAberta); }); } }]
+        : [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }],
         [botVideo, botCortes]));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
       area.appendChild(cartao);
