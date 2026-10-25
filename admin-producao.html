@@ -34,7 +34,7 @@
     .prod-vt-topo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:0 0 10px}
     .prod-vt{display:flex}
     /* uma linha só: ← Voltar, os níveis (azuis; o aberto em ocre) e as abas do nível; se não couber, corre para o lado */
-    .prod-nivel{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 0 12px;font-size:13px;font-weight:700;padding:4px 0}
+    .prod-nivel{display:flex;align-items:center;gap:16px;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 0 12px;font-size:13px;font-weight:700;padding:4px 0}
     .prod-nivel::-webkit-scrollbar{display:none}
     .prod-nivel button,.prod-nivel .portal-btn{flex:none;text-transform:lowercase;background:none!important;border:0!important;padding:6px 0!important;margin:0;font:inherit;font-size:13px!important;color:#1034A6!important;cursor:pointer;box-shadow:none!important}
     html body .pagina-papiro .prod-nivel .portal-aba,html body .pagina-papiro .prod-nivel .portal-aba.ativa{flex:none;border:0!important;border-width:0!important;padding:6px 0!important;font-size:13px!important;letter-spacing:0}
@@ -491,11 +491,10 @@
       var caixa = el('div', { class: 'prod-nivel impresso' });
       voltar.classList.add('nivel-voltar'); caixa.appendChild(voltar);
       partes.forEach(function (p, i) {
-        if (i) caixa.appendChild(el('span', { class: 'prod-trilha-sep', text: '›' }));
         if (p.ir) { var b = el('button', { type: 'button', text: p.nome }); b.addEventListener('click', p.ir); caixa.appendChild(b); }
         else caixa.appendChild(el('span', { class: 'prod-trilha-atual', text: p.nome }));
       });
-      if (abas && abas.length) abas.forEach(function (b, i) { if (!i) b.style.marginLeft = '8px'; caixa.appendChild(b); });
+      if (abas && abas.length) abas.forEach(function (b, i) { caixa.appendChild(b); });
       var env = P.comSetas(caixa);
       setTimeout(function () { if (caixa.scrollWidth > caixa.clientWidth) caixa.scrollLeft = caixa.scrollWidth; }, 0); /* se não couber, mostra o fim (onde você está) */
       return env;
