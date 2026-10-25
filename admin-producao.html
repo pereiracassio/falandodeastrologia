@@ -622,7 +622,8 @@
         cartao.appendChild(linha);
       });
       var soltos = videos.filter(function (v) { return !v.serie_id; });
-      var ls = el('div', { class: 'prod-linha' }, [el('div', {}, [el('span', { class: 'prod-titulo', text: 'Vídeos soltos' }), el('span', { class: 'prod-sub', text: resumoSerie(soltos) })]), botao('Abrir', function () { irPara('series', 'soltos'); })]);
+      var ls = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', {}, [el('span', { class: 'prod-titulo', text: 'Vídeos soltos' }), el('span', { class: 'prod-sub', text: resumoSerie(soltos) })]), botao('Abrir', function () { irPara('series', 'soltos'); })]);
+      ls.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') irPara('series', 'soltos'); }); /* tocar na linha abre, igual às séries */
       cartao.appendChild(ls);
     }
 
@@ -1083,8 +1084,11 @@
         ]);
         ce.appendChild(editor); editores[c.id] = editor;
         /* na lista de cortes: uma linha por corte; tocar abre esse corte */
+        var nomeC = el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), dataC = el('span', { class: 'prod-data', style: 'display:block', text: c.data ? comDia(c.data) : 'sem data' });
+        d.addEventListener('change', function () { dataC.textContent = d.value ? comDia(d.value) : 'sem data'; });
+        t.addEventListener('change', function () { nomeC.textContent = t.value.trim() || 'Corte'; botCorte.textContent = nomeDoCorteAberto(); });
         var abrirC = function () { corteAberto = c.id; mostrarAbaVideo('corte'); window.scrollTo(0, 0); };
-        var linhaC = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:160px' }, [el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), el('span', { class: 'prod-data', style: 'display:block', text: c.data ? comDia(c.data) : 'sem data' })]), botao('Abrir', abrirC)]);
+        var linhaC = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:160px' }, [nomeC, dataC]), botao('Abrir', abrirC)]);
         linhaC.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') abrirC(); });
         cc.appendChild(linhaC);
       });
