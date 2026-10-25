@@ -30,9 +30,10 @@
       { label: "Produção", href: "admin-producao.html" },
       { label: "Visitas", href: "admin-visitas.html" },
       { label: "Psicanálise", href: "https://pereiracassio.com.br/admin.html" },
-      { label: "Configurações", href: "admin-site.html" },
       { label: "Ver o site", href: "index.html", sep: true }
     ];
+    /* Configurações é SEMPRE o último botão do painel (antes de "Ver o site"), mesmo quando entrarem botões novos acima */
+    links.splice(links.length - 1, 0, { label: "Configurações", href: "admin-site.html" });
   }
 
   // quantos serviços tem no carrinho (guardado no navegador, ver carrinho.js; esvazia 30 min depois de ir pro pagamento)

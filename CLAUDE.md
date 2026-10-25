@@ -121,3 +121,7 @@ Botão que apaga é **texto pequeno, apagado e sublinhado** (12px, azul-noite co
 - Criar sempre com `P.botaoApagar('Apagar')` (`portal.js`; classe `.portal-apagar`, em `portal.css` e no fim de `page.css`). **Nunca** `portal-btn-perigo` nem `portal-btn-sec` com texto "Apagar".
 - Apagar a coisa INTEIRA da tela (aluno, cliente, aplicação, atividade, postagem, série, vídeo): `P.apagarNoFim(app, botao)`, centralizado e bem longe, no fim da tela (depois dos outros botões). Apagar um item de lista ou um pedaço (um comentário, uma pergunta, uma imagem, uma entrada do Financeiro): o mesmo texto discreto, ao lado de "Editar", sem destaque.
 - A confirmação ("Apagar ...? Não dá para desfazer.") continua sendo obrigatória, escrita por quem chama.
+
+## ⚙ Configurações: SEMPRE a última aba do painel (26/10/2026) — regra do astrólogo
+
+A barra de abas do administrador (`navAdmin`, `portal.js`) e o menu lateral dele (`menu.js`) terminam sempre na ⚙ (`admin-site.html`, "Configurações"). Aba/botão novo do painel entra ANTES dela, nunca depois (no código ela é acrescentada por último, em separado). Lá ficam: foto do Sobre, pasta dos alunos e dos clientes no Drive, conexão Google Drive, avisos no celular, áreas e serviços do Financeiro, Trocar senha e Sair (botão terracota no fim). O Painel dos Alunos e Clientes não têm abas nem sanfona: só o conteúdo.
