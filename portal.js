@@ -364,6 +364,18 @@
     }, function () {});
     return a;
   }
+  /* setinha de aviso numa barra que rola */
+  function seta(lado, pontos, rotulo) {
+    var b = el('button', { type: 'button', class: 'barra-seta barra-seta-' + lado, 'aria-label': rotulo });
+    b.innerHTML = '<svg viewBox="0 0 64 64" width="20" height="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="' + pontos + '"/></svg>';
+    return b;
+  }
+  /* barra que rola para o lado (abas): os botões mantêm o tamanho, os que não cabem ficam para o lado, com setinhas só onde tem mais */
+  function comSetas(rolagem) {
+    var esq = seta('esq', '40,12 20,32 40,52', 'Mais à esquerda'), dir = seta('dir', '24,12 44,32 24,52', 'Mais à direita');
+    ligarSetas(rolagem, esq, dir);
+    return el('div', { class: 'rolagem-wrap' }, [esq, dir, rolagem]);
+  }
   /* barra de cima igual em TODAS as telas do painel (Aplicações, Alunos, Clientes, Capa, Sair): a aba em que você está fica destacada */
   function navAdmin(atual, texto, aoSair) {
     var itens = [['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['site', 'Site', 'admin-site.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
@@ -376,11 +388,6 @@
     sair.addEventListener('click', aoSair);
     var grupo = el('div', { class: 'portal-grupo' }, botoes.concat([sair]));
     /* sem o "Olá, ...": ele só aparece na entrada, nas telas do painel não */
-    var seta = function (lado, pontos, rotulo) {
-      var b = el('button', { type: 'button', class: 'barra-seta barra-seta-' + lado, 'aria-label': rotulo });
-      b.innerHTML = '<svg viewBox="0 0 64 64" width="20" height="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="' + pontos + '"/></svg>';
-      return b;
-    };
     var esq = seta('esq', '40,12 20,32 40,52', 'Mais botões à esquerda'), dir = seta('dir', '24,12 44,32 24,52', 'Mais botões à direita');
     ligarSetas(grupo, esq, dir);
     var barra = el('div', { class: 'portal-topo portal-topo-painel' }, [el('div', { class: 'rolagem-wrap' }, [esq, dir, grupo])]);
@@ -971,7 +978,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim

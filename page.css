@@ -289,3 +289,11 @@ html body .pagina-papiro .portal-apagar:hover{opacity:.9}
 
 /* painel: a barra de abas do administrador fica no cabeçalho, no lugar dos 4 botões do site */
 .pagina-papiro .cab-admin .portal-topo{margin:16px 0 0!important}
+
+/* abas do aluno: a barra rola para o lado (a quarta aba, Mensalidade, só aparece ao correr); cada aba mantém o tamanho de um terço */
+.pagina-papiro .rolagem-wrap:has(.portal-abas-rola){margin-bottom:12px}
+.pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao{padding-top:6px!important}
+.pagina-papiro .portal-abas-rola{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.pagina-papiro .portal-abas-rola::-webkit-scrollbar{display:none}
+.pagina-papiro .portal-abas-rola .portal-abas{width:133.333%;margin:0!important}
+.pagina-papiro .portal-abas-rola .portal-abas::after{display:none}
