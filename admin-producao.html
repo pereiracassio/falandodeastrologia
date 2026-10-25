@@ -487,6 +487,7 @@
       return b;
     }
     var voltarDoVideo = null;
+    function nomeCurto(t, n) { t = String(t || '').trim(); return t.length > (n || 26) ? t.slice(0, (n || 26) - 1).trim() + '…' : t; }
     /* barra única dos níveis, numa linha: ← Voltar, Séries › série › vídeo e, depois, as abas do nível (Série/Vídeos, Vídeo/Cortes) */
     function barraNivel(voltar, partes, abas) {
       var caixa = el('div', { class: 'prod-nivel impresso' });
@@ -497,7 +498,7 @@
       });
       if (abas && abas.length) abas.forEach(function (b, i) { caixa.appendChild(b); });
       var env = P.comSetas(caixa);
-      setTimeout(function () { if (caixa.scrollWidth > caixa.clientWidth) caixa.scrollLeft = caixa.scrollWidth; }, 0); /* se não couber, mostra o fim (onde você está) */
+      setTimeout(function () { var at = caixa.querySelector('.ativa'); if (caixa.scrollWidth > caixa.clientWidth && at) caixa.scrollLeft = Math.max(0, at.offsetLeft - caixa.clientWidth / 2 + at.offsetWidth / 2); }, 0); /* se não couber, deixa à vista o nível aberto */
       return env;
     }
     function campo(rotulo, entrada) { return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
@@ -640,7 +641,7 @@
       var lista = videos.filter(function (v) { return (v.serie_id || null) === (s ? s.id : null); }).sort(function (a, b) { return (a.numero || 0) - (b.numero || 0); });
       /* na mesma linha do ← Voltar: "Série" (as informações) e "Vídeos" (a lista); depois do vídeo, volta já na lista */
       var abaS = s ? (abaSerieDe === id ? abaSerie : 'serie') : 'videos';
-      var botSerie = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Série' });
+      var botSerie = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: nomeCurto(s ? s.nome : 'Série') });
       var botVideos = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Vídeos' });
       function mostrarAbaSerie(q) {
         abaS = q;
@@ -758,15 +759,17 @@
       var s = serieDe(v), msg = el('p', { class: 'portal-msg' });
       /* na mesma linha do ← Voltar: "Vídeo" (tudo o que já havia) e "Cortes" (os cortes do vídeo) */
       var abaAtual = abaVideoDe === v.id ? abaVideo : 'video';
-      var botVideo = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Vídeo' });
+      var botVideo = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: nomeCurto((v.numero ? v.numero + ' ' : '') + (v.titulo || 'Vídeo')) });
       var botCortes = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Cortes' });
       var botCorte = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Corte' });
+      function nomeDoCorteAberto() { var c = cortesDe(v.id).filter(function (x) { return x.id === corteAberto; })[0] || cortesDe(v.id).slice(-1)[0]; return c ? nomeCurto(c.titulo || 'Corte') : 'Corte'; }
       var editores = {}; /* um editor por corte; só o corte aberto aparece, para não editar um em cima do outro */
       function mostrarAbaVideo(qual) {
         var ultimo = cortesDe(v.id).slice(-1)[0];
         if (qual === 'corte' && !ultimo) qual = 'cortes';
         if (qual === 'corte' && !editores[corteAberto]) corteAberto = ultimo.id;
         abaAtual = qual; abaVideo = qual; abaVideoDe = v.id;
+        botCorte.textContent = nomeDoCorteAberto();
         botVideo.className = 'portal-aba' + (qual === 'video' ? ' ativa' : ''); botCortes.className = 'portal-aba' + (qual === 'cortes' ? ' ativa' : ''); botCorte.className = 'portal-aba' + (qual === 'corte' ? ' ativa' : '');
         cartao.style.display = blocoApagar.style.display = qual === 'video' ? '' : 'none';
         cc.style.display = qual === 'cortes' ? '' : 'none';
@@ -778,10 +781,12 @@
       botVideo.addEventListener('click', function () { mostrarAbaVideo('video'); });
       botCortes.addEventListener('click', function () { mostrarAbaVideo('cortes'); });
       function salvarEIr(fn) { clearTimeout(tempoSalvar); salvarSozinho(); fn(); }
-      /* cada nível aparece uma vez só, sem repetir: Séries (a lista), Série (leva à série) e as abas do vídeo (Vídeo, Cortes). Nunca o nome da série nem do vídeo */
+      /* a linha corre para o lado, então leva os nomes: séries · nome da série · vídeos · nome do vídeo · cortes · nome do corte (o aberto em ocre) */
+      var irSerie = function (aba) { return function () { salvarEIr(function () { rolarParaFimDaLista = aba === 'videos'; abaSerie = aba; abaSerieDe = serieAberta; irPara('series', serieAberta); }); }; };
+      var irSeries = { nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } };
       area.appendChild(barraNivel(null, s
-        ? [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }, { nome: 'Série', ir: function () { salvarEIr(function () { rolarParaFimDaLista = false; abaSerie = 'serie'; abaSerieDe = serieAberta; irPara('series', serieAberta); }); } }]
-        : [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }],
+        ? [irSeries, { nome: nomeCurto(s.nome), ir: irSerie('serie') }, { nome: 'Vídeos', ir: irSerie('videos') }]
+        : [irSeries, { nome: 'Vídeos', ir: irSerie('videos') }],
         cortesDe(v.id).length ? [botVideo, botCortes, botCorte] : [botVideo, botCortes]));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
       area.appendChild(cartao);
