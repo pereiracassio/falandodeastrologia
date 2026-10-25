@@ -652,7 +652,7 @@
       }
       botSerie.addEventListener('click', function () { mostrarAbaSerie('serie'); });
       botVideos.addEventListener('click', function () { mostrarAbaSerie('videos'); });
-      area.appendChild(barraNivel(botaoVoltar(function () { irPara('series'); }), [{ nome: 'Séries', ir: function () { irPara('series'); } }, { nome: s ? s.nome : 'Vídeos soltos' }], s ? [botSerie, botVideos] : []));
+      area.appendChild(barraNivel(botaoVoltar(function () { irPara('series'); }), s ? [{ nome: 'Séries', ir: function () { irPara('series'); } }] : [{ nome: 'Séries', ir: function () { irPara('series'); } }, { nome: 'Vídeos' }], s ? [botSerie, botVideos] : []));
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: s ? s.nome : 'Vídeos soltos' })]);
       area.appendChild(cab);
       var msg = el('p', { class: 'portal-msg' });
@@ -770,11 +770,12 @@
       botVideo.addEventListener('click', function () { mostrarAbaVideo('video'); });
       botCortes.addEventListener('click', function () { mostrarAbaVideo('cortes'); });
       function salvarEIr(fn) { clearTimeout(tempoSalvar); salvarSozinho(); fn(); }
-      area.appendChild(barraNivel(botaoVoltar(), [
-        { nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } },
-        { nome: s ? s.nome : 'Vídeos soltos', ir: function () { salvarEIr(function () { rolarParaFimDaLista = true; abaSerie = 'videos'; abaSerieDe = serieAberta; irPara('series', serieAberta); }); } },
-        { nome: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }
-      ], [botVideo, botCortes]));
+      /* só os nomes dos níveis (nunca o nome da série nem do vídeo): Séries › Série › Vídeos, e as abas deste nível */
+      var irSerie = function (aba) { return function () { salvarEIr(function () { rolarParaFimDaLista = aba === 'videos'; abaSerie = aba; abaSerieDe = serieAberta; irPara('series', serieAberta); }); }; };
+      area.appendChild(barraNivel(botaoVoltar(), s
+        ? [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }, { nome: 'Série', ir: irSerie('serie') }, { nome: 'Vídeos', ir: irSerie('videos') }]
+        : [{ nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } }, { nome: 'Vídeos', ir: irSerie('videos') }],
+        [botVideo, botCortes]));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
       area.appendChild(cartao);
 
