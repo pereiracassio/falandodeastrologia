@@ -258,6 +258,21 @@
         // dia e horário do próximo encontro, puxados da Google Agenda do Cássio (o Meet do compromisso vale se o link fixo não existir)
         var lugarEncontro = el('p', { class: 'portal-proximo', style: 'display:none' });
         app.appendChild(lugarEncontro);
+        /* aviso da mensalidade, logo abaixo da data do próximo encontro: azul de 2 dias antes até o dia do vencimento, terracota depois que vence (some quando você marca "Pagou") */
+        var avisoMensalidade = el('p', { class: 'portal-proximo', style: 'display:none' });
+        app.appendChild(avisoMensalidade);
+        P.client.rpc('meu_vencimento', { p_aluno: previa ? aluno.id : null }).then(function (rv) {
+          var venc = rv && !rv.error && rv.data ? String(rv.data).slice(0, 10) : '';
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(venc)) return;
+          var agora = new Date(), hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+          var pv = venc.split('-'), dias = Math.round((new Date(+pv[0], +pv[1] - 1, +pv[2]) - hoje) / 86400000), dia = pv[2] + '/' + pv[1];
+          var texto, cor;
+          if (dias < 0) { texto = 'Sua mensalidade venceu dia ' + dia + '. Quando puder, é só me avisar.'; cor = '#A03E25'; }
+          else if (dias === 0) { texto = 'Sua mensalidade vence hoje, dia ' + dia + '.'; cor = '#1034A6'; }
+          else if (dias <= 2) { texto = 'Sua mensalidade vence dia ' + dia + '.'; cor = '#1034A6'; }
+          else return;
+          avisoMensalidade.textContent = texto; avisoMensalidade.style.color = cor; avisoMensalidade.style.display = '';
+        }, function () {});
         P.proximoEncontro(previa ? aluno.id : null).then(function (e) {
           if (!e || e.motivo) return;
           lugarEncontro.textContent = P.textoEncontro(e); lugarEncontro.style.display = '';
