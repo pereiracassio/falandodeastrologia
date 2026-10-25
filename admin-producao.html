@@ -113,6 +113,7 @@
 
     var series = [], videos = [], cortes = [];
     var rolarParaFimDaLista = false; /* ao voltar de um vídeo, a lista abre no fim (onde ficam os vídeos mais novos) */
+    var abaSerie = 'serie', abaSerieDe = null; /* dentro da série: 'serie' (informações) ou 'videos' (lista de vídeos), e de qual série */
     var abaVideo = 'video', abaVideoDe = null; /* dentro do vídeo: 'video' ou 'cortes' (e de qual vídeo) */
     var aba = 'hoje', serieAberta = null, videoAberto = null; /* serieAberta: id, 'soltos' ou null */
     var mesCal = { ano: new Date().getFullYear(), mes: new Date().getMonth() }, diaCal = null;
@@ -362,12 +363,12 @@
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
           var e = P.estado.ler();
-          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if (e.vt === 'cortes' && e.video) { abaVideo = 'cortes'; abaVideoDe = e.video; }
+          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if (e.vt === 'cortes' && e.video) { abaVideo = 'cortes'; abaVideoDe = e.video; } if (e.st === 'videos' && e.serie) { abaSerie = 'videos'; abaSerieDe = e.serie; }
           carregar();
         });
       });
     }
-    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo === 'cortes' ? 'cortes' : '' }); }
+    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo === 'cortes' ? 'cortes' : '', st: serieAberta && abaSerieDe === serieAberta && abaSerie === 'videos' ? 'videos' : '' }); }
 
     function carregar() {
       Promise.all([
@@ -593,8 +594,8 @@
           el('span', { class: 'prod-info', style: 'display:block', text: rotuloAcesso(s) + ' · ' + resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
           el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
         ]);
-        var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo]), botao('Abrir', function () { irPara('series', s.id); })]);
-        linha.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') irPara('series', s.id); });
+        var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo]), botao('Abrir', function () { abaSerieDe = null; irPara('series', s.id); })]);
+        linha.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') { abaSerieDe = null; irPara('series', s.id); } });
         cartao.appendChild(linha);
       });
       var soltos = videos.filter(function (v) { return !v.serie_id; });
@@ -615,6 +616,21 @@
       var s = id === 'soltos' ? null : achar(series, id);
       if (id !== 'soltos' && !s) { serieAberta = null; guardarEstado(); return telaSeries(area); }
       var lista = videos.filter(function (v) { return (v.serie_id || null) === (s ? s.id : null); }).sort(function (a, b) { return (a.numero || 0) - (b.numero || 0); });
+      /* na mesma linha do ← Voltar: "Série" (as informações) e "Vídeos" (a lista); depois do vídeo, volta já na lista */
+      var abaS = s ? (abaSerieDe === id ? abaSerie : 'serie') : 'videos';
+      var botSerie = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Série' });
+      var botVideos = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Vídeos' });
+      function mostrarAbaSerie(q) {
+        abaS = q;
+        if (s) { abaSerie = q; abaSerieDe = id; }
+        botSerie.className = 'portal-aba' + (q === 'serie' ? ' ativa' : ''); botVideos.className = 'portal-aba' + (q === 'videos' ? ' ativa' : '');
+        cab.style.display = blocoApagarSerie.style.display = q === 'serie' ? '' : 'none';
+        vc.style.display = q === 'videos' ? '' : 'none';
+        guardarEstado();
+      }
+      botSerie.addEventListener('click', function () { mostrarAbaSerie('serie'); });
+      botVideos.addEventListener('click', function () { mostrarAbaSerie('videos'); });
+      area.appendChild(el('div', { class: 'prod-vt-topo' }, [el('div', {}, [botaoVoltar(function () { irPara('series'); })]), s ? el('div', { class: 'prod-vt', role: 'tablist' }, [botSerie, botVideos]) : el('div'), el('div')]));
       var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: s ? s.nome : 'Vídeos soltos' })]);
       area.appendChild(cab);
       var msg = el('p', { class: 'portal-msg' });
@@ -646,7 +662,7 @@
           for (var i = lista.length + 1; i <= n; i++) novos.push({ serie_id: s.id, numero: i, titulo: 'Vídeo ' + i, acesso: s.acesso || 'publico' });
           C.from('prod_videos').insert(novos).select('*').then(function (r) {
             if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
-            (r.data || []).forEach(function (v) { videos.push(v); }); tela();
+            (r.data || []).forEach(function (v) { videos.push(v); }); abaSerie = 'videos'; abaSerieDe = id; tela();
           });
         });
         /* discreto de propósito: fica no fim da tela, longe dos outros botões, como texto pequeno */
@@ -668,7 +684,6 @@
 
       var vc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Vídeos' })]);
       area.appendChild(vc);
-      vc.appendChild(el('div', { class: 'prod-acoes-topo' }, [botaoVoltar(function () { irPara('series'); })]));
       if (!lista.length) vc.appendChild(el('p', { class: 'prod-vazio', text: s ? 'Nenhum vídeo ainda. Escreva "Quantos vídeos terá" e toque em "Criar os vídeos que faltam", ou use "Novo vídeo".' : 'Nenhum vídeo solto.' }));
       lista.forEach(function (v) {
         var nc = cortesDe(v.id).length;
@@ -710,7 +725,10 @@
           });
         }, false)
       ]));
-      if (apagar) area.appendChild(el('div', { style: 'margin:56px 0 8px;text-align:center' }, [apagar]));
+      vc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar(function () { irPara('series'); })])); /* ← Voltar também embaixo */
+      var blocoApagarSerie = el('div', { style: 'margin:56px 0 8px;text-align:center' }, apagar ? [apagar] : []);
+      area.appendChild(blocoApagarSerie);
+      mostrarAbaSerie(abaS);
     }
 
     /* ---------- UM VÍDEO ---------- */
@@ -929,7 +947,7 @@
         c.addEventListener('input', agendarSalvar);
       });
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
-      voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; irPara('series', serieAberta); };
+      voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; abaSerie = 'videos'; abaSerieDe = serieAberta; irPara('series', serieAberta); };
       salvar.addEventListener('pointerdown', function () { yAntes = window.scrollY; });
       salvar.addEventListener('touchstart', function () { yAntes = window.scrollY; }, { passive: true });
       var voltar = botaoVoltar();
