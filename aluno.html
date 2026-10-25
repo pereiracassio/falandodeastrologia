@@ -253,7 +253,7 @@
       return caixa;
     }
 
-    function abasDaTela(lista, atividadesEl, avisarQuando, aluno, previa) {
+    function abasDaTela(lista, atividadesEl, avisarQuando, aluno, previa, caixaCaderno) {
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       var conteudo = el('div', { class: 'portal-cartao' });
       var botoes = {};
@@ -268,6 +268,7 @@
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
         vazioP = el('p', { class: 'portal-vazio', text: aba.vazio });
+        if (chave === 'materiais' && caixaCaderno) conteudo.appendChild(caixaCaderno);   /* o botão do caderno fica no topo da aba Materiais */
         if (chave === 'caderno') conteudo.appendChild(atividadesEl);   /* as atividades do site ficam no começo da aba */
         if (!itens.length && !(chave === 'caderno' && qtdAtividades > 0)) conteudo.appendChild(vazioP);
         itens.forEach(function (i) { conteudo.appendChild(itemDaLista(i, chave)); });
@@ -375,11 +376,10 @@
             } });
             var avisoResponder = el('p', { class: 'impresso', style: 'display:none;margin:0 0 14px;color:#A03E25;font-weight:700;font-size:16px' });
             app.appendChild(avisoResponder);
-            abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }, aluno, previa).forEach(function (e) { app.appendChild(e); });
-            // "Baixar meu caderno": o PDF com a capa e tudo que o aluno já fez; só aparece quando há atividades
+            // "Baixar meu caderno": o PDF com a capa e tudo que o aluno já fez; só aparece quando há atividades, no topo da aba Materiais
             var caixaCaderno = window.caderno.botao(aluno);
             caixaCaderno.style.display = 'none';
-            app.appendChild(caixaCaderno);
+            abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }, aluno, previa, caixaCaderno).forEach(function (e) { app.appendChild(e); });
             app.appendChild(P.avisos.cartao('aluno')); /* ativar os avisos de atividade nova e correção neste aparelho */
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
