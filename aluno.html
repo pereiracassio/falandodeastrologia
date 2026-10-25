@@ -8,7 +8,7 @@
     if (!app || sessionStorage.getItem('fda_app_aberto')) return;
     sessionStorage.setItem('fda_app_aberto', '1');
     var u = localStorage.getItem('fda_ultima_pagina');
-    if (u && !location.hash && /^\/[a-z-]+\.html/.test(u) && u !== location.pathname + location.search) location.replace(u);
+    if (u && !location.hash && !location.search && /^\/[a-z-]+\.html/.test(u) && u !== location.pathname + location.search) location.replace(u);
   } catch (e) { /* sem armazenamento */ } })();</script>
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
@@ -49,7 +49,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=56"></script>
+  <script src="portal.js?v=57"></script>
   <script src="atividades.js?v=27"></script>
   <script src="caderno.js?v=10"></script>
   <script>

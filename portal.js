@@ -416,6 +416,7 @@
     } catch (e) { /* sem armazenamento */ }
   }
   lembrarOndeParou();
+  try { sessionStorage.setItem('fda_app_aberto', '1'); } catch (e) { /* sem armazenamento */ } /* qualquer página aberta conta como "app já aberto": só a abertura do zero volta ao último lugar */
   var gravarEstado = estado.gravar;
   estado.gravar = function (o) { gravarEstado(o); lembrarOndeParou(); };
   window.addEventListener('pagehide', lembrarOndeParou);
