@@ -110,7 +110,7 @@
     var DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     var DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
+    var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
     /* a linha que separa a descrição dos capítulos no YouTube: 51 traços longos, do tamanho certinho da descrição */
     var LINHA_DESCRICAO = '———————————————————————————————————————————————————';
     /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
@@ -421,14 +421,40 @@
       b.addEventListener('click', function () { aoClicar(b); });
       return b;
     }
+    /* marcar SEO marca também Corte e Legenda; marcar YouTube Shorts marca também Corte, Legenda e SEO (desmarcar não mexe nos outros) */
+    var ANTES_NO_CORTE = { seo_ok: ['corte_ok', 'legenda_ok'], shorts: ['corte_ok', 'legenda_ok', 'seo_ok'] };
+    function pintarCorte(c) {
+      [].forEach.call(document.querySelectorAll('[data-corte="' + c.id + '"][data-campo]'), function (b) {
+        var on = !!c[b.getAttribute('data-campo')];
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
     function chipsDoCorte(c) {
       return el('div', { class: 'prod-chips' }, ETAPAS_CORTE.map(function (rd) {
-        return chip(rd[1], !!c[rd[0]], function (b) {
+        return chip(rd[1], !!c[rd[0]], function () {
           var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
-          b.classList.toggle('on', novo); b.setAttribute('aria-pressed', novo ? 'true' : 'false');
+          if (novo) (ANTES_NO_CORTE[rd[0]] || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
+          Object.keys(campos).forEach(function (k) { c[k] = campos[k]; });
+          pintarCorte(c);
           gravar('prod_cortes', cortes, c, campos);
-        });
+        }, { 'data-corte': c.id, 'data-campo': rd[0] });
       }));
+    }
+    /* SEO do vídeo só pode ser marcado com todos os campos do vídeo preenchidos */
+    function faltaParaSeo(v) {
+      var falta = [], vazio = function (x) { return !String(x == null ? '' : x).trim(); };
+      var rb = v.roteiro_blocos, temRoteiro = !vazio(v.roteiro) || !!(rb && (!vazio(rb.gancho) || !vazio(rb.conclusao) || (rb.blocos || []).some(function (b) { return !vazio(b); })));
+      var t = String(v.texto_postagem || ''), k = t.indexOf('✨ Atendimentos'), corpo = (k >= 0 ? t.slice(0, k) : t).trim();
+      if (vazio(v.titulo) || /^Vídeo \d+$/.test(String(v.titulo).trim())) falta.push('título');
+      if (vazio(v.capa_texto)) falta.push('texto da capa');
+      if (!v.numero) falta.push('número na série');
+      if (!v.data_postar) falta.push('data de publicação');
+      if (vazio(v.capa_url)) falta.push('foto da capa');
+      if (!temRoteiro) falta.push('roteiro');
+      if (!corpo) falta.push('texto que vai junto');
+      if (vazio(v.tags)) falta.push('tags');
+      if (vazio(v.cards)) falta.push('cards');
+      return falta;
     }
     /* repinta todos os botões de etapa deste vídeo que estiverem na tela (o do roteiro lá embaixo e os de cima) */
     function pintarEtapas(v) {
@@ -442,6 +468,12 @@
     var ANTES_DO_YOUTUBE = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina'];
     function marcarEtapa(v, campo, valor) {
       var campos = {}; campos[campo] = valor;
+      if (campo === 'seo_ok' && valor) {
+        var falta = faltaParaSeo(v);
+        if (falta.length) { avisoFlutuante('Falta preencher: ' + falta.join(', '), true); pintarEtapas(v); return Promise.resolve({ error: null }); }
+      }
+      /* Cortes feitos marca "Corte" em todos os cortes deste vídeo */
+      if (campo === 'cortes_feitos' && valor) cortesDe(v.id).forEach(function (c) { if (!c.corte_ok) { c.corte_ok = true; pintarCorte(c); gravar('prod_cortes', cortes, c, { corte_ok: true }); } });
       if (campo === 'no_ar' && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
       Object.keys(campos).forEach(function (k) { v[k] = campos[k]; });
       pintarEtapas(v);
