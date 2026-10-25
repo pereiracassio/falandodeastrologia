@@ -26,7 +26,7 @@
       { label: "Checkouts", href: "admin-checkouts.html" },
       { label: "Financeiro", href: "admin-financeiro.html" },
       { label: "Capa", href: "capa.html" },
-      { label: "Site", href: "admin-site.html" },
+      { label: "Configurações", href: "admin-site.html" },
       { label: "Blog", href: "admin-blog.html" },
       { label: "Produção", href: "admin-producao.html" },
       { label: "Visitas", href: "admin-visitas.html" },

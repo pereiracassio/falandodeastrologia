@@ -33,7 +33,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=60"></script>
+  <script src="portal.js?v=61"></script>
   <script src="atividades.js?v=27"></script>
   <script>
   (function () {
@@ -75,15 +75,14 @@
 
     function listaDeAlunos(user) {
       var h = P.estado.ler();
-      var abertas = (!h.aluno && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : [];
-      P.estado.gravar({ abertas: abertas.join(',') || '-' });
+      P.estado.gravar({});
       limpar();
       app.appendChild(topo(nomeAdmin));
-      /* ordem: Alunos (sanfona, com o botão de adicionar no topo e a busca), pasta dos alunos, login com o Google */
+      /* só o conteúdo dos alunos (botão de adicionar no topo, busca e lista); pasta, Google Drive e avisos ficam em ⚙ (admin-site.html) */
       var novoAluno = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar novo aluno' });
       var areaForm = el('div');
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos' }), el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoAluno]), areaForm]);
-      app.appendChild(P.sanfona(abertas, 'alunos', 'Alunos', [cartao]));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoAluno]), areaForm]);
+      app.appendChild(cartao);
 
       /* novo aluno */
       var msg = el('p', { class: 'portal-msg' });
@@ -135,10 +134,6 @@
         if (areaForm.firstChild) return;
         areaForm.appendChild(form); form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
-      app.appendChild(P.cartaoPastaBase('alunos'));
-      var conexaoDrive = P.cartaoConexaoDrive();
-      if (conexaoDrive) app.appendChild(conexaoDrive);
-      app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
 
       /* lista */
       Promise.all([
@@ -436,6 +431,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=30" defer></script>
+  <script src="menu.js?v=31" defer></script>
 </body>
 </html>
