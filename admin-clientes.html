@@ -74,15 +74,14 @@
 
     function listaDeClientes(user) {
       var h = P.estado.ler();
-      var abertas = (!h.cliente && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : [];
-      P.estado.gravar({ abertas: abertas.join(',') || '-' });
+      P.estado.gravar({});
       limpar();
       app.appendChild(topo(nomeAdmin));
-      /* ordem: Clientes (sanfona, com o botão de adicionar no topo e a busca), pasta dos clientes, login com o Google */
+      /* só o conteúdo dos clientes (botão de adicionar no topo, busca e lista); a pasta e o Google Drive ficam em ⚙ */
       var novoCliente = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar novo cliente' });
       var areaForm = el('div');
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Clientes' }), el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoCliente]), areaForm]);
-      app.appendChild(P.sanfona(abertas, 'clientes', 'Clientes', [cartao]));
+      var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoCliente]), areaForm]);
+      app.appendChild(cartao);
 
       var msg = el('p', { class: 'portal-msg' });
       var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
