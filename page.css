@@ -99,7 +99,7 @@ body:has(.pagina-papiro)::before,body:has(.pagina-papiro)::after{display:none}
 .cab-logo img{display:block;width:100%;height:auto}
 /* Alunos, Seu espaço e painel do administrador: logo pela metade, para ganhar espaço (tudo sobe) */
 .cab-logo.cab-logo-menor{max-width:135px}
-.pagina-papiro .folha-pagina:has(.cab-logo-menor){padding-top:calc(130px*var(--moldura-m) - 6px)}
+.pagina-papiro .folha-pagina:has(.cab-logo-menor){padding-top:calc(130px*var(--moldura-m) - 1px)}
 .cab-nav{display:flex;border:0;margin:16px 0 0;font:700 13px 'Cinzel',serif;letter-spacing:.03em}
 .cab-nav a{flex:1;padding:9px 0;color:var(--terracota,#A03E25);text-decoration:none}
 .cab-nav a+a{border-left:2px solid #1F5FA3}
