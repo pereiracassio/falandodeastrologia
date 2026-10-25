@@ -31,7 +31,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=62"></script>
+  <script src="portal.js?v=63"></script>
   <script src="menu.js?v=31" defer></script>
   <script>
   (function () {
@@ -253,6 +253,17 @@
       app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
       app.appendChild(cartaoAreas); app.appendChild(cartaoServicos);
       carregarFin();
+      /* no fim da lista: Trocar senha e, abaixo, o Sair (botão cheio, terracota) */
+      var areaSenha = el('div', { style: 'width:100%' });
+      var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trocar senha' });
+      trocar.addEventListener('click', function () {
+        if (areaSenha.firstChild) { areaSenha.textContent = ''; return; }
+        P.montarNovaSenha(areaSenha, function () { areaSenha.textContent = ''; areaSenha.appendChild(el('p', { class: 'portal-msg ok', text: 'Senha trocada.' })); }, 'Trocar senha');
+        areaSenha.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+      var saindo = el('button', { type: 'button', class: 'portal-btn', text: 'Sair' });
+      saindo.addEventListener('click', sair);
+      app.appendChild(el('div', { class: 'portal-cartao', style: 'display:flex;flex-direction:column;align-items:center;gap:14px' }, [trocar, areaSenha, saindo]));
     }
 
     C.auth.getSession().then(function (r) {

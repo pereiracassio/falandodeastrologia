@@ -384,9 +384,8 @@
       if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid #1F5FA3;padding:10px 22px;color:#A03E25'; }
       return a;
     });
-    var sair = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
-    sair.addEventListener('click', aoSair);
-    var grupo = el('div', { class: 'portal-grupo' }, botoes.concat([sair]));
+    /* o Sair não é mais uma aba: fica no fim do ⚙ (admin-site.html), com o Trocar senha acima dele */
+    var grupo = el('div', { class: 'portal-grupo' }, botoes);
     /* sem o "Olá, ...": ele só aparece na entrada, nas telas do painel não */
     var esq = seta('esq', '40,12 20,32 40,52', 'Mais botões à esquerda'), dir = seta('dir', '24,12 44,32 24,52', 'Mais botões à direita');
     ligarSetas(grupo, esq, dir);
