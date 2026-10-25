@@ -14,6 +14,26 @@
     { label: "Seu espaço", href: "cliente.html" }
   ];
 
+  /* administrador logado (sinal guardado por portal.js ao entrar/sair): o menu traz os botões da barra do painel, todos, em vez dos do site */
+  var ehAdmin = false;
+  try { ehAdmin = localStorage.getItem("fda_admin") === "1"; } catch (e) { /* sem armazenamento */ }
+  if (ehAdmin) {
+    links = [
+      { label: "Aplicações", href: "admin-aplicacoes.html" },
+      { label: "Alunos", href: "admin-alunos.html" },
+      { label: "Clientes", href: "admin-clientes.html" },
+      { label: "Checkouts", href: "admin-checkouts.html" },
+      { label: "Financeiro", href: "admin-financeiro.html" },
+      { label: "Capa", href: "capa.html" },
+      { label: "Site", href: "admin-site.html" },
+      { label: "Blog", href: "admin-blog.html" },
+      { label: "Produção", href: "admin-producao.html" },
+      { label: "Visitas", href: "admin-visitas.html" },
+      { label: "Psicanálise", href: "https://pereiracassio.com.br/admin.html" },
+      { label: "Ver o site", href: "index.html", sep: true }
+    ];
+  }
+
   // quantos serviços tem no carrinho (guardado no navegador, ver carrinho.js; esvazia 30 min depois de ir pro pagamento)
   function contarCarrinho() {
     try {
@@ -78,7 +98,7 @@
 
   links.forEach(function (link) {
     var a = document.createElement("a");
-    a.href = "/" + link.href; /* com a barra no começo, vale também dentro de /blog/ e /assunto/ */
+    a.href = /^https?:/.test(link.href) ? link.href : "/" + link.href; /* com a barra no começo, vale também dentro de /blog/ e /assunto/ */
     a.textContent = link.label;
     if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
     if (link.sep) { a.classList.add("is-sep"); if (nav.lastChild) nav.lastChild.classList.add("sem-linha"); } /* onde entra a linha ocre, a linha fina de cima sai */

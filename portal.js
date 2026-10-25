@@ -6,6 +6,13 @@
   var SUPABASE_KEY = 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt';
 
   var client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  /* sinal "sou o administrador" para o menu lateral (menu.js) mudar de lista; sai junto com o login */
+  function marcarAdmin(sim) { try { if (sim) localStorage.setItem('fda_admin', '1'); else localStorage.removeItem('fda_admin'); } catch (e) { /* sem armazenamento */ } }
+  client.auth.getSession().then(function (r) {
+    if (!r.data || !r.data.session) { marcarAdmin(false); return; }
+    client.rpc('sou_admin').then(function (ra) { if (!ra.error) marcarAdmin(ra.data === true); }, function () {});
+  });
+  client.auth.onAuthStateChange(function (ev) { if (ev === 'SIGNED_OUT') marcarAdmin(false); });
 
   /* Calendário e listas de escolha (data, avaliação, múltipla escolha...) NÃO reabrem sozinhos quando você volta de outra aba ou aplicativo:
      a lista perde o foco assim que a escolha é feita e qualquer campo de data/lista perde o foco quando a página sai da tela (o navegador do iPad/celular reabria o seletor do campo que ficou focado). */
