@@ -265,3 +265,18 @@ html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important
 html body .pagina-papiro .portal-apagar,html body .pagina-papiro .portal-apagar:hover{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:6px 4px!important;color:#16233F!important;font-size:12px!important;text-decoration:underline!important;font-family:var(--fonte-mao)!important;text-transform:none!important;letter-spacing:0!important;font-weight:400!important;transform:none!important}
 html body .pagina-papiro .portal-apagar{opacity:.6}
 html body .pagina-papiro .portal-apagar:hover{opacity:.9}
+
+/* ===== Página do aluno enxuta para celular (26/10/2026): título e subtítulo numa linha só, tudo mais para cima ===== */
+.pagina-papiro .portal-caixa.aluno-dentro{padding-top:0}
+.pagina-papiro .aluno-dentro .portal-titulo{font-size:22px;letter-spacing:.5px;white-space:nowrap;margin:0 0 2px}
+.pagina-papiro .aluno-dentro .portal-sub{font-size:20px;white-space:nowrap;margin:0 0 8px;line-height:1.2}
+.pagina-papiro .aluno-dentro .portal-topo{margin-bottom:2px!important;gap:2px}
+.pagina-papiro .aluno-dentro .portal-topo>span{font-size:13px;margin:0 0 2px;line-height:1.3}
+.pagina-papiro .aluno-dentro .portal-acoes{margin:0 0 4px!important}
+.pagina-papiro .aluno-dentro .portal-meet{margin:0 0 4px}
+.pagina-papiro .aluno-dentro .portal-btn-meet img{width:32px;height:32px}
+.pagina-papiro .aluno-dentro .portal-proximo{margin:0 0 6px;font-size:15px;line-height:1.35}
+.pagina-papiro .aluno-dentro .portal-abas{margin-bottom:24px!important}
+.pagina-papiro .aluno-dentro .portal-abas::after{bottom:-12px}
+.pagina-papiro .aluno-dentro #app>p[style*="font-weight:700"]{margin:0 0 8px!important;font-size:14px!important}
+.pagina-papiro .aluno-dentro .portal-topo>div{margin:0}

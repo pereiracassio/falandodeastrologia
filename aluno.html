@@ -21,7 +21,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=58">
+  <link rel="stylesheet" href="page.css?v=60">
   <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
@@ -52,7 +52,23 @@
     function titulos(dentro) {
       document.getElementById('portalTitulo').textContent = dentro ? 'Acompanhamento Prático de Astrologia' : 'Alunos';
       document.getElementById('portalSub').textContent = dentro ? 'Mentoria em Astrologia Clássica' : '';
+      document.querySelector('.portal-caixa').classList.toggle('aluno-dentro', !!dentro);
+      ajustarTitulos();
     }
+
+    /* título e subtítulo numa linha só: a letra diminui até caber na largura (a fonte à mão chega depois, então refaz) */
+    function ajustarTitulos() {
+      ['portalTitulo', 'portalSub'].forEach(function (id) {
+        var e = document.getElementById(id);
+        e.style.fontSize = '';
+        if (!e.parentNode.classList.contains('aluno-dentro')) return;
+        var f = parseFloat(getComputedStyle(e).fontSize);
+        while (e.scrollWidth > e.clientWidth + 1 && f > 9) { f -= .5; e.style.fontSize = f + 'px'; }
+      });
+    }
+
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ajustarTitulos(); });
+    window.addEventListener('resize', ajustarTitulos);
 
     function limpar() { app.textContent = ''; titulos(false); }
 
