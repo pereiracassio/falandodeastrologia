@@ -286,3 +286,6 @@ html body .pagina-papiro .portal-apagar:hover{opacity:.9}
 .pagina-papiro .aluno-dentro .portal-topo:has(>.portal-meet)>div{grid-column:1;grid-row:2;justify-self:start;white-space:nowrap}
 .pagina-papiro .aluno-dentro .portal-topo>.portal-meet{grid-column:2;grid-row:2;margin:0;white-space:nowrap}
 .pagina-papiro .aluno-dentro .portal-topo>.portal-meet span{font-size:13px}
+
+/* painel: a barra de abas do administrador fica no cabeçalho, no lugar dos 4 botões do site */
+.pagina-papiro .cab-admin .portal-topo{margin:16px 0 0!important}

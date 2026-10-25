@@ -383,7 +383,22 @@
     };
     var esq = seta('esq', '40,12 20,32 40,52', 'Mais botões à esquerda'), dir = seta('dir', '24,12 44,32 24,52', 'Mais botões à direita');
     ligarSetas(grupo, esq, dir);
-    return el('div', { class: 'portal-topo portal-topo-painel' }, [el('div', { class: 'rolagem-wrap' }, [esq, dir, grupo])]);
+    var barra = el('div', { class: 'portal-topo portal-topo-painel' }, [el('div', { class: 'rolagem-wrap' }, [esq, dir, grupo])]);
+    /* no painel a barra de abas toma o lugar dos 4 botões do site (Blog, Alunos, Cássio, Serviços) no cabeçalho: não fica duplicada nem gasta espaço */
+    var lugar = document.querySelector('.cab-admin') || document.querySelector('.cab-nav');
+    if (lugar && lugar.parentNode) {
+      var antes = lugar.querySelector('.portal-grupo'), rolou = antes ? antes.scrollLeft : 0;
+      if (!lugar.classList.contains('cab-admin')) {
+        var novo = el('div', { class: 'cab-admin' });
+        lugar.parentNode.replaceChild(novo, lugar);
+        lugar = novo;
+      }
+      lugar.textContent = '';
+      lugar.appendChild(barra);
+      grupo.scrollLeft = rolou;
+      return el('div', { style: 'display:none' });
+    }
+    return barra;
   }
   /* setinhas de aviso numa barra que rola (igual ao Astro Hellenic): só aparecem quando tem botão escondido daquele lado; onde a barra cabe, nunca */
   function ligarSetas(rolagem, esq, dir) {
