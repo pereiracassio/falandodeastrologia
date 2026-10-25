@@ -986,7 +986,18 @@
     return caixa;
   }
 
+  /* campo de escrever "livre": sem caixa, só uma linha embaixo, e cresce com o texto (nada de rolagem dentro de uma caixa pequena) */
+  function escritaLivre(ta) {
+    ta.classList.add('escrita-livre');
+    function crescer() { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+    ta.addEventListener('input', crescer); ta.addEventListener('focus', crescer);
+    window.addEventListener('resize', crescer);
+    setTimeout(crescer, 0); setTimeout(crescer, 300); setTimeout(crescer, 1200);
+    return ta;
+  }
+
   window.portal = {
+    escritaLivre: escritaLivre,
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,

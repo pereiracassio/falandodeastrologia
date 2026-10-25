@@ -179,7 +179,7 @@
   function conversaDaPergunta(perguntaId, lista, quem) {
     var souAluno = quem.euAutor === 'aluno';
     var fio = el('div'), msg = el('p', { class: 'portal-msg' });
-    var texto = el('textarea', { rows: '3', placeholder: souAluno ? 'Escreva aqui um comentário ou uma dúvida (opcional)' : 'Escreva a sua resposta ao aluno' });
+    var texto = P.escritaLivre(el('textarea', { rows: '3', placeholder: souAluno ? 'Escreva aqui um comentário ou uma dúvida (opcional)' : 'Escreva a sua resposta ao aluno' }));
     var enviar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: souAluno ? 'Enviar comentário' : 'Responder' });
     var comoAluno = false; /* só o administrador: escrever o comentário em nome do aluno (pra registrar uma dúvida que ele fez por outro canal) */
     var nomeDe = function (c) { return c.autor === quem.euAutor ? 'Você' : (c.autor === 'admin' ? 'Cássio' : primeiroNome(quem.nomeAluno)); };
@@ -355,7 +355,7 @@
           desenharOpcoes();
           cartao.appendChild(caixaOpcoes);
         } else {
-          var t = el('textarea', { rows: '5', placeholder: 'Escreva a sua resposta' });
+          var t = P.escritaLivre(el('textarea', { rows: '5', placeholder: 'Escreva a sua resposta' }));
           t.value = r.texto || '';
           if (editavel) t.addEventListener('input', function () { r.texto = t.value; sujo[p.id] = true; });
           else { t.readOnly = true; }
@@ -784,7 +784,7 @@
           }
           var sit = el('select', {}, [el('option', { value: '', text: 'Sem avaliação' })].concat(Object.keys(SITUACOES).map(function (k) { return el('option', { value: k, text: SITUACOES[k] }); })));
           sit.value = c.situacao || '';
-          var com = el('textarea', { rows: '3', placeholder: 'Comentário para o aluno (opcional)' });
+          var com = P.escritaLivre(el('textarea', { rows: '3', placeholder: 'Comentário para o aluno (opcional)' }));
           com.value = c.comentario || '';
           cx.appendChild(el('label', { text: 'Sua correção' })); cx.appendChild(sit); cx.appendChild(com);
           cx.appendChild(conversaDaPergunta(p.id, d.comentarios[p.id] || (d.comentarios[p.id] = []), { euAutor: 'admin', nomeAluno: aluno.nome, antiga: !!a.antiga }));
