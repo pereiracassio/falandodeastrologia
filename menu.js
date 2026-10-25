@@ -17,7 +17,8 @@
   /* administrador logado (sinal guardado por portal.js ao entrar/sair): o menu traz os botões da barra do painel, todos, em vez dos do site */
   var ehAdmin = false;
   try { ehAdmin = localStorage.getItem("fda_admin") === "1"; } catch (e) { /* sem armazenamento */ }
-  if (ehAdmin) {
+  /* só dentro das telas do painel; no site em si fica o menu do site */
+  if (ehAdmin && /\/(admin-[a-z]+|capa)\.html$/.test(location.pathname)) {
     links = [
       { label: "Aplicações", href: "admin-aplicacoes.html" },
       { label: "Alunos", href: "admin-alunos.html" },
