@@ -29,7 +29,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=66">
+  <link rel="stylesheet" href="page.css?v=67">
   <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
@@ -200,7 +200,8 @@
       { chave: 'caderno', nome: 'Atividades', vazio: 'Nenhuma atividade ainda.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
       { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' },
-      { chave: 'mensalidade', nome: 'Mensalidade' }   /* a última aba: datas, histórico e formas de pagamento (não vem da lista de itens) */
+      { chave: 'mensalidade', nome: 'Mensalidade' },   /* datas, histórico e formas de pagamento (não vem da lista de itens) */
+      { chave: 'avisos', nome: 'Avisos' }   /* a última aba: ativar os avisos no celular */
     ];
 
     var CHAVE_PIX = '11970404508';
@@ -264,6 +265,7 @@
           botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
         });
         conteudo.textContent = '';
+        if (chave === 'avisos') { conteudo.appendChild(P.avisos.cartao('aluno')); return; }
         if (chave === 'mensalidade') { conteudo.appendChild(telaMensalidade(aluno, previa)); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -288,7 +290,7 @@
         barra.appendChild(b);
       });
       mostrar('caderno');
-      /* quatro abas, mas cada uma com o tamanho de sempre (um terço): a quarta fica para o lado, é só correr a barra */
+      /* cinco abas, mas cada uma com o tamanho de sempre (um terço): as outras ficam para o lado, é só correr a barra */
       var rola = el('div', { class: 'portal-abas-rola' }, [barra]);
       return [P.comSetas(rola), conteudo];
     }
@@ -380,7 +382,6 @@
             var caixaCaderno = window.caderno.botao(aluno);
             caixaCaderno.style.display = 'none';
             abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }, aluno, previa, caixaCaderno).forEach(function (e) { app.appendChild(e); });
-            app.appendChild(P.avisos.cartao('aluno')); /* ativar os avisos de atividade nova e correção neste aparelho */
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
