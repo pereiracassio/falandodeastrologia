@@ -988,13 +988,21 @@
 
   /* campo de escrever "livre": sem caixa, só uma linha embaixo, e cresce com o texto (nada de rolagem dentro de uma caixa pequena) */
   function escritaLivre(ta) {
+    if (ta.classList.contains('escrita-livre')) return ta;
     ta.classList.add('escrita-livre');
     function crescer() { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
     ta.addEventListener('input', crescer); ta.addEventListener('focus', crescer);
-    window.addEventListener('resize', crescer);
+    if (window.ResizeObserver) { var largura = 0; new ResizeObserver(function () { if (ta.clientWidth !== largura) { largura = ta.clientWidth; crescer(); } }).observe(ta); }
     setTimeout(crescer, 0); setTimeout(crescer, 300); setTimeout(crescer, 1200);
     return ta;
   }
+  /* PADRÃO EM TUDO: todo campo de texto longo (atividades, blog, produção, comentários...) vira escrita livre, mesmo os criados depois */
+  function todasEscritaLivre(raiz) { [].forEach.call((raiz.querySelectorAll ? raiz.querySelectorAll('textarea:not(.escrita-livre)') : []), escritaLivre); }
+  function ligarEscritaLivre() {
+    todasEscritaLivre(document);
+    new MutationObserver(function (muds) { muds.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) { if (n.tagName === 'TEXTAREA') escritaLivre(n); else todasEscritaLivre(n); } }); }); }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.body) ligarEscritaLivre(); else document.addEventListener('DOMContentLoaded', ligarEscritaLivre);
 
   window.portal = {
     escritaLivre: escritaLivre,
