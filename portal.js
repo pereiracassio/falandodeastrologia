@@ -390,6 +390,16 @@
     /* sem o "Olá, ...": ele só aparece na entrada, nas telas do painel não */
     var esq = seta('esq', '40,12 20,32 40,52', 'Mais botões à esquerda'), dir = seta('dir', '24,12 44,32 24,52', 'Mais botões à direita');
     ligarSetas(grupo, esq, dir);
+    /* a barra fica rolada onde você deixou, também ao trocar de tela: guarda a posição ao rolar e volta a ela ao abrir a próxima */
+    var ROLAGEM = 'fda_barra_rolagem';
+    function posicaoGuardada() { try { return parseInt(localStorage.getItem(ROLAGEM) || '0', 10) || 0; } catch (e) { return 0; } }
+    var esperaRolagem = null;
+    grupo.addEventListener('scroll', function () {
+      clearTimeout(esperaRolagem);
+      esperaRolagem = setTimeout(function () { try { localStorage.setItem(ROLAGEM, String(Math.round(grupo.scrollLeft))); } catch (e) { /* sem armazenamento */ } }, 150);
+    }, { passive: true });
+    var voltarPosicao = function () { grupo.scrollLeft = posicaoGuardada(); };
+    setTimeout(voltarPosicao, 0); setTimeout(voltarPosicao, 250);
     var barra = el('div', { class: 'portal-topo portal-topo-painel' }, [el('div', { class: 'rolagem-wrap' }, [esq, dir, grupo])]);
     /* no painel a barra de abas toma o lugar dos 4 botões do site (Blog, Alunos, Cássio, Serviços) no cabeçalho: não fica duplicada nem gasta espaço */
     var lugar = document.querySelector('.cab-admin') || document.querySelector('.cab-nav');
@@ -402,7 +412,7 @@
       }
       lugar.textContent = '';
       lugar.appendChild(barra);
-      grupo.scrollLeft = rolou;
+      grupo.scrollLeft = rolou || posicaoGuardada();
       return el('div', { style: 'display:none' });
     }
     return barra;
