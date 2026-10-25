@@ -280,3 +280,4 @@ html body .pagina-papiro .portal-apagar:hover{opacity:.9}
 .pagina-papiro .aluno-dentro .portal-abas::after{bottom:-12px}
 .pagina-papiro .aluno-dentro #app>p[style*="font-weight:700"]{margin:0 0 8px!important;font-size:14px!important}
 .pagina-papiro .aluno-dentro .portal-topo>div{margin:0}
+.pagina-papiro .aluno-dentro .portal-topo>.portal-meet{margin:0 0 0 auto}

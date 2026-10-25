@@ -21,7 +21,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=60">
+  <link rel="stylesheet" href="page.css?v=61">
   <link rel="stylesheet" href="portal.css?v=16">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
@@ -260,9 +260,11 @@
     function desenharPaginaDoAluno(user, aluno, previa) {
         limpar();
         titulos(true);
+        var topoPrevia = null; /* na prévia, o "entrar no encontro" fica na mesma linha do Voltar */
         if (previa) {
           var paraOPainel = function () { location.href = 'admin-alunos.html'; };
-          app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + aluno.nome + ' vê (modo administrador)' }), el('div', {}, [P.botaoVoltar(paraOPainel)])]));
+          topoPrevia = el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + aluno.nome + ' vê (modo administrador)' }), el('div', {}, [P.botaoVoltar(paraOPainel)])]);
+          app.appendChild(topoPrevia);
           P.voltarNoFim(app, paraOPainel);
         } else {
           app.appendChild(topo(user, 'Olá, ' + aluno.nome + '!'));
@@ -270,7 +272,7 @@
         }
         // link fixo do encontro semanal (Google Meet), acima das abas
         var meetLink = P.linkSeguro(aluno.meet_link);
-        if (meetLink) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetLink, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
+        if (meetLink) (topoPrevia || app).appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetLink, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
         // dia e horário do próximo encontro, puxados da Google Agenda do Cássio (o Meet do compromisso vale se o link fixo não existir)
         var lugarEncontro = el('p', { class: 'portal-proximo', style: 'display:none' });
         app.appendChild(lugarEncontro);
@@ -292,7 +294,7 @@
         P.proximoEncontro(previa ? aluno.id : null).then(function (e) {
           if (!e || e.motivo) return;
           lugarEncontro.textContent = P.textoEncontro(e); lugarEncontro.style.display = '';
-          if (!meetLink && e.meet) lugarEncontro.parentNode.insertBefore(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: e.meet, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]), lugarEncontro);
+          if (!meetLink && e.meet) (topoPrevia || lugarEncontro.parentNode).insertBefore(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: e.meet, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]), topoPrevia ? null : lugarEncontro);
         });
         P.client.from('itens').select('id,aluno_id,bloco,titulo,descricao,link,data,criado_em').eq('aluno_id', aluno.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
