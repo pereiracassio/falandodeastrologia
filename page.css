@@ -97,6 +97,8 @@ body:has(.pagina-papiro)::before,body:has(.pagina-papiro)::after{display:none}
 .cab-papiro{text-align:center;margin:0 auto 6px;max-width:700px}
 .cab-logo{display:block;margin:0 auto;max-width:270px}
 .cab-logo img{display:block;width:100%;height:auto}
+/* Alunos, Seu espaço e painel do administrador: logo pela metade, para ganhar espaço (tudo sobe) */
+.cab-logo.cab-logo-menor{max-width:135px}
 .cab-nav{display:flex;border:0;margin:16px 0 0;font:700 13px 'Cinzel',serif;letter-spacing:.03em}
 .cab-nav a{flex:1;padding:9px 0;color:var(--terracota,#A03E25);text-decoration:none}
 .cab-nav a+a{border-left:2px solid #1F5FA3}
@@ -121,6 +123,7 @@ html body:has(.pagina-papiro) .cart-toggle svg{stroke:none;fill:#B5852F;width:28
   .pagina-papiro .folha-pagina{padding-left:84px;padding-right:84px}
   .pagina-papiro .folha-pagina>div[style*="max-width: 700px"],.pagina-papiro .cab-papiro{max-width:none!important}
   .pagina-papiro .cab-logo{max-width:clamp(270px,24vw,420px)}
+  .pagina-papiro .cab-logo.cab-logo-menor{max-width:clamp(135px,12vw,210px)}
   .pagina-papiro .cab-nav{font-size:clamp(13px,1.1vw,17px)}
   .pagina-papiro .cab-nav a{padding:clamp(9px,.9vw,14px) 0}
   .pagina-papiro .folha-pagina h1[style*="font-size: 28px"]{font-size:clamp(28px,2.5vw,38px)!important}
