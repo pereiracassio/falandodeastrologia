@@ -406,6 +406,20 @@
     },
     mesclar: function (o) { var a = estado.ler(); Object.keys(o).forEach(function (k) { a[k] = o[k]; }); estado.gravar(a); }
   };
+  /* lembrar onde você parou: o app da tela de início sempre abre na página inicial dele (Produção, Alunos); ao abrir de novo, a primeira
+     linha do <head> dessas páginas lê isto e leva você de volta ao lugar exato (página + o que estava aberto, que fica no endereço). */
+  function lembrarOndeParou() {
+    try {
+      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname)) return;
+      if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
+      localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
+    } catch (e) { /* sem armazenamento */ }
+  }
+  lembrarOndeParou();
+  var gravarEstado = estado.gravar;
+  estado.gravar = function (o) { gravarEstado(o); lembrarOndeParou(); };
+  window.addEventListener('pagehide', lembrarOndeParou);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') lembrarOndeParou(); });
   /* seção que abre e fecha (sanfona): a barra com o título aparece sempre; o conteúdo só quando aberta.
      abertas = lista (compartilhada) das chaves abertas; o que está aberto fica guardado no endereço (#abertas=dados,atividades) e sobrevive ao recarregar. */
   function sanfona(abertas, chave, titulo, filhos) {
