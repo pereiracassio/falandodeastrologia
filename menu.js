@@ -134,6 +134,21 @@
   };
   window.atualizarContadorCarrinho();
 
+  /* dentro da área do aluno (logado) o carrinho vira o sino dos avisos; fora dela, em qualquer outra página, continua carrinho.
+     aluno.html chama window.fdaSinoAvisos({ n: não lidos, aoTocar: função }) a cada vez que a contagem muda. */
+  window.fdaSinoAvisos = function (cfg) {
+    cart.href = "#";
+    cart.setAttribute("aria-label", "Meus avisos");
+    cart.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.2 2.2 0 0 0 2.2-2.2H9.8A2.2 2.2 0 0 0 12 22zm6.5-6.2V11c0-3.1-1.7-5.7-4.6-6.4v-.7a1.9 1.9 0 0 0-3.8 0v.7C7.2 5.3 5.5 7.9 5.5 11v4.8l-2 2V19h17v-1.2z"/></svg>';
+    if (cfg && cfg.n > 0) {
+      var n = document.createElement("span");
+      n.className = "cart-count";
+      n.textContent = cfg.n;
+      cart.appendChild(n);
+    }
+    cart.onclick = function (ev) { ev.preventDefault(); if (cfg && cfg.aoTocar) cfg.aoTocar(); };
+  };
+
   document.body.appendChild(toggle);
   document.body.appendChild(cart);
   document.body.appendChild(overlay);

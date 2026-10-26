@@ -282,7 +282,14 @@
       ]);
     }
     /* lista dos avisos recebidos (os 10 mais novos); o não lido fica em destaque; tocar marca como lido e leva às atividades */
-    function telaAvisos(aluno, previa, irParaAtividades) {
+    var naoLidos = 0, irParaAvisos = function () {};
+    /* o carrinho do canto vira o sino dos avisos enquanto o aluno está logado (menu.js: fdaSinoAvisos) */
+    function pintarSino() {
+      var cfg = { n: naoLidos, aoTocar: function () { irParaAvisos(); } };
+      if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg);
+      else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
+    }
+    function telaAvisos(aluno, previa, irParaAtividades, aoLer) {
       var caixa = el('div', {});
       if (previa) return caixa;
       P.client.from('avisos_recebidos').select('id,titulo,corpo,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
@@ -295,7 +302,7 @@
           ]);
           linha.addEventListener('click', function (ev) {
             ev.preventDefault();
-            if (!a.lido) P.client.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(function () {}, function () {});
+            if (!a.lido) { a.lido = true; aoLer(); P.client.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(function () {}, function () {}); }
             irParaAtividades();
           });
           caixa.appendChild(linha);
@@ -315,7 +322,7 @@
           botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
         });
         conteudo.textContent = '';
-        if (chave === 'avisos') { conteudo.appendChild(telaAvisos(aluno, previa, function () { abaAtual = 'caderno'; mostrar('caderno'); })); conteudo.appendChild(P.avisos.cartao('aluno')); return; }
+        if (chave === 'avisos') { conteudo.appendChild(telaAvisos(aluno, previa, function () { abaAtual = 'caderno'; mostrar('caderno'); }, function () { naoLidos = Math.max(0, naoLidos - 1); rotuloAvisos(); })); conteudo.appendChild(P.avisos.cartao('aluno')); return; }
         if (chave === 'mensalidade') { conteudo.appendChild(telaMensalidade(aluno, previa)); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -326,6 +333,8 @@
         itens.forEach(function (i) { conteudo.appendChild(itemDaLista(i, chave)); });
       }
       var vazioP = null, qtdAtividades = 0, abaAtual = 'caderno';
+      function rotuloAvisos() { if (botoes.avisos) botoes.avisos.textContent = 'Avisos' + (naoLidos ? ' (' + naoLidos + ')' : ''); pintarSino(); }
+      irParaAvisos = function () { abaAtual = 'avisos'; mostrar('avisos'); barra.scrollIntoView({ block: 'start' }); };
       avisarQuando(function (qtd) {
         qtdAtividades = qtd;
         var ab = ABAS[0], itensAba = lista.filter(function (i) { return i.bloco === ab.chave; }).length;
@@ -342,8 +351,9 @@
       mostrar(/[?&]aviso=1/.test(location.search) ? 'avisos' : 'caderno');
       /* quantos avisos ainda não foram lidos, ao lado do nome da aba */
       if (!previa) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
-        if (r && !r.error && r.count) botoes.avisos.textContent = 'Avisos (' + r.count + ')';
+        if (r && !r.error && r.count) { naoLidos = r.count; rotuloAvisos(); }
       }, function () {});
+      pintarSino();
       /* cinco abas, mas cada uma com o tamanho de sempre (um terço): as outras ficam para o lado, é só correr a barra */
       var rola = el('div', { class: 'portal-abas-rola' }, [barra]);
       return [P.comSetas(rola), conteudo];
@@ -468,6 +478,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=37" defer></script>
+  <script src="menu.js?v=38" defer></script>
 </body>
 </html>
