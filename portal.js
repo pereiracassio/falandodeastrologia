@@ -390,7 +390,7 @@
     if (aniversariosPromessa) return aniversariosPromessa;
     var hoje = diaDeHoje(), ano = +hoje.slice(0, 4), mes = +hoje.slice(5, 7), dia = +hoje.slice(8, 10);
     var bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
-    var pega = function (tabela) { return client.from(tabela).select('nome,email,nascimento').not('nascimento', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }); };
+    var pega = function (tabela) { return client.from(tabela).select('nome,email,whatsapp,nascimento').not('nascimento', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }); };
     aniversariosPromessa = Promise.all([pega('clientes'), pega('alunos')]).then(function (r) {
       var vistos = {}, saida = [];
       r[0].concat(r[1]).forEach(function (p) {
@@ -399,9 +399,9 @@
         if (m === 2 && d === 29 && !bissexto) d = 28;
         if (m !== mes || d !== dia) return;
         var k = p.email ? String(p.email).toLowerCase() : String(p.nome).toLowerCase() + '|' + p.nascimento;
-        if (vistos[k]) return;
-        vistos[k] = 1;
-        saida.push({ nome: String(p.nome || '').trim(), idade: ano - +p.nascimento.slice(0, 4), hoje: hoje });
+        if (vistos[k]) { if (!vistos[k].whatsapp && p.whatsapp) vistos[k].whatsapp = p.whatsapp; return; }
+        vistos[k] = { nome: String(p.nome || '').trim(), whatsapp: p.whatsapp || '', hoje: hoje };
+        saida.push(vistos[k]);
       });
       return saida;
     }, function () { return []; });

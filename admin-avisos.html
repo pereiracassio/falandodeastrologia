@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=83"></script>
+  <script src="portal.js?v=84"></script>
   <script src="menu.js?v=38" defer></script>
   <script>
   (function () {
@@ -67,12 +67,15 @@
       P.aniversariosHoje().then(function (lista) {
         P.marcarAnivVisto();
         lista.forEach(function (p) {
-          var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
-            el('span', { class: 'portal-item-titulo', style: 'color:#A03E25', text: 'Aniversário hoje' }),
-            el('p', { style: 'margin:4px 0 0;font-weight:700', text: 'Hoje é aniversário de ' + p.nome + (p.idade > 0 && p.idade < 120 ? ' (' + p.idade + ' anos)' : '') + '. Mande os parabéns e veja se quer fazer a revolução solar.' })
-          ]);
-          linha.addEventListener('click', function (ev) { ev.preventDefault(); location.href = 'admin-agenda.html#v=dia&d=' + p.hoje; });
+          var dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
+          var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas. Um abraço, Cássio.';
+          var linha = el('a', { href: '#', class: 'portal-item-titulo', style: 'display:block;text-decoration:none;color:#A03E25;margin:0 0 14px', text: 'Aniversário de ' + p.nome });
+          var detalhe = el('div', { style: 'display:none;margin:-6px 0 14px' });
+          if (dig) detalhe.appendChild(el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]));
+          else detalhe.appendChild(el('p', { text: 'Sem WhatsApp cadastrado.' }));
+          linha.addEventListener('click', function (ev) { ev.preventDefault(); detalhe.style.display = detalhe.style.display === 'none' ? '' : 'none'; });
           fixos.appendChild(linha);
+          fixos.appendChild(detalhe);
         });
         if (lista.length) fixos.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
       });
