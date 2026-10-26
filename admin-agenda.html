@@ -130,13 +130,29 @@
       return prontoP;
     }
     /* compromissos de todas as agendas marcadas, entre dois instantes (ms) */
+    function pausa(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+    /* uma agenda: tenta de novo se o Google falhar (são muitas agendas, o Google limita pedidos de uma vez) */
+    function eventosDe(c, de, ate, tentativa) {
+      return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
+        .then(function (r) { return (r.items || []).map(function (e) { return normalizar(e, c); }); }, function (er) {
+          if (tentativa < 3) return pausa(600 * (tentativa + 1)).then(function () { return eventosDe(c, de, ate, tentativa + 1); });
+          throw er;
+        });
+    }
+    /* compromissos de todas as agendas, no máximo 4 pedidos ao mesmo tempo; o que NÃO foi lido vai em .falhas (nunca some em silêncio) */
     function eventosEntre(de, ate, comOcultas) {
       return preparar().then(function () {
-        return Promise.all((comOcultas ? todosCalendarios : calendarios).map(function (c) {
-          return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
-            .then(function (r) { return (r.items || []).map(function (e) { return normalizar(e, c); }); }, function () { return []; });
-        }));
-      }).then(function (listas) { return [].concat.apply([], listas).filter(Boolean).sort(function (a, b) { return a.ini - b.ini; }); });
+        var fila = (comOcultas ? todosCalendarios.filter(function (c) { return !/#holiday@|#contacts@/.test(c.id); }) : calendarios).slice(), saida = [], falhas = [];
+        function trabalhador() {
+          var c = fila.shift(); if (!c) return Promise.resolve();
+          return eventosDe(c, de, ate, 0).then(function (l) { saida = saida.concat(l); }, function () { falhas.push(c.summaryOverride || c.summary || c.id); }).then(trabalhador);
+        }
+        return Promise.all([trabalhador(), trabalhador(), trabalhador(), trabalhador()]).then(function () {
+          var lista = saida.filter(Boolean).sort(function (a, b) { return a.ini - b.ini; });
+          lista.falhas = falhas;
+          return lista;
+        });
+      });
     }
 
     /* ---------- tela ---------- */
@@ -272,6 +288,7 @@
         eventosEntre(iv[0], iv[1]).then(function (evs) {
           if (meu !== pedido) return;
           eventos = evs; vista.textContent = '';
+          if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Toque em hoje para tentar de novo.' }));
           if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
           else if (visao === 'mes') vistaMes(vista, evs); else vistaAno(vista, evs);
         }, function (e) { if (meu === pedido) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); } });
@@ -657,30 +674,32 @@
       o.addEventListener('input', function () { doPreset(o.value); });
       var caixaTarefa = P.combo(o, function () { return TAREFAS.map(function (t) { return { valor: t[0], rotulo: t[0], busca: t[0].toLowerCase() }; }); }, function (i) { o.value = i.valor; doPreset(i.valor); }, true);
       var dur = el('select'); [30, 45, 60, 90, 120, 180].forEach(function (m) { dur.appendChild(el('option', { value: String(m), text: duracaoTxt(m) })); }); dur.value = '60';
+      var folga = el('select'); [[0, 'Nenhuma'], [15, '15 minutos'], [30, '30 minutos'], [45, '45 minutos'], [60, '1 hora']].forEach(function (x) { folga.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); folga.value = '30';
       var de = el('input', { type: 'time', value: '06:00' }), ate = el('input', { type: 'time', value: '22:00' });
       var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Ver horários' });
       var res = el('div');
-      botao.addEventListener('click', function () { sugerir(res, area, o.value.trim(), planeta.value, +dur.value, de.value, ate.value); });
+      botao.addEventListener('click', function () { sugerir(res, area, o.value.trim(), planeta.value, +dur.value, de.value, ate.value, +folga.value); });
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
-        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Não antes de', de), campo('Não depois de', ate),
+        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga), campo('Não antes de', de), campo('Não depois de', ate),
         [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
     }
 
-    function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora) {
+    function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora, folga) {
       res.textContent = '';
       var primeiro = meiaNoiteDe(Date.now());
       res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Procurando...' }));
-      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA, true).then(function (evs) { res.textContent = ''; acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA, true).then(function (evs) { res.textContent = ''; if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; } acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora, folga || 0); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
     }
-    function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora) {
+    function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora, folga) {
+      var fg = folga * 60000; /* folga: tempo livre antes e depois de cada compromisso (ir e voltar da academia, por exemplo) */
       var agora = Math.ceil(Date.now() / 300000) * 300000, primeiro = meiaNoiteDe(Date.now()), achados = [], dias = DIAS_BUSCA;
       for (var i = 0; i < dias && achados.length < 8; i++) {
         var dia = isoDia(primeiro + i * 86400000 + 12 * 3600000);
         var ja = Math.max(doIso(dia, deHora), agora), fimJ = doIso(dia, ateHora);
         if (fimJ <= ja) continue;
         /* o que está ocupado nesse dia, com os trechos juntados */
-        var ocupado = eventos.filter(function (e) { return e.ocupa && e.fim > ja && e.ini < fimJ; }).map(function (e) { return [Math.max(e.ini, ja), Math.min(e.fim, fimJ)]; });
+        var ocupado = eventos.filter(function (e) { return e.ocupa && e.fim + fg > ja && e.ini - fg < fimJ; }).map(function (e) { return [Math.max(e.ini - fg, ja), Math.min(e.fim + fg, fimJ)]; });
         var livres = [], cursor = ja;
         ocupado.sort(function (a, b) { return a[0] - b[0]; }).forEach(function (b) { if (b[0] > cursor) livres.push([cursor, b[0]]); cursor = Math.max(cursor, b[1]); });
         if (cursor < fimJ) livres.push([cursor, fimJ]);
