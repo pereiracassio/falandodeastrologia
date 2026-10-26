@@ -264,7 +264,7 @@
         el('label', { for: 'entServico', text: 'Serviço' }), servico, atalhos,
         el('label', { for: 'entData', text: 'Data do serviço (opcional)' }), data,
         el('label', { for: 'entPdf', text: 'Link do PDF (opcional)' }), pdf, P.botaoDrive(pdf, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id),
-        el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)' }), gravacao, P.botaoDrive(gravacao, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id), msg,
+        el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)', style: 'margin-top:34px;display:block' }), gravacao, P.botaoDrive(gravacao, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id), msg,
         el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
       function sairDaEdicao() { editandoId = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, ''); }
