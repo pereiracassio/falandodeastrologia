@@ -473,15 +473,45 @@
   };
   /* lembrar onde você parou: o app da tela de início sempre abre na página inicial dele (Produção, Alunos); ao abrir de novo, a primeira
      linha do <head> dessas páginas lê isto e leva você de volta ao lugar exato (página + o que estava aberto, que fica no endereço). */
-  function lembrarOndeParou() {
+  /* DIAGNÓSTICO TEMPORÁRIO (só administrador, só no app instalado): registro das últimas decisões e gravações da "última tela", mostrado no rodapé (toque para esconder) */
+  var diagAtivo = false;
+  try { diagAtivo = localStorage.getItem('fda_admin') === '1' && !!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); } catch (e) { /* sem armazenamento */ }
+  function diag(msg) {
+    if (!diagAtivo) return;
+    try {
+      var d = new Date(), hh = [d.getHours(), d.getMinutes(), d.getSeconds()].map(function (x) { return String(x).padStart(2, '0'); }).join(':');
+      var l = JSON.parse(localStorage.getItem('fda_diag') || '[]'); l.push(hh + ' ' + msg); localStorage.setItem('fda_diag', JSON.stringify(l.slice(-8)));
+    } catch (e) { /* sem armazenamento */ }
+  }
+  if (diagAtivo) document.addEventListener('DOMContentLoaded', function () {
+    var x = document.createElement('div'), l = []; try { l = JSON.parse(localStorage.getItem('fda_diag') || '[]'); } catch (e) { /* ok */ }
+    x.textContent = l.slice(-6).join('\n'); x.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#000;color:#0f0;font:10px monospace;padding:3px 5px;white-space:pre-wrap;word-break:break-all;opacity:.92';
+    x.addEventListener('click', function () { x.remove(); }); document.body.appendChild(x);
+  });
+  function lembrarOndeParou(ev) {
     try {
       localStorage.setItem('fda_ultimo_uso', String(Date.now())); /* a abertura do zero do app se reconhece por isto estar velho (ver o <head> das páginas de entrada) */
       if (window.__fdaRestaurando) return; /* a página só está de passagem, indo para a última tela: não sobrescrever */
       if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
-      localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
+      var novaUltima = location.pathname + location.search + location.hash;
+      if (diagAtivo && localStorage.getItem('fda_ultima_pagina') !== novaUltima) diag('GRAVA ' + novaUltima + ' (' + ((ev && ev.type) || 'chamada') + ')');
+      localStorage.setItem('fda_ultima_pagina', novaUltima);
     } catch (e) { /* sem armazenamento */ }
   }
+  /* abertura do zero (o iPhone/iPad jogou o app fora e o ícone o abriu de novo): em QUALQUER página do painel/aluno/cliente, não só nas três de entrada,
+     vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
+  (function restaurarUltimaTela() {
+    try {
+      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando) return;
+      var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
+      if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return;
+      var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
+      diag('ABRIU ' + aqui + ' | ultima=' + u + ' | uso=' + Math.round((Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0)) / 1000) + 's');
+      if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { diag('VAI PARA ' + u); window.__fdaRestaurando = true; location.replace(u); }
+    } catch (e) { /* sem armazenamento */ }
+  })();
   lembrarOndeParou();
   try { sessionStorage.setItem('fda_app_aberto', '1'); } catch (e) { /* sem armazenamento */ } /* qualquer página aberta conta como "app já aberto": só a abertura do zero volta ao último lugar */
   var gravarEstado = estado.gravar;
