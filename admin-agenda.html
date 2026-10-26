@@ -124,8 +124,14 @@
     function gravarCache(c) { try { localStorage.setItem(CACHE, JSON.stringify(c)); } catch (e) { /* sem armazenamento: só fica mais lento */ } }
     /* clientes e alunos que têm a data de nascimento no cadastro */
     function carregarAniversarios() {
-      var pega = function (tabela, tipo) { return C.from(tabela).select('nome,whatsapp,nascimento').not('nascimento', 'is', null).then(function (r) { return (r.data || []).map(function (x) { x.tipo = tipo; return x; }); }, function () { return []; }); };
-      return Promise.all([pega('clientes', 'cliente'), pega('alunos', 'aluno')]).then(function (r) { aniversarios = r[0].concat(r[1]).filter(function (x) { return /^\d{4}-\d{2}-\d{2}/.test(x.nascimento || ''); }); }, function () { aniversarios = []; });
+      var pega = function (tabela, tipo) { return C.from(tabela).select('nome,whatsapp,nascimento,email').not('nascimento', 'is', null).then(function (r) { return (r.data || []).map(function (x) { x.tipo = tipo; return x; }); }, function () { return []; }); };
+      return Promise.all([pega('clientes', 'cliente'), pega('alunos', 'aluno')]).then(function (r) { var vistos = {}; /* a mesma pessoa em clientes e em alunos conta uma vez só (pelo e-mail; sem e-mail, pelo nome e a data) */
+        aniversarios = r[0].concat(r[1]).filter(function (x) {
+          if (!/^\d{4}-\d{2}-\d{2}/.test(x.nascimento || '')) return false;
+          var k = x.email ? String(x.email).toLowerCase() : String(x.nome).toLowerCase() + '|' + x.nascimento;
+          if (vistos[k]) { if (!vistos[k].whatsapp && x.whatsapp) vistos[k].whatsapp = x.whatsapp; return false; }
+          vistos[k] = x; return true;
+        }); }, function () { aniversarios = []; });
     }
     /* os aniversários que caem no período como compromissos de dia inteiro (29/02 vira 28/02 nos anos sem 29) */
     function aniversariosEntre(de, ate) {
