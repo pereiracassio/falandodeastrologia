@@ -220,7 +220,7 @@
       var botao = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar arquivo' });
       botao.addEventListener('click', function () { arq.click(); });
       var iso = function (t) { var x = String(t || '').replace(/\s+/g, ''), m = x.match(/^(\d{2})\/(\d{2})\/(\d{4})$/) || x.match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ''; return x.indexOf('/') > 0 ? m[3] + '-' + m[2] + '-' + m[1] : m[1] + '-' + m[2] + '-' + m[3]; };
-      var campos = function (l) { var r = [], c = '', q = false; for (var i = 0; i < l.length; i++) { var ch = l[i]; if (ch === '"') q = !q; else if ((ch === ',' || ch === ';') && !q) { r.push(c); c = ''; } else c += ch; } r.push(c); return r.map(function (x) { return x.trim(); }); };
+      var campos = function (l) { var r = [], c = '', q = false; for (var i = 0; i < l.length; i++) { var ch = l[i]; if (ch === '"') q = !q; else if ((ch === ',' || ch === ';') && !q) { r.push(c); c = ''; } else c += ch; } r.push(c); return r.map(function (x) { x = x.trim(); return /^null$/i.test(x) ? '' : x; }); };
       arq.addEventListener('change', function () {
         var f = arq.files && arq.files[0]; arq.value = ''; if (!f) return;
         P.mensagem(msg, 'Lendo...');
