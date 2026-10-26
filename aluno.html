@@ -278,15 +278,22 @@
     }
     /* lista dos avisos recebidos (os 10 mais novos); o não lido fica em destaque; tocar marca como lido e leva às atividades */
     var naoLidos = 0, irParaAvisos = function () {};
+    /* lembrete da mensalidade (vai vencer / venceu): fica FIXO no topo da aba Avisos, antes de qualquer outro, e conta no sino; some quando você marca "Pagou" */
+    var fixoMensalidade = null, atualizarAvisos = function () {};
+    var totalAvisos = function () { return naoLidos + (fixoMensalidade ? 1 : 0); };
     /* o carrinho do canto vira o sino dos avisos enquanto o aluno está logado (menu.js: fdaSinoAvisos) */
     function pintarSino() {
-      var cfg = { n: naoLidos, aoTocar: function () { irParaAvisos(); } };
-      P.numeroNoIcone(naoLidos);
+      var cfg = { n: totalAvisos(), aoTocar: function () { irParaAvisos(); } };
+      P.numeroNoIcone(totalAvisos());
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg);
       else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
     }
     function telaAvisos(aluno, previa, irParaAtividades, aoLer) {
       var caixa = el('div', {});
+      if (fixoMensalidade) {
+        caixa.appendChild(el('p', { class: 'impresso', style: 'margin:0 0 14px;font-weight:700;color:' + fixoMensalidade.cor, text: fixoMensalidade.texto }));
+        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+      }
       if (previa) return caixa;
       P.client.from('avisos_recebidos').select('id,titulo,corpo,atividade_id,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
         if (r.error || !r.data || !r.data.length) return;
@@ -329,7 +336,8 @@
         itens.forEach(function (i) { conteudo.appendChild(itemDaLista(i, chave)); });
       }
       var vazioP = null, qtdAtividades = 0, abaAtual = 'caderno';
-      function rotuloAvisos() { if (botoes.avisos) botoes.avisos.textContent = 'Avisos' + (naoLidos ? ' (' + naoLidos + ')' : ''); pintarSino(); }
+      function rotuloAvisos() { if (botoes.avisos) botoes.avisos.textContent = 'Avisos' + (totalAvisos() ? ' (' + totalAvisos() + ')' : ''); pintarSino(); }
+      atualizarAvisos = rotuloAvisos;
       irParaAvisos = function () { abaAtual = 'avisos'; mostrar('avisos'); barra.scrollIntoView({ block: 'start' }); };
       avisarQuando(function (qtd) {
         qtdAtividades = qtd;
@@ -421,7 +429,9 @@
           else if (dias === 0) { texto = 'Sua mensalidade vence hoje, dia ' + dia + '.'; cor = '#1034A6'; }
           else if (dias <= 2) { texto = 'Sua mensalidade vence dia ' + dia + '.'; cor = '#1034A6'; }
           else return;
-          avisoMensalidade.textContent = texto; avisoMensalidade.style.color = cor; avisoMensalidade.style.display = '';
+          fixoMensalidade = { texto: texto, cor: cor }; atualizarAvisos();
+          /* vencida é importante demais para ficar só atrás do sino: continua também no topo da página */
+          if (dias < 0) { avisoMensalidade.textContent = texto; avisoMensalidade.style.color = cor; avisoMensalidade.style.display = ''; }
         }, function () {});
         P.proximoEncontro(previa ? aluno.id : null).then(function (e) {
           if (!e || e.motivo) return;
