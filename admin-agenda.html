@@ -479,7 +479,7 @@
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
         campo('O que você vai fazer', o), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Não antes de', de), campo('Não depois de', ate),
-        [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res, el('p', { class: 'portal-item-data', style: 'margin-top:12px', text: 'Horas planetárias de ' + lugarNome + '. O lugar se troca em Configurações.' })]));
+        [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
     }
 
     function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora) {
