@@ -31,6 +31,7 @@
       { label: "Produção", href: "admin-producao.html" },
       { label: "Visitas", href: "admin-visitas.html" },
       { label: "Estudos", href: "admin-estudos.html" },
+      { label: "Leitor", href: "admin-leitor.html" },
       { label: "Psicanálise", href: "https://pereiracassio.com.br/admin.html" },
       { label: "Ver o site", href: "index.html", sep: true }
     ];
