@@ -207,3 +207,5 @@ async function handler(req, res) {
 module.exports = handler;
 module.exports.decidirAviso = decidirAviso;
 module.exports.enviar = enviar;
+module.exports.entregarAviso = entregarAviso;
+module.exports.emailsDoAviso = emailsDoAviso;
