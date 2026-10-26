@@ -217,8 +217,8 @@
       if (c.cal && c.cal.length) { /* já conhecida: abre na hora com o que viu da última vez e atualiza por trás */
         calendarios = c.cal; todosCalendarios = c.todos || c.cal; if (isFinite(c.lat) && isFinite(c.lon)) { LAT = c.lat; LON = c.lon; lugarNome = c.nome || lugarNome; }
         corpo.textContent = ''; montar(corpo);
-        var antes = calendarios.map(function (x) { return x.id; }).join('|');
-        preparar().then(function () { if (calendarios.map(function (x) { return x.id; }).join('|') !== antes) atualizar(); }, function () { /* o erro aparece quando os compromissos não carregam */ });
+        var antes = calendarios.map(function (x) { return x.id; }).join('|'), qtdAniv = aniversarios.length;
+        preparar().then(function () { if (calendarios.map(function (x) { return x.id; }).join('|') !== antes || aniversarios.length !== qtdAniv) atualizar(); }, function () { /* o erro aparece quando os compromissos não carregam */ });
         return;
       }
       preparar().then(function () { corpo.textContent = ''; montar(corpo); }, function (e) { mostraErroAbrir(corpo, e); });
@@ -336,11 +336,12 @@
         titulo.textContent = tituloPeriodo();
         var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
         var desenha = function (evs0) {
-          var evs = evs0.concat(aniversariosEntre(iv[0], iv[1])); evs.falhas = evs0.falhas;
+          var evs = evs0.concat(aniversariosEntre(iv[0], iv[1])); evs.falhas = evs0.falhas; var rolou = window.scrollY;
           eventos = evs; vista.textContent = '';
           if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Toque em hoje para tentar de novo.' }));
           if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
           else if (visao === 'mes') vistaMes(vista, evs); else if (visao === 'lista') vistaLista(vista, evs); else vistaAno(vista, evs);
+          if (visao === 'lista') window.scrollTo(0, rolou);
         };
         if (guardado) desenha(guardado); else { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
         eventosEntre(iv[0], iv[1]).then(function (evs) {
@@ -466,8 +467,9 @@
           linha.appendChild(el('span', { text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
           var nome = el('span', { style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
           linha.appendChild(nome);
-          linha.addEventListener('click', function () { abrirEvento(e); });
-          bloco1.appendChild(linha);
+          var aberto = el('div'); /* o cartão abre aqui embaixo, sem sair de onde você está */
+          linha.addEventListener('click', function () { if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, e); });
+          bloco1.appendChild(linha); bloco1.appendChild(aberto);
         });
         caixa.appendChild(bloco1);
       }
