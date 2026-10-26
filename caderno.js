@@ -61,10 +61,11 @@
   }
 
   /* a capa vira uma imagem (ela é desenho, não texto) */
-  function capaComoImagem(nomeAluno) {
+  function capaComoImagem(nomeAluno, textos) {
+    textos = textos || {};
     var F = window.capaFormato('a4');
     var palco = el('div'); palco.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + F.w + 'px;height:' + F.h + 'px';
-    palco.appendChild(window.capaFolha({ titulo: 'Caderno de Estudos', subtitulo: 'Acompanhamento Prático de Astrologia', nome: 'Mentoria em Astrologia Clássica',
+    palco.appendChild(window.capaFolha({ titulo: textos.titulo || 'Caderno de Estudos', subtitulo: textos.subtitulo || 'Acompanhamento Prático de Astrologia', nome: textos.nome || 'Mentoria em Astrologia Clássica',
       aluno: nomeAluno, tamanho: 'm', powered: false, formato: 'a4' }));
     document.body.appendChild(palco);
     var pronto = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
@@ -276,5 +277,5 @@
     return el('div', { style: 'margin-top:14px' }, [el('div', { class: 'portal-acoes' }, [b]), msg]);
   }
 
-  window.caderno = { botao: botao, baixar: baixar, montarPdf: montarPdf };
+  window.caderno = { botao: botao, baixar: baixar, montarPdf: montarPdf, util: { carregarScript: carregarScript, baixarFontes: baixarFontes, novoDoc: novoDoc, capaComoImagem: capaComoImagem, cores: COR, a4: A4, margem: M } };
 })();
