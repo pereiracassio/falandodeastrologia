@@ -51,7 +51,7 @@
     var nomeAdmin = '', aniversarios = [], calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    var VISOES = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
+    var VISOES = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista']];
     var visao = 'semana', ancora = '', areaForm = null, atualizar = function () {};
 
     function limpar() { app.textContent = ''; }
@@ -237,6 +237,7 @@
       if (visao === 'dia') return [doIso(ancora), doIso(somaDias(ancora, 1))];
       if (visao === 'semana') { ini = somaDias(ancora, -diaSem(ancora)); return [doIso(ini), doIso(somaDias(ini, 7))]; }
       if (visao === 'mes') { var pri = a[0] + '-' + a[1] + '-01'; ini = somaDias(pri, -diaSem(pri)); return [doIso(ini), doIso(somaDias(ini, 42))]; }
+      if (visao === 'lista') return [doIso(ancora), doIso(somaDias(ancora, 31))];
       return [doIso(a[0] + '-01-01'), doIso((+a[0] + 1) + '-01-01')];
     }
     function curto(iso) { var a = iso.split('-'); return (+a[2]) + ' de ' + MES_CURTO[+a[1] - 1]; }
@@ -245,6 +246,7 @@
       if (visao === 'dia') return rotuloDia(ancora);
       if (visao === 'semana') { var ini = somaDias(ancora, -diaSem(ancora)), fim = somaDias(ini, 6); return curto(ini) + ' a ' + curto(fim) + ' de ' + fim.slice(0, 4); }
       if (visao === 'mes') return MESES[+a[1] - 1] + ' de ' + a[0];
+      if (visao === 'lista') return curto(ancora) + ' a ' + curto(somaDias(ancora, 30));
       return a[0];
     }
     /* caixinha só com contorno (igual ao resto do painel): devolve { el, valor() } */
@@ -307,7 +309,7 @@
     function montar(corpo) {
       var ent = P.estado.ler();
       ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
-      if (['dia', 'semana', 'mes', 'ano'].indexOf(ent.v) >= 0) visao = ent.v;
+      if (['dia', 'semana', 'mes', 'ano', 'lista'].indexOf(ent.v) >= 0) visao = ent.v;
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
       var novo = el('button', { type: 'button', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
@@ -318,7 +320,7 @@
         b.addEventListener('click', function () { visao = v[0]; mudou(); });
         botoes[v[0]] = b; abas.appendChild(b);
       });
-      var passo = function (n) { ancora = visao === 'dia' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
+      var passo = function (n) { ancora = visao === 'dia' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
       var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo' });
       var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' });
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
@@ -338,7 +340,7 @@
           eventos = evs; vista.textContent = '';
           if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Toque em hoje para tentar de novo.' }));
           if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
-          else if (visao === 'mes') vistaMes(vista, evs); else vistaAno(vista, evs);
+          else if (visao === 'mes') vistaMes(vista, evs); else if (visao === 'lista') vistaLista(vista, evs); else vistaAno(vista, evs);
         };
         if (guardado) desenha(guardado); else { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
         eventosEntre(iv[0], iv[1]).then(function (evs) {
@@ -452,6 +454,25 @@
       vista.appendChild(caixa);
     }
 
+    /* Lista: todos os compromissos do período, um dia embaixo do outro (só os dias que têm compromisso) */
+    function vistaLista(vista, evs) {
+      var caixa = el('div'), primeiro = ancora, dias = 31;
+      for (var i = 0; i < dias; i++) {
+        var iso = somaDias(primeiro, i), doDiaL = doDia(iso, evs);
+        if (!doDiaL.length) continue;
+        var bloco1 = el('div', { style: 'margin:0 0 14px' }, [el('div', { text: rotuloDia(iso), style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:' + linhaFina })]);
+        doDiaL.sort(function (p, q) { return (p.diaTodo ? 0 : 1) - (q.diaTodo ? 0 : 1) || p.ini - q.ini; }).forEach(function (e) {
+          var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid #16233F;background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
+          linha.appendChild(el('span', { text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
+          var nome = el('span', { style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
+          linha.appendChild(nome);
+          linha.addEventListener('click', function () { abrirEvento(e); });
+          bloco1.appendChild(linha);
+        });
+        caixa.appendChild(bloco1);
+      }
+      vista.appendChild(caixa);
+    }
     /* Mês */
     function vistaMes(vista, evs) {
       var a = ancora.split('-'), pri = a[0] + '-' + a[1] + '-01', ini = somaDias(pri, -diaSem(pri)), hoje = isoDia(Date.now());
