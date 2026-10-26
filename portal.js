@@ -1036,14 +1036,36 @@
       chamarPush('manual', { para: para, id: id, texto: t }).then(function (r) {
         if (!r.ok) { mensagem(msg, (r.dados && r.dados.erro) || 'Não foi possível enviar agora.', 'erro'); return; }
         texto.value = '';
-        mensagem(msg, r.dados.enviados ? 'Aviso enviado.' : 'Aviso guardado na lista dele (o celular dele não está com os avisos ativados).', 'ok');
+        mensagem(msg, r.dados.enviados ? 'Aviso enviado: ' + t : 'Aviso guardado na lista dele (o celular dele não está com os avisos ativados).', 'ok');
       }, function () { mensagem(msg, 'Não foi possível enviar agora.', 'erro'); });
     }
-    var prontos = [['10 minutos', '10 minutos'], ['1 hora', '1 hora'], ['2 horas', '2 horas']].map(function (p) {
-      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Começa em ' + p[0] });
-      b.addEventListener('click', function () { enviar('Oi, ' + primeiro + '! O seu ' + encontro + ' começa em ' + p[1] + '.', true); });
-      return b;
+    /* "Avisar quanto falta": na hora do toque, busca o horário do próximo compromisso na agenda e conta quanto falta; assim o aviso nunca sai com o tempo errado */
+    function tempoQueFalta(min) {
+      if (min <= 0) return 'já está começando';
+      if (min < 60) return 'começa em ' + min + (min === 1 ? ' minuto' : ' minutos');
+      var h = Math.floor(min / 60), m = min % 60;
+      return 'começa em ' + h + (h === 1 ? ' hora' : ' horas') + (m ? ' e ' + m + (m === 1 ? ' minuto' : ' minutos') : '');
+    }
+    function inicioDoCompromisso() {
+      if (para === 'aluno') return proximoEncontro(id).then(function (e) { return e && e.inicio ? e.inicio : null; });
+      return client.auth.getSession().then(function (r) {
+        var sessao = r.data && r.data.session;
+        if (!sessao) return null;
+        return fetch('https://falandodeastrologia.vercel.app/api/meu-atendimento?cliente=' + encodeURIComponent(id), { headers: { Authorization: 'Bearer ' + sessao.access_token } })
+          .then(function (resp) { return resp.ok ? resp.json() : null; }).then(function (d) { return d && d.atendimento && d.atendimento.inicio ? d.atendimento.inicio : null; });
+      });
+    }
+    var quanto = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Avisar quanto falta' });
+    quanto.addEventListener('click', function () {
+      quanto.disabled = true; mensagem(msg, 'Vendo o horário na agenda...');
+      inicioDoCompromisso().then(function (inicio) {
+        quanto.disabled = false;
+        if (!inicio) { mensagem(msg, 'Não achei um compromisso dele na agenda.', 'erro'); return; }
+        var min = Math.round((Date.parse(inicio) - Date.now()) / 60000);
+        enviar('Oi, ' + primeiro + '! O seu ' + encontro + ' ' + tempoQueFalta(min) + '.', false);
+      }, function () { quanto.disabled = false; mensagem(msg, 'Não consegui ver a agenda agora.', 'erro'); });
     });
+    var prontos = [quanto];
     var mandar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar' });
     mandar.addEventListener('click', function () { enviar(texto.value, false); });
     return el('div', { class: 'portal-cartao' }, [
