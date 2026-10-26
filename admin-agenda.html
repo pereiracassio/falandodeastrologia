@@ -48,7 +48,7 @@
     var SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     /* o que fazer -> em qual hora planetária (mude aqui se quiser outra combinação) */
     var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno']]; /* a lista só sugere: ele pode escrever qualquer outra coisa */
-    var nomeAdmin = '', calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
+    var nomeAdmin = '', aniversarios = [], calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     var VISOES = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
@@ -122,11 +122,29 @@
     var prontoP = null, CACHE = 'fda_agenda_cache_v1';
     function lerCache() { try { return JSON.parse(localStorage.getItem(CACHE) || 'null') || {}; } catch (e) { return {}; } }
     function gravarCache(c) { try { localStorage.setItem(CACHE, JSON.stringify(c)); } catch (e) { /* sem armazenamento: só fica mais lento */ } }
+    /* clientes e alunos que têm a data de nascimento no cadastro */
+    function carregarAniversarios() {
+      var pega = function (tabela, tipo) { return C.from(tabela).select('nome,whatsapp,nascimento').not('nascimento', 'is', null).then(function (r) { return (r.data || []).map(function (x) { x.tipo = tipo; return x; }); }, function () { return []; }); };
+      return Promise.all([pega('clientes', 'cliente'), pega('alunos', 'aluno')]).then(function (r) { aniversarios = r[0].concat(r[1]).filter(function (x) { return /^\d{4}-\d{2}-\d{2}/.test(x.nascimento || ''); }); }, function () { aniversarios = []; });
+    }
+    /* os aniversários que caem no período como compromissos de dia inteiro (29/02 vira 28/02 nos anos sem 29) */
+    function aniversariosEntre(de, ate) {
+      var saida = [], a0 = +isoDia(de).slice(0, 4), a1 = +isoDia(ate).slice(0, 4);
+      aniversarios.forEach(function (p) {
+        var m = +p.nascimento.slice(5, 7), d = +p.nascimento.slice(8, 10), ano0 = +p.nascimento.slice(0, 4);
+        for (var y = a0; y <= a1; y++) {
+          var bi = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0, dd = (m === 2 && d === 29 && !bi) ? 28 : d, iso = y + '-' + p2(m) + '-' + p2(dd), ini = doIso(iso);
+          if (ini < de || ini >= ate) continue;
+          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + p.nome, curto: p.nome.split(/\s+/)[0], ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#A03E25', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
+        }
+      });
+      return saida;
+    }
     function preparar() {
       if (prontoP) return prontoP;
       var valorDe = function (chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); };
       /* tudo ao mesmo tempo: lugar, agendas escolhidas e a lista do Google */
-      prontoP = Promise.all([valorDe('prod_local_horas'), valorDe('agenda_ocultas'), gapi('/users/me/calendarList?minAccessRole=freeBusyReader')]).then(function (r) {
+      prontoP = Promise.all([valorDe('prod_local_horas'), valorDe('agenda_ocultas'), gapi('/users/me/calendarList?minAccessRole=freeBusyReader'), carregarAniversarios()]).then(function (r) {
         var v = r[0], ocultas = r[1] || [];
         if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); }
         todosCalendarios = r[2].items || [];
@@ -239,8 +257,19 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     /* tocar num compromisso só MOSTRA; o lápis abre a edição. Cores: título terracota, horário azul, o resto preto */
+    function detalheAniversario(destino, e) {
+      var p = e.aniversario, dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
+      var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas. Um abraço, Cássio.';
+      var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
+      fechar.addEventListener('click', function () { destino.textContent = ''; });
+      var acoes = [];
+      if (dig) { var w = el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]); acoes.push(w); }
+      acoes.push(fechar);
+      destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:#A03E25' }), el('p', { text: rotuloDia(isoDia(e.ini)) + ' · faz ' + p.idade + ' anos', style: 'margin:10px 0 0' }), el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes)]));
+    }
     function detalhe(destino, e) {
       destino.textContent = '';
+      if (e.aniversario) { detalheAniversario(destino, e); return; }
       var ultimo = isoDia(Math.max(e.ini, e.fim - 1)), quando = e.diaTodo ? (isoDia(e.ini) === ultimo ? 'o dia todo' : 'de ' + curto(isoDia(e.ini)) + ' a ' + curto(ultimo)) : 'das ' + hhmm(e.ini) + ' às ' + hhmm(e.fim);
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
@@ -298,7 +327,8 @@
         P.estado.gravar({ v: visao, d: ancora });
         titulo.textContent = tituloPeriodo();
         var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
-        var desenha = function (evs) {
+        var desenha = function (evs0) {
+          var evs = evs0.concat(aniversariosEntre(iv[0], iv[1])); evs.falhas = evs0.falhas;
           eventos = evs; vista.textContent = '';
           if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Toque em hoje para tentar de novo.' }));
           if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
@@ -367,7 +397,7 @@
         isos.forEach(function (iso) {
           var c = el('div', { style: 'padding:2px;min-width:0' });
           doDia(iso, evs).filter(function (e) { return e.diaTodo; }).forEach(function (e) {
-            var t = bloco(e.titulo, 'font-size:10px;line-height:1.3;border:1px solid #16233F;background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;color:' + textoSobre(preenche(e)));
+            var t = bloco(e.curto || e.titulo, 'font-size:10px;line-height:1.3;border:1px solid #16233F;background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;color:' + textoSobre(preenche(e)));
             t.addEventListener('click', function () { abrirEvento(e); }); c.appendChild(t);
           });
           linhaTodo.appendChild(c);
@@ -434,7 +464,7 @@
             var ch = el('div', { style: 'font-size:10px;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:' + preenche(e) + ';padding:0 2px;margin-top:2px;color:' + textoSobre(preenche(e)) + '' });
             if (e.meet) ch.appendChild(marcaMeet(10));
             if (!e.diaTodo) ch.appendChild(el('span', { text: hhmm(e.ini) + ' ' }));
-            ch.appendChild(document.createTextNode(e.titulo)); c.appendChild(ch);
+            ch.appendChild(document.createTextNode(e.curto || e.titulo)); c.appendChild(ch);
           });
           if (lista.length > 3) c.appendChild(bloco('+' + (lista.length - 3), 'font-size:10px;color:#A03E25;margin-top:2px'));
           c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });

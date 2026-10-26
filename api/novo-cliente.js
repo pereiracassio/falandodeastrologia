@@ -50,6 +50,14 @@ module.exports = async (req, res) => {
       try { await supa('/rest/v1/clientes?id=eq.' + q(cliente.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ whatsapp }) }); } catch (e) { console.error('novo-cliente whatsapp:', e.message); }
     }
 
+    /* 1a) data de nascimento (se o Astro Hellenic mandar): "DD/MM/AAAA" ou "AAAA-MM-DD"; só completa, nunca troca uma que já está salva */
+    try {
+      const bruto = String(c.nascimento || c.data_nascimento || '').trim();
+      const m = bruto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/) || bruto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      const iso = m ? (bruto.includes('/') ? m[3] + '-' + m[2] + '-' + m[1] : m[1] + '-' + m[2] + '-' + m[3]) : '';
+      if (iso) await supa('/rest/v1/clientes?id=eq.' + q(cliente.id) + '&nascimento=is.null', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ nascimento: iso }) });
+    } catch (e) { console.error('novo-cliente nascimento:', e.message); }
+
     /* 1b) acesso (login) do cliente: só quem foi cliente consegue entrar no Seu espaço (o cadastro aberto do Supabase fica desligado) */
     try { await criarAcesso(email, nome); } catch (e) { console.error('novo-cliente acesso:', e.message); }
 

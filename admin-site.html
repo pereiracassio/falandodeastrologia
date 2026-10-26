@@ -211,6 +211,38 @@
       return cartao;
     }
 
+    /* aniversários: arquivo CSV (e-mail, nascimento) tirado do Astro Hellenic; completa clientes e alunos que ainda não têm a data */
+    function cartaoAniversarios() {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aniversários' })]);
+      var msg = el('p', { class: 'portal-msg' });
+      var arq = el('input', { type: 'file', accept: '.csv,text/csv,text/plain' }); arq.style.display = 'none';
+      var botao = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar arquivo' });
+      botao.addEventListener('click', function () { arq.click(); });
+      var iso = function (t) { var m = String(t || '').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/) || String(t || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ''; return String(t).indexOf('/') > 0 ? m[3] + '-' + m[2] + '-' + m[1] : m[1] + '-' + m[2] + '-' + m[3]; };
+      var campos = function (l) { var r = [], c = '', q = false; for (var i = 0; i < l.length; i++) { var ch = l[i]; if (ch === '"') q = !q; else if ((ch === ',' || ch === ';') && !q) { r.push(c); c = ''; } else c += ch; } r.push(c); return r.map(function (x) { return x.trim(); }); };
+      arq.addEventListener('change', function () {
+        var f = arq.files && arq.files[0]; arq.value = ''; if (!f) return;
+        P.mensagem(msg, 'Lendo...');
+        f.text().then(function (txt) {
+          var linhas = txt.replace(/^﻿/, '').split(/\r?\n/).filter(function (l) { return l.trim(); }), cab = campos(linhas[0] || '').map(function (x) { return x.toLowerCase(); });
+          var ie = cab.findIndex(function (x) { return /e-?mail/.test(x); }), inn = cab.findIndex(function (x) { return /nasc/.test(x); });
+          if (ie < 0 || inn < 0) throw new Error('o arquivo precisa das colunas email e nascimento');
+          var porEmail = {}; linhas.slice(1).forEach(function (l) { var c = campos(l), d = iso(c[inn]); if (c[ie] && d) porEmail[c[ie].toLowerCase()] = d; });
+          return Promise.all([C.from('clientes').select('id,email,nascimento'), C.from('alunos').select('id,email,nascimento')]).then(function (rs) {
+            var erro = rs[0].error || rs[1].error; if (erro) throw new Error(erro.message);
+            var tarefas = [], feitos = 0;
+            [['clientes', rs[0].data || []], ['alunos', rs[1].data || []]].forEach(function (par) {
+              par[1].forEach(function (x) { var d = porEmail[String(x.email || '').toLowerCase()]; if (d && x.nascimento !== d) tarefas.push({ tabela: par[0], id: x.id, d: d }); });
+            });
+            var proximo = function () { var t = tarefas.shift(); if (!t) return Promise.resolve(); return C.from(t.tabela).update({ nascimento: t.d }).eq('id', t.id).then(function (r) { if (!r.error) feitos++; return proximo(); }); };
+            return Promise.all([proximo(), proximo(), proximo()]).then(function () { P.mensagem(msg, feitos + ' cadastros atualizados.', 'ok'); });
+          });
+        }).catch(function (e) { P.mensagem(msg, 'Não consegui importar (' + e.message + ')', 'erro'); });
+      });
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [botao])); cartao.appendChild(arq); cartao.appendChild(msg);
+      return cartao;
+    }
+
     /* áreas e serviços do Financeiro (o cadastro mora aqui; o Financeiro só lança entradas e usa estas listas) */
     var areas = [], servicosCad = [], cartaoAreas = el('div', { class: 'portal-cartao' }), cartaoServicos = el('div', { class: 'portal-cartao' });
     function moeda(n) { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
@@ -386,6 +418,7 @@
       app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
       app.appendChild(cartaoLugar());
       app.appendChild(cartaoAgendas());
+      app.appendChild(cartaoAniversarios());
       app.appendChild(cartaoAreas); app.appendChild(cartaoServicos);
       carregarFin();
       /* no fim da lista: Trocar senha e, abaixo, o Sair (botão cheio, terracota) */
