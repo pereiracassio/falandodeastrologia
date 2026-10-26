@@ -256,10 +256,10 @@
       return caixa;
     }
 
-    /* aviso fixo no topo: no navegador, como instalar o app e ativar os avisos; dentro do app, o cartão para ativar os avisos */
+    /* aviso fixo no topo, só no navegador: como instalar o app e ativar os avisos (dentro do app não aparece; os avisos ficam na aba Avisos) */
     function avisoDoApp() {
       var dentro = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
-      if (dentro) return P.avisos.cartao('aluno');
+      if (dentro) return document.createDocumentFragment();
       var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       var android = /Android/i.test(navigator.userAgent);
       var instalar = ios ? 'No Safari, toque no botão Compartilhar (o quadradinho com a setinha para cima) e depois em Adicionar à Tela de Início.'
@@ -271,7 +271,7 @@
         el('ol', { style: 'text-align:left;margin:8px 0 0;padding-left:22px' }, [
           el('li', { text: instalar }),
           el('li', { text: 'Abra o app pela tela inicial e entre com o seu acesso.' }),
-          el('li', { text: 'Toque em Ativar avisos neste aparelho e escolha Permitir.' })
+          el('li', { text: 'Na aba Avisos, toque em Ativar avisos neste aparelho e escolha Permitir.' })
         ])
       ]);
     }
