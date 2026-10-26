@@ -194,7 +194,7 @@
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
       var acoes = [];
-      if (e.meet) acoes.push(el('a', { class: 'portal-btn portal-btn-meet', href: P.linkSeguro(e.meet) || e.meet, target: '_blank', rel: 'noopener', text: 'Entrar no Meet' }));
+      if (e.meet) acoes.push(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: P.linkSeguro(e.meet) || e.meet, target: '_blank', rel: 'noopener', title: 'Entrar no Meet', 'aria-label': 'Entrar no Meet' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' })]));
       acoes.push(fechar);
       var topo = el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:10px' }, [el('h2', { text: e.titulo, style: 'margin:0;flex:1' })]);
       if (e.editavel) {
@@ -212,6 +212,8 @@
     }
     function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
     var linhaFina = '1px solid rgba(31,95,163,.35)';
+    /* o ícone ocre do Meet (o mesmo da página do aluno), pequeno, na frente do título */
+    function marcaMeet(px) { return el('img', { src: 'img/rede-meet.svg', alt: 'Meet', width: String(px), height: String(px), style: 'vertical-align:middle;margin-right:3px' }); }
     function bloco(texto, estilo) { var d = el('div', { text: texto }); d.style.cssText = estilo; return d; }
 
     /* ---------- tela com as quatro visões ---------- */
@@ -345,7 +347,7 @@
         colunas(itens).forEach(function (x) {
           var top = yDe(segs, x.i, H), alt = Math.max(16, yDe(segs, x.f, H) - top - 1);
           var b = el('div', { style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid #1F5FA3;border-left:3px solid #B5852F;padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:#16233F;cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
-          b.appendChild(el('div', { text: (x.e.meet ? (unico ? '\u25B6 Meet · ' : '\u25B6 ') : '') + x.e.titulo, style: 'font-weight:700' }));
+          var tt = el('div', { style: 'font-weight:700' }); if (x.e.meet) tt.appendChild(marcaMeet(unico ? 16 : 12)); tt.appendChild(document.createTextNode(x.e.titulo)); b.appendChild(tt);
           if (alt >= 34) b.appendChild(el('div', { text: unico ? hhmm(x.e.ini) + ' às ' + hhmm(x.e.fim) : hhmm(x.e.ini), style: 'font-size:' + (unico ? 11 : 9) + 'px;color:#A03E25' }));
           b.addEventListener('click', function (ev) { ev.stopPropagation(); abrirEvento(x.e); });
           col.appendChild(b);
@@ -372,7 +374,7 @@
           if (iso === hoje) n.style.cssText += ';border:2px solid #1F5FA3;color:#A03E25';
           c.appendChild(n);
           var lista = doDia(iso, evs);
-          lista.slice(0, 3).forEach(function (e) { c.appendChild(bloco((e.diaTodo ? '' : hhmm(e.ini) + ' ') + (e.meet ? '\u25B6 ' : '') + e.titulo, 'font-size:10px;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-left:2px solid #B5852F;padding-left:2px;margin-top:2px;color:#16233F')); });
+          lista.slice(0, 3).forEach(function (e) { var ch = bloco((e.diaTodo ? '' : hhmm(e.ini) + ' ') + e.titulo, 'font-size:10px;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-left:2px solid #B5852F;padding-left:2px;margin-top:2px;color:#16233F'); if (e.meet) ch.insertBefore(marcaMeet(10), ch.firstChild); c.appendChild(ch); });
           if (lista.length > 3) c.appendChild(bloco('+' + (lista.length - 3), 'font-size:10px;color:#A03E25;margin-top:2px'));
           c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
           g.appendChild(c);
