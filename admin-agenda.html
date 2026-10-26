@@ -36,7 +36,8 @@
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app'), HP = window.horaPlanetaria;
-    var LAT = -23.305, LON = -45.966; /* Jacareí/SP: para o nascer e o pôr do sol da hora planetária */
+    var LAT = -23.3053, LON = -45.9658; /* lugar das horas planetárias: vem de Configurações (site_config.prod_local_horas); padrão Jacareí */
+    var lugarNome = 'Jacareí';
     var CAL = 'https://www.googleapis.com/calendar/v3';
     var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     var SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
@@ -102,7 +103,9 @@
     }
     function carregar() {
       var de = meiaNoiteDe(Date.now()), ate = de + dias * 86400000;
-      return gapi('/users/me/calendarList?minAccessRole=reader').then(function (l) {
+      return C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) {
+        try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); } } catch (e) { /* fica o padrão */ }
+      }, function () {}).then(function () { return gapi('/users/me/calendarList?minAccessRole=reader'); }).then(function (l) {
         calendarios = (l.items || []).filter(function (c) { return c.selected !== false; });
         return Promise.all(calendarios.map(function (c) {
           return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250', timeZone: 'America/Sao_Paulo' }))
@@ -235,7 +238,7 @@
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
         campo('O que você vai fazer', o), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Não antes de', de), campo('Não depois de', ate),
-        [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
+        [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res, el('p', { class: 'portal-item-data', style: 'margin-top:12px', text: 'Horas planetárias de ' + lugarNome + '. O lugar se troca em Configurações.' })]));
     }
 
     function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora) {
