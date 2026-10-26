@@ -281,6 +281,29 @@
         ])
       ]);
     }
+    /* lista dos avisos recebidos (os 10 mais novos); o não lido fica em destaque; tocar marca como lido e leva às atividades */
+    function telaAvisos(aluno, previa, irParaAtividades) {
+      var caixa = el('div', {});
+      if (previa) return caixa;
+      P.client.from('avisos_recebidos').select('id,titulo,corpo,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
+        if (r.error || !r.data || !r.data.length) return;
+        r.data.forEach(function (a) {
+          var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
+            el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:#A03E25', text: a.titulo }),
+            el('span', { class: 'portal-item-data', text: P.dataBR(String(a.criado_em).slice(0, 10)) }),
+            el('p', { style: 'margin:4px 0 0' + (a.lido ? '' : ';font-weight:700'), text: a.corpo })
+          ]);
+          linha.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            if (!a.lido) P.client.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(function () {}, function () {});
+            irParaAtividades();
+          });
+          caixa.appendChild(linha);
+        });
+        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+      });
+      return caixa;
+    }
     function abasDaTela(lista, atividadesEl, avisarQuando, aluno, previa, caixaCaderno) {
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       var conteudo = el('div', { class: 'portal-cartao' });
@@ -292,7 +315,7 @@
           botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
         });
         conteudo.textContent = '';
-        if (chave === 'avisos') { conteudo.appendChild(P.avisos.cartao('aluno')); return; }
+        if (chave === 'avisos') { conteudo.appendChild(telaAvisos(aluno, previa, function () { abaAtual = 'caderno'; mostrar('caderno'); })); conteudo.appendChild(P.avisos.cartao('aluno')); return; }
         if (chave === 'mensalidade') { conteudo.appendChild(telaMensalidade(aluno, previa)); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -316,7 +339,11 @@
         botoes[ab.chave] = b;
         barra.appendChild(b);
       });
-      mostrar('caderno');
+      mostrar(/[?&]aviso=1/.test(location.search) ? 'avisos' : 'caderno');
+      /* quantos avisos ainda não foram lidos, ao lado do nome da aba */
+      if (!previa) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
+        if (r && !r.error && r.count) botoes.avisos.textContent = 'Avisos (' + r.count + ')';
+      }, function () {});
       /* cinco abas, mas cada uma com o tamanho de sempre (um terço): as outras ficam para o lado, é só correr a barra */
       var rola = el('div', { class: 'portal-abas-rola' }, [barra]);
       return [P.comSetas(rola), conteudo];
