@@ -10,7 +10,7 @@ const webpush = require('web-push');
 
 const VAPID_CONTATO = 'mailto:cassiofalandodeastrologia@gmail.com';
 const ORIGENS_PERMITIDAS = ['https://falandodeastrologia.com.br', 'https://www.falandodeastrologia.com.br'];
-const URL_ADMIN = '/admin-alunos.html', URL_ALUNO = '/aluno.html';
+const URL_ADMIN = '/admin-alunos.html', URL_ALUNO = '/aluno.html?aviso=1';   /* ?aviso=1 abre a aba Avisos */
 
 const primeiroNome = (n) => String(n || '').trim().split(/\s+/)[0] || 'O aluno';
 const dia = (d) => d.toISOString().slice(0, 10);
@@ -33,11 +33,11 @@ function decidirAviso({ evento, atividade, aluno, usuario, ehAdmin, agora = new 
       if (Date.parse(atividade.criado_em) < agora.getTime() - 86400000) return { ignorar: 'não é nova' };
       if (atividade.data_atividade && String(atividade.data_atividade).slice(0, 10) < ontem) return { ignorar: 'material de data passada' };
       return { para: 'aluno', carga: atividade.somente_leitura
-        ? { title: 'Material novo', body: 'Tem um novo material para você: ' + titulo, url: URL_ALUNO }
-        : { title: 'Atividade nova', body: 'Tem uma nova atividade para você: ' + titulo, url: URL_ALUNO } };
+        ? { title: 'Material novo', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei um novo material para você: ' + titulo, url: URL_ALUNO }
+        : { title: 'Atividade nova', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei uma nova atividade para você: ' + titulo, url: URL_ALUNO } };
     }
     if (!atividade.corrigida_em || atividade.antiga || String(atividade.corrigida_em).slice(0, 10) < ontem) return { ignorar: 'não é uma correção de agora' };
-    return { para: 'aluno', carga: { title: 'Atividade corrigida', body: 'O Cássio já corrigiu sua atividade: ' + titulo, url: URL_ALUNO } };
+    return { para: 'aluno', carga: { title: 'Atividade corrigida', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade: ' + titulo, url: URL_ALUNO } };
   }
   return { erro: 'Aviso desconhecido.', status: 400 };
 }
@@ -124,6 +124,8 @@ async function tratar(req, res) {
     const d = decidirAviso({ evento, atividade, aluno, usuario, ehAdmin });
     if (d.erro) { res.status(d.status).json({ erro: d.erro }); return; }
     if (d.ignorar) { res.status(200).json({ ok: true, enviados: 0, motivo: d.ignorar }); return; }
+    /* o aviso do aluno também fica guardado na lista dele (aba Avisos); o banco só mantém os 10 mais novos de cada aluno */
+    if (d.para === 'aluno') await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email: String(aluno.email || '').toLowerCase(), titulo: d.carga.title, corpo: d.carga.body, url: d.carga.url, atividade_id: atividade.id }) }).catch(() => {});
     const lista = (await destinatarios(d.para, aluno)) || [];
     const r = lista.length ? await enviar(lista, d.carga) : { enviados: 0, removidos: 0, falhas: 0 };
     res.status(200).json({ ok: true, ...r }); return;
