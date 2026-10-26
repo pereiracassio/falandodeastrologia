@@ -502,7 +502,7 @@
     /* ---------- HOJE ---------- */
     function linhaCorte(c, mostrarData) {
       var v = achar(videos, c.video_id);
-      return el('div', { class: 'prod-linha' }, [
+      var linha = el('div', { class: 'prod-linha', style: v ? 'cursor:pointer' : '' }, [
         el('div', {}, [
           el('span', { class: 'prod-titulo', text: c.titulo || 'Corte sem título' }),
           el('span', { class: 'prod-sub', text: (mostrarData ? comDia(c.data) + ' · ' : '') + (v ? nomeVideo(v) : '') }),
@@ -510,6 +510,13 @@
         ]),
         chipsDoCorte(c)
       ]);
+      /* tocar na linha abre o corte (no vídeo dele, já na aba Corte); tocar numa etapa só marca/desmarca */
+      if (v) linha.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('button, input, label, a')) return;
+        corteAberto = c.id; abaVideo = 'corte'; abaVideoDe = v.id;
+        irPara('series', v.serie_id || 'soltos', v.id);
+      });
+      return linha;
     }
     function telaHoje(area) {
       var h = hoje(), cartao = el('div', { class: 'portal-cartao' });
