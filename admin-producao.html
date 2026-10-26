@@ -7,8 +7,8 @@
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app || document.referrer || /access_token|refresh_token|type=/.test(location.hash)) return;
     var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
-    if (u && /^\/[a-z-]+\.html/.test(u) && !location.search) { if (u !== aqui) { window.__fdaRestaurando = true; location.replace(u); } return; }
-    if (!location.search) location.replace('/admin-agenda.html');
+    if (u && /^\/[a-z-]+\.html/.test(u)) { if (u !== aqui) { window.__fdaRestaurando = true; location.replace(u); } return; }
+    location.replace('/admin-agenda.html');
   } catch (e) { /* sem armazenamento */ } })();</script>
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
