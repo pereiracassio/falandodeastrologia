@@ -139,6 +139,43 @@
       return cartao;
     }
 
+    /* quais agendas do Google aparecem na aba Agenda (guardado em site_config.agenda_ocultas = as que ele DESMARCOU; agenda nova aparece sozinha) */
+    function cartaoAgendas() {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Agendas que aparecem' })]);
+      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); cartao.appendChild(corpo);
+      Promise.all([
+        P.tokenGoogle().then(function (t) { return fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader', { headers: { Authorization: 'Bearer ' + t } }); }).then(function (r) { if (!r.ok) throw new Error(r.status === 403 ? 'permissao' : 'Google ' + r.status); return r.json(); }),
+        C.from('site_config').select('valor').eq('chave', 'agenda_ocultas').maybeSingle()
+      ]).then(function (rs) {
+        var ocultas = []; try { ocultas = rs[1].data && rs[1].data.valor ? JSON.parse(rs[1].data.valor) : []; } catch (e) { /* todas */ }
+        corpo.textContent = '';
+        corpo.appendChild(el('p', { text: 'Marque as agendas que aparecem na aba Agenda. As desmarcadas não aparecem e também não bloqueiam horário.' }));
+        var msg = el('p', { class: 'portal-msg' });
+        (rs[0].items || []).forEach(function (c) {
+          var marcada = ocultas.indexOf(c.id) < 0;
+          var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+          var pinta = function () { cx.textContent = marcada ? '\u2713' : ''; cx.setAttribute('aria-checked', marcada ? 'true' : 'false'); };
+          pinta();
+          var alterna = function () {
+            marcada = !marcada; pinta();
+            var i = ocultas.indexOf(c.id);
+            if (marcada && i >= 0) ocultas.splice(i, 1); else if (!marcada && i < 0) ocultas.push(c.id);
+            C.from('site_config').upsert({ chave: 'agenda_ocultas', valor: JSON.stringify(ocultas), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (r) {
+              P.mensagem(msg, r.error ? 'Não consegui salvar (' + r.error.message + ')' : 'Salvo.', r.error ? 'erro' : 'ok');
+            });
+          };
+          var nome = el('span', { text: c.summaryOverride || c.summary || c.id, style: 'flex:1;text-align:left;cursor:pointer' });
+          cx.addEventListener('click', alterna); nome.addEventListener('click', alterna);
+          corpo.appendChild(el('div', { style: 'display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.5)' }, [cx, nome]));
+        });
+        corpo.appendChild(msg);
+      }).catch(function (e) {
+        corpo.textContent = '';
+        corpo.appendChild(el('p', { text: e.message === 'desconectado' || e.message === 'permissao' ? 'Para escolher as agendas, conecte o Google (cartão Google Drive, acima) e abra a aba Agenda uma vez para permitir o Google Agenda.' : 'Não foi possível ler as agendas agora (' + e.message + ').' }));
+      });
+      return cartao;
+    }
+
     /* áreas e serviços do Financeiro (o cadastro mora aqui; o Financeiro só lança entradas e usa estas listas) */
     var areas = [], servicosCad = [], cartaoAreas = el('div', { class: 'portal-cartao' }), cartaoServicos = el('div', { class: 'portal-cartao' });
     function moeda(n) { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
@@ -313,6 +350,7 @@
       if (conexaoDrive) app.appendChild(conexaoDrive);
       app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
       app.appendChild(cartaoLugar());
+      app.appendChild(cartaoAgendas());
       app.appendChild(cartaoAreas); app.appendChild(cartaoServicos);
       carregarFin();
       /* no fim da lista: Trocar senha e, abaixo, o Sair (botão cheio, terracota) */

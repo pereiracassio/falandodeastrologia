@@ -112,7 +112,10 @@
       prontoP = C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) {
         try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); } } catch (e) { /* fica o padrão */ }
       }, function () {}).then(function () { return gapi('/users/me/calendarList?minAccessRole=reader'); }).then(function (l) {
-        calendarios = (l.items || []).filter(function (c) { return c.selected !== false; });
+        return C.from('site_config').select('valor').eq('chave', 'agenda_ocultas').maybeSingle().then(function (r) {
+          var ocultas = []; try { ocultas = r.data && r.data.valor ? JSON.parse(r.data.valor) : []; } catch (e) { /* mostra todas */ }
+          calendarios = (l.items || []).filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* o que ele desmarcou em Configurações fica de fora (nem aparece nem bloqueia horário) */
+        }, function () { calendarios = l.items || []; });
       });
       prontoP.catch(function () { prontoP = null; });
       return prontoP;
@@ -209,7 +212,7 @@
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
       hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
       var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje]);
-      corpo.appendChild(el('div', { class: 'portal-acoes' }, [novo]));
+      corpo.appendChild(el('div', { class: 'portal-acoes' }, [novo, el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-site.html', text: 'Escolher agendas' })]));
       corpo.appendChild(areaForm); corpo.appendChild(abas); corpo.appendChild(nav); corpo.appendChild(vista);
       encaixe.appendChild(painelEncaixe(areaForm)); corpo.appendChild(encaixe);
 
