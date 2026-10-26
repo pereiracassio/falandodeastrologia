@@ -119,17 +119,19 @@
         corId: e.colorId || '', cor: CORES_EVENTO[e.colorId] || '', calCor: cal.backgroundColor || '', lembPadrao: !e.reminders || e.reminders.useDefault !== false, lembretes: (e.reminders && e.reminders.overrides) || [], padraoAgenda: cal.defaultReminders || [] };
     }
     /* lugar das horas planetárias e lista de agendas: uma vez só */
-    var prontoP = null;
+    var prontoP = null, CACHE = 'fda_agenda_cache_v1';
+    function lerCache() { try { return JSON.parse(localStorage.getItem(CACHE) || 'null') || {}; } catch (e) { return {}; } }
+    function gravarCache(c) { try { localStorage.setItem(CACHE, JSON.stringify(c)); } catch (e) { /* sem armazenamento: só fica mais lento */ } }
     function preparar() {
       if (prontoP) return prontoP;
-      prontoP = C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) {
-        try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); } } catch (e) { /* fica o padrão */ }
-      }, function () {}).then(function () { return gapi('/users/me/calendarList?minAccessRole=freeBusyReader'); }).then(function (l) {
-        return C.from('site_config').select('valor').eq('chave', 'agenda_ocultas').maybeSingle().then(function (r) {
-          var ocultas = []; try { ocultas = r.data && r.data.valor ? JSON.parse(r.data.valor) : []; } catch (e) { /* mostra todas */ }
-          todosCalendarios = l.items || [];
-          calendarios = todosCalendarios.filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* só as agendas marcadas em Configurações são lidas: nem aparecem, nem bloqueiam horário */
-        }, function () { calendarios = l.items || []; });
+      var valorDe = function (chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); };
+      /* tudo ao mesmo tempo: lugar, agendas escolhidas e a lista do Google */
+      prontoP = Promise.all([valorDe('prod_local_horas'), valorDe('agenda_ocultas'), gapi('/users/me/calendarList?minAccessRole=freeBusyReader')]).then(function (r) {
+        var v = r[0], ocultas = r[1] || [];
+        if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); }
+        todosCalendarios = r[2].items || [];
+        calendarios = todosCalendarios.filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* só as agendas marcadas em Configurações são lidas: nem aparecem, nem bloqueiam horário */
+        var c = lerCache(); c.cal = calendarios; c.todos = todosCalendarios; c.lat = LAT; c.lon = LON; c.nome = lugarNome; gravarCache(c);
       });
       prontoP.catch(function () { prontoP = null; });
       return prontoP;
@@ -152,7 +154,7 @@
           var c = fila.shift(); if (!c) return Promise.resolve();
           return eventosDe(c, de, ate, 0).then(function (l) { saida = saida.concat(l); }, function () { falhas.push(c.summaryOverride || c.summary || c.id); }).then(trabalhador);
         }
-        return Promise.all([trabalhador(), trabalhador(), trabalhador(), trabalhador()]).then(function () {
+        return Promise.all([trabalhador(), trabalhador(), trabalhador(), trabalhador(), trabalhador(), trabalhador()]).then(function () {
           var lista = saida.filter(Boolean).sort(function (a, b) { return a.ini - b.ini; });
           lista.falhas = falhas;
           return lista;
@@ -163,31 +165,39 @@
     /* ---------- tela ---------- */
     function iniciar(user) {
       limpar();
-      C.rpc('sou_admin').then(function (r) {
+      Promise.all([C.rpc('sou_admin'), C.from('admins').select('nome').maybeSingle()]).then(function (rs) {
+        var r = rs[0], rn = rs[1];
         if (r.error || r.data !== true) {
           app.appendChild(topo(user.email));
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
           return;
         }
-        C.from('admins').select('nome').maybeSingle().then(function (rn) {
-          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
-          if (/[?&]drive=ok/.test(location.search)) { try { sessionStorage.removeItem('fda_drive_token'); history.replaceState(null, '', location.pathname); } catch (e) { /* sem armazenamento */ } }
-          tela();
-        });
+        nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+        if (/[?&]drive=ok/.test(location.search)) { try { sessionStorage.removeItem('fda_drive_token'); localStorage.removeItem(CACHE); history.replaceState(null, '', location.pathname); } catch (e) { /* sem armazenamento */ } }
+        tela();
       });
     }
 
+    function mostraErroAbrir(corpo, e) {
+      corpo.textContent = '';
+      if (e.message === 'desconectado') corpo.appendChild(cartaoConectar('Para ver a sua agenda, conecte o Google uma vez. Depois disso não pede mais.', 'Conectar o Google'));
+      else if (e.message === 'permissao') corpo.appendChild(cartaoConectar('O Google ainda não deixou o site ver a sua agenda. É só dar essa permissão uma vez.', 'Permitir o Google Agenda'));
+      else corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível abrir a agenda agora (' + e.message + ').' }));
+    }
     function tela() {
       limpar();
       app.appendChild(topo(nomeAdmin));
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
       app.appendChild(corpo);
-      preparar().then(function () { corpo.textContent = ''; montar(corpo); }, function (e) {
-        corpo.textContent = '';
-        if (e.message === 'desconectado') corpo.appendChild(cartaoConectar('Para ver a sua agenda, conecte o Google uma vez. Depois disso não pede mais.', 'Conectar o Google'));
-        else if (e.message === 'permissao') corpo.appendChild(cartaoConectar('O Google ainda não deixou o site ver a sua agenda. É só dar essa permissão uma vez.', 'Permitir o Google Agenda'));
-        else corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível abrir a agenda agora (' + e.message + ').' }));
-      });
+      var c = lerCache();
+      if (c.cal && c.cal.length) { /* já conhecida: abre na hora com o que viu da última vez e atualiza por trás */
+        calendarios = c.cal; todosCalendarios = c.todos || c.cal; if (isFinite(c.lat) && isFinite(c.lon)) { LAT = c.lat; LON = c.lon; lugarNome = c.nome || lugarNome; }
+        corpo.textContent = ''; montar(corpo);
+        var antes = calendarios.map(function (x) { return x.id; }).join('|');
+        preparar().then(function () { if (calendarios.map(function (x) { return x.id; }).join('|') !== antes) atualizar(); }, function () { /* o erro aparece quando os compromissos não carregam */ });
+        return;
+      }
+      preparar().then(function () { corpo.textContent = ''; montar(corpo); }, function (e) { mostraErroAbrir(corpo, e); });
     }
 
     /* ---------- datas (texto "AAAA-MM-DD", sempre no horário de Brasília) ---------- */
@@ -287,15 +297,20 @@
         VISOES.forEach(function (v) { botoes[v[0]].className = 'portal-aba' + (v[0] === visao ? ' ativa' : ''); botoes[v[0]].setAttribute('aria-selected', v[0] === visao ? 'true' : 'false'); });
         P.estado.gravar({ v: visao, d: ancora });
         titulo.textContent = tituloPeriodo();
-        vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
-        var meu = ++pedido, iv = intervalo();
-        eventosEntre(iv[0], iv[1]).then(function (evs) {
-          if (meu !== pedido) return;
+        var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
+        var desenha = function (evs) {
           eventos = evs; vista.textContent = '';
           if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Toque em hoje para tentar de novo.' }));
           if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
           else if (visao === 'mes') vistaMes(vista, evs); else vistaAno(vista, evs);
-        }, function (e) { if (meu === pedido) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); } });
+        };
+        if (guardado) desenha(guardado); else { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
+        eventosEntre(iv[0], iv[1]).then(function (evs) {
+          if (meu !== pedido) return;
+          if (visao !== 'ano') { var c2 = lerCache(); c2.ev = c2.ev || {}; c2.ev[chave] = { ts: Date.now(), evs: evs }; var ks = Object.keys(c2.ev).sort(function (p, q) { return c2.ev[q].ts - c2.ev[p].ts; }); ks.slice(8).forEach(function (k) { delete c2.ev[k]; }); gravarCache(c2); }
+          if (guardado && !(evs.falhas && evs.falhas.length) && JSON.stringify(guardado) === JSON.stringify(evs)) return; /* igual ao que já está na tela */
+          desenha(evs);
+        }, function (e) { if (meu === pedido) { if (e.message === 'desconectado' || e.message === 'permissao') { mostraErroAbrir(vista, e); } else if (!guardado) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); } } });
       }
       atualizar = mudou;
       mudou();
