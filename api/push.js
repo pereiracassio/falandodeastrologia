@@ -93,6 +93,25 @@ async function emailsDoAviso(para, aluno) {
 }
 const aparelhosDe = (email) => supa('/rest/v1/push_inscricoes?select=endpoint,p256dh,auth&email=eq.' + encodeURIComponent(email));
 
+/* guarda o aviso na lista de quem recebe e manda para o celular dele, com a quantidade de não lidos (número no ícone do app) */
+async function entregarAviso(email, carga, extras = {}) {
+  await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: carga.title, corpo: carga.body, url: carga.url, ...extras }) }).catch(() => {});
+  const naoLidos = ((await supa('/rest/v1/avisos_recebidos?select=id&lido=eq.false&email=eq.' + encodeURIComponent(email)).catch(() => [])) || []).length;
+  const lista = (await aparelhosDe(email)) || [];
+  if (!lista.length) return { enviados: 0, removidos: 0, falhas: 0 };
+  return enviar(lista, { ...carga, contagem: naoLidos });
+}
+const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas });
+const URL_CLIENTE = '/cliente.html?aviso=1', URL_ADMIN_CLIENTES = '/admin-clientes.html';
+const NOME_DO_ARQUIVO = { pdf: 'o PDF', gravacao: 'a gravação' };
+
+async function entregaECliente(id) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) return {};
+  const [entrega] = (await supa('/rest/v1/entregas?id=eq.' + id + '&select=id,servico,cliente_id,pdf_link,gravacao_link')) || [];
+  const [cliente] = entrega ? ((await supa('/rest/v1/clientes?id=eq.' + entrega.cliente_id + '&select=id,nome,email')) || []) : [];
+  return { entrega, cliente };
+}
+
 async function tratar(req, res) {
   if (String((req.query && req.query.acao) || '') === 'chave') { res.status(200).json({ chave: (await chaves()).publica }); return; } /* a chave pública não é segredo: o aparelho precisa dela para se cadastrar */
   const jwt = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
@@ -125,15 +144,37 @@ async function tratar(req, res) {
     if (d.ignorar) { res.status(200).json({ ok: true, enviados: 0, motivo: d.ignorar }); return; }
     /* o aviso fica guardado na lista de quem recebe (aluno ou administrador; o banco só mantém os 10 mais novos de cada um) e o celular recebe também,
        com a quantidade de avisos não lidos para o número no ícone do app */
-    const r = { enviados: 0, removidos: 0, falhas: 0 };
+    let r = { enviados: 0, removidos: 0, falhas: 0 };
     for (const email of await emailsDoAviso(d.para, aluno)) {
-      await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: d.carga.title, corpo: d.carga.body, url: d.carga.url, atividade_id: atividade.id }) }).catch(() => {});
-      const naoLidos = ((await supa('/rest/v1/avisos_recebidos?select=id&lido=eq.false&email=eq.' + encodeURIComponent(email)).catch(() => [])) || []).length;
-      const lista = (await aparelhosDe(email)) || [];
-      if (!lista.length) continue;
-      const x = await enviar(lista, { ...d.carga, contagem: naoLidos });
-      r.enviados += x.enviados; r.removidos += x.removidos; r.falhas += x.falhas;
+      r = somar(r, await entregarAviso(email, d.carga, { atividade_id: atividade.id }));
     }
+    res.status(200).json({ ok: true, ...r }); return;
+  }
+  /* o administrador acabou de disponibilizar PDF e/ou gravação para o cliente: o cliente recebe o aviso (e ele fica guardado sempre) */
+  if (acao === 'entrega') {
+    if (!(await souAdmin(jwt))) { res.status(403).json({ erro: 'Só quem administra avisa o cliente.' }); return; }
+    const { entrega, cliente } = await entregaECliente(corpo.entrega_id);
+    if (!entrega || !cliente || !cliente.email) { res.status(404).json({ erro: 'Entrega não encontrada.' }); return; }
+    const nome = primeiroNome(cliente.nome), servico = String(entrega.servico || '').slice(0, 120);
+    let r = { enviados: 0, removidos: 0, falhas: 0 };
+    for (const tipo of ['gravacao', 'pdf']) {
+      if (!(corpo.tipos || []).includes(tipo) || !(tipo === 'pdf' ? entrega.pdf_link : entrega.gravacao_link)) continue;
+      const carga = tipo === 'gravacao'
+        ? { title: 'Gravação disponível', body: 'Oi, ' + nome + '! Já disponibilizei a gravação do seu atendimento: ' + servico, url: URL_CLIENTE }
+        : { title: 'Material disponível', body: 'Oi, ' + nome + '! Disponibilizei o material complementar do seu serviço: ' + servico, url: URL_CLIENTE };
+      r = somar(r, await entregarAviso(String(cliente.email).toLowerCase(), carga, { guardar_sempre: true }));
+    }
+    res.status(200).json({ ok: true, ...r }); return;
+  }
+  /* o cliente tocou em baixar: o administrador recebe o aviso (só vale para o próprio cliente da entrega) */
+  if (acao === 'baixou') {
+    const tipo = corpo.tipo === 'pdf' ? 'pdf' : corpo.tipo === 'gravacao' ? 'gravacao' : '';
+    const { entrega, cliente } = await entregaECliente(corpo.entrega_id);
+    if (!tipo || !entrega || !cliente) { res.status(404).json({ erro: 'Entrega não encontrada.' }); return; }
+    if (String(cliente.email || '').toLowerCase() !== String(usuario.email).toLowerCase()) { res.status(403).json({ erro: 'Só o próprio cliente avisa que baixou.' }); return; }
+    const carga = { title: 'Arquivo baixado', body: String(cliente.nome || 'O cliente').trim() + ' baixou ' + NOME_DO_ARQUIVO[tipo] + ': ' + String(entrega.servico || '').slice(0, 120), url: URL_ADMIN_CLIENTES };
+    let r = { enviados: 0, removidos: 0, falhas: 0 };
+    for (const email of await emailsDoAviso('admins', null)) r = somar(r, await entregarAviso(email, carga));
     res.status(200).json({ ok: true, ...r }); return;
   }
   res.status(400).json({ erro: 'Ação desconhecida.' });

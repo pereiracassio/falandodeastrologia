@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=77"></script>
+  <script src="portal.js?v=78"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -257,7 +257,7 @@
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
       var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar edição' });
       cancelar.style.display = 'none';
-      var editandoId = null;
+      var editandoId = null, editandoOrig = null;
       var form = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: (cliente.codigo ? cliente.codigo + ' · ' : '') + cliente.nome }),
         el('p', { text: 'Escolha os arquivos no Drive: o link entra sozinho e o arquivo já é compartilhado com o e-mail do cliente (' + (cliente.email || 'sem e-mail') + '). Se colar o link à mão, compartilhe no próprio Drive.' }),
@@ -267,7 +267,7 @@
         el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)', style: 'margin-top:34px;display:block' }), P.botaoDrive(gravacao, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id), msg,
         el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
-      function sairDaEdicao() { editandoId = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, ''); }
+      function sairDaEdicao() { editandoId = null; editandoOrig = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, ''); }
       cancelar.addEventListener('click', sairDaEdicao);
       form.addEventListener('submit', function (ev) {
         ev.preventDefault();
@@ -277,12 +277,16 @@
         add.disabled = true;
         var campos = { servico: servico.value.trim(), data: data.value || null, pdf_link: seguroPdf, gravacao_link: seguroGrav };
         var pedido = editandoId
-          ? P.client.from('entregas').update(campos).eq('id', editandoId)
-          : P.client.from('entregas').insert(Object.assign({ cliente_id: cliente.id }, campos));
+          ? P.client.from('entregas').update(campos).eq('id', editandoId).select('id')
+          : P.client.from('entregas').insert(Object.assign({ cliente_id: cliente.id }, campos)).select('id');
+        /* o que ficou disponível agora (link novo ou trocado) avisa o cliente no celular */
+        var novos = ['pdf', 'gravacao'].filter(function (t) { var campo = t === 'pdf' ? 'pdf_link' : 'gravacao_link'; return campos[campo] && (!editandoOrig || editandoOrig[campo] !== campos[campo]); });
         pedido.then(function (r) {
           add.disabled = false;
           if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
-          paginaDoCliente(user, cliente);
+          var id = r.data && r.data[0] && r.data[0].id;
+          var depois = function () { paginaDoCliente(user, cliente); };
+          if (id && novos.length) P.avisos.entrega(id, novos).then(depois, depois); else depois();
         });
       });
       app.appendChild(form);
@@ -298,7 +302,7 @@
             var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
             editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
             editar.addEventListener('click', function () {
-              editandoId = e.id; servico.value = e.servico; data.value = e.data || ''; pdf.value = e.pdf_link || ''; gravacao.value = e.gravacao_link || '';
+              editandoId = e.id; editandoOrig = e; servico.value = e.servico; data.value = e.data || ''; pdf.value = e.pdf_link || ''; gravacao.value = e.gravacao_link || '';
               add.textContent = 'Salvar alterações'; cancelar.style.display = ''; P.mensagem(msg, 'Editando: ' + e.servico, 'ok');
               form.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });

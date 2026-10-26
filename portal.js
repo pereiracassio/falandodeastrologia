@@ -975,11 +975,42 @@
     if (!atividadeId) return Promise.resolve();
     return chamarPush('avisar', { evento: evento, atividade_id: atividadeId }).then(function (r) { if (!r.ok && window.console) console.warn('Aviso não enviado', r.dados); }, function () {});
   }
+  /* o administrador acabou de disponibilizar PDF e/ou gravação (tipos: ['pdf','gravacao']): o cliente recebe o aviso */
+  function avisarEntrega(entregaId, tipos) {
+    if (!entregaId || !tipos || !tipos.length) return Promise.resolve();
+    return chamarPush('entrega', { entrega_id: entregaId, tipos: tipos }).then(function () {}, function () {});
+  }
+  /* o cliente tocou em baixar: o administrador recebe o aviso */
+  function avisarBaixa(entregaId, tipo) {
+    return chamarPush('baixou', { entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {});
+  }
+  /* lista dos avisos recebidos (os mais novos); o não lido fica em terracota e negrito; tocar marca como lido e chama aoTocar(aviso) */
+  function listaAvisos(aoTocar, aoLer, limite) {
+    var caixa = el('div', {});
+    client.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(limite || 10).then(function (r) {
+      if (r.error || !r.data || !r.data.length) return;
+      r.data.forEach(function (a) {
+        var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
+          el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:#A03E25', text: a.titulo }),
+          el('span', { class: 'portal-item-data', text: dataBR(String(a.criado_em).slice(0, 10)) }),
+          el('p', { style: 'margin:4px 0 0' + (a.lido ? '' : ';font-weight:700'), text: a.corpo })
+        ]);
+        linha.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          if (!a.lido) { a.lido = true; linha.firstChild.style.color = ''; linha.lastChild.style.fontWeight = ''; if (aoLer) aoLer(); client.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(function () {}, function () {}); }
+          if (aoTocar) aoTocar(a);
+        });
+        caixa.appendChild(linha);
+      });
+      caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+    });
+    return caixa;
+  }
   /* cartão "Avisos no celular": papel 'admin' ou 'aluno' só muda o texto de explicação */
   function cartaoAvisos(papel) {
     var corpo = el('div', {});
     var caixa = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avisos no celular' }), corpo]);
-    var explicacao = papel === 'admin' ? 'Receba um aviso quando um aluno enviar uma atividade.' : 'Receba um aviso quando tiver uma atividade nova ou quando o Cássio corrigir a sua.';
+    var explicacao = papel === 'admin' ? 'Receba um aviso quando um aluno enviar uma atividade ou um cliente baixar um arquivo.' : papel === 'cliente' ? 'Receba um aviso quando a gravação ou o material do seu atendimento estiver disponível.' : 'Receba um aviso quando tiver uma atividade nova ou quando eu corrigir a sua.';
     function desenhar() {
       corpo.textContent = '';
       var msg = el('p', { class: 'portal-msg' });
@@ -1039,6 +1070,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, sinoAdmin: sinoAdmin, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
   };
 })();

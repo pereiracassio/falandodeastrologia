@@ -39,7 +39,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=77"></script>
+  <script src="portal.js?v=78"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -104,6 +104,7 @@
     /* guarda cada toque em "Baixar" (só o administrador enxerga); no modo "ver como o cliente" nada é guardado */
     function registrarBaixa(entregaId, tipo, verId) {
       if (verId) return;
+      P.avisos.baixou(entregaId, tipo); /* o Cássio recebe o aviso no celular */
       try { P.client.from('entrega_baixas').insert({ entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {}); } catch (e) { /* o link abre do mesmo jeito */ }
     }
 
@@ -153,6 +154,27 @@
       ]);
     }
 
+    /* o carrinho do canto vira o sino dos avisos; tocar nele abre e fecha o cartão Avisos, logo abaixo do "Olá" */
+    var naoLidos = 0, cartaoAvisos = null, listaDeAvisos = null;
+    function pintarSino() {
+      P.numeroNoIcone(naoLidos);
+      var cfg = { n: naoLidos, aoTocar: function () {
+        if (cartaoAvisos.style.display === 'none') { cartaoAvisos.style.display = ''; cartaoAvisos.scrollIntoView({ block: 'start' }); } else cartaoAvisos.style.display = 'none';
+      } };
+      if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
+    }
+    function ligarAvisos(verId) {
+      cartaoAvisos = el('div', {});
+      if (!verId) cartaoAvisos.appendChild(P.avisos.lista(function () { cartaoAvisos.style.display = 'none'; }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); }, 30));
+      cartaoAvisos.appendChild(P.avisos.cartao('cliente'));
+      cartaoAvisos.style.display = /[?&]aviso=1/.test(location.search) ? '' : 'none';
+      app.appendChild(cartaoAvisos);
+      pintarSino();
+      if (!verId) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
+        if (r && !r.error && r.count) { naoLidos = r.count; pintarSino(); }
+      }, function () {});
+    }
+
     /* próximo atendimento (horário e Google Meet), buscado na agenda pelo servidor; sem atendimento marcado, o cartão nem aparece */
     function carregarAtendimento(verId) {
       app.appendChild(P.cartaoAtendimento(verId || null, false));
@@ -182,6 +204,7 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
+        ligarAvisos(verId);
         carregarAtendimento(verId);
         app.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),
