@@ -156,7 +156,7 @@
         function desenhar() {
           var t = busca.value.trim().toLowerCase();
           lista.textContent = '';
-          var achados = clientes.filter(function (c) { return !t || (c.codigo + ' ' + c.nome + ' ' + c.email).toLowerCase().indexOf(t) >= 0; });
+          var achados = clientes.filter(function (c) { return !t || (c.codigo + ' ' + c.nome + ' ' + (c.email || '')).toLowerCase().indexOf(t) >= 0; });
           if (!achados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum cliente encontrado.' }));
           achados.forEach(function (c) {
             /* a linha inteira é o botão: tocar no cliente abre a página dele */
@@ -175,7 +175,7 @@
               });
             }
             var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [
-              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (c.codigo ? c.codigo + ' · ' : '') + c.nome }), selo, el('span', { class: 'portal-item-data', text: c.email })])
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: (c.codigo ? c.codigo + ' · ' : '') + c.nome }), selo, el('span', { class: 'portal-item-data', text: c.email || '' })])
             ])]);
             linha.addEventListener('click', abrir);
             linha.addEventListener('keydown', function (ev) { if (ev.target === linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(); } });
@@ -256,7 +256,7 @@
       var editandoId = null;
       var form = el('form', { class: 'portal-cartao' }, [
         el('h2', { text: (cliente.codigo ? cliente.codigo + ' · ' : '') + cliente.nome }),
-        el('p', { text: 'Escolha os arquivos no Drive: o link entra sozinho e o arquivo já é compartilhado com o e-mail do cliente (' + cliente.email + '). Se colar o link à mão, compartilhe no próprio Drive.' }),
+        el('p', { text: 'Escolha os arquivos no Drive: o link entra sozinho e o arquivo já é compartilhado com o e-mail do cliente (' + (cliente.email || 'sem e-mail') + '). Se colar o link à mão, compartilhe no próprio Drive.' }),
         el('label', { for: 'entServico', text: 'Serviço' }), servico, atalhos,
         el('label', { for: 'entData', text: 'Data do serviço (opcional)' }), data,
         el('label', { for: 'entPdf', text: 'Link do PDF (opcional)' }), pdf, P.botaoDrive(pdf, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id),
@@ -312,7 +312,7 @@
             var itens = [e.gravacao_link ? 'a gravação da sua sessão' : '', e.pdf_link ? 'o PDF' : ''].filter(Boolean);
             var texto = 'Oi ' + primeiro + '. Tudo bem?\n\n' +
               (itens.length ? 'Na página Seu espaço do site você encontra ' + itens.join(' e ') + ', do serviço ' + e.servico + '.' : 'O material do serviço ' + e.servico + ' está na página Seu espaço do site.') + '\n' +
-              'Entre com o Gmail ' + cliente.email + ' (o mesmo da contratação):\n' +
+              'Entre com o Gmail ' + (cliente.email || '') + ' (o mesmo da contratação):\n' +
               'https://falandodeastrologia.com.br/cliente.html\n\n' +
               'Você pode salvar com você, pra que sempre tenha acesso.' +
               (e.gravacao_link ? ' Não consigo garantir que vou ter a gravação sempre lá, porque às vezes preciso liberar espaço. Por isso recomendo baixar e guardar contigo.' : '') + '\n\n' +

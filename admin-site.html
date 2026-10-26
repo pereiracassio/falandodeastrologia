@@ -211,31 +211,55 @@
       return cartao;
     }
 
-    /* aniversários: arquivo CSV (e-mail, nascimento) tirado do Astro Hellenic; completa clientes e alunos que ainda não têm a data */
-    function cartaoAniversarios() {
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aniversários' })]);
+    /* clientes do Astro Hellenic: arquivo CSV (codigo, nome, email, whatsapp, nascimento). Cria o cadastro de quem ainda não existe aqui (mesmo sem e-mail)
+       e completa o que faltar nos que já existem (WhatsApp, nascimento, código), sem nunca trocar o que já está salvo. Alunos só são completados. */
+    function cartaoImportarClientes() {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Importar clientes' })]);
       var msg = el('p', { class: 'portal-msg' });
       var arq = el('input', { type: 'file', accept: '.csv,text/csv,text/plain' }); arq.style.display = 'none';
       var botao = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar arquivo' });
       botao.addEventListener('click', function () { arq.click(); });
-      var iso = function (t) { var m = String(t || '').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/) || String(t || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ''; return String(t).indexOf('/') > 0 ? m[3] + '-' + m[2] + '-' + m[1] : m[1] + '-' + m[2] + '-' + m[3]; };
+      var iso = function (t) { var x = String(t || '').trim(), m = x.match(/^(\d{2})\/(\d{2})\/(\d{4})$/) || x.match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ''; return x.indexOf('/') > 0 ? m[3] + '-' + m[2] + '-' + m[1] : m[1] + '-' + m[2] + '-' + m[3]; };
       var campos = function (l) { var r = [], c = '', q = false; for (var i = 0; i < l.length; i++) { var ch = l[i]; if (ch === '"') q = !q; else if ((ch === ',' || ch === ';') && !q) { r.push(c); c = ''; } else c += ch; } r.push(c); return r.map(function (x) { return x.trim(); }); };
       arq.addEventListener('change', function () {
         var f = arq.files && arq.files[0]; arq.value = ''; if (!f) return;
         P.mensagem(msg, 'Lendo...');
         f.text().then(function (txt) {
           var linhas = txt.replace(/^﻿/, '').split(/\r?\n/).filter(function (l) { return l.trim(); }), cab = campos(linhas[0] || '').map(function (x) { return x.toLowerCase(); });
-          var ie = cab.findIndex(function (x) { return /e-?mail/.test(x); }), inn = cab.findIndex(function (x) { return /nasc/.test(x); });
-          if (ie < 0 || inn < 0) throw new Error('o arquivo precisa das colunas email e nascimento');
-          var porEmail = {}; linhas.slice(1).forEach(function (l) { var c = campos(l), d = iso(c[inn]); if (c[ie] && d) porEmail[c[ie].toLowerCase()] = d; });
-          return Promise.all([C.from('clientes').select('id,email,nascimento'), C.from('alunos').select('id,email,nascimento')]).then(function (rs) {
-            var erro = rs[0].error || rs[1].error; if (erro) throw new Error(erro.message);
-            var tarefas = [], feitos = 0;
-            [['clientes', rs[0].data || []], ['alunos', rs[1].data || []]].forEach(function (par) {
-              par[1].forEach(function (x) { var d = porEmail[String(x.email || '').toLowerCase()]; if (d && x.nascimento !== d) tarefas.push({ tabela: par[0], id: x.id, d: d }); });
-            });
-            var proximo = function () { var t = tarefas.shift(); if (!t) return Promise.resolve(); return C.from(t.tabela).update({ nascimento: t.d }).eq('id', t.id).then(function (r) { if (!r.error) feitos++; return proximo(); }); };
-            return Promise.all([proximo(), proximo(), proximo()]).then(function () { P.mensagem(msg, feitos + ' cadastros atualizados.', 'ok'); });
+          var col = function (re) { return cab.findIndex(function (x) { return re.test(x); }); };
+          var ic = col(/c[oó]d/), inome = col(/nome/), ie = col(/e-?mail/), iw = col(/whats|fone|tel/), inn = col(/nasc/);
+          if (inome < 0) throw new Error('o arquivo precisa da coluna nome');
+          var pessoas = linhas.slice(1).map(function (l) {
+            var c = campos(l), em = (ie >= 0 ? c[ie] : '').toLowerCase();
+            return { codigo: ic >= 0 ? c[ic].replace(/\s+[AB]$/i, '').trim() : '', nome: c[inome] || '', email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) ? em : '', whatsapp: iw >= 0 ? c[iw] : '', nascimento: inn >= 0 ? iso(c[inn]) : '' };
+          }).filter(function (p) { return p.nome; });
+          return Promise.all([C.from('clientes').select('id,email,nome,whatsapp,nascimento'), C.from('cliente_codigos').select('cliente_id,codigo'), C.from('alunos').select('id,email,whatsapp,nascimento')]).then(function (rs) {
+            var erro = rs[0].error || rs[1].error || rs[2].error; if (erro) throw new Error(erro.message);
+            var clientes = rs[0].data || [], porEmail = {}, porCodigo = {}, codigoDe = {}, alunosPorEmail = {};
+            clientes.forEach(function (x) { if (x.email) porEmail[x.email.toLowerCase()] = x; });
+            (rs[1].data || []).forEach(function (x) { porCodigo[x.codigo] = x.cliente_id; codigoDe[x.cliente_id] = x.codigo; });
+            (rs[2].data || []).forEach(function (x) { if (x.email) alunosPorEmail[x.email.toLowerCase()] = x; });
+            var porId = {}; clientes.forEach(function (x) { porId[x.id] = x; });
+            var criados = 0, completados = 0, falhas = 0, i = 0;
+            var uma = function () {
+              var p = pessoas[i++]; if (!p) return Promise.resolve();
+              var ex = (p.email && porEmail[p.email]) || (p.codigo && porId[porCodigo[p.codigo]]) || null, tarefas = [];
+              var al = p.email && alunosPorEmail[p.email];
+              if (al) { var u = {}; if (p.whatsapp && !al.whatsapp) u.whatsapp = p.whatsapp; if (p.nascimento && !al.nascimento) u.nascimento = p.nascimento; if (Object.keys(u).length) tarefas.push(C.from('alunos').update(u).eq('id', al.id).then(function (r) { if (!r.error) completados++; else falhas++; })); }
+              if (ex) {
+                var u2 = {}; if (p.whatsapp && !ex.whatsapp) u2.whatsapp = p.whatsapp; if (p.nascimento && !ex.nascimento) u2.nascimento = p.nascimento; if (p.email && !ex.email) u2.email = p.email;
+                if (Object.keys(u2).length) tarefas.push(C.from('clientes').update(u2).eq('id', ex.id).then(function (r) { if (!r.error) completados++; else falhas++; }));
+                if (p.codigo && !codigoDe[ex.id] && !porCodigo[p.codigo]) tarefas.push(C.from('cliente_codigos').insert({ cliente_id: ex.id, codigo: p.codigo }).then(function (r) { if (r.error) falhas++; }));
+              } else if (!al) {
+                tarefas.push(C.from('clientes').insert({ nome: p.nome, email: p.email || null, whatsapp: p.whatsapp || null, nascimento: p.nascimento || null }).select('id').single().then(function (r) {
+                  if (r.error) { falhas++; return; }
+                  criados++; if (p.email) porEmail[p.email] = { id: r.data.id, email: p.email, whatsapp: p.whatsapp, nascimento: p.nascimento };
+                  if (p.codigo && !porCodigo[p.codigo]) { porCodigo[p.codigo] = r.data.id; codigoDe[r.data.id] = p.codigo; porId[r.data.id] = { id: r.data.id }; return C.from('cliente_codigos').insert({ cliente_id: r.data.id, codigo: p.codigo }).then(function (r2) { if (r2.error) falhas++; }); }
+                }));
+              }
+              return Promise.all(tarefas).then(uma);
+            };
+            return uma().then(function () { P.mensagem(msg, criados + ' cadastros criados, ' + completados + ' completados' + (falhas ? ', ' + falhas + ' com erro' : '') + '.', falhas ? 'erro' : 'ok'); });
           });
         }).catch(function (e) { P.mensagem(msg, 'Não consegui importar (' + e.message + ')', 'erro'); });
       });
@@ -418,7 +442,7 @@
       app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
       app.appendChild(cartaoLugar());
       app.appendChild(cartaoAgendas());
-      app.appendChild(cartaoAniversarios());
+      app.appendChild(cartaoImportarClientes());
       app.appendChild(cartaoAreas); app.appendChild(cartaoServicos);
       carregarFin();
       /* no fim da lista: Trocar senha e, abaixo, o Sair (botão cheio, terracota) */
