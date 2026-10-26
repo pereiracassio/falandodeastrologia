@@ -33,7 +33,6 @@
   <script src="portal.js?v=70"></script>
   <script src="menu.js?v=35" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="icones-planetas.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app'), HP = window.horaPlanetaria;
@@ -245,11 +244,11 @@
       fechar(); return res;
     }
 
-    /* ícone do planeta (traço em tinta, os mesmos das rodas do Astro Hellenic) */
+    /* ícone do planeta: a fonte AstroIcones do site (a mesma do blog e das atividades; Sol U+E000, Lua, Mercúrio, Vênus, Marte, Júpiter, Saturno em seguida) */
+    var ORDEM_ICONES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno'];
     function iconePlaneta(nome, px, cor) {
-      var s = el('span', { style: 'display:inline-block;width:' + px + 'px;height:' + px + 'px;color:' + (cor || '#1F5FA3') + ';vertical-align:middle;flex:none', title: nome, 'aria-label': nome });
-      s.innerHTML = (window.iconesPlanetas && window.iconesPlanetas[nome]) || ''; /* texto fixo do próprio site, nada digitado */
-      return s;
+      return el('span', { text: String.fromCharCode(0xE000 + ORDEM_ICONES.indexOf(nome)), title: nome, 'aria-label': nome,
+        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + (cor || '#1F5FA3') + ';vertical-align:middle;flex:none' });
     }
     /* as horas planetárias de um dia civil, cortadas na meia-noite: cada uma vira uma linha da grade */
     function segmentosDoDia(iso) {
