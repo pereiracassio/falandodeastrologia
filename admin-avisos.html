@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=3">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest-producao.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Produção">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Avisos - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="stylesheet" href="page.css?v=67">
+  <link rel="stylesheet" href="portal.css?v=18">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo cab-logo-menor"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/blog.html">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Avisos</h1>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=77"></script>
+  <script src="menu.js?v=38" defer></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function voltar() { if (history.length > 1) history.back(); else location.href = 'admin-agenda.html'; }
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(P.navAdmin('avisos', user.email, sair));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        tela(user);
+      });
+    }
+    /* os 10 avisos mais novos; o não lido fica em terracota e negrito; tocar marca como lido e abre o lugar do aviso */
+    function tela(user) {
+      limpar();
+      app.appendChild(P.navAdmin('avisos', '', sair));
+      app.appendChild(P.botaoVoltar(voltar));
+      var cartao = el('div', { class: 'portal-cartao' });
+      app.appendChild(cartao);
+      app.appendChild(P.botaoVoltar(voltar));
+      C.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
+        if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os avisos agora.' })); return; }
+        if (!r.data.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aviso por enquanto.' })); return; }
+        var naoLidos = r.data.filter(function (a) { return !a.lido; }).length;
+        P.sinoAdmin(naoLidos);
+        r.data.forEach(function (a) {
+          var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
+            el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:#A03E25', text: a.titulo }),
+            el('span', { class: 'portal-item-data', text: P.dataBR(String(a.criado_em).slice(0, 10)) }),
+            el('p', { style: 'margin:4px 0 0' + (a.lido ? '' : ';font-weight:700'), text: a.corpo })
+          ]);
+          linha.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            var ir = function () { location.href = /^\/admin-[a-z]+\.html/.test(a.url || '') ? a.url : 'admin-alunos.html'; };
+            if (a.lido) { ir(); return; }
+            C.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(ir, ir);
+          });
+          cartao.appendChild(linha);
+        });
+      });
+    }
+    C.auth.getSession().then(function (r) {
+      if (r.data && r.data.session) iniciar(r.data.session.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>

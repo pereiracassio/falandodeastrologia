@@ -87,12 +87,11 @@ async function souAdmin(jwt) {
 }
 const emLista = (emails) => '(' + emails.map((e) => '"' + String(e).replace(/"/g, '') + '"').join(',') + ')';
 
-async function destinatarios(para, aluno) {
-  if (para === 'aluno') return supa('/rest/v1/push_inscricoes?select=endpoint,p256dh,auth&email=eq.' + encodeURIComponent(String(aluno.email || '').toLowerCase()));
-  const admins = ((await supa('/rest/v1/admins?select=email')) || []).map((a) => String(a.email || '').toLowerCase()).filter(Boolean);
-  if (!admins.length) return [];
-  return supa('/rest/v1/push_inscricoes?select=endpoint,p256dh,auth&email=in.' + encodeURIComponent(emLista(admins)));
+async function emailsDoAviso(para, aluno) {
+  if (para === 'aluno') return [String(aluno.email || '').toLowerCase()].filter(Boolean);
+  return ((await supa('/rest/v1/admins?select=email')) || []).map((a) => String(a.email || '').toLowerCase()).filter(Boolean);
 }
+const aparelhosDe = (email) => supa('/rest/v1/push_inscricoes?select=endpoint,p256dh,auth&email=eq.' + encodeURIComponent(email));
 
 async function tratar(req, res) {
   if (String((req.query && req.query.acao) || '') === 'chave') { res.status(200).json({ chave: (await chaves()).publica }); return; } /* a chave pública não é segredo: o aparelho precisa dela para se cadastrar */
@@ -124,10 +123,17 @@ async function tratar(req, res) {
     const d = decidirAviso({ evento, atividade, aluno, usuario, ehAdmin });
     if (d.erro) { res.status(d.status).json({ erro: d.erro }); return; }
     if (d.ignorar) { res.status(200).json({ ok: true, enviados: 0, motivo: d.ignorar }); return; }
-    /* o aviso do aluno também fica guardado na lista dele (aba Avisos); o banco só mantém os 10 mais novos de cada aluno */
-    if (d.para === 'aluno') await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email: String(aluno.email || '').toLowerCase(), titulo: d.carga.title, corpo: d.carga.body, url: d.carga.url, atividade_id: atividade.id }) }).catch(() => {});
-    const lista = (await destinatarios(d.para, aluno)) || [];
-    const r = lista.length ? await enviar(lista, d.carga) : { enviados: 0, removidos: 0, falhas: 0 };
+    /* o aviso fica guardado na lista de quem recebe (aluno ou administrador; o banco só mantém os 10 mais novos de cada um) e o celular recebe também,
+       com a quantidade de avisos não lidos para o número no ícone do app */
+    const r = { enviados: 0, removidos: 0, falhas: 0 };
+    for (const email of await emailsDoAviso(d.para, aluno)) {
+      await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: d.carga.title, corpo: d.carga.body, url: d.carga.url, atividade_id: atividade.id }) }).catch(() => {});
+      const naoLidos = ((await supa('/rest/v1/avisos_recebidos?select=id&lido=eq.false&email=eq.' + encodeURIComponent(email)).catch(() => [])) || []).length;
+      const lista = (await aparelhosDe(email)) || [];
+      if (!lista.length) continue;
+      const x = await enviar(lista, { ...d.carga, contagem: naoLidos });
+      r.enviados += x.enviados; r.removidos += x.removidos; r.falhas += x.falhas;
+    }
     res.status(200).json({ ok: true, ...r }); return;
   }
   res.status(400).json({ erro: 'Ação desconhecida.' });

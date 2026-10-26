@@ -6,6 +6,8 @@ self.addEventListener('activate', function (event) { event.waitUntil(self.client
 self.addEventListener('push', function (event) {
   var d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : '' }; }
+  /* número no ícone do app (iPhone/iPad com o app instalado, Android): a quantidade de avisos não lidos que o servidor mandou */
+  if (typeof d.contagem === 'number' && self.navigator && self.navigator.setAppBadge) { try { self.navigator.setAppBadge(d.contagem); } catch (e) { /* sem suporte */ } }
   event.waitUntil(self.registration.showNotification(d.title || 'Falando de Astrologia', {
     body: d.body || '',
     icon: '/favicon.png',

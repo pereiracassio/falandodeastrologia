@@ -55,7 +55,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=76"></script>
+  <script src="portal.js?v=77"></script>
   <script src="atividades.js?v=28"></script>
   <script src="caderno.js?v=11"></script>
   <script>
@@ -286,6 +286,7 @@
     /* o carrinho do canto vira o sino dos avisos enquanto o aluno está logado (menu.js: fdaSinoAvisos) */
     function pintarSino() {
       var cfg = { n: naoLidos, aoTocar: function () { irParaAvisos(); } };
+      P.numeroNoIcone(naoLidos);
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg);
       else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
     }
