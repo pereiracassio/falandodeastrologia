@@ -249,7 +249,6 @@
       if (e.convidados.length) filhos.push(el('p', { text: 'Com ' + e.convidados.join(', '), style: 'margin:6px 0 0' }));
       var nota = String(e.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
       if (nota) filhos.push(el('p', { text: nota.length > 600 ? nota.slice(0, 600) + '…' : nota, style: 'white-space:pre-line;margin:10px 0 0' }));
-      filhos.push(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.7', text: 'Agenda "' + e.calNome + '"' + (e.editavel ? '' : ', só de leitura') + '.' }));
       filhos.push(el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, acoes));
       destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
     }
@@ -399,7 +398,6 @@
         corpo.appendChild(col);
       });
       caixa.appendChild(corpo);
-      if (unico && !evs.length) caixa.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Nada marcado neste dia. Toque numa hora planetária para marcar.' }));
       vista.appendChild(caixa);
     }
 
@@ -505,8 +503,7 @@
         data.style.display = fim.value === 'em' ? '' : 'none'; vezes.style.display = fim.value === 'vezes' ? '' : 'none';
       };
       freq.addEventListener('change', mostrar); fim.addEventListener('change', mostrar); mostrar();
-      if (complexa) caixa.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F', text: 'Este compromisso tem uma repetição especial do Google (por exemplo, "toda segunda terça do mês"). Ela fica como está.' }));
-      else { caixa.appendChild(rotulo('Repetir')); caixa.appendChild(freq); caixa.appendChild(opcoes); }
+      if (!complexa) { caixa.appendChild(rotulo('Repetir')); caixa.appendChild(freq); caixa.appendChild(opcoes); }
       return { el: caixa, mantida: !!complexa, regra: function () { /* '' = não repete; senão a linha RRULE */
         if (!freq.value) return '';
         var p = ['FREQ=' + freq.value], n = Math.max(1, parseInt(cada.value, 10) || 1);
@@ -719,7 +716,6 @@
       achados.sort(function (a, b) { return a.ini - b.ini; });
       achados = achados.slice(0, 8);
       if (!achados.length) { res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Nenhuma hora de ' + planeta + ' livre com ' + duracaoTxt(minutos) + ' nos próximos ' + dias + ' dias. Experimente um tempo menor ou uma janela maior.' })); return; }
-      res.appendChild(el('p', { class: 'portal-item-data', style: 'margin:14px 0 4px', text: 'Livres, na hora de ' + planeta + ':' }));
       achados.forEach(function (a) {
         var fimSug = a.ini + minutos * 60000;
         var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar na agenda' });
