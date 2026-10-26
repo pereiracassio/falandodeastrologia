@@ -1022,6 +1022,38 @@
   function avisarBaixa(entregaId, tipo) {
     return chamarPush('baixou', { entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {});
   }
+  /* manda um aviso na hora para o aluno ou o cliente (para: 'aluno' | 'cliente'); só o administrador consegue */
+  function cartaoEnviarAviso(para, id, nome) {
+    var primeiro = String(nome || '').trim().split(/\s+/)[0] || '';
+    var encontro = para === 'cliente' ? 'atendimento' : 'encontro';
+    var texto = el('textarea', { id: 'avisoLivre', rows: '2', placeholder: 'Escreva o aviso' });
+    var msg = el('p', { class: 'portal-msg' });
+    function enviar(t, pedirConfirmacao) {
+      t = String(t || '').trim();
+      if (!t) { mensagem(msg, 'Escreva o aviso.', 'erro'); return; }
+      if (pedirConfirmacao && !confirm('Enviar para ' + (primeiro || 'ele') + ': "' + t + '"?')) return;
+      mensagem(msg, 'Enviando...');
+      chamarPush('manual', { para: para, id: id, texto: t }).then(function (r) {
+        if (!r.ok) { mensagem(msg, (r.dados && r.dados.erro) || 'Não foi possível enviar agora.', 'erro'); return; }
+        texto.value = '';
+        mensagem(msg, r.dados.enviados ? 'Aviso enviado.' : 'Aviso guardado na lista dele (o celular dele não está com os avisos ativados).', 'ok');
+      }, function () { mensagem(msg, 'Não foi possível enviar agora.', 'erro'); });
+    }
+    var prontos = [['10 minutos', '10 minutos'], ['1 hora', '1 hora'], ['2 horas', '2 horas']].map(function (p) {
+      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Começa em ' + p[0] });
+      b.addEventListener('click', function () { enviar('Oi, ' + primeiro + '! O seu ' + encontro + ' começa em ' + p[1] + '.', true); });
+      return b;
+    });
+    var mandar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar' });
+    mandar.addEventListener('click', function () { enviar(texto.value, false); });
+    return el('div', { class: 'portal-cartao' }, [
+      el('h2', { text: 'Enviar aviso' }),
+      el('div', { class: 'portal-acoes' }, prontos),
+      texto,
+      el('div', { class: 'portal-acoes' }, [mandar]),
+      msg
+    ]);
+  }
   /* lista dos avisos recebidos (os mais novos); o não lido fica em terracota e negrito; tocar marca como lido e chama aoTocar(aviso) */
   function listaAvisos(aoTocar, aoLer, limite) {
     var caixa = el('div', {});
@@ -1108,6 +1140,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, cartaoEnviar: cartaoEnviarAviso }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
   };
 })();

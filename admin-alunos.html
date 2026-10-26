@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=80"></script>
+  <script src="portal.js?v=81"></script>
   <script src="atividades.js?v=29"></script>
   <script>
   (function () {
@@ -220,6 +220,7 @@
       var lugarEncontro = el('p', { class: 'portal-proximo', style: 'display:none' });
       if (meetAdmin) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetAdmin, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
       app.appendChild(lugarEncontro);
+      app.appendChild(P.avisos.cartaoEnviar('aluno', aluno.id, aluno.nome));
       P.proximoEncontro(aluno.id).then(function (e) { /* puxado da Google Agenda */
         if (!e) return;
         if (e.motivo) { lugarEncontro.textContent = 'Próximo encontro não encontrado: ' + e.motivo + '.'; lugarEncontro.style.display = ''; return; }

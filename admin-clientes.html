@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=80"></script>
+  <script src="portal.js?v=81"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -199,6 +199,7 @@
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoCliente]));
       P.voltarNoFim(app, function () { listaDeClientes(user); });
       app.appendChild(P.cartaoAtendimento(cliente.id, true)); /* próximo atendimento e Meet, sem caçar o link */
+      app.appendChild(P.avisos.cartaoEnviar('cliente', cliente.id, cliente.nome));
 
       /* dados do cliente: código, nome e pasta no Drive (o código só o administrador vê) */
       var msgCod = el('p', { class: 'portal-msg' });

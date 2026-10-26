@@ -167,6 +167,18 @@ async function tratar(req, res) {
     }
     res.status(200).json({ ok: true, ...r }); return;
   }
+  /* aviso escrito (ou pronto) pelo administrador, enviado na hora para um aluno ou um cliente */
+  if (acao === 'manual') {
+    if (!(await souAdmin(jwt))) { res.status(403).json({ erro: 'Só quem administra envia avisos.' }); return; }
+    const texto = String(corpo.texto || '').trim().slice(0, 300);
+    const id = String(corpo.id || '');
+    if (!texto || !/^[0-9a-f-]{36}$/i.test(id) || !['aluno', 'cliente'].includes(corpo.para)) { res.status(400).json({ erro: 'Aviso inválido.' }); return; }
+    const [pessoa] = (await supa('/rest/v1/' + (corpo.para === 'aluno' ? 'alunos' : 'clientes') + '?id=eq.' + id + '&select=id,email')) || [];
+    if (!pessoa || !pessoa.email) { res.status(404).json({ erro: 'Essa pessoa não tem e-mail cadastrado.' }); return; }
+    const carga = { title: 'Aviso', body: texto, url: corpo.para === 'aluno' ? URL_ALUNO + '?aviso=1' : URL_CLIENTE };
+    const r = await entregarAviso(String(pessoa.email).toLowerCase(), carga, corpo.para === 'cliente' ? { guardar_sempre: true } : {});
+    res.status(200).json({ ok: true, ...r }); return;
+  }
   /* o cliente tocou em baixar: o administrador recebe o aviso (só vale para o próprio cliente da entrega) */
   if (acao === 'baixou') {
     const tipo = corpo.tipo === 'pdf' ? 'pdf' : corpo.tipo === 'gravacao' ? 'gravacao' : '';
