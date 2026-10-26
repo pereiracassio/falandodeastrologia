@@ -451,6 +451,7 @@
      linha do <head> dessas páginas lê isto e leva você de volta ao lugar exato (página + o que estava aberto, que fica no endereço). */
   function lembrarOndeParou() {
     try {
+      localStorage.setItem('fda_ultimo_uso', String(Date.now())); /* a abertura do zero do app se reconhece por isto estar velho (ver o <head> das páginas de entrada) */
       if (window.__fdaRestaurando) return; /* a página só está de passagem, indo para a última tela: não sobrescrever */
       if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
@@ -462,6 +463,7 @@
   var gravarEstado = estado.gravar;
   estado.gravar = function (o) { gravarEstado(o); lembrarOndeParou(); };
   window.addEventListener('pagehide', lembrarOndeParou);
+  setInterval(function () { if (document.visibilityState === 'visible') try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } }, 4000);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') lembrarOndeParou(); });
   /* seção que abre e fecha (sanfona): a barra com o título aparece sempre; o conteúdo só quando aberta.
      abertas = lista (compartilhada) das chaves abertas; o que está aberto fica guardado no endereço (#abertas=dados,atividades) e sobrevive ao recarregar. */
