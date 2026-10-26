@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=74"></script>
+  <script src="portal.js?v=75"></script>
   <script src="atividades.js?v=28"></script>
   <script>
   (function () {
@@ -300,7 +300,7 @@
             el('label', { for: 'it' + id + 'T', text: 'Título' }), titulo,
             el('label', { for: 'it' + id + 'D', text: 'Data (opcional)' }), data,
             el('label', { for: 'it' + id + 'S', text: 'Descrição (opcional)' }), descricao,
-            el('label', { for: 'it' + id + 'L', text: o.bloco === 'materiais' ? 'Link (do Drive ou de outro site, como o Archive.org)' : 'Link do Drive' }), link, P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email, 'aluno:' + aluno.id), msg,
+            el('label', { for: 'it' + id + 'L', text: o.bloco === 'materiais' ? 'Link (do Drive ou de outro site, como o Archive.org)' : 'Link do Drive' }), P.botaoDrive(link, function (t, tipo) { P.mensagem(msg, t, tipo); }, aluno.email, 'aluno:' + aluno.id), msg,
             el('div', { class: 'portal-acoes' }, [salvar, cancelar])
           ]);
           form.addEventListener('submit', function (ev) {

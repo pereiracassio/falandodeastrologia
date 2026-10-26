@@ -273,7 +273,12 @@
   /* botão "Escolher do Drive": preenche o campo de link e, se vier o e-mail, já compartilha o arquivo com a pessoa.
      aviso(texto, 'ok' | 'erro') mostra a mensagem na tela */
   function botaoDrive(campo, aviso, email, chavePasta) {
-    var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Escolher do Drive' });
+    /* o ícone do Drive fica ANTES do campo do link (devolve a linha com os dois); tocar nele escolhe o arquivo */
+    var b = el('button', { type: 'button', title: 'Escolher do Drive', 'aria-label': 'Escolher do Drive', style: 'flex:none;background:none;border:0;padding:0;margin:0;width:46px;height:42px;min-height:0;cursor:pointer;display:flex;align-items:center;justify-content:center' }, [
+      el('img', { src: 'img/drive.svg', alt: '', width: '38', height: '34', style: 'display:block' })
+    ]);
+    campo.style.flex = '1'; campo.style.minWidth = '0'; campo.style.margin = '0';
+    var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;margin:0 0 6px' }, [b, campo]);
     b.addEventListener('click', function () {
       escolherDoDrive(function (url, id, token) {
         campo.value = url;
@@ -286,7 +291,7 @@
         });
       }, function (t) { aviso(t, 'erro'); }, false, chavePasta);
     });
-    return b;
+    return linha;
   }
 
   /* Pasta no Drive. A pasta-mãe (onde nascem as pastas novas dos alunos ou dos clientes) é uma configuração, escolhida na
