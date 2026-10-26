@@ -83,6 +83,7 @@
     <div class="price-title">Valor do Investimento</div>
     <div class="price-value" id="service-price">—</div>
     <div class="linha-desc" id="linha-desc" style="display:none"><span>Desconto por levar mais de um serviço</span><span id="valor-desc"></span></div>
+    <div class="linha-desc" id="linha-cupom" style="display:none"><span>Cupom de aniversário (10%)</span><span id="valor-cupom"></span></div>
   </div>
 
   <a class="mais" id="mais" href="index.html">+ Adicionar outro serviço (R$ 11,00 de desconto a partir do segundo)</a>
@@ -118,6 +119,10 @@
     <label for="cli-email">E-mail (precisa ser Gmail)</label>
     <input type="email" id="cli-email" autocomplete="email" placeholder="seu@gmail.com">
     <p class="dica">Use um Gmail: é por ele que você acessa a gravação da sessão.</p>
+    <label for="cli-cupom">Cupom de desconto (opcional)</label>
+    <input type="text" id="cli-cupom" autocomplete="off" autocapitalize="characters" placeholder="Digite o cupom">
+    <button type="button" id="aplicar-cupom" class="it-tirar" style="margin:-6px 0 12px;font-size:13px">Aplicar cupom</button>
+    <p class="dica" id="cupom-msg" style="display:none"></p>
     <p class="erro-dados" id="erro-dados"></p>
     <p class="dica" style="margin:6px 0 0"><strong>Depois de pagar</strong>, a página do InfinitePay mostra um botão preto. Toque nele para voltar ao site e concluir o seu agendamento.</p>
   </div>
@@ -148,6 +153,16 @@
   var TEXTO_AGENDA_VARIOS = '<strong>Agendamento:</strong> Cada serviço tem o seu próprio atendimento. Ao enviar o formulário, você será redirecionado para a agenda onde escolherá o melhor dia e horário.';
   var TEXTO_SEM_AGENDA = '<strong>Retificação:</strong> Esta opção não tem agendamento. Depois de enviar o formulário, a retificação é feita por mensagem, sem chamada.';
 
+  // Cupom de aniversário: 10% no total do carrinho, só no mês do aniversário de quem já é cliente (a conferência é feita no Supabase pelo e-mail)
+  var CUPOM_CODIGO = "ANIVERSARIO", CUPOM_PERCENTUAL = 10, cupomAtivo = false;
+  function cupomConfere(email) {
+    return window.portal.client.rpc("cupom_aniversario", { p_email: email }).then(function (r) { return !r.error && r.data === true; }, function () { return false; });
+  }
+  function avisoCupom(texto, erroMsg) {
+    var m = document.getElementById("cupom-msg");
+    m.textContent = texto; m.style.display = texto ? "" : "none"; m.style.color = erroMsg ? "#B3261E" : "";
+  }
+
   function desenhar() {
     if (window.atualizarContadorCarrinho) window.atualizarContadorCarrinho();
     var res = Carrinho.resumo();
@@ -176,7 +191,11 @@
       lista.appendChild(caixa);
     });
 
-    document.getElementById("service-price").textContent = Carrinho.reais(res.total);
+    // cupom de aniversário: 10% sobre o total já com o desconto por mais de um serviço
+    var descCupom = cupomAtivo ? Math.round(res.total * CUPOM_PERCENTUAL / 100) : 0;
+    document.getElementById("linha-cupom").style.display = descCupom ? "" : "none";
+    document.getElementById("valor-cupom").textContent = "− " + Carrinho.reais(descCupom);
+    document.getElementById("service-price").textContent = Carrinho.reais(res.total - descCupom);
     document.getElementById("linha-desc").style.display = res.desconto ? "" : "none";
     document.getElementById("valor-desc").textContent = "− " + Carrinho.reais(res.desconto);
     var algumaAgenda = res.linhas.some(function (l) { return l.agenda; });
@@ -274,6 +293,19 @@
 
   var botao = document.getElementById("pay-button");
   var erro = document.getElementById("erro-dados");
+  document.getElementById("aplicar-cupom").addEventListener("click", function () {
+    var codigo = document.getElementById("cli-cupom").value.trim().toUpperCase();
+    var email = document.getElementById("cli-email").value.trim();
+    cupomAtivo = false;
+    if (!codigo) { avisoCupom("Digite o cupom.", true); desenhar(); return; }
+    if (codigo !== CUPOM_CODIGO) { avisoCupom("Esse cupom não existe.", true); desenhar(); return; }
+    if (!/^[^\s@]+@gmail\.com$/i.test(email)) { avisoCupom("Preencha o seu e-mail (Gmail) acima para conferir o cupom.", true); return; }
+    cupomConfere(email).then(function (ok) {
+      cupomAtivo = ok;
+      avisoCupom(ok ? "Cupom aplicado: 10% de desconto." : "Esse cupom vale só no mês do seu aniversário, para quem já é cliente.", !ok);
+      desenhar();
+    });
+  });
   botao.addEventListener("click", function (e) {
     e.preventDefault();
     var res = Carrinho.resumo();
@@ -297,6 +329,17 @@
     erro.style.display = "none";
     botao.classList.add("ocupado");
     botao.textContent = "Abrindo o pagamento...";
+    // com cupom, confere de novo com o e-mail que vai valer na compra (ele pode ter mudado depois de aplicar)
+    var conferido = cupomAtivo ? cupomConfere(email) : Promise.resolve(false);
+    conferido.then(function (cupomValeu) {
+    if (cupomAtivo && !cupomValeu) {
+      cupomAtivo = false; desenhar();
+      botao.classList.remove("ocupado"); botao.textContent = "Ir para o Pagamento";
+      erro.textContent = "O cupom de aniversário vale só no mês do seu aniversário, para quem já é cliente. O valor voltou ao normal; confira e toque de novo em Ir para o Pagamento.";
+      erro.style.display = "block";
+      return;
+    }
+    var fator = cupomValeu ? (100 - CUPOM_PERCENTUAL) / 100 : 1;
 
     // vários serviços vão separados por | (o combo já tem "+" no nome); &sa= = os que não usam agenda
     var titulos = res.linhas.map(function (l) { return l.titulo; }).join(" | ");
@@ -308,7 +351,7 @@
 
     // Se a criação do link falhar: com um serviço só e preço cheio, cai no link fixo de antes; senão mostra o erro
     var reserva = function () {
-      if (res.linhas.length === 1 && res.linhas[0].fixo && res.linhas[0].desconto === 0 && res.linhas[0].final === Carrinho.servicos[res.linhas[0].chave].centavos) {
+      if (!cupomValeu && res.linhas.length === 1 && res.linhas[0].fixo && res.linhas[0].desconto === 0 && res.linhas[0].final === Carrinho.servicos[res.linhas[0].chave].centavos) {
         Carrinho.marcarSaida(); window.location.href = res.linhas[0].fixo; return;
       }
       botao.classList.remove("ocupado");
@@ -335,7 +378,7 @@
           handle: INFINITEPAY_HANDLE,
           order_nsu: pedido,
           webhook_url: "https://falandodeastrologia.vercel.app/api/infinitepay",
-          items: res.linhas.map(function (l) { return { quantity: 1, price: l.final, description: l.titulo }; }),
+          items: res.linhas.map(function (l) { return { quantity: 1, price: Math.round(l.final * fator), description: l.titulo }; }),
           redirect_url: redirectUrl,
           customer: { name: nome, email: email, phone_number: telefoneInternacional(whatsapp) }
         })
@@ -344,6 +387,7 @@
         var url = acharEnderecoPagamento(j);
         if (url) { Carrinho.marcarSaida(); window.location.href = url; } else { reserva(); }
       }).catch(function () { clearTimeout(timer); reserva(); });
+    });
     });
   });
 </script>
