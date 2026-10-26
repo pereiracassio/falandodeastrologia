@@ -274,8 +274,8 @@
      aviso(texto, 'ok' | 'erro') mostra a mensagem na tela */
   function botaoDrive(campo, aviso, email, chavePasta) {
     /* o ícone do Drive fica ANTES do campo do link (devolve a linha com os dois); tocar nele escolhe o arquivo */
-    var b = el('button', { type: 'button', title: 'Escolher do Drive', 'aria-label': 'Escolher do Drive', style: 'flex:none;background:none;border:0;padding:0;margin:0;width:46px;height:42px;min-height:0;cursor:pointer;display:flex;align-items:center;justify-content:center' }, [
-      el('img', { src: 'img/drive.svg', alt: '', width: '38', height: '34', style: 'display:block' })
+    var b = el('button', { type: 'button', title: 'Escolher do Drive', 'aria-label': 'Escolher do Drive', style: 'flex:none;background:none;border:0;padding:0;margin:0;width:50px;height:46px;min-height:0;cursor:pointer;display:flex;align-items:center;justify-content:center' }, [
+      el('img', { src: 'img/drive.svg', alt: '', width: '44', height: '44', style: 'display:block' })
     ]);
     campo.style.flex = '1'; campo.style.minWidth = '0'; campo.style.margin = '0';
     var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;margin:0 0 6px' }, [b, campo]);
