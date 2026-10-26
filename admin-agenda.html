@@ -43,7 +43,11 @@
     var SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     /* o que fazer -> em qual hora planetária (mude aqui se quiser outra combinação) */
     var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno'], ['Outra coisa', 'Mercúrio']];
-    var nomeAdmin = '', calendarios = [], eventos = [], dias = 7;
+    var nomeAdmin = '', calendarios = [], eventos = [], DIAS_BUSCA = 7;
+    var DIA = 86400000, HORA_PX = 48, ATIVA = null;
+    var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    var VISOES = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
+    var visao = 'semana', ancora = '', areaForm = null, atualizar = function () {};
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
@@ -101,19 +105,26 @@
       return { id: e.id, calId: cal.id, calNome: cal.summary, titulo: e.summary || '(sem título)', ini: ini, fim: fim, diaTodo: diaTodo, link: e.htmlLink, meet: e.hangoutLink,
         ocupa: !diaTodo && e.transparency !== 'transparent' && !recusou, editavel: !diaTodo && (cal.accessRole === 'owner' || cal.accessRole === 'writer') };
     }
-    function carregar() {
-      var de = meiaNoiteDe(Date.now()), ate = de + dias * 86400000;
-      return C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) {
+    /* lugar das horas planetárias e lista de agendas: uma vez só */
+    var prontoP = null;
+    function preparar() {
+      if (prontoP) return prontoP;
+      prontoP = C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) {
         try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); } } catch (e) { /* fica o padrão */ }
       }, function () {}).then(function () { return gapi('/users/me/calendarList?minAccessRole=reader'); }).then(function (l) {
         calendarios = (l.items || []).filter(function (c) { return c.selected !== false; });
+      });
+      prontoP.catch(function () { prontoP = null; });
+      return prontoP;
+    }
+    /* compromissos de todas as agendas marcadas, entre dois instantes (ms) */
+    function eventosEntre(de, ate) {
+      return preparar().then(function () {
         return Promise.all(calendarios.map(function (c) {
-          return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250', timeZone: 'America/Sao_Paulo' }))
+          return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
             .then(function (r) { return (r.items || []).map(function (e) { return normalizar(e, c); }); }, function () { return []; });
         }));
-      }).then(function (listas) {
-        eventos = [].concat.apply([], listas).filter(Boolean).sort(function (a, b) { return a.ini - b.ini; });
-      });
+      }).then(function (listas) { return [].concat.apply([], listas).filter(Boolean).sort(function (a, b) { return a.ini - b.ini; }); });
     }
 
     /* ---------- tela ---------- */
@@ -138,7 +149,7 @@
       app.appendChild(topo(nomeAdmin));
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
       app.appendChild(corpo);
-      carregar().then(function () { corpo.textContent = ''; desenhar(corpo); }, function (e) {
+      preparar().then(function () { corpo.textContent = ''; montar(corpo); }, function (e) {
         corpo.textContent = '';
         if (e.message === 'desconectado') corpo.appendChild(cartaoConectar('Para ver a sua agenda, conecte o Google uma vez. Depois disso não pede mais.', 'Conectar o Google'));
         else if (e.message === 'permissao') corpo.appendChild(cartaoConectar('O Google ainda não deixou o site ver a sua agenda. É só dar essa permissão uma vez.', 'Permitir o Google Agenda'));
@@ -146,47 +157,218 @@
       });
     }
 
-    function desenhar(corpo) {
+    /* ---------- datas (texto "AAAA-MM-DD", sempre no horário de Brasília) ---------- */
+    function somaDias(iso, n) { var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2] + n)); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
+    function somaMeses(iso, n) {
+      var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1 + n, 1)), dim = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+      return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(Math.min(+a[2], dim));
+    }
+    function diaSem(iso) { var a = iso.split('-'); return new Date(Date.UTC(+a[0], +a[1] - 1, +a[2])).getUTCDay(); }
+    function diasNoMes(a, m) { return new Date(Date.UTC(a, m, 0)).getUTCDate(); }
+    function intervalo() { /* [de, ate) em ms do que a tela atual mostra */
+      var a = ancora.split('-'), ini;
+      if (visao === 'dia') return [doIso(ancora), doIso(somaDias(ancora, 1))];
+      if (visao === 'semana') { ini = somaDias(ancora, -diaSem(ancora)); return [doIso(ini), doIso(somaDias(ini, 7))]; }
+      if (visao === 'mes') { var pri = a[0] + '-' + a[1] + '-01'; ini = somaDias(pri, -diaSem(pri)); return [doIso(ini), doIso(somaDias(ini, 42))]; }
+      return [doIso(a[0] + '-01-01'), doIso((+a[0] + 1) + '-01-01')];
+    }
+    function curto(iso) { var a = iso.split('-'); return (+a[2]) + ' de ' + MES_CURTO[+a[1] - 1]; }
+    function tituloPeriodo() {
+      var a = ancora.split('-');
+      if (visao === 'dia') return rotuloDia(ancora);
+      if (visao === 'semana') { var ini = somaDias(ancora, -diaSem(ancora)), fim = somaDias(ini, 6); return curto(ini) + ' a ' + curto(fim) + ' de ' + fim.slice(0, 4); }
+      if (visao === 'mes') return MESES[+a[1] - 1] + ' de ' + a[0];
+      return a[0];
+    }
+    function abrirEvento(e) {
+      if (e.editavel) { formulario(areaForm, e, {}); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      else if (e.link) window.open(e.link, '_blank', 'noopener');
+    }
+    function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
+    var linhaFina = '1px solid rgba(31,95,163,.35)';
+    function bloco(texto, estilo) { var d = el('div', { text: texto }); d.style.cssText = estilo; return d; }
+
+    /* ---------- tela com as quatro visões ---------- */
+    function montar(corpo) {
+      var ent = P.estado.ler();
+      ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
+      if (['dia', 'semana', 'mes', 'ano'].indexOf(ent.v) >= 0) visao = ent.v;
+      areaForm = el('div');
+      var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
       var novo = el('button', { type: 'button', class: 'portal-btn', text: '+ Compromisso' });
-      var area = el('div'), encaixe = el('div'), lista = el('div');
-      novo.addEventListener('click', function () { formulario(area, null, {}); });
-      corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:12px' }, [novo]));
-      corpo.appendChild(area);
-      encaixe.appendChild(painelEncaixe(area));
-      corpo.appendChild(encaixe);
-      corpo.appendChild(lista);
-      listaDias(lista, area);
-    }
+      novo.addEventListener('click', function () { formulario(areaForm, null, { dia: visao === 'dia' ? ancora : undefined }); });
+      var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:14px' }), botoes = {};
+      VISOES.forEach(function (v) {
+        var b = el('button', { type: 'button', class: 'portal-aba', text: v[1] });
+        b.addEventListener('click', function () { visao = v[0]; mudou(); });
+        botoes[v[0]] = b; abas.appendChild(b);
+      });
+      var passo = function (n) { ancora = visao === 'dia' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
+      var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo' });
+      var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' });
+      ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
+      hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
+      var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje]);
+      corpo.appendChild(el('div', { class: 'portal-acoes' }, [novo]));
+      corpo.appendChild(areaForm); corpo.appendChild(abas); corpo.appendChild(nav); corpo.appendChild(vista);
+      encaixe.appendChild(painelEncaixe(areaForm)); corpo.appendChild(encaixe);
 
-    function listaDias(lista, area) {
-      lista.textContent = '';
-      var primeiro = meiaNoiteDe(Date.now());
-      for (var i = 0; i < dias; i++) {
-        var iso = isoDia(primeiro + i * 86400000 + 12 * 3600000);
-        var doDia = eventos.filter(function (e) { return isoDia(e.ini) === iso || (e.diaTodo && e.ini <= doIso(iso, '00:00') && e.fim > doIso(iso, '00:00')); });
-        var c = el('div', { class: 'portal-cartao' }, [el('h2', { text: rotuloDia(iso) })]);
-        if (!doDia.length) c.appendChild(el('p', { class: 'portal-vazio', text: 'Nada marcado.' }));
-        doDia.forEach(function (e) { c.appendChild(linha(e, area)); });
-        lista.appendChild(c);
+      var pedido = 0;
+      function mudou() {
+        VISOES.forEach(function (v) { botoes[v[0]].className = 'portal-aba' + (v[0] === visao ? ' ativa' : ''); botoes[v[0]].setAttribute('aria-selected', v[0] === visao ? 'true' : 'false'); });
+        P.estado.gravar({ v: visao, d: ancora });
+        titulo.textContent = tituloPeriodo();
+        vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+        var meu = ++pedido, iv = intervalo();
+        eventosEntre(iv[0], iv[1]).then(function (evs) {
+          if (meu !== pedido) return;
+          eventos = evs; vista.textContent = '';
+          if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
+          else if (visao === 'mes') vistaMes(vista, evs); else vistaAno(vista, evs);
+        }, function (e) { if (meu === pedido) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); } });
       }
-      var mais = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ver mais 7 dias' });
-      mais.addEventListener('click', function () { dias += 7; tela(); });
-      lista.appendChild(el('div', { class: 'portal-acoes' }, [mais]));
+      atualizar = mudou;
+      mudou();
     }
 
-    function linha(e, area) {
-      var quando = e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim);
-      var acoes = el('div', { class: 'portal-acoes' });
-      if (e.meet) acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: P.linkSeguro ? P.linkSeguro(e.meet) : e.meet, target: '_blank', rel: 'noopener', text: 'Meet' }));
-      if (e.editavel) {
-        var ed = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
-        ed.addEventListener('click', function () { formulario(area, e, {}); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-        acoes.appendChild(ed);
-      } else if (e.link) acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: e.link, target: '_blank', rel: 'noopener', text: 'Abrir no Google' }));
-      var l = el('div', { class: 'portal-item' }, [
-        el('div', {}, [el('strong', { text: e.titulo }), el('div', { class: 'portal-item-data', text: quando + (calendarios.length > 1 ? ' · ' + e.calNome : '') })]), acoes]);
-      l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
-      return l;
+    /* coloca os compromissos lado a lado quando se sobrepõem */
+    function colunas(lista) {
+      var res = [], grupo = [], fimGrupo = 0;
+      function fechar() { var n = 0; grupo.forEach(function (g) { n = Math.max(n, g.col + 1); }); grupo.forEach(function (g) { g.cols = n; }); res = res.concat(grupo); grupo = []; fimGrupo = 0; }
+      lista.forEach(function (x) {
+        if (grupo.length && x.i >= fimGrupo) fechar();
+        var usados = {}; grupo.forEach(function (g) { if (g.f > x.i) usados[g.col] = 1; });
+        var c = 0; while (usados[c]) c++;
+        x.col = c; grupo.push(x); fimGrupo = Math.max(fimGrupo, x.f);
+      });
+      fechar(); return res;
+    }
+
+    /* Dia e Semana: linha do tempo por hora (no Dia, uma faixa com a hora planetária) */
+    function vistaGrade(vista, isos, evs) {
+      var unico = isos.length === 1, hoje = isoDia(Date.now());
+      var h0 = 6, h1 = 23;
+      evs.forEach(function (e) { if (e.diaTodo) return; var a = loc(e.ini), b = loc(e.fim); h0 = Math.min(h0, a.getUTCHours()); if (isoDia(e.fim) === isoDia(e.ini)) h1 = Math.max(h1, b.getUTCHours() + (b.getUTCMinutes() ? 1 : 0)); else h1 = 24; });
+      h1 = Math.min(24, Math.max(h1, h0 + 1));
+      var altura = (h1 - h0) * HORA_PX, modelo = '34px ' + (unico ? '58px ' : '') + 'repeat(' + isos.length + ', minmax(0, 1fr))';
+      var caixa = el('div');
+      // cabeçalho dos dias
+      var cab = el('div', { style: 'display:grid;grid-template-columns:' + modelo }); cab.appendChild(el('div')); if (unico) cab.appendChild(el('div'));
+      isos.forEach(function (iso) {
+        var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:6px 0;font-family:var(--fonte-mao);color:#16233F;text-align:center' });
+        b.appendChild(el('div', { text: SEM_CURTO[diaSem(iso)], style: 'font-size:11px' }));
+        var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:16px;font-weight:700;display:inline-block;min-width:26px;line-height:26px' });
+        if (iso === hoje) n.style.cssText += ';border:2px solid #1F5FA3;color:#A03E25';
+        b.appendChild(n);
+        if (!unico) b.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
+        cab.appendChild(b);
+      });
+      caixa.appendChild(cab);
+      // o dia todo
+      var temTodo = evs.some(function (e) { return e.diaTodo; });
+      if (temTodo) {
+        var linhaTodo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina }); linhaTodo.appendChild(el('div')); if (unico) linhaTodo.appendChild(el('div'));
+        isos.forEach(function (iso) {
+          var c = el('div', { style: 'padding:2px;min-width:0' });
+          doDia(iso, evs).filter(function (e) { return e.diaTodo; }).forEach(function (e) {
+            var t = bloco(e.titulo, 'font-size:10px;line-height:1.3;border:1px solid #1F5FA3;padding:1px 3px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;color:#16233F');
+            t.addEventListener('click', function () { abrirEvento(e); }); c.appendChild(t);
+          });
+          linhaTodo.appendChild(c);
+        });
+        caixa.appendChild(linhaTodo);
+      }
+      // as horas
+      var corpo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina });
+      var gut = el('div', { style: 'position:relative;height:' + altura + 'px' });
+      for (var h = h0; h < h1; h++) gut.appendChild(bloco(p2(h), 'position:absolute;left:0;right:4px;top:' + ((h - h0) * HORA_PX - 6) + 'px;text-align:right;font-size:10px;color:#16233F;opacity:.7'));
+      corpo.appendChild(gut);
+      if (unico) {
+        var pl = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina });
+        var d0 = doIso(isos[0]);
+        HP.horasEntre(d0, d0 + DIA, LAT, LON).forEach(function (hp) {
+          var topo = (Math.max(hp.ini, d0) - d0) / 3600000 * HORA_PX - h0 * HORA_PX, fimPx = (Math.min(hp.fim, d0 + DIA) - d0) / 3600000 * HORA_PX - h0 * HORA_PX;
+          if (fimPx <= 0 || topo >= altura) return;
+          var t = Math.max(0, topo), alt = Math.min(altura, fimPx) - t;
+          pl.appendChild(bloco(hp.planeta, 'position:absolute;left:0;right:0;top:' + t + 'px;height:' + alt + 'px;box-sizing:border-box;border-top:' + linhaFina + ';font-size:10px;padding:1px 3px;overflow:hidden;color:#B5852F;font-weight:700'));
+        });
+        corpo.appendChild(pl);
+      }
+      isos.forEach(function (iso) {
+        var d0 = doIso(iso), d1 = d0 + DIA;
+        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (HORA_PX - 1) + 'px,rgba(31,95,163,.3) ' + (HORA_PX - 1) + 'px,rgba(31,95,163,.3) ' + HORA_PX + 'px)' });
+        col.addEventListener('click', function (ev) {
+          var y = ev.clientY - col.getBoundingClientRect().top, min = Math.floor((h0 * 60 + y / HORA_PX * 60) / 30) * 30, fimMin = Math.min(min + 60, 24 * 60 - 1);
+          formulario(areaForm, null, { dia: iso, ini: p2(Math.floor(min / 60)) + ':' + p2(min % 60), fim: p2(Math.floor(fimMin / 60)) + ':' + p2(fimMin % 60) });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        var itens = doDia(iso, evs).filter(function (e) { return !e.diaTodo; }).map(function (e) { return { e: e, i: Math.max(e.ini, d0), f: Math.min(e.fim, d1) }; }).sort(function (a, b) { return a.i - b.i; });
+        colunas(itens).forEach(function (x) {
+          var top = (x.i - d0) / 3600000 * HORA_PX - h0 * HORA_PX, alt = Math.max(16, (x.f - x.i) / 3600000 * HORA_PX - 1);
+          var b = el('div', { style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid #1F5FA3;border-left:3px solid #B5852F;padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:#16233F;cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
+          b.appendChild(el('div', { text: x.e.titulo, style: 'font-weight:700' }));
+          if (alt >= 34) b.appendChild(el('div', { text: unico ? hhmm(x.e.ini) + ' às ' + hhmm(x.e.fim) : hhmm(x.e.ini), style: 'font-size:' + (unico ? 11 : 9) + 'px;color:#A03E25' }));
+          b.addEventListener('click', function (ev) { ev.stopPropagation(); abrirEvento(x.e); });
+          col.appendChild(b);
+        });
+        if (iso === hoje) { var agora = (Date.now() - d0) / 3600000 * HORA_PX - h0 * HORA_PX; if (agora >= 0 && agora <= altura) col.appendChild(bloco('', 'position:absolute;left:0;right:0;top:' + agora + 'px;border-top:2px solid #A03E25;pointer-events:none')); }
+        corpo.appendChild(col);
+      });
+      caixa.appendChild(corpo);
+      if (unico && !evs.length) caixa.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Nada marcado neste dia. Toque num horário para marcar.' }));
+      vista.appendChild(caixa);
+    }
+
+    /* Mês */
+    function vistaMes(vista, evs) {
+      var a = ancora.split('-'), pri = a[0] + '-' + a[1] + '-01', ini = somaDias(pri, -diaSem(pri)), hoje = isoDia(Date.now());
+      var linhas = Math.ceil((diaSem(pri) + diasNoMes(+a[0], +a[1])) / 7);
+      var g = el('div', { style: 'display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:' + linhaFina + ';border-left:' + linhaFina });
+      SEM_CURTO.forEach(function (s) { g.appendChild(bloco(s, 'font-size:11px;text-align:center;padding:4px 0;border-right:' + linhaFina + ';border-bottom:' + linhaFina)); });
+      for (var k = 0; k < linhas * 7; k++) {
+        (function (iso) {
+          var fora = iso.slice(0, 7) !== a[0] + '-' + a[1];
+          var c = el('div', { style: 'min-height:84px;padding:2px;min-width:0;cursor:pointer;border-right:' + linhaFina + ';border-bottom:' + linhaFina + ';' + (fora ? 'opacity:.45' : '') });
+          var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:12px;font-weight:700;display:inline-block;min-width:20px;line-height:20px;text-align:center' });
+          if (iso === hoje) n.style.cssText += ';border:2px solid #1F5FA3;color:#A03E25';
+          c.appendChild(n);
+          var lista = doDia(iso, evs);
+          lista.slice(0, 3).forEach(function (e) { c.appendChild(bloco((e.diaTodo ? '' : hhmm(e.ini) + ' ') + e.titulo, 'font-size:10px;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-left:2px solid #B5852F;padding-left:2px;margin-top:2px;color:#16233F')); });
+          if (lista.length > 3) c.appendChild(bloco('+' + (lista.length - 3), 'font-size:10px;color:#A03E25;margin-top:2px'));
+          c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
+          g.appendChild(c);
+        })(somaDias(ini, k));
+      }
+      vista.appendChild(g);
+    }
+
+    /* Ano: os 12 meses de uma vez; dia com compromisso ganha uma barrinha ocre (mais grossa quando tem mais) */
+    function vistaAno(vista, evs) {
+      var ano = +ancora.split('-')[0], hoje = isoDia(Date.now()), conta = {};
+      evs.forEach(function (e) {
+        var d = isoDia(e.ini), ultimo = isoDia(Math.max(e.ini, e.fim - 1));
+        for (var n = 0; d <= ultimo && n < 40; n++) { conta[d] = (conta[d] || 0) + 1; d = somaDias(d, 1); }
+      });
+      var g = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:18px 14px' });
+      for (var m = 1; m <= 12; m++) {
+        (function (m) {
+          var pri = ano + '-' + p2(m) + '-01', cx = el('div');
+          var nome = el('button', { type: 'button', text: MESES[m - 1], style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:2px 0;margin-bottom:4px;font-family:Cinzel,serif;font-size:13px;font-weight:700;color:#A03E25;text-transform:lowercase' });
+          nome.addEventListener('click', function () { visao = 'mes'; ancora = pri; atualizar(); });
+          cx.appendChild(nome);
+          var t = el('div', { style: 'display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px' });
+          ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (s) { t.appendChild(bloco(s, 'opacity:.6;padding:1px 0')); });
+          for (var v = 0; v < diaSem(pri); v++) t.appendChild(el('div'));
+          for (var d = 1; d <= diasNoMes(ano, m); d++) {
+            var iso = ano + '-' + p2(m) + '-' + p2(d), n = conta[iso] || 0;
+            var c = el('div', { text: String(d), style: 'cursor:pointer;line-height:20px;box-sizing:border-box;color:#16233F;' + (n ? 'font-weight:700;border-bottom:' + (n >= 3 ? 4 : 2) + 'px solid #B5852F;' : '') + (iso === hoje ? 'outline:2px solid #1F5FA3;outline-offset:-2px;color:#A03E25;' : '') });
+            (function (iso) { c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); }); })(iso);
+            t.appendChild(c);
+          }
+          cx.appendChild(t); g.appendChild(cx);
+        })(m);
+      }
+      vista.appendChild(g);
     }
 
     /* criar / editar um compromisso (novo vai para a agenda principal) */
@@ -209,7 +391,7 @@
         var corpo = { summary: t, start: { dateTime: new Date(a).toISOString(), timeZone: 'America/Sao_Paulo' }, end: { dateTime: new Date(b).toISOString(), timeZone: 'America/Sao_Paulo' } };
         var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(e.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
           : gapi('/calendars/primary/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
-        cham.then(function () { tela(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
+        cham.then(function () { destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
       });
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       var filhos = [el('h2', { text: e ? 'Editar compromisso' : 'Novo compromisso' })].concat(campo('Nome', titulo), campo('Dia', dia), campo('Início', ini), campo('Fim', fim), [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
@@ -217,7 +399,7 @@
         var ap = P.botaoApagar('Apagar');
         ap.addEventListener('click', function () {
           if (!confirm('Apagar "' + e.titulo + '"? Não dá para desfazer.')) return;
-          gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(e.id), { method: 'DELETE' }).then(function () { tela(); }, function (er) { P.mensagem(msg, 'Não foi possível apagar (' + er.message + ').', 'erro'); });
+          gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(e.id), { method: 'DELETE' }).then(function () { destino.textContent = ''; atualizar(); }, function (er) { P.mensagem(msg, 'Não foi possível apagar (' + er.message + ').', 'erro'); });
         });
         filhos.push(el('div', { style: 'margin:28px 0 4px;text-align:center' }, [ap]));
       }
@@ -243,7 +425,12 @@
 
     function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora) {
       res.textContent = '';
-      var agora = Math.ceil(Date.now() / 300000) * 300000, primeiro = meiaNoiteDe(Date.now()), achados = [];
+      var primeiro = meiaNoiteDe(Date.now());
+      res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Procurando...' }));
+      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA).then(function (evs) { res.textContent = ''; acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+    }
+    function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora) {
+      var agora = Math.ceil(Date.now() / 300000) * 300000, primeiro = meiaNoiteDe(Date.now()), achados = [], dias = DIAS_BUSCA;
       for (var i = 0; i < dias && achados.length < 8; i++) {
         var dia = isoDia(primeiro + i * 86400000 + 12 * 3600000);
         var ja = Math.max(doIso(dia, deHora), agora), fimJ = doIso(dia, ateHora);
