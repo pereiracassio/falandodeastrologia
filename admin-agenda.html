@@ -311,7 +311,7 @@
         var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:6px 0;font-family:var(--fonte-mao);color:#16233F;text-align:center' });
         b.appendChild(el('div', { text: SEM_CURTO[diaSem(iso)], style: 'font-size:11px' }));
         var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:16px;font-weight:700;display:inline-block;min-width:26px;line-height:26px' });
-        if (iso === hoje) n.style.cssText += ';border:2px solid #1F5FA3;color:#A03E25';
+        if (iso === hoje) n.style.cssText += ';border:2px solid #B5852F;color:#A03E25';
         b.appendChild(n);
         if (!unico) b.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
         cab.appendChild(b);
@@ -383,7 +383,7 @@
           var fora = iso.slice(0, 7) !== a[0] + '-' + a[1];
           var c = el('div', { style: 'min-height:84px;padding:2px;min-width:0;cursor:pointer;border-right:' + linhaFina + ';border-bottom:' + linhaFina + ';' + (fora ? 'opacity:.45' : '') });
           var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:12px;font-weight:700;display:inline-block;min-width:20px;line-height:20px;text-align:center' });
-          if (iso === hoje) n.style.cssText += ';border:2px solid #1F5FA3;color:#A03E25';
+          if (iso === hoje) n.style.cssText += ';border:2px solid #B5852F;color:#A03E25';
           c.appendChild(n);
           var lista = doDia(iso, evs);
           lista.slice(0, 3).forEach(function (e) {
@@ -419,7 +419,7 @@
           for (var v = 0; v < diaSem(pri); v++) t.appendChild(el('div'));
           for (var d = 1; d <= diasNoMes(ano, m); d++) {
             var iso = ano + '-' + p2(m) + '-' + p2(d), n = conta[iso] || 0;
-            var c = el('div', { text: String(d), style: 'cursor:pointer;line-height:20px;box-sizing:border-box;color:#16233F;' + (n ? 'font-weight:700;border-bottom:' + (n >= 3 ? 4 : 2) + 'px solid #B5852F;' : '') + (iso === hoje ? 'outline:2px solid #1F5FA3;outline-offset:-2px;color:#A03E25;' : '') });
+            var c = el('div', { text: String(d), style: 'cursor:pointer;line-height:20px;box-sizing:border-box;color:#16233F;' + (n ? 'font-weight:700;border-bottom:' + (n >= 3 ? 4 : 2) + 'px solid #B5852F;' : '') + (iso === hoje ? 'outline:2px solid #B5852F;outline-offset:-2px;color:#A03E25;' : '') });
             (function (iso) { c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); }); })(iso);
             t.appendChild(c);
           }
