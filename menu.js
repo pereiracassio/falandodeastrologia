@@ -20,6 +20,7 @@
   /* só dentro das telas do painel; no site em si fica o menu do site */
   if (ehAdmin && /\/(admin-[a-z]+|capa)\.html$/.test(location.pathname)) {
     links = [
+      { label: "Agenda", href: "admin-agenda.html" },
       { label: "Aplicações", href: "admin-aplicacoes.html" },
       { label: "Alunos", href: "admin-alunos.html" },
       { label: "Clientes", href: "admin-clientes.html" },
@@ -30,7 +31,6 @@
       { label: "Produção", href: "admin-producao.html" },
       { label: "Visitas", href: "admin-visitas.html" },
       { label: "Estudos", href: "admin-estudos.html" },
-      { label: "Agenda", href: "admin-agenda.html" },
       { label: "Psicanálise", href: "https://pereiracassio.com.br/admin.html" },
       { label: "Ver o site", href: "index.html", sep: true }
     ];

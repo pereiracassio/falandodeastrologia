@@ -3,7 +3,7 @@
   "short_name": "Produção",
   "description": "Séries, vídeos, cortes e horários de Júpiter",
   "lang": "pt-BR",
-  "start_url": "/admin-producao.html",
+  "start_url": "/admin-agenda.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#e6d3a0",

@@ -30,8 +30,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=70"></script>
-  <script src="menu.js?v=35" defer></script>
+  <script src="portal.js?v=71"></script>
+  <script src="menu.js?v=36" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
   (function () {
@@ -237,7 +237,7 @@
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
       hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
       var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje]);
-      corpo.appendChild(el('div', { class: 'portal-acoes' }, [novo, el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-site.html', text: 'Escolher agendas' })]));
+      corpo.appendChild(el('div', { class: 'portal-acoes' }, [novo]));
       corpo.appendChild(areaForm); corpo.appendChild(abas); corpo.appendChild(nav); corpo.appendChild(vista);
       encaixe.appendChild(painelEncaixe(areaForm)); corpo.appendChild(encaixe);
 

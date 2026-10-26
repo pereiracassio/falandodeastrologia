@@ -2,13 +2,12 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <script>/* app da tela de início: ao abrir de novo, volta para onde você parou (ver lembrarOndeParou em portal.js) */
+  <script>/* app da tela de início: ao abrir do zero, SEMPRE entra pela Agenda (pedido dele, 26/10/2026; antes voltava à última página) */
   (function () { try {
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app || sessionStorage.getItem('fda_app_aberto')) return;
     sessionStorage.setItem('fda_app_aberto', '1');
-    var u = localStorage.getItem('fda_ultima_pagina');
-    if (u && !location.hash && !location.search && /^\/[a-z-]+\.html/.test(u) && u !== location.pathname + location.search) location.replace(u);
+    if (!location.hash && !location.search) location.replace('/admin-agenda.html');
   } catch (e) { /* sem armazenamento */ } })();</script>
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
@@ -101,8 +100,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=70"></script>
-  <script src="menu.js?v=35" defer></script>
+  <script src="portal.js?v=71"></script>
+  <script src="menu.js?v=36" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
