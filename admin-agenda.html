@@ -103,7 +103,7 @@
       var fim = diaTodo ? doIso(e.end.date, '00:00') : Date.parse(e.end.dateTime);
       var recusou = (e.attendees || []).some(function (a) { return a.self && a.responseStatus === 'declined'; });
       return { id: e.id, calId: cal.id, calNome: cal.summary, titulo: e.summary || '(sem título)', ini: ini, fim: fim, diaTodo: diaTodo, link: e.htmlLink, meet: e.hangoutLink,
-        ocupa: !diaTodo && e.transparency !== 'transparent' && !recusou, editavel: !diaTodo && (cal.accessRole === 'owner' || cal.accessRole === 'writer') };
+        ocupa: !diaTodo && e.transparency !== 'transparent' && !recusou, editavel: (cal.accessRole === 'owner' || cal.accessRole === 'writer') };
     }
     /* lugar das horas planetárias e lista de agendas: uma vez só */
     var prontoP = null;
@@ -184,8 +184,18 @@
       return a[0];
     }
     function abrirEvento(e) {
-      if (e.editavel) { formulario(areaForm, e, {}); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-      else if (e.link) window.open(e.link, '_blank', 'noopener');
+      if (e.editavel) formulario(areaForm, e, {}); else detalhe(areaForm, e);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    /* agenda só de leitura (aniversários, feriados...): mostra aqui mesmo, sem abrir o Google */
+    function detalhe(destino, e) {
+      destino.textContent = '';
+      var ultimo = isoDia(Math.max(e.ini, e.fim - 1)), quando = e.diaTodo ? (isoDia(e.ini) === ultimo ? 'o dia todo' : 'de ' + curto(isoDia(e.ini)) + ' a ' + curto(ultimo)) : hhmm(e.ini) + ' às ' + hhmm(e.fim);
+      var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
+      fechar.addEventListener('click', function () { destino.textContent = ''; });
+      var acoes = [fechar];
+      if (e.meet) acoes.unshift(el('a', { class: 'portal-btn portal-btn-sec', href: P.linkSeguro(e.meet) || e.meet, target: '_blank', rel: 'noopener', text: 'Meet' }));
+      destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo }), el('p', { text: rotuloDia(isoDia(e.ini)) + ' · ' + quando }), el('p', { class: 'portal-item-data', text: 'Agenda "' + e.calNome + '", só de leitura.' }), el('div', { class: 'portal-acoes' }, acoes)]));
     }
     function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
     var linhaFina = '1px solid rgba(31,95,163,.35)';
@@ -390,27 +400,45 @@
     /* criar / editar um compromisso (novo vai para a agenda principal) */
     function formulario(destino, e, pre) {
       destino.textContent = '';
+      var todo = e ? e.diaTodo : !!pre.todo;
       var titulo = el('input', { type: 'text', placeholder: 'O que é', value: e ? e.titulo : (pre.titulo || '') });
       var dia = el('input', { type: 'date', value: e ? isoDia(e.ini) : (pre.dia || isoDia(Date.now())) });
-      var ini = el('input', { type: 'time', value: e ? hhmm(e.ini) : (pre.ini || '09:00') });
-      var fim = el('input', { type: 'time', value: e ? hhmm(e.fim) : (pre.fim || '10:00') });
+      var ate = el('input', { type: 'date', value: e && e.diaTodo ? isoDia(Math.max(e.ini, e.fim - 1)) : (pre.dia || isoDia(Date.now())) });
+      var ini = el('input', { type: 'time', value: e && !e.diaTodo ? hhmm(e.ini) : (pre.ini || '09:00') });
+      var fim = el('input', { type: 'time', value: e && !e.diaTodo ? hhmm(e.fim) : (pre.fim || '10:00') });
       var msg = el('p', { class: 'portal-msg' });
+      /* "o dia todo": caixinha só com contorno, como no resto do painel */
+      var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+      var blocoHora = el('div'), blocoAte = el('div');
+      var pinta = function () { cx.textContent = todo ? '✓' : ''; cx.setAttribute('aria-checked', todo ? 'true' : 'false'); blocoHora.style.display = todo ? 'none' : ''; blocoAte.style.display = todo ? '' : 'none'; };
+      cx.addEventListener('click', function () { todo = !todo; pinta(); });
+      var nomeCx = el('span', { text: 'O dia todo', style: 'cursor:pointer' }); nomeCx.addEventListener('click', function () { todo = !todo; pinta(); });
+      var linhaTodo = el('div', { style: 'display:flex;align-items:center;gap:12px;margin:14px 0 10px' }, [cx, nomeCx]);
+      var campo = function (r, c) { return [el('label', { text: r }), c]; };
+      campo('Início', ini).concat(campo('Fim', fim)).forEach(function (n) { blocoHora.appendChild(n); });
+      campo('Até o dia', ate).forEach(function (n) { blocoAte.appendChild(n); });
+      pinta();
       var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
       var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
       cancelar.addEventListener('click', function () { destino.textContent = ''; });
       salvar.addEventListener('click', function () {
-        var t = titulo.value.trim();
-        if (!t || !dia.value || !ini.value || !fim.value) { P.mensagem(msg, 'Preencha o nome, o dia e os dois horários.', 'erro'); return; }
-        var a = doIso(dia.value, ini.value), b = doIso(dia.value, fim.value);
-        if (b <= a) { P.mensagem(msg, 'O fim precisa ser depois do início.', 'erro'); return; }
+        var t = titulo.value.trim(), corpo;
+        if (!t || !dia.value) { P.mensagem(msg, 'Preencha o nome e o dia.', 'erro'); return; }
+        if (todo) {
+          if (!ate.value || ate.value < dia.value) { P.mensagem(msg, 'O "até o dia" precisa ser o mesmo dia ou depois.', 'erro'); return; }
+          corpo = { summary: t, start: { date: dia.value, dateTime: null }, end: { date: somaDias(ate.value, 1), dateTime: null } };
+        } else {
+          if (!ini.value || !fim.value) { P.mensagem(msg, 'Preencha os dois horários.', 'erro'); return; }
+          var a = doIso(dia.value, ini.value), b = doIso(dia.value, fim.value);
+          if (b <= a) { P.mensagem(msg, 'O fim precisa ser depois do início.', 'erro'); return; }
+          corpo = { summary: t, start: { dateTime: new Date(a).toISOString(), date: null, timeZone: 'America/Sao_Paulo' }, end: { dateTime: new Date(b).toISOString(), date: null, timeZone: 'America/Sao_Paulo' } };
+        }
         salvar.disabled = true;
-        var corpo = { summary: t, start: { dateTime: new Date(a).toISOString(), timeZone: 'America/Sao_Paulo' }, end: { dateTime: new Date(b).toISOString(), timeZone: 'America/Sao_Paulo' } };
         var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(e.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
           : gapi('/calendars/primary/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
         cham.then(function () { destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
       });
-      var campo = function (r, c) { return [el('label', { text: r }), c]; };
-      var filhos = [el('h2', { text: e ? 'Editar compromisso' : 'Novo compromisso' })].concat(campo('Nome', titulo), campo('Dia', dia), campo('Início', ini), campo('Fim', fim), [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
+      var filhos = [el('h2', { text: e ? 'Editar compromisso' : 'Novo compromisso' })].concat(campo('Nome', titulo), campo('Dia', dia), [linhaTodo, blocoHora, blocoAte, el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
       if (e) {
         var ap = P.botaoApagar('Apagar');
         ap.addEventListener('click', function () {
