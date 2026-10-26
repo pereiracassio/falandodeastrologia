@@ -152,6 +152,11 @@ function casca({ titulo, descricao, url, tipo, extraHead, corpo, home, barra }) 
   <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/favicon.png?v=2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest-alunos.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Alunos">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   ${tipo === 'article' ? '<meta name="theme-color" content="#e6d3a0">' : ''}
   <title>${esc(titulo)} - Falando de Astrologia</title>
   <meta name="description" content="${esc(descricao)}">
