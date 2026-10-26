@@ -7,7 +7,7 @@
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app || sessionStorage.getItem('fda_app_aberto')) return;
     sessionStorage.setItem('fda_app_aberto', '1');
-    if (!location.hash && !location.search) location.replace('/admin-agenda.html');
+    if (!/access_token|refresh_token|type=/.test(location.hash)) location.replace('/admin-agenda.html'); /* mesmo com #aba=... no endereço salvo no ícone */
   } catch (e) { /* sem armazenamento */ } })();</script>
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=2">

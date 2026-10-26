@@ -102,7 +102,7 @@
       var ini = diaTodo ? doIso(e.start.date, '00:00') : Date.parse(e.start.dateTime);
       var fim = diaTodo ? doIso(e.end.date, '00:00') : Date.parse(e.end.dateTime);
       var recusou = (e.attendees || []).some(function (a) { return a.self && a.responseStatus === 'declined'; });
-      return { id: e.id, calId: cal.id, calNome: cal.summary, titulo: e.summary || '(sem título)', ini: ini, fim: fim, diaTodo: diaTodo, link: e.htmlLink, meet: e.hangoutLink || ((e.conferenceData && e.conferenceData.entryPoints || []).filter(function (p) { return p.entryPointType === 'video'; })[0] || {}).uri || '', local: e.location || '', descricao: e.description || '',
+      return { id: e.id, calId: cal.id, calNome: cal.summary, titulo: e.summary || '(sem título)', ini: ini, fim: fim, diaTodo: diaTodo, link: e.htmlLink, meet: e.hangoutLink || ((e.conferenceData && e.conferenceData.entryPoints || []).filter(function (p) { return p.entryPointType === 'video'; })[0] || {}).uri || '', local: e.location || '', descricao: e.description || '', convRaw: e.attendees || [], convidados: (e.attendees || []).filter(function (p) { return !p.self && !p.resource; }).map(function (p) { return p.email; }),
         ocupa: !diaTodo && e.transparency !== 'transparent' && !recusou, editavel: (cal.accessRole === 'owner' || cal.accessRole === 'writer') };
     }
     /* lugar das horas planetárias e lista de agendas: uma vez só */
@@ -183,30 +183,42 @@
       if (visao === 'mes') return MESES[+a[1] - 1] + ' de ' + a[0];
       return a[0];
     }
+    /* caixinha só com contorno (igual ao resto do painel): devolve { el, valor() } */
+    function caixinha(rotulo, inicial, aoMudar) {
+      var marcada = !!inicial;
+      var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+      var nome = el('span', { text: rotulo, style: 'cursor:pointer' });
+      var pinta = function () { cx.textContent = marcada ? '\u2713' : ''; cx.setAttribute('aria-checked', marcada ? 'true' : 'false'); if (aoMudar) aoMudar(marcada); };
+      var alterna = function () { marcada = !marcada; pinta(); };
+      cx.addEventListener('click', alterna); nome.addEventListener('click', alterna);
+      pinta();
+      return { el: el('div', { style: 'display:flex;align-items:center;gap:12px;margin:14px 0 10px' }, [cx, nome]), valor: function () { return marcada; } };
+    }
     function abrirEvento(e) {
       detalhe(areaForm, e);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    /* tocar num compromisso só MOSTRA (título, quando, onde, Meet, anotações); o lápis abre a edição, se a agenda deixar */
+    /* tocar num compromisso só MOSTRA; o lápis abre a edição. Cores: título terracota, horário azul, o resto preto */
     function detalhe(destino, e) {
       destino.textContent = '';
-      var ultimo = isoDia(Math.max(e.ini, e.fim - 1)), quando = e.diaTodo ? (isoDia(e.ini) === ultimo ? 'o dia todo' : 'de ' + curto(isoDia(e.ini)) + ' a ' + curto(ultimo)) : hhmm(e.ini) + ' às ' + hhmm(e.fim);
+      var ultimo = isoDia(Math.max(e.ini, e.fim - 1)), quando = e.diaTodo ? (isoDia(e.ini) === ultimo ? 'o dia todo' : 'de ' + curto(isoDia(e.ini)) + ' a ' + curto(ultimo)) : 'das ' + hhmm(e.ini) + ' às ' + hhmm(e.fim);
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
       var acoes = [];
       if (e.meet) acoes.push(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: P.linkSeguro(e.meet) || e.meet, target: '_blank', rel: 'noopener', title: 'Entrar no Meet', 'aria-label': 'Entrar no Meet' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' })]));
       acoes.push(fechar);
-      var topo = el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:10px' }, [el('h2', { text: e.titulo, style: 'margin:0;flex:1' })]);
+      var topo = el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:10px' }, [el('h2', { text: e.titulo, style: 'margin:0;flex:1;color:#A03E25' })]);
       if (e.editavel) {
-        var lapis = el('button', { type: 'button', title: 'Editar', 'aria-label': 'Editar', text: '✎', style: 'flex:none;width:44px;height:44px;padding:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#1034A6;font-size:24px;line-height:1;cursor:pointer' });
+        var lapis = el('button', { type: 'button', title: 'Editar', 'aria-label': 'Editar', text: '✎', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#1034A6;font-size:28px;line-height:1;cursor:pointer' });
         lapis.addEventListener('click', function () { formulario(destino, e, {}); });
         topo.appendChild(lapis);
       }
-      var filhos = [topo, el('p', { text: rotuloDia(isoDia(e.ini)) + ' · ' + quando, style: 'margin:10px 0 0' })];
+      var filhos = [topo, el('p', { style: 'margin:10px 0 0' }, [el('span', { text: rotuloDia(isoDia(e.ini)) + ', ' }), el('span', { text: quando, style: 'color:#1034A6;font-weight:700' })])];
       if (e.local) filhos.push(el('p', { text: e.local, style: 'margin:6px 0 0' }));
+      if (e.convidados.length) filhos.push(el('p', { text: 'Com ' + e.convidados.join(', '), style: 'margin:6px 0 0' }));
       var nota = String(e.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
       if (nota) filhos.push(el('p', { text: nota.length > 600 ? nota.slice(0, 600) + '…' : nota, style: 'white-space:pre-line;margin:10px 0 0' }));
-      filhos.push(el('p', { class: 'portal-item-data', text: 'Agenda "' + e.calNome + '"' + (e.editavel ? '' : ', só de leitura') + '.' }));
+      filhos.push(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.7', text: 'Agenda "' + e.calNome + '"' + (e.editavel ? '' : ', só de leitura') + '.' }));
       filhos.push(el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, acoes));
       destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
     }
@@ -347,8 +359,8 @@
         colunas(itens).forEach(function (x) {
           var top = yDe(segs, x.i, H), alt = Math.max(16, yDe(segs, x.f, H) - top - 1);
           var b = el('div', { style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid #1F5FA3;border-left:3px solid #B5852F;padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:#16233F;cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
-          var tt = el('div', { style: 'font-weight:700' }); if (x.e.meet) tt.appendChild(marcaMeet(unico ? 16 : 12)); tt.appendChild(document.createTextNode(x.e.titulo)); b.appendChild(tt);
-          if (alt >= 34) b.appendChild(el('div', { text: unico ? hhmm(x.e.ini) + ' às ' + hhmm(x.e.fim) : hhmm(x.e.ini), style: 'font-size:' + (unico ? 11 : 9) + 'px;color:#A03E25' }));
+          var tt = el('div', { style: 'font-weight:700;color:#A03E25' }); if (x.e.meet) tt.appendChild(marcaMeet(unico ? 16 : 12)); tt.appendChild(document.createTextNode(x.e.titulo)); b.appendChild(tt);
+          if (alt >= 34) b.appendChild(el('div', { text: unico ? hhmm(x.e.ini) + ' às ' + hhmm(x.e.fim) : hhmm(x.e.ini), style: 'font-size:' + (unico ? 11 : 9) + 'px;color:#1034A6' }));
           b.addEventListener('click', function (ev) { ev.stopPropagation(); abrirEvento(x.e); });
           col.appendChild(b);
         });
@@ -374,7 +386,12 @@
           if (iso === hoje) n.style.cssText += ';border:2px solid #1F5FA3;color:#A03E25';
           c.appendChild(n);
           var lista = doDia(iso, evs);
-          lista.slice(0, 3).forEach(function (e) { var ch = bloco((e.diaTodo ? '' : hhmm(e.ini) + ' ') + e.titulo, 'font-size:10px;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-left:2px solid #B5852F;padding-left:2px;margin-top:2px;color:#16233F'); if (e.meet) ch.insertBefore(marcaMeet(10), ch.firstChild); c.appendChild(ch); });
+          lista.slice(0, 3).forEach(function (e) {
+            var ch = el('div', { style: 'font-size:10px;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-left:2px solid #B5852F;padding-left:2px;margin-top:2px;color:#A03E25' });
+            if (e.meet) ch.appendChild(marcaMeet(10));
+            if (!e.diaTodo) ch.appendChild(el('span', { text: hhmm(e.ini) + ' ', style: 'color:#1034A6' }));
+            ch.appendChild(document.createTextNode(e.titulo)); c.appendChild(ch);
+          });
           if (lista.length > 3) c.appendChild(bloco('+' + (lista.length - 3), 'font-size:10px;color:#A03E25;margin-top:2px'));
           c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
           g.appendChild(c);
@@ -415,45 +432,63 @@
     /* criar / editar um compromisso (novo vai para a agenda principal) */
     function formulario(destino, e, pre) {
       destino.textContent = '';
-      var todo = e ? e.diaTodo : !!pre.todo;
       var titulo = el('input', { type: 'text', placeholder: 'O que é', value: e ? e.titulo : (pre.titulo || '') });
       var dia = el('input', { type: 'date', value: e ? isoDia(e.ini) : (pre.dia || isoDia(Date.now())) });
       var ate = el('input', { type: 'date', value: e && e.diaTodo ? isoDia(Math.max(e.ini, e.fim - 1)) : (pre.dia || isoDia(Date.now())) });
       var ini = el('input', { type: 'time', value: e && !e.diaTodo ? hhmm(e.ini) : (pre.ini || '09:00') });
       var fim = el('input', { type: 'time', value: e && !e.diaTodo ? hhmm(e.fim) : (pre.fim || '10:00') });
+      var local = el('input', { type: 'text', placeholder: 'Endereço ou lugar', value: e ? e.local : '' });
+      var convidados = el('input', { type: 'text', placeholder: 'E-mails separados por vírgula', value: e ? e.convidados.join(', ') : '' });
+      var descricao = el('textarea', { rows: '3', placeholder: 'Anotações' });
+      descricao.value = e ? String(e.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '') : '';
       var msg = el('p', { class: 'portal-msg' });
-      /* "o dia todo": caixinha só com contorno, como no resto do painel */
-      var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
       var blocoHora = el('div'), blocoAte = el('div');
-      var pinta = function () { cx.textContent = todo ? '✓' : ''; cx.setAttribute('aria-checked', todo ? 'true' : 'false'); blocoHora.style.display = todo ? 'none' : ''; blocoAte.style.display = todo ? '' : 'none'; };
-      cx.addEventListener('click', function () { todo = !todo; pinta(); });
-      var nomeCx = el('span', { text: 'O dia todo', style: 'cursor:pointer' }); nomeCx.addEventListener('click', function () { todo = !todo; pinta(); });
-      var linhaTodo = el('div', { style: 'display:flex;align-items:center;gap:12px;margin:14px 0 10px' }, [cx, nomeCx]);
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
+      var todo = caixinha('O dia todo', e ? e.diaTodo : !!pre.todo, function (m) { blocoHora.style.display = m ? 'none' : ''; blocoAte.style.display = m ? '' : 'none'; });
+      var meet = caixinha('Google Meet', e ? !!e.meet : !!pre.meet);
       campo('Início', ini).concat(campo('Fim', fim)).forEach(function (n) { blocoHora.appendChild(n); });
       campo('Até o dia', ate).forEach(function (n) { blocoAte.appendChild(n); });
-      pinta();
+      todo.valor(); /* já aplicou a visibilidade */
+      /* agenda onde o compromisso novo nasce (as que deixam escrever) */
+      var qual = el('select');
+      calendarios.filter(function (c) { return c.accessRole === 'owner' || c.accessRole === 'writer'; }).forEach(function (c) { qual.appendChild(el('option', { value: c.id, text: c.summaryOverride || c.summary || c.id })); });
+      var principal = calendarios.filter(function (c) { return c.primary; })[0]; if (principal) qual.value = principal.id;
       var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
       var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
       cancelar.addEventListener('click', function () { destino.textContent = ''; });
       salvar.addEventListener('click', function () {
         var t = titulo.value.trim(), corpo;
         if (!t || !dia.value) { P.mensagem(msg, 'Preencha o nome e o dia.', 'erro'); return; }
-        if (todo) {
+        if (todo.valor()) {
           if (!ate.value || ate.value < dia.value) { P.mensagem(msg, 'O "até o dia" precisa ser o mesmo dia ou depois.', 'erro'); return; }
           corpo = { summary: t, start: { date: dia.value, dateTime: null }, end: { date: somaDias(ate.value, 1), dateTime: null } };
         } else {
           if (!ini.value || !fim.value) { P.mensagem(msg, 'Preencha os dois horários.', 'erro'); return; }
-          var a = doIso(dia.value, ini.value), b = doIso(dia.value, fim.value);
-          if (b <= a) { P.mensagem(msg, 'O fim precisa ser depois do início.', 'erro'); return; }
-          corpo = { summary: t, start: { dateTime: new Date(a).toISOString(), date: null, timeZone: 'America/Sao_Paulo' }, end: { dateTime: new Date(b).toISOString(), date: null, timeZone: 'America/Sao_Paulo' } };
+          var a1 = doIso(dia.value, ini.value), b1 = doIso(dia.value, fim.value);
+          if (b1 <= a1) { P.mensagem(msg, 'O fim precisa ser depois do início.', 'erro'); return; }
+          corpo = { summary: t, start: { dateTime: new Date(a1).toISOString(), date: null, timeZone: 'America/Sao_Paulo' }, end: { dateTime: new Date(b1).toISOString(), date: null, timeZone: 'America/Sao_Paulo' } };
         }
+        corpo.location = local.value.trim(); corpo.description = descricao.value;
+        /* convidados: só mexe se mudou (quem já respondeu continua como estava) e então o Google avisa */
+        var emails = convidados.value.split(/[,;\s]+/).filter(function (x) { return /@/.test(x); });
+        var antes = e ? e.convidados.slice().sort().join(',') : '', agora = emails.slice().sort().join(',');
+        var params = ['conferenceDataVersion=1'];
+        if (agora !== antes) {
+          var raw = e ? e.convRaw : [];
+          corpo.attendees = raw.filter(function (p) { return p.self || p.resource; }).concat(emails.map(function (em) { return raw.filter(function (p) { return p.email === em; })[0] || { email: em }; }));
+          params.push('sendUpdates=all');
+        }
+        if (meet.valor() && !(e && e.meet)) corpo.conferenceData = { createRequest: { requestId: 'fda-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), conferenceSolutionKey: { type: 'hangoutsMeet' } } };
+        else if (!meet.valor() && e && e.meet) corpo.conferenceData = null;
         salvar.disabled = true;
-        var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(e.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
-          : gapi('/calendars/primary/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+        var opc = function (m) { return { method: m, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }; };
+        var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(e.id) + '?' + params.join('&'), opc('PATCH'))
+          : gapi('/calendars/' + encodeURIComponent(qual.value || 'primary') + '/events?' + params.join('&'), opc('POST'));
         cham.then(function () { destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
       });
-      var filhos = [el('h2', { text: e ? 'Editar compromisso' : 'Novo compromisso' })].concat(campo('Nome', titulo), campo('Dia', dia), [linhaTodo, blocoHora, blocoAte, el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
+      var filhos = [el('h2', { text: e ? 'Editar compromisso' : 'Novo compromisso' })].concat(campo('Nome', titulo), campo('Dia', dia), [todo.el, blocoHora, blocoAte], campo('Local', local), [meet.el], campo('Convidados', convidados), campo('Anotações', descricao));
+      if (!e && qual.options.length > 1) filhos = filhos.concat(campo('Agenda', qual));
+      filhos = filhos.concat([el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
       if (e) {
         var ap = P.botaoApagar('Apagar');
         ap.addEventListener('click', function () {
