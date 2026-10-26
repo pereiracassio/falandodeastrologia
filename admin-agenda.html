@@ -241,7 +241,7 @@
       if (['dia', 'semana', 'mes', 'ano'].indexOf(ent.v) >= 0) visao = ent.v;
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
-      var novo = el('button', { type: 'button', class: 'portal-btn', text: '+ Compromisso' });
+      var novo = el('button', { type: 'button', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
       novo.addEventListener('click', function () { formulario(areaForm, null, { dia: visao === 'dia' ? ancora : undefined }); });
       var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:14px' }), botoes = {};
       VISOES.forEach(function (v) {
@@ -254,8 +254,7 @@
       var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' });
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
       hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
-      var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje]);
-      corpo.appendChild(el('div', { class: 'portal-acoes' }, [novo]));
+      var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje, novo]);
       corpo.appendChild(areaForm); corpo.appendChild(abas); corpo.appendChild(nav); corpo.appendChild(vista);
       encaixe.appendChild(painelEncaixe(areaForm)); corpo.appendChild(encaixe);
 
