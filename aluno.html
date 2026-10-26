@@ -50,8 +50,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=79"></script>
-  <script src="atividades.js?v=28"></script>
+  <script src="portal.js?v=80"></script>
+  <script src="atividades.js?v=29"></script>
   <script src="caderno.js?v=11"></script>
   <script>
   (function () {
@@ -288,7 +288,7 @@
     function telaAvisos(aluno, previa, irParaAtividades, aoLer) {
       var caixa = el('div', {});
       if (previa) return caixa;
-      P.client.from('avisos_recebidos').select('id,titulo,corpo,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
+      P.client.from('avisos_recebidos').select('id,titulo,corpo,atividade_id,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
         if (r.error || !r.data || !r.data.length) return;
         r.data.forEach(function (a) {
           var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
@@ -299,7 +299,7 @@
           linha.addEventListener('click', function (ev) {
             ev.preventDefault();
             if (!a.lido) { a.lido = true; aoLer(); P.client.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(function () {}, function () {}); }
-            irParaAtividades();
+            irParaAtividades(a);
           });
           caixa.appendChild(linha);
         });
@@ -318,7 +318,7 @@
           botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
         });
         conteudo.textContent = '';
-        if (chave === 'avisos') { conteudo.appendChild(telaAvisos(aluno, previa, function () { abaAtual = 'caderno'; mostrar('caderno'); }, function () { naoLidos = Math.max(0, naoLidos - 1); rotuloAvisos(); })); conteudo.appendChild(P.avisos.cartao('aluno')); return; }
+        if (chave === 'avisos') { conteudo.appendChild(telaAvisos(aluno, previa, function (a) { abaAtual = 'caderno'; mostrar('caderno'); if (a && a.atividade_id) window.atividades.destacar(a.atividade_id); }, function () { naoLidos = Math.max(0, naoLidos - 1); rotuloAvisos(); })); conteudo.appendChild(P.avisos.cartao('aluno')); return; }
         if (chave === 'mensalidade') { conteudo.appendChild(telaMensalidade(aluno, previa)); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -344,7 +344,13 @@
         botoes[ab.chave] = b;
         barra.appendChild(b);
       });
+      var deUmAviso = /[?&]atividade=([0-9a-f-]{36})/i.exec(location.search);
       mostrar(/[?&]aviso=1/.test(location.search) ? 'avisos' : 'caderno');
+      /* veio do aviso no celular: mostra onde está a atividade e marca o aviso dela como lido */
+      if (deUmAviso && !previa) {
+        window.atividades.destacar(deUmAviso[1]);
+        P.client.from('avisos_recebidos').update({ lido: true }).eq('atividade_id', deUmAviso[1]).eq('lido', false).then(function () {}, function () {});
+      }
       /* quantos avisos ainda não foram lidos, ao lado do nome da aba */
       if (!previa) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
         if (r && !r.error && r.count) { naoLidos = r.count; rotuloAvisos(); }

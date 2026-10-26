@@ -38,8 +38,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=79"></script>
-  <script src="atividades.js?v=28"></script>
+  <script src="portal.js?v=80"></script>
+  <script src="atividades.js?v=29"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -68,7 +68,8 @@
 
     /* depois de recarregar: volta pro aluno em que você estava (endereço #aluno=ID) */
     function restaurar(user) {
-      var h = P.estado.ler();
+      var h = P.estado.ler(), doAviso = new URLSearchParams(location.search).get('aluno');   /* ?aluno=ID: veio de um aviso */
+      if (doAviso) h.aluno = doAviso;
       if (!h.aluno) { listaDeAlunos(user); return; }
       Promise.all([P.client.from('alunos').select('id,nome,email,nascimento,meet_link,whatsapp').eq('id', h.aluno).maybeSingle(),
                    P.client.from('aluno_codigos').select('codigo').eq('aluno_id', h.aluno).maybeSingle()]).then(function (r) {

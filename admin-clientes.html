@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=79"></script>
+  <script src="portal.js?v=80"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -67,7 +67,8 @@
 
     /* depois de recarregar: volta pro cliente em que você estava (endereço #cliente=ID) */
     function restaurar(user) {
-      var h = P.estado.ler();
+      var h = P.estado.ler(), doAviso = new URLSearchParams(location.search).get('cliente');   /* ?cliente=ID: veio de um aviso */
+      if (doAviso) h.cliente = doAviso;
       if (!h.cliente) { listaDeClientes(user); return; }
       Promise.all([P.client.from('clientes').select('id,nome,email,nascimento,whatsapp').eq('id', h.cliente).maybeSingle(),
                    P.client.from('cliente_codigos').select('codigo').eq('cliente_id', h.cliente).maybeSingle()]).then(function (r) {

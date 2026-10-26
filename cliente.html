@@ -39,7 +39,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=79"></script>
+  <script src="portal.js?v=80"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -123,7 +123,7 @@
         aGrav.addEventListener('click', function () { registrarBaixa(e.id, 'gravacao', verId); });
         botoes.appendChild(aGrav);
       }
-      var caixa = el('div', { class: 'portal-item' });
+      var caixa = el('div', { class: 'portal-item', 'data-entrega': e.id });
       if (gravacao || pdf) {
         /* o arquivo abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
         caixa.appendChild(titulo);
@@ -155,6 +155,12 @@
     }
 
     /* o carrinho do canto vira o sino dos avisos; tocar nele abre e fecha o cartão Avisos, logo abaixo do "Olá" */
+    /* aviso tocado ou aberto pelo celular (&e=ID): mostra onde está o serviço na lista, sem abrir; se a lista ainda está chegando, espera */
+    var paraDestacar = (/[?&]e=([0-9a-f-]{36})/i.exec(location.search) || [])[1] || null;
+    function destacarEntrega(id) {
+      var alvo = id && document.querySelector('[data-entrega="' + id + '"]');
+      if (alvo) { paraDestacar = null; P.destacar(alvo); } else paraDestacar = id;
+    }
     var naoLidos = 0, cartaoAvisos = null, listaDeAvisos = null;
     function pintarSino() {
       P.numeroNoIcone(naoLidos);
@@ -165,9 +171,10 @@
     }
     function ligarAvisos(verId) {
       cartaoAvisos = el('div', {});
-      if (!verId) cartaoAvisos.appendChild(P.avisos.lista(function () { cartaoAvisos.style.display = 'none'; }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); }, 30));
+      if (!verId) cartaoAvisos.appendChild(P.avisos.lista(function (a) { cartaoAvisos.style.display = 'none'; var m = /[?&]e=([0-9a-f-]{36})/i.exec(a.url || ''); if (m) destacarEntrega(m[1]); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); }, 30));
       cartaoAvisos.appendChild(P.avisos.cartao('cliente'));
-      cartaoAvisos.style.display = /[?&]aviso=1/.test(location.search) ? '' : 'none';
+      cartaoAvisos.style.display = /[?&]aviso=1/.test(location.search) && !paraDestacar ? '' : 'none';
+      if (paraDestacar && !verId) P.client.from('avisos_recebidos').update({ lido: true }).eq('url', '/cliente.html?aviso=1&e=' + paraDestacar).eq('lido', false).then(function () {}, function () {});
       app.appendChild(cartaoAvisos);
       pintarSino();
       if (!verId) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
@@ -217,6 +224,7 @@
             if (re.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus serviços agora.' })); return; }
             if (!re.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum serviço entregue ainda.' }));
             re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e, verId)); });
+            if (paraDestacar) destacarEntrega(paraDestacar);
             /* depois do atendimento (já há material entregue): convite para avaliar no Google */
             if (re.data.length) {
               app.appendChild(el('div', { class: 'portal-cartao' }, [

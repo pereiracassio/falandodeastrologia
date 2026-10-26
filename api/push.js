@@ -10,7 +10,7 @@ const webpush = require('web-push');
 
 const VAPID_CONTATO = 'mailto:cassiofalandodeastrologia@gmail.com';
 const ORIGENS_PERMITIDAS = ['https://falandodeastrologia.com.br', 'https://www.falandodeastrologia.com.br'];
-const URL_ADMIN = '/admin-alunos.html', URL_ALUNO = '/aluno.html?aviso=1';   /* ?aviso=1 abre a aba Avisos */
+const URL_ADMIN = '/admin-alunos.html', URL_ALUNO = '/aluno.html';   /* ?atividade=ID abre a lista de atividades mostrando onde ela está */
 
 const primeiroNome = (n) => String(n || '').trim().split(/\s+/)[0] || 'O aluno';
 const dia = (d) => d.toISOString().slice(0, 10);
@@ -23,7 +23,7 @@ function decidirAviso({ evento, atividade, aluno, usuario, ehAdmin, agora = new 
   if (evento === 'enviada') {
     if (email !== String(aluno.email || '').toLowerCase()) return { erro: 'Só o próprio aluno avisa que enviou.', status: 403 };
     if (!atividade.enviada_em || atividade.antiga || atividade.somente_leitura) return { ignorar: 'não é um envio' };
-    return { para: 'admins', carga: { title: 'Atividade enviada', body: primeiroNome(aluno.nome) + ' enviou: ' + titulo, url: URL_ADMIN } };
+    return { para: 'admins', carga: { title: 'Atividade enviada', body: primeiroNome(aluno.nome) + ' enviou: ' + titulo, url: URL_ADMIN + '?aluno=' + aluno.id } };
   }
   if (evento === 'nova' || evento === 'corrigida') {
     if (!ehAdmin) return { erro: 'Só quem administra avisa o aluno.', status: 403 };
@@ -33,11 +33,11 @@ function decidirAviso({ evento, atividade, aluno, usuario, ehAdmin, agora = new 
       if (Date.parse(atividade.criado_em) < agora.getTime() - 86400000) return { ignorar: 'não é nova' };
       if (atividade.data_atividade && String(atividade.data_atividade).slice(0, 10) < ontem) return { ignorar: 'material de data passada' };
       return { para: 'aluno', carga: atividade.somente_leitura
-        ? { title: 'Material novo', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei um novo material para você: ' + titulo, url: URL_ALUNO }
-        : { title: 'Atividade nova', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei uma nova atividade para você: ' + titulo, url: URL_ALUNO } };
+        ? { title: 'Material novo', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei um novo material para você: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id }
+        : { title: 'Atividade nova', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei uma nova atividade para você: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id } };
     }
     if (!atividade.corrigida_em || atividade.antiga || String(atividade.corrigida_em).slice(0, 10) < ontem) return { ignorar: 'não é uma correção de agora' };
-    return { para: 'aluno', carga: { title: 'Atividade corrigida', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade: ' + titulo, url: URL_ALUNO } };
+    return { para: 'aluno', carga: { title: 'Atividade corrigida', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id } };
   }
   return { erro: 'Aviso desconhecido.', status: 400 };
 }
@@ -103,6 +103,7 @@ async function entregarAviso(email, carga, extras = {}) {
 }
 const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas });
 const URL_CLIENTE = '/cliente.html?aviso=1', URL_ADMIN_CLIENTES = '/admin-clientes.html';
+const urlDaEntrega = (id) => URL_CLIENTE + '&e=' + id;
 const NOME_DO_ARQUIVO = { pdf: 'o PDF', gravacao: 'a gravação' };
 
 async function entregaECliente(id) {
@@ -160,8 +161,8 @@ async function tratar(req, res) {
     for (const tipo of ['gravacao', 'pdf']) {
       if (!(corpo.tipos || []).includes(tipo) || !(tipo === 'pdf' ? entrega.pdf_link : entrega.gravacao_link)) continue;
       const carga = tipo === 'gravacao'
-        ? { title: 'Gravação disponível', body: 'Oi, ' + nome + '! Já disponibilizei a gravação do seu atendimento: ' + servico, url: URL_CLIENTE }
-        : { title: 'Material disponível', body: 'Oi, ' + nome + '! Disponibilizei o material complementar do seu serviço: ' + servico, url: URL_CLIENTE };
+        ? { title: 'Gravação disponível', body: 'Oi, ' + nome + '! Já disponibilizei a gravação do seu atendimento: ' + servico, url: urlDaEntrega(entrega.id) }
+        : { title: 'Material disponível', body: 'Oi, ' + nome + '! Disponibilizei o material complementar do seu serviço: ' + servico, url: urlDaEntrega(entrega.id) };
       r = somar(r, await entregarAviso(String(cliente.email).toLowerCase(), carga, { guardar_sempre: true }));
     }
     res.status(200).json({ ok: true, ...r }); return;
@@ -172,7 +173,7 @@ async function tratar(req, res) {
     const { entrega, cliente } = await entregaECliente(corpo.entrega_id);
     if (!tipo || !entrega || !cliente) { res.status(404).json({ erro: 'Entrega não encontrada.' }); return; }
     if (String(cliente.email || '').toLowerCase() !== String(usuario.email).toLowerCase()) { res.status(403).json({ erro: 'Só o próprio cliente avisa que baixou.' }); return; }
-    const carga = { title: 'Arquivo baixado', body: String(cliente.nome || 'O cliente').trim() + ' baixou ' + NOME_DO_ARQUIVO[tipo] + ': ' + String(entrega.servico || '').slice(0, 120), url: URL_ADMIN_CLIENTES };
+    const carga = { title: 'Arquivo baixado', body: String(cliente.nome || 'O cliente').trim() + ' baixou ' + NOME_DO_ARQUIVO[tipo] + ': ' + String(entrega.servico || '').slice(0, 120), url: URL_ADMIN_CLIENTES + '?cliente=' + cliente.id };
     let r = { enviados: 0, removidos: 0, falhas: 0 };
     for (const email of await emailsDoAviso('admins', null)) r = somar(r, await entregarAviso(email, carga));
     res.status(200).json({ ok: true, ...r }); return;

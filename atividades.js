@@ -288,6 +288,12 @@
 
   /* lista de atividades do aluno; aoAbrir(atividade) abre uma.
      opcoes.semMoldura: sem cartão nem título (quando já está dentro da aba); opcoes.aoCarregar(qtd): avisa quantas atividades vieram */
+  /* aviso tocado: mostra onde está a atividade na lista (sem abrir); se a lista ainda está chegando, espera ela montar */
+  var paraDestacar = null;
+  function destacarAtividade(id) {
+    var alvo = document.querySelector('[data-atividade="' + id + '"]');
+    if (alvo) { paraDestacar = null; window.portal.destacar(alvo); } else paraDestacar = id;
+  }
   function cartaoDoAluno(aluno, aoAbrir, opcoes) {
     opcoes = opcoes || {};
     var cartao = opcoes.semMoldura ? el('div') : el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Atividades' })]);
@@ -299,12 +305,13 @@
       cartao.style.display = '';
       lista.forEach(function (a) {
         var abrir = el('button', { type: 'button', class: 'portal-btn', text: a.somente_leitura ? 'Ler' : a.enviada_em ? 'Ver' : 'Responder' });
-        cartao.appendChild(linhaClicavel(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
+        cartao.appendChild(linhaClicavel(el('div', { class: 'portal-item', 'data-atividade': a.id }, [el('div', { class: 'portal-item-linha' }, [
           el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }),
             el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · Para responder') })]),
           abrir
         ])]), function () { aoAbrir(a); }));
       });
+      if (paraDestacar) destacarAtividade(paraDestacar);
     });
     return cartao;
   }
@@ -990,5 +997,5 @@
   }
 
   P.iconesNosCampos(document.body); /* ícones astrológicos em todos os campos de texto das atividades */
-  window.atividades = { blocosDoTexto: blocosDoTexto, semMarcas: semMarcas, dadosDoCaderno: dadosDoCaderno, urlAssinada: urlAssinada, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
+  window.atividades = { blocosDoTexto: blocosDoTexto, semMarcas: semMarcas, dadosDoCaderno: dadosDoCaderno, urlAssinada: urlAssinada, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, destacar: destacarAtividade, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
 })();

@@ -382,6 +382,14 @@
     return el('div', { class: 'rolagem-wrap' }, [esq, dir, rolagem]);
   }
   /* barra de cima igual em TODAS as telas do painel (Aplicações, Alunos, Clientes, Capa, Sair): a aba em que você está fica destacada */
+  /* mostra onde está o item (rola até ele e põe um contorno grosso por alguns segundos), sem abrir nada */
+  function destacar(elemento) {
+    if (!elemento) return;
+    try { elemento.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { elemento.scrollIntoView(); }
+    var antes = elemento.style.outline;
+    elemento.style.outline = '3px solid #1034A6'; elemento.style.outlineOffset = '4px';
+    setTimeout(function () { elemento.style.outline = antes; elemento.style.outlineOffset = ''; }, 6000);
+  }
   /* número no ícone do app (iPhone/iPad com o app instalado): a quantidade de avisos não lidos; sem suporte, nada acontece */
   function numeroNoIcone(n) {
     try { if (n > 0 && navigator.setAppBadge) navigator.setAppBadge(n); else if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) { /* sem suporte */ }
@@ -1017,7 +1025,7 @@
   /* lista dos avisos recebidos (os mais novos); o não lido fica em terracota e negrito; tocar marca como lido e chama aoTocar(aviso) */
   function listaAvisos(aoTocar, aoLer, limite) {
     var caixa = el('div', {});
-    client.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(limite || 10).then(function (r) {
+    client.from('avisos_recebidos').select('id,titulo,corpo,url,atividade_id,lido,criado_em').order('criado_em', { ascending: false }).limit(limite || 10).then(function (r) {
       if (r.error || !r.data || !r.data.length) return;
       r.data.forEach(function (a) {
         var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
@@ -1097,7 +1105,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, sinoAdmin: sinoAdmin, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
