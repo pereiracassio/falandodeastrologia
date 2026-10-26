@@ -36,11 +36,13 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=71"></script>
+  <script src="caderno.js?v=11"></script>
+  <script src="caderno-estudos.js?v=1"></script>
   <script src="menu.js?v=36" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
-    var nomeAdmin = '';
+    var nomeAdmin = '', nomeCurto = '';
     var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
     function limpar() { app.textContent = ''; }
@@ -59,7 +61,7 @@
           return;
         }
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
-          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email; nomeCurto = rn.data && rn.data.nome ? rn.data.nome : '';
           var ent = P.estado.ler();
           if (ent.aula) aula(ent.aula); else lista();
         });
@@ -165,6 +167,15 @@
         });
         corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [imp, arq]));
         corpo.appendChild(msg);
+        /* no fim das lições: gera o caderno em PDF e abre para ver */
+        var cad = el('button', { type: 'button', class: 'portal-btn', text: 'Gerar meu caderno' });
+        var msgCad = el('p', { class: 'portal-msg' });
+        cad.addEventListener('click', function () { /* a aba do PDF precisa abrir já no toque: nada assíncrono antes */
+          cad.disabled = true;
+          window.cadernoEstudos.gerar(nomeCurto, function (t, tipo) { P.mensagem(msgCad, t, tipo); }).then(function () { cad.disabled = false; });
+        });
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:28px' }, [cad]));
+        corpo.appendChild(msgCad);
       });
     }
 
