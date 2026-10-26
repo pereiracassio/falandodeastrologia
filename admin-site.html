@@ -149,7 +149,7 @@
       ]).then(function (rs) {
         var ocultas = []; try { ocultas = rs[1].data && rs[1].data.valor ? JSON.parse(rs[1].data.valor) : []; } catch (e) { /* todas */ }
         corpo.textContent = '';
-        corpo.appendChild(el('p', { text: 'Marque as agendas que aparecem na aba Agenda. As desmarcadas não aparecem na Agenda, mas continuam bloqueando horário nas sugestões.' }));
+        corpo.appendChild(el('p', { text: 'Marque as agendas que aparecem na aba Agenda. A Agenda só usa as marcadas. As desmarcadas não aparecem nem bloqueiam horário.' }));
         var msg = el('p', { class: 'portal-msg' });
         (rs[0].items || []).forEach(function (c) {
           var marcada = ocultas.indexOf(c.id) < 0;

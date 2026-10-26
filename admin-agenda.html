@@ -123,7 +123,7 @@
         return C.from('site_config').select('valor').eq('chave', 'agenda_ocultas').maybeSingle().then(function (r) {
           var ocultas = []; try { ocultas = r.data && r.data.valor ? JSON.parse(r.data.valor) : []; } catch (e) { /* mostra todas */ }
           todosCalendarios = l.items || [];
-          calendarios = todosCalendarios.filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* o que ele desmarcou em Configurações não APARECE na tela, mas continua bloqueando horário nas sugestões */
+          calendarios = todosCalendarios.filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* só as agendas marcadas em Configurações são lidas: nem aparecem, nem bloqueiam horário */
         }, function () { calendarios = l.items || []; });
       });
       prontoP.catch(function () { prontoP = null; });
@@ -142,7 +142,7 @@
     /* compromissos de todas as agendas, no máximo 4 pedidos ao mesmo tempo; o que NÃO foi lido vai em .falhas (nunca some em silêncio) */
     function eventosEntre(de, ate, comOcultas) {
       return preparar().then(function () {
-        var fila = (comOcultas ? todosCalendarios.filter(function (c) { return !/#holiday@|#contacts@/.test(c.id); }) : calendarios).slice(), saida = [], falhas = [];
+        var fila = calendarios.slice(), saida = [], falhas = []; /* só as agendas que ele escolheu em Configurações */
         function trabalhador() {
           var c = fila.shift(); if (!c) return Promise.resolve();
           return eventosDe(c, de, ate, 0).then(function (l) { saida = saida.concat(l); }, function () { falhas.push(c.summaryOverride || c.summary || c.id); }).then(trabalhador);
@@ -689,7 +689,7 @@
       res.textContent = '';
       var primeiro = meiaNoiteDe(Date.now());
       res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Procurando...' }));
-      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA, true).then(function (evs) { res.textContent = ''; if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; } acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora, folga || 0); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA).then(function (evs) { res.textContent = ''; if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; } acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora, folga || 0); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
     }
     function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora, folga) {
       var fg = folga * 60000; /* folga: tempo livre antes e depois de cada compromisso (ir e voltar da academia, por exemplo) */
