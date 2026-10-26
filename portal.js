@@ -407,6 +407,30 @@
     }, function () { return []; });
     return aniversariosPromessa;
   }
+  /* Produção: o que está para os próximos 7 dias (ou atrasado há até 14) e ainda não foi concluído. Vídeo concluído = "No YouTube" marcado;
+     corte concluído = "YouTube Shorts" marcado. Calculado ao abrir o painel, sem relógio; some sozinho quando você conclui. */
+  var lembretesPromessa = null;
+  function lembretesProducao() {
+    if (lembretesPromessa) return lembretesPromessa;
+    var hoje = diaDeHoje(), somar = function (n) { var d = new Date(hoje + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+    var de = somar(-14), ate = somar(7);
+    var ETAPAS_VIDEO = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube']];
+    var ETAPAS_CORTE = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts']];
+    var primeira = function (reg, lista) { var f = lista.filter(function (e) { return !reg[e[0]]; })[0]; return f ? f[1] : ''; };
+    lembretesPromessa = Promise.all([
+      client.from('prod_videos').select('id,numero,titulo,data_postar,roteiro_ok,gravado,editado,edicao_fina,seo_ok,no_ar').eq('no_ar', false).gte('data_postar', de).lte('data_postar', ate).then(function (r) { return r.data || []; }, function () { return []; }),
+      client.from('prod_cortes').select('id,titulo,ordem,data,corte_ok,legenda_ok,seo_ok,shorts,prod_videos(numero,titulo)').eq('shorts', false).gte('data', de).lte('data', ate).then(function (r) { return r.data || []; }, function () { return []; })
+    ]).then(function (r) {
+      var saida = [];
+      r[0].forEach(function (v) { saida.push({ tipo: 'video', data: v.data_postar, nome: 'Vídeo' + (v.numero ? ' ' + v.numero : '') + ', ' + v.titulo, falta: primeira(v, ETAPAS_VIDEO) }); });
+      r[1].forEach(function (c) {
+        var v = c.prod_videos || {};
+        saida.push({ tipo: 'corte', data: c.data, nome: (c.titulo || 'Corte ' + c.ordem) + ' do vídeo' + (v.numero ? ' ' + v.numero : ''), falta: primeira(c, ETAPAS_CORTE) });
+      });
+      return saida.sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
+    }, function () { return []; });
+    return lembretesPromessa;
+  }
   /* depois que você abre a tela de Avisos no dia, os aniversários deixam de contar no sino (só neste aparelho) */
   var anivVisto = function () { try { return localStorage.getItem('fda_aniv_visto') === diaDeHoje(); } catch (e) { return false; } };
   function marcarAnivVisto() { try { localStorage.setItem('fda_aniv_visto', diaDeHoje()); } catch (e) { /* sem armazenamento */ } }
@@ -437,8 +461,9 @@
     /* o número do sino = avisos não lidos + aniversariantes de hoje (até você abrir a tela de Avisos no dia) */
     Promise.all([
       client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) { return r && !r.error && r.count ? r.count : 0; }, function () { return 0; }),
-      aniversariosHoje().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; })
-    ]).then(function (v) { if (v[0] + v[1]) pintar(v[0] + v[1]); });
+      aniversariosHoje().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; }),
+      lembretesProducao().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; })
+    ]).then(function (v) { var t = v[0] + v[1] + v[2]; if (t) pintar(t); });
   }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
@@ -1191,7 +1216,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, cartaoEnviar: cartaoEnviarAviso }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
