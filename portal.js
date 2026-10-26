@@ -463,6 +463,18 @@
       localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
     } catch (e) { /* sem armazenamento */ }
   }
+  /* abertura do zero (o iPhone/iPad jogou o app fora e o ícone o abriu de novo): em QUALQUER página do painel/aluno/cliente, não só nas três de entrada,
+     vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
+  (function restaurarUltimaTela() {
+    try {
+      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando) return;
+      var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
+      if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return;
+      var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
+      if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; location.replace(u); }
+    } catch (e) { /* sem armazenamento */ }
+  })();
   lembrarOndeParou();
   try { sessionStorage.setItem('fda_app_aberto', '1'); } catch (e) { /* sem armazenamento */ } /* qualquer página aberta conta como "app já aberto": só a abertura do zero volta ao último lugar */
   var gravarEstado = estado.gravar;
