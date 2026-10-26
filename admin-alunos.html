@@ -70,7 +70,7 @@
     function restaurar(user) {
       var h = P.estado.ler();
       if (!h.aluno) { listaDeAlunos(user); return; }
-      Promise.all([P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').eq('id', h.aluno).maybeSingle(),
+      Promise.all([P.client.from('alunos').select('id,nome,email,nascimento,meet_link,whatsapp').eq('id', h.aluno).maybeSingle(),
                    P.client.from('aluno_codigos').select('codigo').eq('aluno_id', h.aluno).maybeSingle()]).then(function (r) {
         if (r[0].error || !r[0].data) { listaDeAlunos(user); return; }
         var a = r[0].data; a.codigo = (r[1].data && r[1].data.codigo) || '';
@@ -93,6 +93,7 @@
       var msg = el('p', { class: 'portal-msg' });
       var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
       var email = el('input', { type: 'email', id: 'novoEmail', required: '' });
+      var nascNovo = el('input', { type: 'date', id: 'novoNasc' });
       var codigo = el('input', { type: 'text', id: 'novoCodigo', placeholder: 'Ex.: 0147' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar aluno' });
       var cancelarNovo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
@@ -102,6 +103,7 @@
         el('p', { text: 'O acesso dele é criado aqui, ao adicionar. Ele entra com o Google (o mesmo Gmail) ou toca em "Esqueci minha senha" na tela de entrada.' }),
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (o mesmo do acesso)' }), email,
+        el('label', { for: 'novoNasc', text: 'Aniversário' }), nascNovo,
         el('label', { for: 'novoCodigo', text: 'Código do aluno' }), codigo, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
@@ -119,10 +121,10 @@
             .then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { if (!resp.ok) throw new Error(d.detalhe || d.erro || 'erro'); }); });
         }).then(function () {
           P.mensagem(msg, '');
-          return P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single();
+          return P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase(), nascimento: nascNovo.value || null }).select('id').single();
         }).catch(function (e) {
           avisoAcesso = e.message; /* o acesso não travou: a ficha é criada mesmo assim e o motivo aparece */
-          return P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single();
+          return P.client.from('alunos').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase(), nascimento: nascNovo.value || null }).select('id').single();
         }).then(function (r) {
           if (r.error) { add.disabled = false; P.mensagem(msg, /duplicate|unique/i.test(r.error.message) ? 'Já existe um aluno com esse e-mail.' : P.traduzErro(r.error.message), 'erro'); return; }
           var cod = codigo.value.trim();
@@ -142,7 +144,7 @@
 
       /* lista */
       Promise.all([
-        P.client.from('alunos').select('id,nome,email,meet_link,whatsapp').order('nome'),
+        P.client.from('alunos').select('id,nome,email,nascimento,meet_link,whatsapp').order('nome'),
         P.client.from('aluno_codigos').select('aluno_id,codigo'),
         /* atividades que o aluno já enviou e que ainda esperam a sua correção */
         P.client.from('atividades').select('aluno_id').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
@@ -230,6 +232,7 @@
       codInput.value = aluno.codigo || '';
       var nomeInput = el('input', { type: 'text', id: 'alunoNome', required: '' });
       nomeInput.value = aluno.nome || '';
+      var nascInput = el('input', { type: 'date', id: 'alunoNasc' }); nascInput.value = String(aluno.nascimento || '').slice(0, 10);
       var whatsInput = el('input', { type: 'tel', id: 'alunoWhats', placeholder: 'Ex.: 11 91234-5678' });
       whatsInput.value = aluno.whatsapp || '';
       var meet = el('input', { type: 'url', id: 'alunoMeet', placeholder: 'https://meet.google.com/...' });
@@ -243,6 +246,7 @@
         el('label', { for: 'alunoCodigo', text: 'Código' }), codInput,
         el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
         el('label', { for: 'alunoWhats', text: 'WhatsApp' }), whatsInput,
+        el('label', { for: 'alunoNasc', text: 'Aniversário' }), nascInput,
         el('label', { for: 'alunoMeet', text: 'Link do Meet' }), meet,
         pastaDrive, msgDados, salvarDados
       ]);
@@ -255,7 +259,7 @@
         if (!novoNome) { P.mensagem(msgDados, 'Escreva o nome.', 'erro'); return; }
         if (linkMeet && !seguro) { P.mensagem(msgDados, 'O link do Meet precisa começar com https://', 'erro'); return; }
         salvarDados.disabled = true;
-        P.client.from('alunos').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null, meet_link: seguro }).eq('id', aluno.id).then(function (r1) {
+        P.client.from('alunos').update({ nome: novoNome, nascimento: nascInput.value || null, whatsapp: whatsInput.value.trim() || null, meet_link: seguro }).eq('id', aluno.id).then(function (r1) {
           if (r1.error) { salvarDados.disabled = false; P.mensagem(msgDados, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('aluno_codigos').upsert({ aluno_id: aluno.id, codigo: valor }, { onConflict: 'aluno_id' })
@@ -263,7 +267,7 @@
           pedido.then(function (r2) {
             salvarDados.disabled = false;
             if (r2.error) { P.mensagem(msgDados, /duplicate|unique/i.test(r2.error.message) ? 'Nome salvo, mas esse código já é de outro aluno.' : P.traduzErro(r2.error.message), 'erro'); return; }
-            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.meet_link = seguro;
+            aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.nascimento = nascInput.value || null; aluno.meet_link = seguro;
             paginaDoAluno(user, aluno);
           });
         });

@@ -69,7 +69,7 @@
     function restaurar(user) {
       var h = P.estado.ler();
       if (!h.cliente) { listaDeClientes(user); return; }
-      Promise.all([P.client.from('clientes').select('id,nome,email,whatsapp').eq('id', h.cliente).maybeSingle(),
+      Promise.all([P.client.from('clientes').select('id,nome,email,nascimento,whatsapp').eq('id', h.cliente).maybeSingle(),
                    P.client.from('cliente_codigos').select('codigo').eq('cliente_id', h.cliente).maybeSingle()]).then(function (r) {
         if (r[0].error || !r[0].data) { listaDeClientes(user); return; }
         var c = r[0].data; c.codigo = (r[1].data && r[1].data.codigo) || '';
@@ -91,6 +91,7 @@
       var msg = el('p', { class: 'portal-msg' });
       var nome = el('input', { type: 'text', id: 'novoNome', required: '' });
       var email = el('input', { type: 'email', id: 'novoEmail', required: '' });
+      var nascNovo = el('input', { type: 'date', id: 'novoNasc' });
       var codigo = el('input', { type: 'text', id: 'novoCodigo', placeholder: 'Ex.: 0147' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar cliente' });
       var cancelarNovo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
@@ -100,7 +101,8 @@
         el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. O acesso dele é criado aqui, ao adicionar. Ele entra na página Seu espaço com o Google, sem senha.' }),
         el('label', { for: 'novoCodigo', text: 'Código do cliente' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
-        el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
+        el('label', { for: 'novoEmail', text: 'E-mail (Gmail do cliente)' }), email,
+        el('label', { for: 'novoNasc', text: 'Aniversário' }), nascNovo, msg, el('div', { class: 'portal-acoes' }, [add, cancelarNovo])
       ]);
       form.addEventListener('submit', function (ev) {
         var avisoAcesso = '';
@@ -117,7 +119,7 @@
             .then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { if (!resp.ok) throw new Error(d.detalhe || d.erro || 'erro'); }); });
         }).then(function () {
           P.mensagem(msg, '');
-          return P.client.from('clientes').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase() }).select('id').single();
+          return P.client.from('clientes').insert({ nome: nome.value.trim(), email: email.value.trim().toLowerCase(), nascimento: nascNovo.value || null }).select('id').single();
         }).catch(function (e) {
           return { error: { message: e.message, acesso: true } };
         }).then(function (r) {
@@ -140,7 +142,7 @@
       });
 
       Promise.all([
-        P.client.from('clientes').select('id,nome,email,whatsapp,retificacao_fatos_em,retificacao_fatos_vistos_em').order('nome'),
+        P.client.from('clientes').select('id,nome,email,nascimento,whatsapp,retificacao_fatos_em,retificacao_fatos_vistos_em').order('nome'),
         P.client.from('cliente_codigos').select('cliente_id,codigo')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
@@ -203,6 +205,7 @@
       codInput.value = cliente.codigo || '';
       var nomeInput = el('input', { type: 'text', id: 'clienteNome', required: '' });
       nomeInput.value = cliente.nome || '';
+      var nascInput = el('input', { type: 'date', id: 'clienteNasc' }); nascInput.value = String(cliente.nascimento || '').slice(0, 10);
       var whatsInput = el('input', { type: 'tel', id: 'clienteWhats', placeholder: 'Ex.: 11 91234-5678' });
       whatsInput.value = cliente.whatsapp || '';
       var salvarCod = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
@@ -214,6 +217,7 @@
         el('label', { for: 'clienteCodigo', text: 'Código' }), codInput,
         el('label', { for: 'clienteNome', text: 'Nome' }), nomeInput,
         el('label', { for: 'clienteWhats', text: 'WhatsApp' }), whatsInput,
+        el('label', { for: 'clienteNasc', text: 'Aniversário' }), nascInput,
         pastaDrive, msgCod, salvarCod
       ]);
       formCod.addEventListener('submit', function (ev) {
@@ -222,7 +226,7 @@
         var novoNome = nomeInput.value.trim();
         if (!novoNome) { P.mensagem(msgCod, 'Escreva o nome.', 'erro'); return; }
         salvarCod.disabled = true;
-        P.client.from('clientes').update({ nome: novoNome, whatsapp: whatsInput.value.trim() || null }).eq('id', cliente.id).then(function (r1) {
+        P.client.from('clientes').update({ nome: novoNome, nascimento: nascInput.value || null, whatsapp: whatsInput.value.trim() || null }).eq('id', cliente.id).then(function (r1) {
           if (r1.error) { salvarCod.disabled = false; P.mensagem(msgCod, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('cliente_codigos').upsert({ cliente_id: cliente.id, codigo: valor }, { onConflict: 'cliente_id' })
@@ -230,7 +234,7 @@
           pedido.then(function (r) {
             salvarCod.disabled = false;
             if (r.error) { P.mensagem(msgCod, /duplicate|unique/i.test(r.error.message) ? 'Nome salvo, mas esse código já é de outro cliente.' : P.traduzErro(r.error.message), 'erro'); return; }
-            cliente.nome = novoNome; cliente.codigo = valor; cliente.whatsapp = whatsInput.value.trim() || null;
+            cliente.nome = novoNome; cliente.codigo = valor; cliente.whatsapp = whatsInput.value.trim() || null; cliente.nascimento = nascInput.value || null;
             paginaDoCliente(user, cliente);
           });
         });
