@@ -39,7 +39,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=74"></script>
+  <script src="portal.js?v=76"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -134,6 +134,25 @@
       return caixa;
     }
 
+    /* aviso fixo no topo, só no navegador: como instalar o app (dentro do app não aparece, porque já está instalado) */
+    function avisoDoApp() {
+      var dentro = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      if (dentro) return document.createDocumentFragment();
+      var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var android = /Android/i.test(navigator.userAgent);
+      var instalar = ios ? 'No Safari, toque no botão Compartilhar (o quadradinho com a setinha para cima) e depois em Adicionar à Tela de Início.'
+        : android ? 'No Chrome, toque nos três pontinhos do canto e depois em Instalar app (ou Adicionar à tela inicial).'
+        : 'No celular ou no iPad, abra esta página pelo navegador, toque em Compartilhar ou no menu e escolha Adicionar à Tela de Início (ou Instalar app).';
+      return el('div', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Instale o app' }),
+        el('p', { text: 'Existe um app para você acompanhar tudo por aqui. Ele não pesa nada: é levíssimo e quase não ocupa memória no seu aparelho. Pelo app você entra direto na videoconferência da sua sessão, sem precisar procurar o link.' }),
+        el('ol', { style: 'text-align:left;margin:8px 0 0;padding-left:22px' }, [
+          el('li', { text: instalar }),
+          el('li', { text: 'Abra o app pela tela inicial e entre com o seu Gmail.' })
+        ])
+      ]);
+    }
+
     /* próximo atendimento (horário e Google Meet), buscado na agenda pelo servidor; sem atendimento marcado, o cartão nem aparece */
     function carregarAtendimento(verId) {
       app.appendChild(P.cartaoAtendimento(verId || null, false));
@@ -157,6 +176,7 @@
         } else {
           app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Olá, ' + nome + '!' }), sairBtn]));
         }
+        app.appendChild(avisoDoApp());
         if (r.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' })); return; }
         if (!r.data) {
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));

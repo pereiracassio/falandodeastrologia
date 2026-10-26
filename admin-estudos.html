@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=74"></script>
+  <script src="portal.js?v=76"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=1"></script>
   <script src="menu.js?v=37" defer></script>
@@ -129,12 +129,6 @@
           l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
           return l;
         };
-        var bloco = function (titulo, itens) {
-          if (!itens.length) return;
-          var c = el('div', { class: 'portal-cartao' }, [el('h2', { text: titulo })]);
-          itens.forEach(function (a) { c.appendChild(linhaDe(a)); });
-          corpo.appendChild(c);
-        };
         if (!aulas.length) {
           corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhuma aula ainda. Toque em "Importar aulas" e escolha o arquivo que o Claude mandou.' })]));
         }
@@ -152,9 +146,22 @@
           corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Semana de ' + ini + ' a ' + fim }), barra,
             el('p', { class: 'portal-item-data', text: feitas + ' de ' + daSemana.length + ' aulas concluídas (' + pct + '%)' })]));
         }
-        bloco('Hoje', aulas.filter(function (a) { return dia(a) === hoje; }));
-        bloco('Próximas', aulas.filter(function (a) { return dia(a) > hoje; }));
-        bloco('Anteriores', aulas.filter(function (a) { return dia(a) < hoje; }).reverse());
+        /* a lista: o que falta fazer, na ordem das datas; uma linha grossa; e, mais apagado, o que já foi feito (o mais recente primeiro) */
+        var concluida = function (x) { var p = prog[x.id]; return !!p && p.total > 0 && p.feitas === p.total; };
+        var faltam = aulas.filter(function (x) { return !concluida(x); }), feitas = aulas.filter(concluida).reverse();
+        if (faltam.length) {
+          var cf = el('div', { class: 'portal-cartao' });
+          faltam.forEach(function (x) { cf.appendChild(linhaDe(x)); });
+          cf.lastChild.style.borderBottom = '0';
+          corpo.appendChild(cf);
+        }
+        if (feitas.length) {
+          corpo.appendChild(el('hr', { style: 'border:0;border-top:5px solid #1F5FA3;margin:22px 0 14px' }));
+          var cd = el('div', { class: 'portal-cartao', style: 'opacity:.5' });
+          feitas.forEach(function (x) { cd.appendChild(linhaDe(x)); });
+          cd.lastChild.style.borderBottom = '0';
+          corpo.appendChild(cd);
+        }
         var imp = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar aulas' });
         var arq = el('input', { type: 'file', accept: '.json,application/json' }); arq.style.display = 'none';
         imp.addEventListener('click', function () { arq.click(); });
