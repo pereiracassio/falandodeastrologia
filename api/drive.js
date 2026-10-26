@@ -11,9 +11,9 @@ const crypto = require('crypto');
 const { esquecerToken, SUPABASE_URL, SUPABASE_ANON, env, b64url, deB64url, cifrar, lerConexao, salvarConexao, apagarConexao, pedirTokens, tokenDeAcesso } = require('./_drive');
 const SITE = 'https://falandodeastrologia.com.br';
 const ORIGENS_PERMITIDAS = ['https://falandodeastrologia.com.br', 'https://www.falandodeastrologia.com.br'];
-const VOLTAS_PERMITIDAS = ['/admin-alunos.html', '/admin-clientes.html'];
-/* calendar.events.readonly: só leitura da agenda, para mostrar ao cliente o horário e o Meet do próprio atendimento (api/meu-atendimento.js) */
-const ESCOPOS = 'openid email https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events.readonly';
+const VOLTAS_PERMITIDAS = ['/admin-alunos.html', '/admin-clientes.html', '/admin-agenda.html'];
+/* calendar.events: ler e editar os eventos (aba Agenda do painel e api/meu-atendimento.js, que só lê); calendarlist.readonly: lista das agendas da conta */
+const ESCOPOS = 'openid email https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendarlist.readonly';
 
 /* "estado" do login: vai e volta pelo Google e prova que quem voltou é o administrador que começou (assinado, vale 15 min) */
 const assinar = (payload) => b64url(crypto.createHmac('sha256', env('GOOGLE_CLIENT_SECRET')).update('estado|' + payload).digest());
