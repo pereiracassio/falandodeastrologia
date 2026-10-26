@@ -363,7 +363,7 @@
       if (!previa) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
         if (r && !r.error && r.count) { naoLidos = r.count; rotuloAvisos(); }
       }, function () {});
-      pintarSino();
+      rotuloAvisos();
       /* cinco abas, mas cada uma com o tamanho de sempre (um terço): as outras ficam para o lado, é só correr a barra */
       var rola = el('div', { class: 'portal-abas-rola' }, [barra]);
       return [P.comSetas(rola), conteudo];
