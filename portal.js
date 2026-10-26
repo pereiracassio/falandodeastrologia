@@ -382,6 +382,34 @@
     return el('div', { class: 'rolagem-wrap' }, [esq, dir, rolagem]);
   }
   /* barra de cima igual em TODAS as telas do painel (Aplicações, Alunos, Clientes, Capa, Sair): a aba em que você está fica destacada */
+  /* aniversariantes de HOJE (clientes e alunos com a data no cadastro; o dia é o de Brasília; 29/02 comemora em 28/02 nos anos sem 29).
+     Não é aviso guardado: é calculado na hora em que você abre o painel, sem relógio nenhum. */
+  var aniversariosPromessa = null;
+  var diaDeHoje = function () { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); };
+  function aniversariosHoje() {
+    if (aniversariosPromessa) return aniversariosPromessa;
+    var hoje = diaDeHoje(), ano = +hoje.slice(0, 4), mes = +hoje.slice(5, 7), dia = +hoje.slice(8, 10);
+    var bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
+    var pega = function (tabela) { return client.from(tabela).select('nome,email,nascimento').not('nascimento', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }); };
+    aniversariosPromessa = Promise.all([pega('clientes'), pega('alunos')]).then(function (r) {
+      var vistos = {}, saida = [];
+      r[0].concat(r[1]).forEach(function (p) {
+        if (!/^\d{4}-\d{2}-\d{2}/.test(p.nascimento || '')) return;
+        var m = +p.nascimento.slice(5, 7), d = +p.nascimento.slice(8, 10);
+        if (m === 2 && d === 29 && !bissexto) d = 28;
+        if (m !== mes || d !== dia) return;
+        var k = p.email ? String(p.email).toLowerCase() : String(p.nome).toLowerCase() + '|' + p.nascimento;
+        if (vistos[k]) return;
+        vistos[k] = 1;
+        saida.push({ nome: String(p.nome || '').trim(), idade: ano - +p.nascimento.slice(0, 4), hoje: hoje });
+      });
+      return saida;
+    }, function () { return []; });
+    return aniversariosPromessa;
+  }
+  /* depois que você abre a tela de Avisos no dia, os aniversários deixam de contar no sino (só neste aparelho) */
+  var anivVisto = function () { try { return localStorage.getItem('fda_aniv_visto') === diaDeHoje(); } catch (e) { return false; } };
+  function marcarAnivVisto() { try { localStorage.setItem('fda_aniv_visto', diaDeHoje()); } catch (e) { /* sem armazenamento */ } }
   /* mostra onde está o item (rola até ele e põe um contorno grosso por alguns segundos), sem abrir nada */
   function destacar(elemento) {
     if (!elemento) return;
@@ -406,7 +434,11 @@
     if (sinoAdminLigado) return;
     sinoAdminLigado = true;
     pintar(0);
-    client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) { if (r && !r.error && r.count) pintar(r.count); }, function () {});
+    /* o número do sino = avisos não lidos + aniversariantes de hoje (até você abrir a tela de Avisos no dia) */
+    Promise.all([
+      client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) { return r && !r.error && r.count ? r.count : 0; }, function () { return 0; }),
+      aniversariosHoje().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; })
+    ]).then(function (v) { if (v[0] + v[1]) pintar(v[0] + v[1]); });
   }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
@@ -1159,7 +1191,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, cartaoEnviar: cartaoEnviarAviso }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim

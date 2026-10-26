@@ -34,7 +34,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=82"></script>
+  <script src="portal.js?v=83"></script>
   <script src="menu.js?v=38" defer></script>
   <script>
   (function () {
@@ -61,10 +61,25 @@
       app.appendChild(P.botaoVoltar(voltar));
       var cartao = el('div', { class: 'portal-cartao' });
       app.appendChild(cartao);
+      /* aniversariantes de hoje: ficam fixos no topo, antes de qualquer outro aviso */
+      var fixos = el('div', {});
+      cartao.appendChild(fixos);
+      P.aniversariosHoje().then(function (lista) {
+        P.marcarAnivVisto();
+        lista.forEach(function (p) {
+          var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
+            el('span', { class: 'portal-item-titulo', style: 'color:#A03E25', text: 'Aniversário hoje' }),
+            el('p', { style: 'margin:4px 0 0;font-weight:700', text: 'Hoje é aniversário de ' + p.nome + (p.idade > 0 && p.idade < 120 ? ' (' + p.idade + ' anos)' : '') + '. Mande os parabéns e veja se quer fazer a revolução solar.' })
+          ]);
+          linha.addEventListener('click', function (ev) { ev.preventDefault(); location.href = 'admin-agenda.html#v=dia&d=' + p.hoje; });
+          fixos.appendChild(linha);
+        });
+        if (lista.length) fixos.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+      });
       app.appendChild(P.botaoVoltar(voltar));
       C.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(50).then(function (r) {
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os avisos agora.' })); return; }
-        if (!r.data.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aviso por enquanto.' })); return; }
+        if (!r.data.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aviso por enquanto.' })); P.sinoAdmin(0); return; }
         var naoLidos = r.data.filter(function (a) { return !a.lido; }).length;
         P.sinoAdmin(naoLidos);
         r.data.forEach(function (a) {
