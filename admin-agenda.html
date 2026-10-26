@@ -42,7 +42,7 @@
     var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     var SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     /* o que fazer -> em qual hora planetária (mude aqui se quiser outra combinação) */
-    var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno'], ['Outra coisa', 'Mercúrio']];
+    var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno']]; /* a lista só sugere: ele pode escrever qualquer outra coisa */
     var nomeAdmin = '', calendarios = [], eventos = [], DIAS_BUSCA = 7;
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -467,18 +467,21 @@
 
     /* ---------- encaixar uma tarefa pela hora planetária ---------- */
     function painelEncaixe(area) {
-      var o = el('select'); TAREFAS.forEach(function (t, i) { o.appendChild(el('option', { value: String(i), text: t[0] })); });
+      /* campo comum onde se escreve o que quiser, com a lista de sugestões embaixo (a mesma peça do Financeiro: P.combo) */
+      var o = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Escreva ou escolha na lista' });
       var planeta = el('select'); HP.CALDEIA.forEach(function (n) { planeta.appendChild(el('option', { value: n, text: n })); });
-      planeta.value = TAREFAS[0][1];
-      o.addEventListener('change', function () { planeta.value = TAREFAS[+o.value][1]; });
+      planeta.value = 'Mercúrio';
+      var doPreset = function (txt) { var t = TAREFAS.filter(function (x) { return x[0].toLowerCase() === String(txt).trim().toLowerCase(); })[0]; if (t) planeta.value = t[1]; };
+      o.addEventListener('input', function () { doPreset(o.value); });
+      var caixaTarefa = P.combo(o, function () { return TAREFAS.map(function (t) { return { valor: t[0], rotulo: t[0], busca: t[0].toLowerCase() }; }); }, function (i) { o.value = i.valor; doPreset(i.valor); }, true);
       var dur = el('select'); [30, 45, 60, 90, 120, 180].forEach(function (m) { dur.appendChild(el('option', { value: String(m), text: duracaoTxt(m) })); }); dur.value = '60';
       var de = el('input', { type: 'time', value: '06:00' }), ate = el('input', { type: 'time', value: '22:00' });
       var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Ver horários' });
       var res = el('div');
-      botao.addEventListener('click', function () { sugerir(res, area, TAREFAS[+o.value][0], planeta.value, +dur.value, de.value, ate.value); });
+      botao.addEventListener('click', function () { sugerir(res, area, o.value.trim(), planeta.value, +dur.value, de.value, ate.value); });
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
-        campo('O que você vai fazer', o), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Não antes de', de), campo('Não depois de', ate),
+        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Não antes de', de), campo('Não depois de', ate),
         [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
     }
 
@@ -513,7 +516,7 @@
       achados.forEach(function (a) {
         var fimSug = a.ini + minutos * 60000;
         var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar na agenda' });
-        b.addEventListener('click', function () { formulario(area, null, { titulo: tarefa === 'Outra coisa' ? '' : tarefa, dia: a.dia, ini: hhmm(a.ini), fim: hhmm(fimSug) }); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        b.addEventListener('click', function () { formulario(area, null, { titulo: tarefa, dia: a.dia, ini: hhmm(a.ini), fim: hhmm(fimSug) }); window.scrollTo({ top: 0, behavior: 'smooth' }); });
         var detalhe = el('div', { class: 'portal-item-data' }, [iconePlaneta(planeta, 14, '#A03E25'), el('span', { text: ' livre até ' + hhmm(a.limite) + ' · hora de ' + planeta + ' das ' + hhmm(a.hora.ini) + ' às ' + hhmm(a.hora.fim) })]);
         var l = el('div', { class: 'portal-item' }, [el('div', {}, [el('strong', { text: rotuloDia(a.dia) + ', ' + hhmm(a.ini) + ' às ' + hhmm(fimSug) }), detalhe]), b]);
         l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
