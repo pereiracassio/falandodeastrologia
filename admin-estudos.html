@@ -176,6 +176,57 @@
         });
         corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:28px' }, [cad]));
         corpo.appendChild(msgCad);
+        /* resultado da semana para o Claude: copia o texto (é só colar na conversa); se o aparelho não deixar copiar, baixa como arquivo */
+        var env = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Enviar resultado' });
+        var msgEnv = el('p', { class: 'portal-msg' });
+        env.addEventListener('click', function () {
+          env.disabled = true; P.mensagem(msgEnv, 'Juntando o seu resultado...', 'ok');
+          montarResultado().then(function (txt) {
+            var baixar = function () {
+              var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'application/json' })); a.download = 'resultado-estudos.json';
+              document.body.appendChild(a); a.click(); a.remove();
+              P.mensagem(msgEnv, 'Baixei o arquivo resultado-estudos.json. Mande para o Claude na conversa.', 'ok');
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { P.mensagem(msgEnv, 'Copiado! Agora é só colar na conversa com o Claude.', 'ok'); }, baixar);
+            else baixar();
+          }).catch(function (e) { P.mensagem(msgEnv, 'Não consegui juntar o resultado: ' + (e && e.message ? e.message : e), 'erro'); }).then(function () { env.disabled = false; });
+        });
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [env]));
+        corpo.appendChild(msgEnv);
+      });
+    }
+
+
+    /* ---------- resultado da semana: texto compacto para colar na conversa com o Claude (acertos, erros, motivos e o que já está dominado) ---------- */
+    function montarResultado() {
+      return Promise.all([
+        C.from('estudo_aulas').select('id,codigo,data,materia,titulo').order('data'),
+        C.from('estudo_questoes').select('aula_id,ordem,tipo,enunciado,opcoes,correta,id').order('ordem'),
+        C.from('estudo_respostas').select('*')
+      ]).then(function (rs) {
+        var erro = rs[0].error || rs[1].error || rs[2].error; if (erro) throw erro;
+        var resp = {}; rs[2].data.forEach(function (x) { resp[x.questao_id] = x; });
+        var letra = function (k) { return k == null ? null : String.fromCharCode(65 + k); };
+        var aulas = [], porMateria = {};
+        rs[0].data.forEach(function (a) {
+          var qs = rs[1].data.filter(function (q) { return q.aula_id === a.id; });
+          var feitas = qs.filter(function (q) { var r = resp[q.id]; return r && (r.opcao != null || (r.texto && r.texto.trim())); });
+          if (!feitas.length) return; /* aula que nem começou fica de fora */
+          var linhas = qs.map(function (q) {
+            var r = resp[q.id] || {}, x = { n: q.ordem + 1, tipo: q.tipo, pergunta: String(q.enunciado).replace(/\s+/g, ' ').slice(0, 110) };
+            if (q.tipo === 'multipla') {
+              if (r.opcao == null) { x.resposta = null; return x; }
+              x.resposta = letra(r.opcao); x.certa = letra(q.correta); x.acertou = r.opcao === q.correta;
+              if (!x.acertou && r.motivo) x.motivo = r.motivo; /* atencao | conceito | conta */
+              x.fez_conta_a_mao = !!r.desenho;
+            } else { x.texto = r.texto ? String(r.texto).slice(0, 400) : null; }
+            return x;
+          });
+          var m = porMateria[a.materia] = porMateria[a.materia] || { acertos: 0, respondidas: 0 };
+          linhas.forEach(function (x) { if (x.tipo === 'multipla' && x.resposta) { m.respondidas++; if (x.acertou) m.acertos++; } });
+          aulas.push({ data: a.data, materia: a.materia, aula: a.titulo, concluida: feitas.length === qs.length, questoes: linhas });
+        });
+        return JSON.stringify({ resultado_estudos: { gerado_em: hojeISO(), por_materia: porMateria, aulas: aulas } });
       });
     }
 
@@ -320,6 +371,31 @@
       return caixa;
     }
 
+
+    /* depois de errar: por que errei? (a resposta vai no resultado da semana, para o Claude saber se o problema é a matéria ou a atenção) */
+    var MOTIVOS = [['atencao', 'Li errado ou me distraí'], ['conceito', 'Não entendi o conceito'], ['conta', 'Errei a conta']];
+    function motivoErro(q, resposta) {
+      var caixa = el('div', { style: 'margin:6px 0 8px' });
+      caixa.appendChild(el('p', { class: 'portal-item-data', text: 'Por que errei?' }));
+      var desenhar = function () {
+        while (caixa.childNodes.length > 1) caixa.removeChild(caixa.lastChild);
+        MOTIVOS.forEach(function (m) {
+          var marcado = resposta.motivo === m[0];
+          var b = el('button', { type: 'button', text: m[1], 'aria-pressed': marcado ? 'true' : 'false' });
+          b.style.cssText = 'display:inline-block;background:transparent;color:#16233F;font:inherit;font-size:14px;cursor:pointer;border-radius:0;margin:0 8px 8px 0;' + (marcado ? 'border:3px solid #1F5FA3;padding:6px 10px' : 'border:1px solid #1F5FA3;padding:8px 12px');
+          b.addEventListener('click', function () {
+            var novo = marcado ? null : m[0], antigo = resposta.motivo; resposta.motivo = novo; desenhar();
+            C.from('estudo_respostas').upsert({ questao_id: q.id, motivo: novo, atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function (x) {
+              if (x.error) { resposta.motivo = antigo; desenhar(); caixa.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(x.error.message) })); }
+            });
+          });
+          caixa.appendChild(b);
+        });
+      };
+      desenhar();
+      return caixa;
+    }
+
     function cartaoQuestao(q, i, r) {
       var cartao = el('div', { class: 'portal-cartao' });
       var enun = el('p', { text: (i + 1) + '. ' + q.enunciado, class: 'portal-item-titulo' }); enun.style.whiteSpace = 'pre-line';
@@ -352,10 +428,11 @@
           });
           if (respondida) {
             area.appendChild(el('p', { class: 'portal-item-data', text: resposta.opcao === q.correta ? 'Certo!' : 'Não foi dessa vez. A certa é a letra ' + String.fromCharCode(65 + q.correta) + '.' }));
+            if (resposta.opcao !== q.correta) area.appendChild(motivoErro(q, resposta));
             mostrarResolucao();
             var refazer = P.botaoApagar('Refazer');
             refazer.addEventListener('click', function () {
-              C.from('estudo_respostas').upsert({ questao_id: q.id, opcao: null, atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function () { resposta.opcao = null; desenhar(); });
+              C.from('estudo_respostas').upsert({ questao_id: q.id, opcao: null, motivo: null, atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function () { resposta.opcao = null; resposta.motivo = null; desenhar(); });
             });
             area.appendChild(refazer);
           }
