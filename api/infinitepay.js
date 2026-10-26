@@ -84,22 +84,22 @@ module.exports = async (req, res) => {
     const forma = FORMAS[String(corpo.capture_method || '').toLowerCase()] || null;
     const observacao = corpo.receipt_url ? 'Comprovante: ' + corpo.receipt_url : null;
 
-    /* área: a do serviço cadastrado com esse nome; senão Astrologia (os serviços do site) */
-    let areaId = null;
-    if (produto) {
-      const servs = await supa('/rest/v1/fin_servicos?select=nome,area_id');
-      const achado = (servs || []).filter((s) => String(s.nome).trim().toLowerCase() === produto.toLowerCase())[0];
-      if (achado) areaId = achado.area_id;
+    /* cada serviço do pedido vira UMA entrada no Financeiro, com o valor dele já com os descontos (o carrinho manda o preço final de cada item).
+       Se o total pago for diferente da soma dos itens (taxa do cartão), a diferença é repartida na proporção do valor de cada um, para o total bater com o que entrou. */
+    const servs = (await supa('/rest/v1/fin_servicos?select=nome,area_id')) || [];
+    const areas = (await supa('/rest/v1/fin_areas?select=id,nome&order=ordem')) || [];
+    const areaAstro = (areas.filter((a) => /astrolog/i.test(a.nome))[0] || {}).id || null;
+    const areaDe = (nomeServico) => { const a = servs.filter((s) => String(s.nome).trim().toLowerCase() === String(nomeServico || '').toLowerCase())[0]; return a ? a.area_id : areaAstro; };
+    const pagos = itens.map((i) => ({ desc: String(i.description || '').trim(), preco: (num(i.price) || 0) * (num(i.quantity) || 1) })).filter((i) => i.desc);
+    let partes = [{ desc: produto, centavos: Math.round(centavos) }];
+    if (pagos.length > 1 && pagos.every((i) => i.preco > 0)) {
+      const soma = pagos.reduce((t, i) => t + i.preco, 0);
+      partes = pagos.map((i) => ({ desc: i.desc, centavos: Math.round(centavos * i.preco / soma) }));
+      partes[partes.length - 1].centavos += Math.round(centavos) - partes.reduce((t, p) => t + p.centavos, 0);
     }
-    if (!areaId) {
-      const areas = await supa('/rest/v1/fin_areas?select=id,nome&order=ordem');
-      const astro = (areas || []).filter((a) => /astrolog/i.test(a.nome))[0];
-      if (astro) areaId = astro.id;
-    }
-
     await supa('/rest/v1/fin_entradas?on_conflict=id_externo', {
       method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-      body: JSON.stringify({ data: hojeBR(), cliente_nome: nome, produto, valor: Math.round(centavos) / 100, area_id: areaId, forma_pagamento: forma, observacao, origem: 'infinitepay', id_externo: 'infinitepay-' + idExterno })
+      body: JSON.stringify(partes.map((p, n) => ({ data: hojeBR(), cliente_nome: nome, produto: p.desc, valor: p.centavos / 100, area_id: areaDe(p.desc), forma_pagamento: forma, observacao, origem: 'infinitepay', id_externo: 'infinitepay-' + idExterno + (partes.length > 1 ? '-' + (n + 1) : '') })))
     });
     await resultado('entrada lançada' + (clienteCadastrado ? ' e cliente cadastrado' : ''));
     res.status(200).json({ ok: true, entrada: true });
