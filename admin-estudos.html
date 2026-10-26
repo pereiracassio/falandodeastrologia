@@ -228,9 +228,9 @@
     /* quadro para fazer a conta à mão (Apple Pencil, dedo ou mouse): o que foi escrito fica guardado como imagem e volta igual em qualquer aparelho */
     function quadroConta(q, resposta) {
       var ALTURA = 240, PASSO = 200;
-      var caixa = el('div', { style: 'margin:10px 0 14px' });
+      var caixa = el('div', { style: 'margin:10px 0 14px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none' });
       caixa.appendChild(el('p', { class: 'portal-item-data', text: 'Espaço para a conta' }));
-      var cv = el('canvas'); cv.style.cssText = 'display:block;width:100%;height:' + ALTURA + 'px;border:1px solid #1F5FA3;background:transparent;touch-action:none;cursor:crosshair';
+      var cv = el('canvas'); cv.style.cssText = 'display:block;width:100%;height:' + ALTURA + 'px;border:1px solid #1F5FA3;background:transparent;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent';
       caixa.appendChild(cv);
       var g = cv.getContext('2d'), dpr = Math.max(1, window.devicePixelRatio || 1);
       var larg = 0, alt = ALTURA, borracha = false, desfazer = [], desenhando = false, ultimo = null, espera = null;
@@ -251,16 +251,29 @@
         g.lineWidth = borracha ? 22 : (e.pointerType === 'pen' && b.p ? 1.4 + b.p * 2.6 : 2.4);
         g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
       };
+      /* rejeição da palma: com a caneta (Apple Pencil) em uso, o dedo e a mão apoiada não escrevem; encostos largos também são ignorados */
+      var temCaneta = false, canetaNaTela = false;
+      var ignorar = function (e) {
+        if (e.pointerType === 'pen') { temCaneta = true; return false; }
+        if (e.pointerType === 'touch') return temCaneta || canetaNaTela || (e.width > 28 || e.height > 28);
+        return false;
+      };
+      cv.addEventListener('pointerover', function (e) { if (e.pointerType === 'pen') temCaneta = true; });
+      cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
       cv.addEventListener('pointerdown', function (e) {
-        e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) { /* sem captura */ }
+        e.preventDefault();
+        if (ignorar(e)) return;
+        if (e.pointerType === 'pen') canetaNaTela = true;
+        try { cv.setPointerCapture(e.pointerId); } catch (x) { /* sem captura */ }
         instantaneo(); desenhando = true; ultimo = ponto(e); traco(ultimo, { x: ultimo.x + 0.01, y: ultimo.y + 0.01, p: ultimo.p }, e);
       });
       cv.addEventListener('pointermove', function (e) {
         if (!desenhando) return; e.preventDefault();
+        if (ignorar(e)) return;
         var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; if (!evs.length) evs = [e];
         evs.forEach(function (ev) { var p = ponto(ev); traco(ultimo, p, e); ultimo = p; });
       });
-      var fim = function () { if (!desenhando) return; desenhando = false; guardar(); };
+      var fim = function (e) { if (e && e.pointerType === 'pen') canetaNaTela = false; if (!desenhando) return; if (e && e.pointerType === 'touch' && (temCaneta || canetaNaTela)) return; desenhando = false; guardar(); };
       cv.addEventListener('pointerup', fim); cv.addEventListener('pointercancel', fim);
 
       var botao = function (texto, aoClicar) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: texto }); b.addEventListener('click', aoClicar); return b; };
