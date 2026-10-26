@@ -144,6 +144,19 @@
     }
 
     /* quais agendas do Google aparecem na aba Agenda (guardado em site_config.agenda_ocultas = as que ele DESMARCOU; agenda nova aparece sozinha) */
+    var PALETA_AGENDA = ['#ac725e', '#d06b64', '#f83a22', '#fa573c', '#ff7537', '#ffad46', '#42d692', '#16a765', '#7bd148', '#b3dc6c', '#fbe983', '#fad165', '#92e1c0', '#9fe1e7', '#9fc6e7', '#4986e7', '#9a9cff', '#b99aff', '#c2c2c2', '#cabdbf', '#cca6ac', '#f691b2', '#cd74e6', '#a47ae2'];
+    function textoSobreHex(hex) { var n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 120 ? '#000000' : '#ffffff'; }
+    /* o Google ainda não deixou trocar a cor: pede a permissão de novo */
+    function permitirDeNovo(msg) {
+      msg.textContent = '';
+      var b = el('button', { type: 'button', class: 'portal-btn', text: 'Permitir o Google Agenda' });
+      b.addEventListener('click', function () {
+        try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ }
+        C.auth.getSession().then(function (r) { return fetch('https://falandodeastrologia.vercel.app/api/drive?acao=iniciar&volta=' + encodeURIComponent('/admin-site.html'), { headers: { Authorization: 'Bearer ' + r.data.session.access_token } }); })
+          .then(function (r) { return r.json(); }).then(function (d) { location.href = d.url; });
+      });
+      msg.appendChild(b);
+    }
     function cartaoAgendas() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Agendas que aparecem' })]);
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); cartao.appendChild(corpo);
@@ -157,7 +170,7 @@
         (rs[0].items || []).forEach(function (c) {
           var marcada = ocultas.indexOf(c.id) < 0;
           var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
-          var pinta = function () { cx.textContent = marcada ? '\u2713' : ''; cx.setAttribute('aria-checked', marcada ? 'true' : 'false'); };
+          var pinta = function () { cx.textContent = marcada ? '✓' : ''; cx.setAttribute('aria-checked', marcada ? 'true' : 'false'); };
           pinta();
           var alterna = function () {
             marcada = !marcada; pinta();
@@ -169,7 +182,26 @@
           };
           var nome = el('span', { text: c.summaryOverride || c.summary || c.id, style: 'flex:1;text-align:left;cursor:pointer' });
           cx.addEventListener('click', alterna); nome.addEventListener('click', alterna);
-          corpo.appendChild(el('div', { style: 'display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.5)' }, [cx, nome]));
+          /* a cor da agenda: a mesma do Google; trocar aqui troca lá */
+          var cor = el('button', { type: 'button', title: 'Cor', 'aria-label': 'Cor', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;border:0;border-radius:0;cursor:pointer;background:' + (c.backgroundColor || '#B5852F') });
+          var paleta = el('div', { style: 'display:none;flex-wrap:wrap;gap:6px;padding:8px 0 4px 38px' });
+          PALETA_AGENDA.forEach(function (hex) {
+            var q = el('button', { type: 'button', 'aria-label': hex, style: 'width:30px;height:30px;padding:0;border:0;border-radius:0;cursor:pointer;background:' + hex });
+            q.addEventListener('click', function () {
+              paleta.style.display = 'none';
+              P.tokenGoogle().then(function (t) {
+                return fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList/' + encodeURIComponent(c.id) + '?colorRgbFormat=true', { method: 'PATCH', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ backgroundColor: hex, foregroundColor: textoSobreHex(hex) }) });
+              }).then(function (r) {
+                if (r.status === 403) { permitirDeNovo(msg); return; }
+                if (!r.ok) throw new Error('Google ' + r.status);
+                c.backgroundColor = hex; cor.style.background = hex; P.mensagem(msg, 'Salvo.', 'ok');
+              }).catch(function (er) { P.mensagem(msg, 'Não consegui trocar a cor (' + er.message + ')', 'erro'); });
+            });
+            paleta.appendChild(q);
+          });
+          cor.addEventListener('click', function () { paleta.style.display = paleta.style.display === 'none' ? 'flex' : 'none'; });
+          var linha = el('div', { style: 'display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.5)' }, [cx, cor, nome]);
+          corpo.appendChild(el('div', {}, [linha, paleta]));
         });
         corpo.appendChild(msg);
       }).catch(function (e) {

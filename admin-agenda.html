@@ -105,7 +105,7 @@
     var CORES_EVENTO = { 1: '#7986cb', 2: '#33b679', 3: '#8e24aa', 4: '#e67c73', 5: '#f6bf26', 6: '#f4511e', 7: '#039be5', 8: '#616161', 9: '#3f51b5', 10: '#0b8043', 11: '#d50000' };
     var NOMES_COR = { 1: 'Lavanda', 2: 'Sálvia', 3: 'Uva', 4: 'Flamingo', 5: 'Banana', 6: 'Tangerina', 7: 'Pavão', 8: 'Grafite', 9: 'Mirtilo', 10: 'Manjericão', 11: 'Tomate' };
     /* compromisso PREENCHIDO: ocre, ou a cor que ele escolheu; o texto escuro ou claro conforme a cor, para ler bem por cima da grade */
-    function preenche(e) { return e.cor || '#B5852F'; }
+    function preenche(e) { return e.cor || e.calCor || '#B5852F'; }
     function textoSobre(hex) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 120 ? '#16233F' : '#FFFFFF'; }
     function normalizar(e, cal) {
       if (e.status === 'cancelled') return null;
@@ -116,7 +116,7 @@
       return { id: e.id, calId: cal.id, calNome: cal.summary, titulo: e.summary || '(sem título)', ini: ini, fim: fim, diaTodo: diaTodo, link: e.htmlLink, meet: e.hangoutLink || ((e.conferenceData && e.conferenceData.entryPoints || []).filter(function (p) { return p.entryPointType === 'video'; })[0] || {}).uri || '', local: e.location || '', descricao: e.description || '', convRaw: e.attendees || [], convidados: (e.attendees || []).filter(function (p) { return !p.self && !p.resource; }).map(function (p) { return p.email; }),
         ocupa: !diaTodo && e.transparency !== 'transparent' && !recusou, editavel: (cal.accessRole === 'owner' || cal.accessRole === 'writer'),
         recorrenteId: e.recurringEventId || '', recorrencia: e.recurrence || null, livre: e.transparency === 'transparent', visib: e.visibility || 'default',
-        corId: e.colorId || '', cor: CORES_EVENTO[e.colorId] || '', lembPadrao: !e.reminders || e.reminders.useDefault !== false, lembretes: (e.reminders && e.reminders.overrides) || [], padraoAgenda: cal.defaultReminders || [] };
+        corId: e.colorId || '', cor: CORES_EVENTO[e.colorId] || '', calCor: cal.backgroundColor || '', lembPadrao: !e.reminders || e.reminders.useDefault !== false, lembretes: (e.reminders && e.reminders.overrides) || [], padraoAgenda: cal.defaultReminders || [] };
     }
     /* lugar das horas planetárias e lista de agendas: uma vez só */
     var prontoP = null;
@@ -609,6 +609,7 @@
         } else aplicarEscopo();
       });
       todo.valor(); aplicarEscopo();
+      if (pre.serie) [blocoData, todo.el, blocoHora, blocoAte, blocoRepet].forEach(function (b) { b.style.display = 'none'; });
       var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
       var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
       cancelar.addEventListener('click', function () { destino.textContent = ''; });
@@ -643,13 +644,24 @@
         if (meet.valor() && !(e && e.meet)) corpo.conferenceData = { createRequest: { requestId: 'fda-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), conferenceSolutionKey: { type: 'hangoutsMeet' } } };
         else if (!meet.valor() && e && e.meet) corpo.conferenceData = null;
         salvar.disabled = true;
+        if (pre.serie && !e) { /* um compromisso por dia da série, 3 de cada vez */
+          var fila = pre.serie.slice(), erros = 0, qid = encodeURIComponent(qual.value || 'primary');
+          var um = function () {
+            var s = fila.shift(); if (!s) return Promise.resolve();
+            var c1 = JSON.parse(JSON.stringify(corpo)); delete c1.recurrence;
+            c1.start = { dateTime: new Date(s.ini).toISOString(), date: null, timeZone: 'America/Sao_Paulo' }; c1.end = { dateTime: new Date(s.fim).toISOString(), date: null, timeZone: 'America/Sao_Paulo' };
+            return gapi('/calendars/' + qid + '/events?' + params.join('&'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c1) }).then(null, function () { erros++; }).then(um);
+          };
+          Promise.all([um(), um(), um()]).then(function () { if (erros) { salvar.disabled = false; P.mensagem(msg, 'Não consegui criar ' + erros + ' compromisso(s).', 'erro'); } else { destino.textContent = ''; } atualizar(); });
+          return;
+        }
         var opc = function (m) { return { method: m, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }; };
         var idAlvo = todos ? e.recorrenteId : (e ? e.id : null);
         var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(idAlvo) + '?' + params.join('&'), opc('PATCH'))
           : gapi('/calendars/' + encodeURIComponent(qual.value || 'primary') + '/events?' + params.join('&'), opc('POST'));
         cham.then(function () { destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
       });
-      var filhos = [el('h2', { text: e ? 'Editar compromisso' : 'Novo compromisso' })];
+      var filhos = [el('h2', { text: e ? 'Editar compromisso' : pre.serie ? pre.serie.length + ' compromissos' : 'Novo compromisso' })];
       if (serie) filhos = filhos.concat(campo('Esta mudança vale para', escopoSel));
       filhos = filhos.concat(campo('Nome', titulo), [blocoData, todo.el, blocoHora, blocoAte, blocoRepet], campo('Local', local), [meet.el], campo('Convidados', convidados), [lemb.el], campo('Cor', cores), campo('Visibilidade', visib), campo('Mostrar como', ocupado), campo('Anotações', descricao));
       if (!e && qual.options.length > 1) filhos = filhos.concat(campo('Agenda', qual));
@@ -677,49 +689,78 @@
       var caixaTarefa = P.combo(o, function () { return TAREFAS.map(function (t) { return { valor: t[0], rotulo: t[0], busca: t[0].toLowerCase() }; }); }, function (i) { o.value = i.valor; doPreset(i.valor); }, true);
       var dur = el('select'); [30, 45, 60, 90, 120, 180].forEach(function (m) { dur.appendChild(el('option', { value: String(m), text: duracaoTxt(m) })); }); dur.value = '60';
       var folga = el('select'); [[0, 'Nenhuma'], [15, '15 minutos'], [30, '30 minutos'], [45, '45 minutos'], [60, '1 hora']].forEach(function (x) { folga.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); folga.value = '30';
+      var repete = el('select'); [['uma', 'Só uma vez'], ['todos', 'Todos os dias'], ['uteis', 'Segunda a sexta'], ['semana', 'Uma vez por semana']].forEach(function (x) { repete.appendChild(el('option', { value: x[0], text: x[1] })); });
+      var por = el('select'); [[14, '2 semanas'], [30, '1 mês'], [60, '2 meses'], [90, '3 meses']].forEach(function (x) { por.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); por.value = '30';
+      var blocoPor = el('div'); [el('label', { text: 'Durante' }), por].forEach(function (n) { blocoPor.appendChild(n); });
+      var mostraPor = function () { blocoPor.style.display = repete.value === 'uma' ? 'none' : ''; }; repete.addEventListener('change', mostraPor); mostraPor();
       var de = el('input', { type: 'time', value: '06:00' }), ate = el('input', { type: 'time', value: '22:00' });
       var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Ver horários' });
       var res = el('div');
-      botao.addEventListener('click', function () { sugerir(res, area, o.value.trim(), planeta.value, +dur.value, de.value, ate.value, +folga.value); });
+      botao.addEventListener('click', function () { sugerir(res, area, o.value.trim(), planeta.value, +dur.value, de.value, ate.value, +folga.value, { modo: repete.value, dias: +por.value }); });
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
-        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga), campo('Não antes de', de), campo('Não depois de', ate),
+        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga), campo('Repetir', repete), [blocoPor], campo('Não antes de', de), campo('Não depois de', ate),
         [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
     }
 
-    function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora, folga) {
+    function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora, folga, rep) {
       res.textContent = '';
       var primeiro = meiaNoiteDe(Date.now());
       res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Procurando...' }));
-      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA).then(function (evs) { res.textContent = ''; if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; } acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora, folga || 0); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA).then(function (evs) { res.textContent = ''; if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; } acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora, folga || 0, rep); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
     }
-    function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora, folga) {
+    /* os horários da hora do planeta que cabem num dia (a tarefa COMEÇA dentro da hora do planeta e cabe inteira num trecho livre) */
+    function slotsDoDia(dia, eventos, planeta, minutos, deHora, ateHora, fg, agora) {
+      var achados = [], ja = Math.max(doIso(dia, deHora), agora), fimJ = doIso(dia, ateHora);
+      if (fimJ <= ja) return achados;
+      var ocupado = eventos.filter(function (e) { return e.ocupa && e.fim + fg > ja && e.ini - fg < fimJ; }).map(function (e) { return [Math.max(e.ini - fg, ja), Math.min(e.fim + fg, fimJ)]; });
+      var livres = [], cursor = ja;
+      ocupado.sort(function (a, b) { return a[0] - b[0]; }).forEach(function (b) { if (b[0] > cursor) livres.push([cursor, b[0]]); cursor = Math.max(cursor, b[1]); });
+      if (cursor < fimJ) livres.push([cursor, fimJ]);
+      HP.horasEntre(ja, fimJ, LAT, LON).filter(function (h) { return h.planeta === planeta; }).forEach(function (h) {
+        livres.forEach(function (l) {
+          var s = Math.ceil(Math.max(l[0], h.ini) / 60000) * 60000; /* minuto inteiro */
+          if (s < h.fim && s + minutos * 60000 <= l[1]) achados.push({ dia: dia, ini: s, limite: l[1], hora: h });
+        });
+      });
+      return achados;
+    }
+    /* repetir: um compromisso por dia escolhido, cada um na hora do planeta que cai mais perto do horário da sugestão (a hora do planeta muda de um dia para o outro) */
+    function montarSerie(a, planeta, minutos, deHora, ateHora, fg, rep, eventos) {
+      var b0 = loc(a.ini), baseMin = b0.getUTCHours() * 60 + b0.getUTCMinutes(), fimIso = somaDias(a.dia, rep.dias - 1), dowBase = diaSem(a.dia), saida = [];
+      for (var iso = a.dia; iso <= fimIso; iso = somaDias(iso, 1)) {
+        var dw = diaSem(iso);
+        if (rep.modo === 'uteis' && (dw === 0 || dw === 6)) continue;
+        if (rep.modo === 'semana' && dw !== dowBase) continue;
+        var slots = iso === a.dia ? [a] : slotsDoDia(iso, eventos, planeta, minutos, deHora, ateHora, fg, 0), melhor = null, dist = 1e9;
+        slots.forEach(function (s) { var l = loc(s.ini), d = Math.abs(l.getUTCHours() * 60 + l.getUTCMinutes() - baseMin); if (d < dist) { dist = d; melhor = s; } });
+        if (melhor && dist <= 180) saida.push({ ini: melhor.ini, fim: melhor.ini + minutos * 60000 });
+      }
+      return saida;
+    }
+    function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora, folga, rep) {
       var fg = folga * 60000; /* folga: tempo livre antes e depois de cada compromisso (ir e voltar da academia, por exemplo) */
       var agora = Math.ceil(Date.now() / 300000) * 300000, primeiro = meiaNoiteDe(Date.now()), achados = [], dias = DIAS_BUSCA;
       for (var i = 0; i < dias && achados.length < 8; i++) {
         var dia = isoDia(primeiro + i * 86400000 + 12 * 3600000);
-        var ja = Math.max(doIso(dia, deHora), agora), fimJ = doIso(dia, ateHora);
-        if (fimJ <= ja) continue;
-        /* o que está ocupado nesse dia, com os trechos juntados */
-        var ocupado = eventos.filter(function (e) { return e.ocupa && e.fim + fg > ja && e.ini - fg < fimJ; }).map(function (e) { return [Math.max(e.ini - fg, ja), Math.min(e.fim + fg, fimJ)]; });
-        var livres = [], cursor = ja;
-        ocupado.sort(function (a, b) { return a[0] - b[0]; }).forEach(function (b) { if (b[0] > cursor) livres.push([cursor, b[0]]); cursor = Math.max(cursor, b[1]); });
-        if (cursor < fimJ) livres.push([cursor, fimJ]);
-        HP.horasEntre(ja, fimJ, LAT, LON).filter(function (h) { return h.planeta === planeta; }).forEach(function (h) {
-          /* a tarefa COMEÇA dentro da hora do planeta e cabe inteira num trecho livre (pode passar um pouco do fim da hora) */
-          livres.forEach(function (l) {
-            var s = Math.max(l[0], h.ini);
-            if (s < h.fim && s + minutos * 60000 <= l[1]) achados.push({ dia: dia, ini: s, limite: l[1], hora: h });
-          });
-        });
+        achados = achados.concat(slotsDoDia(dia, eventos, planeta, minutos, deHora, ateHora, fg, agora));
       }
       achados.sort(function (a, b) { return a.ini - b.ini; });
       achados = achados.slice(0, 8);
-      if (!achados.length) { res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Nenhuma hora de ' + planeta + ' livre com ' + duracaoTxt(minutos) + ' nos próximos ' + dias + ' dias. Experimente um tempo menor ou uma janela maior.' })); return; }
+      if (!achados.length) { res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Nenhuma hora de ' + planeta + ' livre com ' + duracaoTxt(minutos) + ' nos próximos ' + dias + ' dias.' })); return; }
       achados.forEach(function (a) {
         var fimSug = a.ini + minutos * 60000;
         var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar na agenda' });
-        b.addEventListener('click', function () { formulario(area, null, { titulo: tarefa, dia: a.dia, ini: hhmm(a.ini), fim: hhmm(fimSug) }); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        b.addEventListener('click', function () {
+          var abrir = function (serie) { formulario(area, null, { titulo: tarefa, dia: a.dia, ini: hhmm(a.ini), fim: hhmm(fimSug), serie: serie }); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+          if (!rep || rep.modo === 'uma') { abrir(null); return; }
+          b.disabled = true;
+          eventosEntre(doIso(a.dia), doIso(somaDias(a.dia, rep.dias))).then(function (evs) {
+            b.disabled = false;
+            if (evs.falhas && evs.falhas.length) { P.mensagem(area.appendChild(el('p', { class: 'portal-msg' })), 'Não consegui ler a agenda ' + evs.falhas.join(', ') + '.', 'erro'); return; }
+            abrir(montarSerie(a, planeta, minutos, deHora, ateHora, fg, rep, evs));
+          }, function () { b.disabled = false; });
+        });
         var detalhe = el('div', { class: 'portal-item-data' }, [iconePlaneta(planeta, 14, '#A03E25'), el('span', { text: ' livre até ' + hhmm(a.limite) + ' · hora de ' + planeta + ' das ' + hhmm(a.hora.ini) + ' às ' + hhmm(a.hora.fim) })]);
         var l = el('div', { class: 'portal-item' }, [el('div', {}, [el('strong', { text: rotuloDia(a.dia) + ', ' + hhmm(a.ini) + ' às ' + hhmm(fimSug) }), detalhe]), b]);
         l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
