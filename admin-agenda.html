@@ -663,7 +663,7 @@
       });
       var filhos = [el('h2', { text: e ? 'Editar compromisso' : pre.serie ? pre.serie.length + ' compromissos' : 'Novo compromisso' })];
       if (serie) filhos = filhos.concat(campo('Esta mudança vale para', escopoSel));
-      filhos = filhos.concat(campo('Nome', titulo), [blocoData, todo.el, blocoHora, blocoAte, blocoRepet], campo('Local', local), [meet.el], campo('Convidados', convidados), [lemb.el], campo('Cor', cores), campo('Visibilidade', visib), campo('Mostrar como', ocupado), campo('Anotações', descricao));
+      filhos = filhos.concat(campo('Nome', titulo), [blocoData, todo.el, blocoHora, blocoAte, blocoRepet], campo('Mostrar como', ocupado), campo('Local', local), [meet.el], campo('Convidados', convidados), [lemb.el], campo('Cor', cores), campo('Visibilidade', visib), campo('Anotações', descricao));
       if (!e && qual.options.length > 1) filhos = filhos.concat(campo('Agenda', qual));
       filhos = filhos.concat([el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
       if (e) {
