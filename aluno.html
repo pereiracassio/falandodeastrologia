@@ -7,7 +7,7 @@
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app || document.referrer || /access_token|refresh_token|type=/.test(location.hash)) return;
     var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
-    if (u && /^\/[a-z-]+\.html/.test(u) && !location.search && !location.hash) { if (u !== aqui) location.replace(u); return; }
+    if (u && /^\/[a-z-]+\.html/.test(u) && !location.search) { if (u !== aqui) { window.__fdaRestaurando = true; location.replace(u); } return; }
     
   } catch (e) { /* sem armazenamento */ } })();</script>
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
@@ -49,7 +49,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=71"></script>
+  <script src="portal.js?v=72"></script>
   <script src="atividades.js?v=28"></script>
   <script src="caderno.js?v=11"></script>
   <script>

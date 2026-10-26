@@ -451,6 +451,7 @@
      linha do <head> dessas páginas lê isto e leva você de volta ao lugar exato (página + o que estava aberto, que fica no endereço). */
   function lembrarOndeParou() {
     try {
+      if (window.__fdaRestaurando) return; /* a página só está de passagem, indo para a última tela: não sobrescrever */
       if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
       localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
