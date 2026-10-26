@@ -94,7 +94,6 @@
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       function desenhar() {
         corpo.textContent = '';
-        corpo.appendChild(el('p', { text: 'Hoje: ' + atual.nome + '. A Produção e a Agenda calculam as horas planetárias para esse lugar.' }));
         var lista = el('select');
         LOCAIS.forEach(function (l, i) { var o = el('option', { value: String(i), text: l[0] }); if (l[0] === atual.nome) o.selected = true; lista.appendChild(o); });
         var outro = el('option', { value: 'outro', text: 'Outro lugar (digitar)' }); if (!LOCAIS.some(function (l) { return l[0] === atual.nome; })) outro.selected = true; lista.appendChild(outro);
@@ -149,7 +148,6 @@
       ]).then(function (rs) {
         var ocultas = []; try { ocultas = rs[1].data && rs[1].data.valor ? JSON.parse(rs[1].data.valor) : []; } catch (e) { /* todas */ }
         corpo.textContent = '';
-        corpo.appendChild(el('p', { text: 'Marque as agendas que aparecem na aba Agenda. A Agenda só usa as marcadas. As desmarcadas não aparecem nem bloqueiam horário.' }));
         var msg = el('p', { class: 'portal-msg' });
         (rs[0].items || []).forEach(function (c) {
           var marcada = ocultas.indexOf(c.id) < 0;
