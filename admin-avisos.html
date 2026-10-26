@@ -54,7 +54,7 @@
         tela(user);
       });
     }
-    /* os 10 avisos mais novos; o não lido fica em terracota e negrito; tocar marca como lido e abre o lugar do aviso */
+    /* os 50 avisos mais novos; o não lido fica em terracota e negrito; tocar marca como lido e abre o lugar do aviso */
     function tela(user) {
       limpar();
       app.appendChild(P.navAdmin('avisos', '', sair));
@@ -62,7 +62,7 @@
       var cartao = el('div', { class: 'portal-cartao' });
       app.appendChild(cartao);
       app.appendChild(P.botaoVoltar(voltar));
-      C.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
+      C.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(50).then(function (r) {
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os avisos agora.' })); return; }
         if (!r.data.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aviso por enquanto.' })); return; }
         var naoLidos = r.data.filter(function (a) { return !a.lido; }).length;
