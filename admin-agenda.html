@@ -43,7 +43,7 @@
     var SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     /* o que fazer -> em qual hora planetária (mude aqui se quiser outra combinação) */
     var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno']]; /* a lista só sugere: ele pode escrever qualquer outra coisa */
-    var nomeAdmin = '', calendarios = [], eventos = [], DIAS_BUSCA = 7;
+    var nomeAdmin = '', calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     var VISOES = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
@@ -119,19 +119,20 @@
       if (prontoP) return prontoP;
       prontoP = C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) {
         try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); } } catch (e) { /* fica o padrão */ }
-      }, function () {}).then(function () { return gapi('/users/me/calendarList?minAccessRole=reader'); }).then(function (l) {
+      }, function () {}).then(function () { return gapi('/users/me/calendarList?minAccessRole=freeBusyReader'); }).then(function (l) {
         return C.from('site_config').select('valor').eq('chave', 'agenda_ocultas').maybeSingle().then(function (r) {
           var ocultas = []; try { ocultas = r.data && r.data.valor ? JSON.parse(r.data.valor) : []; } catch (e) { /* mostra todas */ }
-          calendarios = (l.items || []).filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* o que ele desmarcou em Configurações fica de fora (nem aparece nem bloqueia horário) */
+          todosCalendarios = l.items || [];
+          calendarios = todosCalendarios.filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* o que ele desmarcou em Configurações não APARECE na tela, mas continua bloqueando horário nas sugestões */
         }, function () { calendarios = l.items || []; });
       });
       prontoP.catch(function () { prontoP = null; });
       return prontoP;
     }
     /* compromissos de todas as agendas marcadas, entre dois instantes (ms) */
-    function eventosEntre(de, ate) {
+    function eventosEntre(de, ate, comOcultas) {
       return preparar().then(function () {
-        return Promise.all(calendarios.map(function (c) {
+        return Promise.all((comOcultas ? todosCalendarios : calendarios).map(function (c) {
           return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
             .then(function (r) { return (r.items || []).map(function (e) { return normalizar(e, c); }); }, function () { return []; });
         }));
@@ -670,7 +671,7 @@
       res.textContent = '';
       var primeiro = meiaNoiteDe(Date.now());
       res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Procurando...' }));
-      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA).then(function (evs) { res.textContent = ''; acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA, true).then(function (evs) { res.textContent = ''; acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
     }
     function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora) {
       var agora = Math.ceil(Date.now() / 300000) * 300000, primeiro = meiaNoiteDe(Date.now()), achados = [], dias = DIAS_BUSCA;
@@ -684,9 +685,10 @@
         ocupado.sort(function (a, b) { return a[0] - b[0]; }).forEach(function (b) { if (b[0] > cursor) livres.push([cursor, b[0]]); cursor = Math.max(cursor, b[1]); });
         if (cursor < fimJ) livres.push([cursor, fimJ]);
         HP.horasEntre(ja, fimJ, LAT, LON).filter(function (h) { return h.planeta === planeta; }).forEach(function (h) {
+          /* a tarefa COMEÇA dentro da hora do planeta e cabe inteira num trecho livre (pode passar um pouco do fim da hora) */
           livres.forEach(function (l) {
-            var a = Math.max(l[0], h.ini), b = Math.min(l[1], h.fim);
-            if (b - a >= minutos * 60000) achados.push({ dia: dia, ini: a, limite: b, hora: h });
+            var s = Math.max(l[0], h.ini);
+            if (s < h.fim && s + minutos * 60000 <= l[1]) achados.push({ dia: dia, ini: s, limite: l[1], hora: h });
           });
         });
       }

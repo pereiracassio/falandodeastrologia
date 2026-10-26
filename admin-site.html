@@ -144,12 +144,12 @@
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Agendas que aparecem' })]);
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); cartao.appendChild(corpo);
       Promise.all([
-        P.tokenGoogle().then(function (t) { return fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader', { headers: { Authorization: 'Bearer ' + t } }); }).then(function (r) { if (!r.ok) throw new Error(r.status === 403 ? 'permissao' : 'Google ' + r.status); return r.json(); }),
+        P.tokenGoogle().then(function (t) { return fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=freeBusyReader', { headers: { Authorization: 'Bearer ' + t } }); }).then(function (r) { if (!r.ok) throw new Error(r.status === 403 ? 'permissao' : 'Google ' + r.status); return r.json(); }),
         C.from('site_config').select('valor').eq('chave', 'agenda_ocultas').maybeSingle()
       ]).then(function (rs) {
         var ocultas = []; try { ocultas = rs[1].data && rs[1].data.valor ? JSON.parse(rs[1].data.valor) : []; } catch (e) { /* todas */ }
         corpo.textContent = '';
-        corpo.appendChild(el('p', { text: 'Marque as agendas que aparecem na aba Agenda. As desmarcadas não aparecem e também não bloqueiam horário.' }));
+        corpo.appendChild(el('p', { text: 'Marque as agendas que aparecem na aba Agenda. As desmarcadas não aparecem na Agenda, mas continuam bloqueando horário nas sugestões.' }));
         var msg = el('p', { class: 'portal-msg' });
         (rs[0].items || []).forEach(function (c) {
           var marcada = ocultas.indexOf(c.id) < 0;
