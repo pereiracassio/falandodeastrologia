@@ -256,6 +256,25 @@
       return caixa;
     }
 
+    /* aviso fixo no topo: no navegador, como instalar o app e ativar os avisos; dentro do app, o cartão para ativar os avisos */
+    function avisoDoApp() {
+      var dentro = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      if (dentro) return P.avisos.cartao('aluno');
+      var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var android = /Android/i.test(navigator.userAgent);
+      var instalar = ios ? 'No Safari, toque no botão Compartilhar (o quadradinho com a setinha para cima) e depois em Adicionar à Tela de Início.'
+        : android ? 'No Chrome, toque nos três pontinhos do canto e depois em Instalar app (ou Adicionar à tela inicial).'
+        : 'No celular ou no iPad, abra esta página pelo navegador, toque em Compartilhar ou no menu e escolha Adicionar à Tela de Início (ou Instalar app).';
+      return el('div', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Instale o app' }),
+        el('p', { text: 'Para entrar mais rápido e receber os avisos das atividades, instale o app da área do aluno no seu aparelho:' }),
+        el('ol', { style: 'text-align:left;margin:8px 0 0;padding-left:22px' }, [
+          el('li', { text: instalar }),
+          el('li', { text: 'Abra o app pela tela inicial e entre com o seu acesso.' }),
+          el('li', { text: 'Toque em Ativar avisos neste aparelho e escolha Permitir.' })
+        ])
+      ]);
+    }
     function abasDaTela(lista, atividadesEl, avisarQuando, aluno, previa, caixaCaderno) {
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       var conteudo = el('div', { class: 'portal-cartao' });
@@ -383,6 +402,7 @@
             // "Baixar meu caderno": o PDF com a capa e tudo que o aluno já fez; só aparece quando há atividades, no topo da aba Materiais
             var caixaCaderno = window.caderno.botao(aluno);
             caixaCaderno.style.display = 'none';
+            app.appendChild(avisoDoApp());
             abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }, aluno, previa, caixaCaderno).forEach(function (e) { app.appendChild(e); });
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
