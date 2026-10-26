@@ -33,6 +33,7 @@
   <script src="portal.js?v=70"></script>
   <script src="menu.js?v=35" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
+  <script src="icones-planetas.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app'), HP = window.horaPlanetaria;
@@ -244,16 +245,29 @@
       fechar(); return res;
     }
 
-    /* Dia e Semana: linha do tempo por hora (no Dia, uma faixa com a hora planetária) */
+    /* ícone do planeta (traço em tinta, os mesmos das rodas do Astro Hellenic) */
+    function iconePlaneta(nome, px, cor) {
+      var s = el('span', { style: 'display:inline-block;width:' + px + 'px;height:' + px + 'px;color:' + (cor || '#1F5FA3') + ';vertical-align:middle;flex:none', title: nome, 'aria-label': nome });
+      s.innerHTML = (window.iconesPlanetas && window.iconesPlanetas[nome]) || ''; /* texto fixo do próprio site, nada digitado */
+      return s;
+    }
+    /* as horas planetárias de um dia civil, cortadas na meia-noite: cada uma vira uma linha da grade */
+    function segmentosDoDia(iso) {
+      var d0 = doIso(iso), d1 = d0 + DIA;
+      return HP.horasEntre(d0, d1, LAT, LON).map(function (h) { return { ini: Math.max(h.ini, d0), fim: Math.min(h.fim, d1), planeta: h.planeta, noite: h.noite }; }).filter(function (s) { return s.fim > s.ini; });
+    }
+    function yDe(segs, t, H) { /* onde, na coluna, fica um instante: dentro da linha da hora planetária em que ele cai */
+      for (var k = 0; k < segs.length; k++) if (t < segs[k].fim) return k * H + Math.max(0, (t - segs[k].ini)) / (segs[k].fim - segs[k].ini) * H;
+      return segs.length * H;
+    }
+
+    /* Dia e Semana: as linhas são as HORAS PLANETÁRIAS (não as horas do relógio); em cada linha o ícone do planeta e a hora em que ela começa */
     function vistaGrade(vista, isos, evs) {
-      var unico = isos.length === 1, hoje = isoDia(Date.now());
-      var h0 = 6, h1 = 23;
-      evs.forEach(function (e) { if (e.diaTodo) return; var a = loc(e.ini), b = loc(e.fim); h0 = Math.min(h0, a.getUTCHours()); if (isoDia(e.fim) === isoDia(e.ini)) h1 = Math.max(h1, b.getUTCHours() + (b.getUTCMinutes() ? 1 : 0)); else h1 = 24; });
-      h1 = Math.min(24, Math.max(h1, h0 + 1));
-      var altura = (h1 - h0) * HORA_PX, modelo = '34px ' + (unico ? '58px ' : '') + 'repeat(' + isos.length + ', minmax(0, 1fr))';
+      var unico = isos.length === 1, hoje = isoDia(Date.now()), H = unico ? 56 : 50;
+      var todos = isos.map(segmentosDoDia), linhasMax = Math.max.apply(null, todos.map(function (s) { return s.length; }));
+      var altura = linhasMax * H, modelo = (unico ? '78px ' : '') + 'repeat(' + isos.length + ', minmax(0, 1fr))';
       var caixa = el('div');
-      // cabeçalho dos dias
-      var cab = el('div', { style: 'display:grid;grid-template-columns:' + modelo }); cab.appendChild(el('div')); if (unico) cab.appendChild(el('div'));
+      var cab = el('div', { style: 'display:grid;grid-template-columns:' + modelo }); if (unico) cab.appendChild(el('div'));
       isos.forEach(function (iso) {
         var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:6px 0;font-family:var(--fonte-mao);color:#16233F;text-align:center' });
         b.appendChild(el('div', { text: SEM_CURTO[diaSem(iso)], style: 'font-size:11px' }));
@@ -264,10 +278,8 @@
         cab.appendChild(b);
       });
       caixa.appendChild(cab);
-      // o dia todo
-      var temTodo = evs.some(function (e) { return e.diaTodo; });
-      if (temTodo) {
-        var linhaTodo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina }); linhaTodo.appendChild(el('div')); if (unico) linhaTodo.appendChild(el('div'));
+      if (evs.some(function (e) { return e.diaTodo; })) {
+        var linhaTodo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina }); if (unico) linhaTodo.appendChild(el('div'));
         isos.forEach(function (iso) {
           var c = el('div', { style: 'padding:2px;min-width:0' });
           doDia(iso, evs).filter(function (e) { return e.diaTodo; }).forEach(function (e) {
@@ -278,44 +290,46 @@
         });
         caixa.appendChild(linhaTodo);
       }
-      // as horas
       var corpo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina });
-      var gut = el('div', { style: 'position:relative;height:' + altura + 'px' });
-      for (var h = h0; h < h1; h++) gut.appendChild(bloco(p2(h), 'position:absolute;left:0;right:4px;top:' + ((h - h0) * HORA_PX - 6) + 'px;text-align:right;font-size:10px;color:#16233F;opacity:.7'));
-      corpo.appendChild(gut);
-      if (unico) {
-        var pl = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina });
-        var d0 = doIso(isos[0]);
-        HP.horasEntre(d0, d0 + DIA, LAT, LON).forEach(function (hp) {
-          var topo = (Math.max(hp.ini, d0) - d0) / 3600000 * HORA_PX - h0 * HORA_PX, fimPx = (Math.min(hp.fim, d0 + DIA) - d0) / 3600000 * HORA_PX - h0 * HORA_PX;
-          if (fimPx <= 0 || topo >= altura) return;
-          var t = Math.max(0, topo), alt = Math.min(altura, fimPx) - t;
-          pl.appendChild(bloco(hp.planeta, 'position:absolute;left:0;right:0;top:' + t + 'px;height:' + alt + 'px;box-sizing:border-box;border-top:' + linhaFina + ';font-size:10px;padding:1px 3px;overflow:hidden;color:#B5852F;font-weight:700'));
+      if (unico) { /* a régua do lado: ícone do planeta e hora em que a hora planetária começa */
+        var gut = el('div', { style: 'position:relative;height:' + altura + 'px' });
+        todos[0].forEach(function (s, k) {
+          var l = el('div', { style: 'position:absolute;left:0;right:4px;top:' + (k * H) + 'px;height:' + H + 'px;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:5px;border-top:' + linhaFina + ';font-size:11px;color:#16233F' });
+          l.appendChild(el('span', { text: hhmm(s.ini), style: 'opacity:.75' })); l.appendChild(iconePlaneta(s.planeta, 22, s.noite ? '#16233F' : '#1F5FA3'));
+          gut.appendChild(l);
         });
-        corpo.appendChild(pl);
+        corpo.appendChild(gut);
       }
-      isos.forEach(function (iso) {
-        var d0 = doIso(iso), d1 = d0 + DIA;
-        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (HORA_PX - 1) + 'px,rgba(31,95,163,.3) ' + (HORA_PX - 1) + 'px,rgba(31,95,163,.3) ' + HORA_PX + 'px)' });
+      isos.forEach(function (iso, di) {
+        var d0 = doIso(iso), d1 = d0 + DIA, segs = todos[di];
+        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + H + 'px)' });
+        if (!unico) segs.forEach(function (s, k) { /* na semana cada coluna tem o seu ícone e hora, no cantinho da linha */
+          var m = el('div', { style: 'position:absolute;left:2px;top:' + (k * H + 2) + 'px;display:flex;align-items:center;gap:2px;font-size:9px;color:#16233F;opacity:.7;pointer-events:none' });
+          m.appendChild(iconePlaneta(s.planeta, 13, s.noite ? '#16233F' : '#1F5FA3')); m.appendChild(el('span', { text: hhmm(s.ini) }));
+          col.appendChild(m);
+        });
         col.addEventListener('click', function (ev) {
-          var y = ev.clientY - col.getBoundingClientRect().top, min = Math.floor((h0 * 60 + y / HORA_PX * 60) / 30) * 30, fimMin = Math.min(min + 60, 24 * 60 - 1);
-          formulario(areaForm, null, { dia: iso, ini: p2(Math.floor(min / 60)) + ':' + p2(min % 60), fim: p2(Math.floor(fimMin / 60)) + ':' + p2(fimMin % 60) });
+          var y = ev.clientY - col.getBoundingClientRect().top, k = Math.min(segs.length - 1, Math.max(0, Math.floor(y / H)));
+          if (!segs.length) return;
+          var t0 = segs[k].ini + (y / H - k) * (segs[k].fim - segs[k].ini); t0 = Math.floor(t0 / 300000) * 300000;
+          var t1 = Math.min(t0 + 3600000, d1 - 60000);
+          formulario(areaForm, null, { dia: iso, ini: hhmm(t0), fim: hhmm(t1) });
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
-        var itens = doDia(iso, evs).filter(function (e) { return !e.diaTodo; }).map(function (e) { return { e: e, i: Math.max(e.ini, d0), f: Math.min(e.fim, d1) }; }).sort(function (a, b) { return a.i - b.i; });
+        var itens = doDia(iso, evs).filter(function (e) { return !e.diaTodo; }).map(function (e) { return { e: e, i: Math.max(e.ini, d0), f: Math.min(e.fim, d1) }; }).sort(function (p, q) { return p.i - q.i; });
         colunas(itens).forEach(function (x) {
-          var top = (x.i - d0) / 3600000 * HORA_PX - h0 * HORA_PX, alt = Math.max(16, (x.f - x.i) / 3600000 * HORA_PX - 1);
+          var top = yDe(segs, x.i, H), alt = Math.max(16, yDe(segs, x.f, H) - top - 1);
           var b = el('div', { style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid #1F5FA3;border-left:3px solid #B5852F;padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:#16233F;cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
           b.appendChild(el('div', { text: x.e.titulo, style: 'font-weight:700' }));
           if (alt >= 34) b.appendChild(el('div', { text: unico ? hhmm(x.e.ini) + ' às ' + hhmm(x.e.fim) : hhmm(x.e.ini), style: 'font-size:' + (unico ? 11 : 9) + 'px;color:#A03E25' }));
           b.addEventListener('click', function (ev) { ev.stopPropagation(); abrirEvento(x.e); });
           col.appendChild(b);
         });
-        if (iso === hoje) { var agora = (Date.now() - d0) / 3600000 * HORA_PX - h0 * HORA_PX; if (agora >= 0 && agora <= altura) col.appendChild(bloco('', 'position:absolute;left:0;right:0;top:' + agora + 'px;border-top:2px solid #A03E25;pointer-events:none')); }
+        if (iso === hoje && segs.length) { var agora = yDe(segs, Date.now(), H); if (agora > 0 && agora < segs.length * H) col.appendChild(bloco('', 'position:absolute;left:0;right:0;top:' + agora + 'px;border-top:2px solid #A03E25;pointer-events:none')); }
         corpo.appendChild(col);
       });
       caixa.appendChild(corpo);
-      if (unico && !evs.length) caixa.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Nada marcado neste dia. Toque num horário para marcar.' }));
+      if (unico && !evs.length) caixa.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Nada marcado neste dia. Toque numa hora planetária para marcar.' }));
       vista.appendChild(caixa);
     }
 
@@ -455,8 +469,8 @@
         var fimSug = a.ini + minutos * 60000;
         var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar na agenda' });
         b.addEventListener('click', function () { formulario(area, null, { titulo: tarefa === 'Outra coisa' ? '' : tarefa, dia: a.dia, ini: hhmm(a.ini), fim: hhmm(fimSug) }); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-        var detalhe = 'livre até ' + hhmm(a.limite) + ' · hora de ' + planeta + (a.hora.noite ? ' (noite)' : ' (dia)') + ' das ' + hhmm(a.hora.ini) + ' às ' + hhmm(a.hora.fim);
-        var l = el('div', { class: 'portal-item' }, [el('div', {}, [el('strong', { text: rotuloDia(a.dia) + ', ' + hhmm(a.ini) + ' às ' + hhmm(fimSug) }), el('div', { class: 'portal-item-data', text: detalhe })]), b]);
+        var detalhe = el('div', { class: 'portal-item-data' }, [iconePlaneta(planeta, 14, '#A03E25'), el('span', { text: ' livre até ' + hhmm(a.limite) + ' · hora de ' + planeta + ' das ' + hhmm(a.hora.ini) + ' às ' + hhmm(a.hora.fim) })]);
+        var l = el('div', { class: 'portal-item' }, [el('div', {}, [el('strong', { text: rotuloDia(a.dia) + ', ' + hhmm(a.ini) + ' às ' + hhmm(fimSug) }), detalhe]), b]);
         l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
         res.appendChild(l);
       });
