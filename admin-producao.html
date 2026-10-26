@@ -392,7 +392,7 @@
       if (vazio(v.titulo) || /^Vídeo \d+$/.test(String(v.titulo).trim())) falta.push('título');
       if (vazio(v.capa_texto)) falta.push('texto da capa');
       if (!v.numero) falta.push('número na série');
-      if (!v.data_postar) falta.push('data de publicação');
+      if (!v.data_postar) falta.push('data para membros');
       if (vazio(v.capa_url)) falta.push('foto da capa');
       if (!temRoteiro) falta.push('roteiro');
       if (!corpo) falta.push('texto que vai junto');
@@ -545,7 +545,7 @@
         var linha = el('div', { class: 'prod-linha' }, [
           el('div', {}, [
             el('span', { class: 'prod-titulo', text: nomeVideo(v) }),
-            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + rotuloAcesso(v) + (v.data_postar < h ? ' · atrasado' : '') + (falta ? ' · falta: ' + falta[1].toLowerCase() : '') })
+            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + rotuloAcesso(v) + (v.data_publico && rotuloAcesso(v) === 'público' ? ' (público em ' + comDia(v.data_publico) + ')' : '') + (v.data_postar < h ? ' · atrasado' : '') + (falta ? ' · falta: ' + falta[1].toLowerCase() : '') })
           ])
         ]);
         linha.appendChild(botao('Abrir', function () { irPara('series', v.serie_id || 'soltos', v.id); }));
@@ -657,7 +657,7 @@
         /* a série começa na data do primeiro vídeo: os outros ficam uma semana depois um do outro (os que já estão no ar não mudam) */
         var datas = botao('Ajustar as datas dos vídeos', function () {
           var primeiro = lista[0];
-          if (!primeiro || !primeiro.data_postar) { P.mensagem(msg, 'Coloque primeiro a data de publicação do primeiro vídeo. Os outros vêm uma semana depois, um do outro.', 'erro'); return; }
+          if (!primeiro || !primeiro.data_postar) { P.mensagem(msg, 'Coloque primeiro a data (disponível para membros) do primeiro vídeo. Os outros vêm uma semana depois, um do outro.', 'erro'); return; }
           var mudar = lista.map(function (v, i) { return { v: v, d: somarDias(primeiro.data_postar, 7 * i) }; }).filter(function (x) { return x.v !== primeiro && !x.v.no_ar; });
           Promise.all(mudar.map(function (x) { return gravar('prod_videos', videos, x.v, { data_postar: x.d }); })).then(function () { P.mensagem(msg, 'Datas ajustadas a partir do primeiro vídeo.', 'ok'); tela(); });
         });
@@ -702,7 +702,7 @@
             el('span', { class: 'prod-nome', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }),
             el('span', { style: 'display:block' }, [
               el('span', { class: 'prod-data', text: comDia(v.data_postar) }),
-              el('span', { class: 'prod-info', text: ' · ' + rotuloAcesso(v) + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
+              el('span', { class: 'prod-info', text: ' · ' + rotuloAcesso(v) + (v.data_publico && rotuloAcesso(v) === 'público' ? ' (público em ' + comDia(v.data_publico) + ')' : '') + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
             ])
           ]),
           chipsDaEtapa(v),
@@ -787,11 +787,15 @@
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
-      cartao.appendChild(fila([0.7, 1.1, 2], [campo('Número na série', numero), campo('Data de publicação', data), campo('Link do YouTube', link)]));
+      cartao.appendChild(fila([0.7, 1.1, 2], [campo('Número na série', numero), campo('Disponível para membros', data), campo('Link do YouTube', link)]));
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter(v.data_postar) });
       data.addEventListener('change', function () { jupV.textContent = textoJupiter(data.value); });
       cartao.appendChild(jupV);
-      cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
+      var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
+      var blocoPublico = el('div', { style: 'max-width:240px' }, [campo('Fica público em', dataPublico)]);
+      blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
+      cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
+      cartao.appendChild(blocoPublico);
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
@@ -927,7 +931,7 @@
         if (yAntes == null) yAntes = window.scrollY;
         if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
         if (link.value.trim() && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(link.value.trim())) { P.mensagem(msg, 'O link precisa ser do YouTube.', 'erro'); return; }
-        var campos = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        var campos = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
         if (usaBlocos) campos.roteiro_blocos = rb;
         var subir = Promise.resolve();
         if (capaNova) {

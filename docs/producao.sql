@@ -77,3 +77,4 @@ alter table public.prod_cortes add column if not exists tags text;
 alter table public.prod_cortes add column if not exists corte_ok boolean not null default false;
 alter table public.prod_cortes add column if not exists legenda_ok boolean not null default false;
 alter table public.prod_cortes add column if not exists seo_ok boolean not null default false;
+alter table public.prod_videos add column if not exists data_publico date; -- vídeo público: data em que fica público (data_postar = disponível para membros)
