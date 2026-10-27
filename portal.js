@@ -418,14 +418,14 @@
     var ETAPAS_CORTE = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts']];
     var primeira = function (reg, lista) { var f = lista.filter(function (e) { return !reg[e[0]]; })[0]; return f ? f[1] : ''; };
     lembretesPromessa = Promise.all([
-      client.from('prod_videos').select('id,numero,titulo,data_postar,roteiro_ok,gravado,editado,edicao_fina,seo_ok,no_ar').eq('no_ar', false).gte('data_postar', de).lte('data_postar', ate).then(function (r) { return r.data || []; }, function () { return []; }),
-      client.from('prod_cortes').select('id,titulo,ordem,data,corte_ok,legenda_ok,seo_ok,shorts,prod_videos(numero,titulo)').eq('shorts', false).gte('data', de).lte('data', ate).then(function (r) { return r.data || []; }, function () { return []; })
+      client.from('prod_videos').select('id,serie_id,numero,titulo,data_postar,roteiro_ok,gravado,editado,edicao_fina,seo_ok,no_ar').eq('no_ar', false).gte('data_postar', de).lte('data_postar', ate).then(function (r) { return r.data || []; }, function () { return []; }),
+      client.from('prod_cortes').select('id,video_id,titulo,ordem,data,corte_ok,legenda_ok,seo_ok,shorts,prod_videos(serie_id,numero,titulo)').eq('shorts', false).gte('data', de).lte('data', ate).then(function (r) { return r.data || []; }, function () { return []; })
     ]).then(function (r) {
       var saida = [];
-      r[0].forEach(function (v) { saida.push({ tipo: 'video', data: v.data_postar, nome: 'Vídeo' + (v.numero ? ' ' + v.numero : '') + ', ' + v.titulo, falta: primeira(v, ETAPAS_VIDEO) }); });
+      r[0].forEach(function (v) { saida.push({ tipo: 'video', data: v.data_postar, nome: 'Vídeo' + (v.numero ? ' ' + v.numero : '') + ', ' + v.titulo, falta: primeira(v, ETAPAS_VIDEO), url: 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) }); });
       r[1].forEach(function (c) {
         var v = c.prod_videos || {};
-        saida.push({ tipo: 'corte', data: c.data, nome: (c.titulo || 'Corte ' + c.ordem) + ' do vídeo' + (v.numero ? ' ' + v.numero : ''), falta: primeira(c, ETAPAS_CORTE) });
+        saida.push({ tipo: 'corte', data: c.data, nome: (c.titulo || 'Corte ' + c.ordem) + ' do vídeo' + (v.numero ? ' ' + v.numero : ''), falta: primeira(c, ETAPAS_CORTE), url: 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(c.video_id) + '&vt=cortes' });
       });
       return saida.sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
     }, function () { return []; });
