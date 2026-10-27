@@ -161,25 +161,31 @@
       var alvo = id && document.querySelector('[data-entrega="' + id + '"]');
       if (alvo) { paraDestacar = null; P.destacar(alvo); } else paraDestacar = id;
     }
-    var naoLidos = 0, cartaoAvisos = null, listaDeAvisos = null;
+    var naoLidos = 0, abrirAvisos = function () {}, abrirAvisosNaEntrada = /[?&]aviso=1/.test(location.search) && !paraDestacar;
     function pintarSino() {
       P.numeroNoIcone(naoLidos);
-      var cfg = { n: naoLidos, aoTocar: function () {
-        if (cartaoAvisos.style.display === 'none') { cartaoAvisos.style.display = ''; cartaoAvisos.scrollIntoView({ block: 'start' }); } else cartaoAvisos.style.display = 'none';
-      } };
+      var cfg = { n: naoLidos, aoTocar: function () { abrirAvisos(); } };
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
     }
-    function ligarAvisos(verId) {
-      cartaoAvisos = el('div', {});
-      if (!verId) cartaoAvisos.appendChild(P.avisos.lista(function (a) { cartaoAvisos.style.display = 'none'; var m = /[?&]e=([0-9a-f-]{36})/i.exec(a.url || ''); if (m) destacarEntrega(m[1]); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); }, 30));
-      cartaoAvisos.appendChild(P.avisos.cartao('cliente'));
-      cartaoAvisos.style.display = /[?&]aviso=1/.test(location.search) && !paraDestacar ? '' : 'none';
+    /* tela própria dos avisos (aberta pelo sino): avisos recebidos e o botão de ativar no celular */
+    function telaDeAvisos(user, verId) {
+      limpar();
+      var voltar = function () { mostrarPortal(user, verId); };
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
+      if (!verId) app.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avisos' }),
+        P.avisos.lista(function (a) { voltar(); var m = /[?&]e=([0-9a-f-]{36})/i.exec(a.url || ''); if (m) destacarEntrega(m[1]); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); }, 30)]));
+      app.appendChild(P.avisos.cartao('cliente'));
+      P.voltarNoFim(app, voltar);
+      window.scrollTo(0, 0);
+    }
+    function ligarAvisos(user, verId) {
+      abrirAvisos = function () { telaDeAvisos(user, verId); };
       if (paraDestacar && !verId) P.client.from('avisos_recebidos').update({ lido: true }).eq('url', '/cliente.html?aviso=1&e=' + paraDestacar).eq('lido', false).then(function () {}, function () {});
-      app.appendChild(cartaoAvisos);
       pintarSino();
       if (!verId) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
         if (r && !r.error && r.count) { naoLidos = r.count; pintarSino(); }
       }, function () {});
+      if (abrirAvisosNaEntrada) { abrirAvisosNaEntrada = false; setTimeout(abrirAvisos, 0); }
     }
 
     /* próximo atendimento (horário e Google Meet), buscado na agenda pelo servidor; sem atendimento marcado, o cartão nem aparece */
@@ -211,7 +217,7 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
-        ligarAvisos(verId);
+        ligarAvisos(user, verId);
         carregarAtendimento(verId);
         app.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),

@@ -203,8 +203,7 @@
       { chave: 'caderno', nome: 'Atividades', vazio: 'Nenhuma atividade ainda.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
       { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' },
-      { chave: 'mensalidade', nome: 'Mensalidade' },   /* datas, histórico e formas de pagamento (não vem da lista de itens) */
-      { chave: 'avisos', nome: 'Avisos' }   /* a última aba: ativar os avisos no celular */
+      { chave: 'mensalidade', nome: 'Mensalidade' }   /* datas, histórico e formas de pagamento (não vem da lista de itens) */
     ];
 
     var CHAVE_PIX = '11970404508';
@@ -277,7 +276,7 @@
       ]);
     }
     /* lista dos avisos recebidos (os 10 mais novos); o não lido fica em destaque; tocar marca como lido e leva às atividades */
-    var naoLidos = 0, irParaAvisos = function () {};
+    var naoLidos = 0, irParaAvisos = function () {}, abrirAvisosNaEntrada = /[?&]aviso=1/.test(location.search);
     /* lembrete da mensalidade (vai vencer / venceu): fica FIXO no topo da aba Avisos, antes de qualquer outro, e conta no sino; some quando você marca "Pagou" */
     var fixoMensalidade = null, atualizarAvisos = function () {};
     var totalAvisos = function () { return naoLidos + (fixoMensalidade ? 1 : 0); };
@@ -287,6 +286,18 @@
       P.numeroNoIcone(totalAvisos());
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg);
       else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
+    }
+    /* tela própria dos avisos (aberta pelo sino): lembrete da mensalidade, avisos recebidos e o botão de ativar no celular */
+    function telaDeAvisos(user, aluno, previa) {
+      limpar();
+      var voltar = function () { desenharPaginaDoAluno(user, aluno, previa); };
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
+      var lista = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avisos' }),
+        telaAvisos(aluno, previa, function (a) { voltar(); if (a && a.atividade_id) window.atividades.destacar(a.atividade_id); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); })]);
+      app.appendChild(lista);
+      app.appendChild(P.avisos.cartao('aluno'));
+      P.voltarNoFim(app, voltar);
+      window.scrollTo(0, 0);
     }
     function telaAvisos(aluno, previa, irParaAtividades, aoLer) {
       var caixa = el('div', {});
@@ -325,7 +336,6 @@
           botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
         });
         conteudo.textContent = '';
-        if (chave === 'avisos') { conteudo.appendChild(telaAvisos(aluno, previa, function (a) { abaAtual = 'caderno'; mostrar('caderno'); if (a && a.atividade_id) window.atividades.destacar(a.atividade_id); }, function () { naoLidos = Math.max(0, naoLidos - 1); rotuloAvisos(); })); conteudo.appendChild(P.avisos.cartao('aluno')); return; }
         if (chave === 'mensalidade') { conteudo.appendChild(telaMensalidade(aluno, previa)); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -336,9 +346,8 @@
         itens.forEach(function (i) { conteudo.appendChild(itemDaLista(i, chave)); });
       }
       var vazioP = null, qtdAtividades = 0, abaAtual = 'caderno';
-      function rotuloAvisos() { if (botoes.avisos) botoes.avisos.textContent = 'Avisos' + (totalAvisos() ? ' (' + totalAvisos() + ')' : ''); pintarSino(); }
+      var rotuloAvisos = pintarSino;   /* o número fica no sino; os avisos têm tela própria */
       atualizarAvisos = rotuloAvisos;
-      irParaAvisos = function () { abaAtual = 'avisos'; mostrar('avisos'); barra.scrollIntoView({ block: 'start' }); };
       avisarQuando(function (qtd) {
         qtdAtividades = qtd;
         var ab = ABAS[0], itensAba = lista.filter(function (i) { return i.bloco === ab.chave; }).length;
@@ -353,7 +362,7 @@
         barra.appendChild(b);
       });
       var deUmAviso = /[?&]atividade=([0-9a-f-]{36})/i.exec(location.search);
-      mostrar(/[?&]aviso=1/.test(location.search) ? 'avisos' : 'caderno');
+      mostrar('caderno');
       /* veio do aviso no celular: mostra onde está a atividade e marca o aviso dela como lido */
       if (deUmAviso && !previa) {
         window.atividades.destacar(deUmAviso[1]);
@@ -397,6 +406,7 @@
 
     /* a página do aluno em si. previa = o administrador vendo como o aluno vê (nada é salvo nem enviado) */
     function desenharPaginaDoAluno(user, aluno, previa) {
+        irParaAvisos = function () { telaDeAvisos(user, aluno, previa); };
         limpar();
         titulos(true);
         var topoPrevia = null; /* na prévia, o "entrar no encontro" fica na mesma linha do Voltar */
@@ -459,6 +469,8 @@
             caixaCaderno.style.display = 'none';
             app.appendChild(avisoDoApp());
             abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }, aluno, previa, caixaCaderno).forEach(function (e) { app.appendChild(e); });
+            /* veio do aviso no celular sem uma atividade específica: abre a tela de Avisos */
+            if (abrirAvisosNaEntrada) { abrirAvisosNaEntrada = false; irParaAvisos(); }
             // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
