@@ -205,7 +205,7 @@
       busca.then(function (r) {
         var nome = r.data ? r.data.nome : (P.nomeDoGoogle(user) || email);
         if (verId) {
-          var paraOPainel = function () { location.href = 'admin-clientes.html'; };
+          var paraOPainel = function () { location.href = 'admin-clientes.html?cliente=' + encodeURIComponent(verId); };
           app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + nome + ' vê (modo administrador)' }), el('div', {}, [P.botaoVoltar(paraOPainel)])]));
           P.voltarNoFim(app, paraOPainel);
         } else {
