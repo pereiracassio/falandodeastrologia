@@ -946,11 +946,23 @@
           campos.capa_url = capaUrl || null;
           return gravar('prod_videos', videos, v, campos);
         }).then(function (r) {
-          if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); avisoFlutuante('Salvo'); }
+          if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); avisoFlutuante('Salvo'); marcarSeoSePronto(); }
           else avisoFlutuante('Não salvou', true);
           voltarAoPonto();
         }).catch(function (e) { var motivo = e && e.message ? e.message : String(e || 'erro desconhecido'); P.mensagem(msg, (capaNova ? 'Não consegui enviar a foto' : 'Não consegui salvar') + ' (' + motivo + ')', 'erro'); avisoFlutuante('Não salvou', true); voltarAoPonto(); });
       }, false);
+      /* tudo preenchido = SEO marcado sozinho (só na passagem de "faltando" para "completo", para não remarcar quem desmarcou à mão) */
+      var seoCompleto = faltaParaSeo(v).length === 0;
+      function marcarSeoSePronto() {
+        var vf = Object.assign({}, v, { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim(), numero: numero.value ? +numero.value : null, data_postar: data.value || null, capa_url: capaUrl || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim(), cards: cardsTxt.value });
+        if (usaBlocos) vf.roteiro_blocos = rb;
+        var completo = faltaParaSeo(vf).length === 0, passou = completo && !seoCompleto;
+        seoCompleto = completo;
+        if (passou && !v.seo_ok) {
+          var campos = { seo_ok: true, numero: vf.numero, data_postar: vf.data_postar, capa_url: vf.capa_url };
+          gravar('prod_videos', videos, v, campos).then(function (r) { if (r && !r.error) { pintarEtapas(v); avisoFlutuante('Marcado: SEO'); } });
+        }
+      }
       /* salva sozinho enquanto digita (só os textos; a foto da capa só guarda no botão Salvar) */
       var tempoSalvar = null;
       function salvarSozinho() {
@@ -960,7 +972,7 @@
         if (okLink) c.link_youtube = lk || null;
         if (usaBlocos) c.roteiro_blocos = rb;
         estadoSalvo.textContent = 'Salvando...';
-        gravar('prod_videos', videos, v, c).then(function (r) { estadoSalvo.textContent = r && r.error ? 'Não salvou' : 'Salvo automaticamente'; });
+        gravar('prod_videos', videos, v, c).then(function (r) { estadoSalvo.textContent = r && r.error ? 'Não salvou' : 'Salvo automaticamente'; marcarSeoSePronto(); });
       }
       function agendarSalvar() { estadoSalvo.textContent = 'Digitando...'; clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarSozinho, 1200); }
       /* link do YouTube preenchido = o vídeo já está no YouTube (e tudo o que vem antes está feito) */
