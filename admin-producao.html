@@ -523,7 +523,7 @@
       area.appendChild(cartao);
 
       var atrasados = cortes.filter(function (c) { return c.data && c.data < h && cortePendente(c); }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
-      var doDia = cortes.filter(function (c) { return c.data === h; });
+      var doDia = cortes.filter(function (c) { return c.data === h && cortePendente(c); });
       cartao.appendChild(el('h2', { text: 'Hoje, ' + comDia(h) }));
       if (!doDia.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte marcado para hoje.' }));
       doDia.forEach(function (c) { cartao.appendChild(linhaCorte(c, false)); });
@@ -552,7 +552,7 @@
       });
 
       /* cortes dos próximos 7 dias */
-      var proxCortes = cortes.filter(function (c) { return c.data && c.data > h && c.data <= somarDias(h, 7); }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
+      var proxCortes = cortes.filter(function (c) { return c.data && c.data > h && c.data <= somarDias(h, 7) && cortePendente(c); }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
       cartao.appendChild(el('hr', { class: 'prod-divisa' }));
       cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Cortes dos próximos 7 dias' }));
       if (!proxCortes.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte marcado.' }));
