@@ -823,6 +823,8 @@
       mostrarCapa();
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Etapas' }));
       cartao.appendChild(chipsDaEtapa(v));
+      var faltaSeoLinha = el('p', { class: 'prod-sub', style: 'margin:-4px 0 12px;color:#A03E25' });
+      cartao.appendChild(faltaSeoLinha);
       cartao.appendChild(el('hr', { class: 'prod-divisa' }));
       /* vídeos novos: roteiro em blocos (gancho, bloco 1, 2..., conclusão). Vídeos com roteiro antigo escrito no campo único ficam como estão. */
       var usaBlocos = v.roteiro_blocos != null || !(v.roteiro && v.roteiro.trim());
@@ -940,7 +942,9 @@
       function marcarSeoSePronto() {
         var vf = Object.assign({}, v, { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim(), numero: numero.value ? +numero.value : null, data_postar: data.value || null, capa_url: capaUrl || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() });
         if (usaBlocos) vf.roteiro_blocos = rb;
-        if (v.seo_ok || faltaParaSeo(vf).length) return;
+        var faltando = faltaParaSeo(vf);
+        faltaSeoLinha.textContent = v.seo_ok || !faltando.length ? '' : 'Falta para o SEO: ' + faltando.join(', ');
+        if (v.seo_ok || faltando.length) return;
         var campos = { seo_ok: true, numero: vf.numero, data_postar: vf.data_postar, capa_url: vf.capa_url };
         gravar('prod_videos', videos, v, campos).then(function (r) { if (r && !r.error) { pintarEtapas(v); avisoFlutuante('Marcado: SEO'); } });
       }
@@ -967,6 +971,8 @@
       [titulo, capaTexto, link, numero, data, dataPublico, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
         c.addEventListener('change', agendarSalvar);
+        c.addEventListener('input', marcarSeoSePronto);
+        c.addEventListener('change', marcarSeoSePronto);
       });
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
       voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; abaSerie = 'videos'; abaSerieDe = serieAberta; irPara('series', serieAberta); };
