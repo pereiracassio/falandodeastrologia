@@ -35,7 +35,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="hora-planetaria.js"></script>
-  <script src="portal.js?v=86"></script>
+  <script src="portal.js?v=87"></script>
   <script src="menu.js?v=38" defer></script>
   <script>
   (function () {
@@ -95,7 +95,7 @@
           lista.forEach(function (x) {
             var p = x.data.split('-'), dia = DIAS[new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay()] + ' ' + p[2] + '/' + p[1];
             var jup = x.tipo === 'corte' ? jupiterDe(x.data) : [];
-            var linha = el('a', { href: 'admin-producao.html', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
+            var linha = el('a', { href: x.url || 'admin-producao.html', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
               el('span', { class: 'portal-item-titulo', style: 'color:#A03E25', text: x.nome }),
               el('p', { style: 'margin:4px 0 0', text: 'Postar ' + dia + (jup.length ? ' · Júpiter ' + jup.join(' · ') : '') + (x.falta ? ' · falta: ' + x.falta.toLowerCase() : '') })
             ]);
