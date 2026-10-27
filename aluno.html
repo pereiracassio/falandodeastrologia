@@ -8,7 +8,7 @@
     if (!app || /access_token|refresh_token|type=/.test(location.hash)) return;
     if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return; /* navegando dentro do app (a página anterior acabou de sair): não é abertura do zero */
     var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
-    if (u && /^\/[a-z-]+\.html/.test(u)) { if (u !== aqui) { window.__fdaRestaurando = true; try { var dg = JSON.parse(localStorage.getItem('fda_diag') || '[]'); dg.push('(cab.) ' + aqui + ' -> ' + u); localStorage.setItem('fda_diag', JSON.stringify(dg.slice(-8))); } catch (e) { /* ok */ } location.replace(u); } return; }
+    if (u && /^\/[a-z-]+\.html/.test(u)) { if (u !== aqui) { window.__fdaRestaurando = true; location.replace(u); } return; }
     
   } catch (e) { /* sem armazenamento */ } })();</script>
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
@@ -50,7 +50,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=85"></script>
+  <script src="portal.js?v=86"></script>
   <script src="atividades.js?v=29"></script>
   <script src="caderno.js?v=11"></script>
   <script>

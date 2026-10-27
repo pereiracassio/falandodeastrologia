@@ -8,7 +8,7 @@
     if (!app || /access_token|refresh_token|type=/.test(location.hash)) return;
     if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return; /* navegando dentro do app (a página anterior acabou de sair): não é abertura do zero */
     var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
-    if (u && /^\/[a-z-]+\.html/.test(u)) { if (u !== aqui) { window.__fdaRestaurando = true; try { var dg = JSON.parse(localStorage.getItem('fda_diag') || '[]'); dg.push('(cab.) ' + aqui + ' -> ' + u); localStorage.setItem('fda_diag', JSON.stringify(dg.slice(-8))); } catch (e) { /* ok */ } location.replace(u); } return; }
+    if (u && /^\/[a-z-]+\.html/.test(u)) { if (u !== aqui) { window.__fdaRestaurando = true; location.replace(u); } return; }
     location.replace('/admin-agenda.html');
   } catch (e) { /* sem armazenamento */ } })();</script>
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
@@ -102,7 +102,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=85"></script>
+  <script src="portal.js?v=86"></script>
   <script src="menu.js?v=38" defer></script>
   <script>
   (function () {
@@ -397,7 +397,6 @@
       if (!temRoteiro) falta.push('roteiro');
       if (!corpo) falta.push('texto que vai junto');
       if (vazio(v.tags)) falta.push('tags');
-      if (vazio(v.cards)) falta.push('cards');
       return falta;
     }
     /* repinta todos os botões de etapa deste vídeo que estiverem na tela (o do roteiro lá embaixo e os de cima) */
@@ -649,11 +648,14 @@
         cab.appendChild(fila([1.4, 1.4, 0.8], [campo('Nome', nome), campo('Assunto no blog', assunto), campo('Quantos vídeos terá', total)]));
         cab.appendChild(campo('Série pública ou de membros', escolhaAcesso(s.acesso, function (v) { gravar('prod_series', series, s, { acesso: v }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
         cab.appendChild(el('p', { class: 'prod-vazio', style: 'margin:-8px 0 14px', text: 'Os vídeos novos já nascem assim, mas cada vídeo pode ser diferente (por exemplo, o primeiro público).' }));
-        var salvar = botao('Salvar a série', function () {
-          if (!nome.value.trim()) { P.mensagem(msg, 'Escreva o nome da série.', 'erro'); return; }
-          gravar('prod_series', series, s, { nome: nome.value.trim(), assunto: assunto.value.trim() || null, total: total.value ? +total.value : null })
-            .then(function (r) { if (!r.error) { P.mensagem(msg, 'Salvo.', 'ok'); tela(); } });
-        }, false);
+        /* os campos da série salvam sozinhos (nome vazio não apaga o que já estava) */
+        var tempoS = null;
+        function salvarSerieSozinha() {
+          var c = { assunto: assunto.value.trim() || null, total: total.value ? +total.value : null };
+          if (nome.value.trim()) c.nome = nome.value.trim();
+          gravar('prod_series', series, s, c).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); });
+        }
+        [nome, assunto, total].forEach(function (c) { ['input', 'change'].forEach(function (ev) { c.addEventListener(ev, function () { clearTimeout(tempoS); tempoS = setTimeout(salvarSerieSozinha, 1000); }); }); });
         /* a série começa na data do primeiro vídeo: os outros ficam uma semana depois um do outro (os que já estão no ar não mudam) */
         var datas = botao('Ajustar as datas dos vídeos', function () {
           var primeiro = lista[0];
@@ -684,7 +686,7 @@
             irPara('series');
           });
         });
-        cab.appendChild(el('div', { class: 'portal-acoes' }, [salvar, datas, mais]));
+        cab.appendChild(el('div', { class: 'portal-acoes' }, [datas, mais]));
         cab.appendChild(msg);
       } else cab.appendChild(msg);
 
@@ -807,12 +809,12 @@
         botTirar.style.display = capaUrl ? '' : 'none';
       }
       botImg.addEventListener('click', function () { escolher.click(); });
-      botTirar.addEventListener('click', function () { capaUrl = ''; capaNova = null; mostrarCapa(); });
+      botTirar.addEventListener('click', function () { capaUrl = ''; capaNova = null; mostrarCapa(); gravar('prod_videos', videos, v, { capa_url: null }).then(function () { marcarSeoSePronto(); }); });
       escolher.addEventListener('change', function () {
         var arq = escolher.files && escolher.files[0]; escolher.value = '';
         if (!arq) return;
         P.mensagem(msg, 'Preparando a imagem...');
-        prepararImagem(arq).then(function (blob) { capaNova = blob; capaUrl = URL.createObjectURL(blob); mostrarCapa(); P.mensagem(msg, 'Foto escolhida. Toque em Salvar para guardar.'); })
+        prepararImagem(arq).then(function (blob) { capaNova = blob; capaUrl = URL.createObjectURL(blob); mostrarCapa(); enviarCapaAgora(); })
           .catch(function () { P.mensagem(msg, 'Não consegui ler essa imagem. Tente outra (JPEG ou PNG).', 'erro'); });
       });
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Foto da capa (a mesma que vai para o blog)' }));
@@ -921,46 +923,38 @@
       data.addEventListener('change', pintarJupFim); pintarJupFim();
       cartao.appendChild(jupFim);
       cartao.appendChild(estadoSalvo);
-      /* salvar não pode jogar a página para o topo (o teclado fechando no iPad faz isso): guarda onde estava e volta para o mesmo ponto */
-      var yAntes = null;
-      function voltarAoPonto() {
-        if (yAntes == null) return; var y = yAntes;
-        [0, 120, 350, 800].forEach(function (ms) { setTimeout(function () { if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); }, ms); });
+      /* a foto vai para o servidor e fica guardada assim que é escolhida (sem botão Salvar) */
+      function enviarCapaAgora() {
+        if (!capaNova) return;
+        var blob = capaNova, caminho = 'blog-' + Date.now() + '.jpg';
+        P.mensagem(msg, 'Enviando a foto...');
+        C.storage.from('site').upload(caminho, blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
+          if (r.error) throw r.error;
+          capaUrl = C.storage.from('site').getPublicUrl(caminho).data.publicUrl; if (capaNova === blob) capaNova = null;
+          mostrarCapa();
+          return gravar('prod_videos', videos, v, { capa_url: capaUrl });
+        }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Foto salva.', 'ok'); avisoFlutuante('Salvo'); marcarSeoSePronto(); } })
+          .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto (' + (e && e.message ? e.message : 'erro') + ')', 'erro'); });
       }
-      var salvar = botao('Salvar', function () {
-        if (yAntes == null) yAntes = window.scrollY;
-        if (!titulo.value.trim()) { P.mensagem(msg, 'Escreva o título.', 'erro'); return; }
-        if (link.value.trim() && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(link.value.trim())) { P.mensagem(msg, 'O link precisa ser do YouTube.', 'erro'); return; }
-        var campos = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, link_youtube: link.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
-        if (usaBlocos) campos.roteiro_blocos = rb;
-        var subir = Promise.resolve();
-        if (capaNova) {
-          P.mensagem(msg, 'Enviando a foto...');
-          var caminho = 'blog-' + Date.now() + '.jpg';
-          subir = C.storage.from('site').upload(caminho, capaNova, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
-            if (r.error) throw r.error;
-            capaUrl = C.storage.from('site').getPublicUrl(caminho).data.publicUrl; capaNova = null;
-          });
-        }
-        subir.then(function () {
-          campos.capa_url = capaUrl || null;
-          return gravar('prod_videos', videos, v, campos);
-        }).then(function (r) {
-          if (r && !r.error) { P.mensagem(msg, 'Salvo.', 'ok'); mostrarCapa(); avisoFlutuante('Salvo'); }
-          else avisoFlutuante('Não salvou', true);
-          voltarAoPonto();
-        }).catch(function (e) { var motivo = e && e.message ? e.message : String(e || 'erro desconhecido'); P.mensagem(msg, (capaNova ? 'Não consegui enviar a foto' : 'Não consegui salvar') + ' (' + motivo + ')', 'erro'); avisoFlutuante('Não salvou', true); voltarAoPonto(); });
-      }, false);
-      /* salva sozinho enquanto digita (só os textos; a foto da capa só guarda no botão Salvar) */
+      /* tudo o que é obrigatório preenchido = SEO marcado sozinho (também ao abrir um vídeo que já estava completo) */
+      function marcarSeoSePronto() {
+        var vf = Object.assign({}, v, { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim(), numero: numero.value ? +numero.value : null, data_postar: data.value || null, capa_url: capaUrl || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() });
+        if (usaBlocos) vf.roteiro_blocos = rb;
+        if (v.seo_ok || faltaParaSeo(vf).length) return;
+        var campos = { seo_ok: true, numero: vf.numero, data_postar: vf.data_postar, capa_url: vf.capa_url };
+        gravar('prod_videos', videos, v, campos).then(function (r) { if (r && !r.error) { pintarEtapas(v); avisoFlutuante('Marcado: SEO'); } });
+      }
+      marcarSeoSePronto();
+      /* salva sozinho enquanto digita (todos os campos; a foto é enviada na hora que é escolhida) */
       var tempoSalvar = null;
       function salvarSozinho() {
-        if (!titulo.value.trim()) return;
         var lk = link.value.trim(), okLink = !lk || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk);
-        var c = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        if (titulo.value.trim()) c.titulo = titulo.value.trim(); /* título é obrigatório no banco: vazio não apaga o que já estava */
         if (okLink) c.link_youtube = lk || null;
         if (usaBlocos) c.roteiro_blocos = rb;
         estadoSalvo.textContent = 'Salvando...';
-        gravar('prod_videos', videos, v, c).then(function (r) { estadoSalvo.textContent = r && r.error ? 'Não salvou' : 'Salvo automaticamente'; });
+        gravar('prod_videos', videos, v, c).then(function (r) { estadoSalvo.textContent = r && r.error ? 'Não salvou' : 'Salvo automaticamente'; marcarSeoSePronto(); });
       }
       function agendarSalvar() { estadoSalvo.textContent = 'Digitando...'; clearTimeout(tempoSalvar); tempoSalvar = setTimeout(salvarSozinho, 1200); }
       /* link do YouTube preenchido = o vídeo já está no YouTube (e tudo o que vem antes está feito) */
@@ -970,13 +964,12 @@
           marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
         }
       });
-      [titulo, capaTexto, link, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+      [titulo, capaTexto, link, numero, data, dataPublico, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
+        c.addEventListener('change', agendarSalvar);
       });
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
       voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; abaSerie = 'videos'; abaSerieDe = serieAberta; irPara('series', serieAberta); };
-      salvar.addEventListener('pointerdown', function () { yAntes = window.scrollY; });
-      salvar.addEventListener('touchstart', function () { yAntes = window.scrollY; }, { passive: true });
       var voltar = botaoVoltar();
       /* discreto de propósito: texto pequeno no fim da tela, longe dos outros botões */
       var apagar = P.botaoApagar('Excluir este vídeo');
@@ -991,7 +984,7 @@
       var blogBtn = v.blog_post_id
         ? el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-blog.html#editar=' + encodeURIComponent(v.blog_post_id), text: 'Abrir a postagem no blog' })
         : el('a', { class: 'portal-btn portal-btn-sec', href: 'admin-blog.html#novo=' + encodeURIComponent(v.id), text: 'Criar postagem do blog' });
-      cartao.appendChild(el('div', { class: 'portal-acoes' }, [salvar, blogBtn, voltar]));
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [blogBtn, voltar]));
       cartao.appendChild(el('p', { class: 'prod-vazio', text: v.blog_post_id ? 'Este vídeo já tem postagem no blog.' : 'Salve antes de criar a postagem: ela já vem com o título, o link do YouTube, a foto de capa, o assunto da série e o texto que vai junto.' }));
       cartao.appendChild(msg);
 
