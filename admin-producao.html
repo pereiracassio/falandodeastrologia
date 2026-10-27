@@ -397,7 +397,6 @@
       if (!temRoteiro) falta.push('roteiro');
       if (!corpo) falta.push('texto que vai junto');
       if (vazio(v.tags)) falta.push('tags');
-      if (vazio(v.cards)) falta.push('cards');
       return falta;
     }
     /* repinta todos os botões de etapa deste vídeo que estiverem na tela (o do roteiro lá embaixo e os de cima) */
@@ -654,6 +653,14 @@
           gravar('prod_series', series, s, { nome: nome.value.trim(), assunto: assunto.value.trim() || null, total: total.value ? +total.value : null })
             .then(function (r) { if (!r.error) { P.mensagem(msg, 'Salvo.', 'ok'); tela(); } });
         }, false);
+        /* os campos da série salvam sozinhos (nome vazio não apaga o que já estava) */
+        var tempoS = null;
+        function salvarSerieSozinha() {
+          var c = { assunto: assunto.value.trim() || null, total: total.value ? +total.value : null };
+          if (nome.value.trim()) c.nome = nome.value.trim();
+          gravar('prod_series', series, s, c).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); });
+        }
+        [nome, assunto, total].forEach(function (c) { ['input', 'change'].forEach(function (ev) { c.addEventListener(ev, function () { clearTimeout(tempoS); tempoS = setTimeout(salvarSerieSozinha, 1000); }); }); });
         /* a série começa na data do primeiro vídeo: os outros ficam uma semana depois um do outro (os que já estão no ar não mudam) */
         var datas = botao('Ajustar as datas dos vídeos', function () {
           var primeiro = lista[0];
@@ -807,12 +814,12 @@
         botTirar.style.display = capaUrl ? '' : 'none';
       }
       botImg.addEventListener('click', function () { escolher.click(); });
-      botTirar.addEventListener('click', function () { capaUrl = ''; capaNova = null; mostrarCapa(); });
+      botTirar.addEventListener('click', function () { capaUrl = ''; capaNova = null; mostrarCapa(); gravar('prod_videos', videos, v, { capa_url: null }).then(function () { marcarSeoSePronto(); }); });
       escolher.addEventListener('change', function () {
         var arq = escolher.files && escolher.files[0]; escolher.value = '';
         if (!arq) return;
         P.mensagem(msg, 'Preparando a imagem...');
-        prepararImagem(arq).then(function (blob) { capaNova = blob; capaUrl = URL.createObjectURL(blob); mostrarCapa(); P.mensagem(msg, 'Foto escolhida. Toque em Salvar para guardar.'); })
+        prepararImagem(arq).then(function (blob) { capaNova = blob; capaUrl = URL.createObjectURL(blob); mostrarCapa(); enviarCapaAgora(); })
           .catch(function () { P.mensagem(msg, 'Não consegui ler essa imagem. Tente outra (JPEG ou PNG).', 'erro'); });
       });
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Foto da capa (a mesma que vai para o blog)' }));
@@ -951,6 +958,19 @@
           voltarAoPonto();
         }).catch(function (e) { var motivo = e && e.message ? e.message : String(e || 'erro desconhecido'); P.mensagem(msg, (capaNova ? 'Não consegui enviar a foto' : 'Não consegui salvar') + ' (' + motivo + ')', 'erro'); avisoFlutuante('Não salvou', true); voltarAoPonto(); });
       }, false);
+      /* a foto vai para o servidor e fica guardada assim que é escolhida (sem botão Salvar) */
+      function enviarCapaAgora() {
+        if (!capaNova) return;
+        var blob = capaNova, caminho = 'blog-' + Date.now() + '.jpg';
+        P.mensagem(msg, 'Enviando a foto...');
+        C.storage.from('site').upload(caminho, blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
+          if (r.error) throw r.error;
+          capaUrl = C.storage.from('site').getPublicUrl(caminho).data.publicUrl; if (capaNova === blob) capaNova = null;
+          mostrarCapa();
+          return gravar('prod_videos', videos, v, { capa_url: capaUrl });
+        }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Foto salva.', 'ok'); avisoFlutuante('Salvo'); marcarSeoSePronto(); } })
+          .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto (' + (e && e.message ? e.message : 'erro') + ')', 'erro'); });
+      }
       /* tudo preenchido = SEO marcado sozinho (só na passagem de "faltando" para "completo", para não remarcar quem desmarcou à mão) */
       var seoCompleto = faltaParaSeo(v).length === 0;
       function marcarSeoSePronto() {
@@ -963,12 +983,12 @@
           gravar('prod_videos', videos, v, campos).then(function (r) { if (r && !r.error) { pintarEtapas(v); avisoFlutuante('Marcado: SEO'); } });
         }
       }
-      /* salva sozinho enquanto digita (só os textos; a foto da capa só guarda no botão Salvar) */
+      /* salva sozinho enquanto digita (todos os campos; a foto é enviada na hora que é escolhida) */
       var tempoSalvar = null;
       function salvarSozinho() {
-        if (!titulo.value.trim()) return;
         var lk = link.value.trim(), okLink = !lk || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk);
-        var c = { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim() || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        if (titulo.value.trim()) c.titulo = titulo.value.trim(); /* título é obrigatório no banco: vazio não apaga o que já estava */
         if (okLink) c.link_youtube = lk || null;
         if (usaBlocos) c.roteiro_blocos = rb;
         estadoSalvo.textContent = 'Salvando...';
@@ -982,8 +1002,9 @@
           marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
         }
       });
-      [titulo, capaTexto, link, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+      [titulo, capaTexto, link, numero, data, dataPublico, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
+        c.addEventListener('change', agendarSalvar);
       });
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
       voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; abaSerie = 'videos'; abaSerieDe = serieAberta; irPara('series', serieAberta); };
