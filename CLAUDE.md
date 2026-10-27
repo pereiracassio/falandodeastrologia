@@ -244,3 +244,7 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 2. Avaliação do módulo e desbloqueio com nota 7.
 3. Pagamento e matrícula automática (quando escolher a plataforma).
 4. Vídeo protegido (quando houver aulas gravadas).
+
+## Linha de lista abre ao tocar em QUALQUER lugar dela (27/10/2026) — regra do astrólogo, vale para TODA lista nova
+
+**Nada de botão "Abrir"/"Rever"/"Continuar" no canto da linha:** a linha inteira é o toque (`role="button"`, `cursor:pointer`), porque o intuitivo é tocar no item. Feito na lista da aba Estudos (`admin-estudos.html`). Listas antigas com botão "Editar"/"Abrir" ao lado (Alunos, Clientes, Blog etc.) ainda NÃO foram trocadas: fazer só quando ele pedir, uma tela de cada vez.
