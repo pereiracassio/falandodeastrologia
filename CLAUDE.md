@@ -63,7 +63,7 @@ O astrólogo reclamou várias vezes: cada lugar do site ficava de um jeito. **É
 - Publicar na `main` só quando ele pedir. Mexeu em `blog.css`/`blog.js`: bumpar `?v=` só em `blog.html`, `postagem.html` e `404.html`. **As páginas geradas por `api/_blog.js` NÃO levam `?v=` nos CSS/JS** (assim pegam o estilo e o menu atuais sozinhas, com até ~10 min de cache do GitHub Pages) e **só precisam de "Atualizar as páginas do blog" quando a ESTRUTURA do HTML gerado muda** (cabeçalho, seta, cartões), nunca por mudança de CSS/JS.
 - **Mostrar com imagem, não com artefato nem descrição:** ele quer ver o resultado (print do Playwright pelo `SendUserFile`) e não gosta de texto que descreve o que a imagem já mostra. A página de Alunos (`aluno.html`) e a de Seu espaço (`cliente.html`) já seguem esse padrão.
 
-## Acesso do aluno: criado pelo painel, nunca pelo aluno (21/10/2026)
+## Acesso do aluno DA MENTORIA: criado pelo painel, nunca pelo aluno (21/10/2026) — vale só para a mentoria; o curso (ver mais abaixo) é aberto a quem comprar
 A tela Alunos (`aluno.html`) **não tem e não pode ter lugar para criar conta** (só entrar: Google, e-mail e senha, "Esqueci minha senha"). Quem cria o acesso é o astrólogo, em `admin-alunos.html` → Novo aluno → Adicionar: o painel chama `api/criar-acesso.js` (Vercel, só `sou_admin`, usa `SUPABASE_SERVICE_ROLE_KEY`, cria o usuário já confirmado, sem senha) e depois grava a ficha em `alunos`. Nunca mais mandar o astrólogo criar usuário no Supabase à mão. Servidor não se testa daqui: foi simulado em Node; o teste real é dele.
 - **Nunca cortar palavra com hífen** (`hyphens:none` nas páginas de papiro) e **botão sempre numa linha só** (a letra diminui para caber, `white-space:nowrap`). Dúvida no WhatsApp = frase em azul-noite + só o ícone da home, nunca botão verde. Investimento e avisos soltos no papiro: nada de quadro dentro de quadro.
 
@@ -225,8 +225,7 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 2. **Atividades:** todas as aulas terão ou só a avaliação? Ele acha que a apostila basta e as atividades serão "mais avaliativas". Não criar atividade por aula sem ele decidir.
 3. **Formato da avaliação:** de marcar (o site corrige sozinho, como no Estudos) e/ou dissertativa (ele corrige à mão, como nas Atividades dos alunos)?
 4. **Meio de pagamento:** ainda não escolhido; provavelmente o mesmo do Astro Hellenic. **Requisito: precisa AVISAR o site quando alguém paga (webhook) e aceitar pagamento recorrente/parcelado.** O InfinitePay não serve para o curso (a recorrência no cartão dele não avisa o pagamento).
-5. **Matrícula automática:** quem paga ganha o acesso sozinho. Isso **muda a regra atual** ("o acesso do aluno só nasce pelo painel, nunca pelo aluno"): aqui o pagamento confirmado, via servidor, criaria o acesso (reaproveitar `api/criar-acesso.js`). Decisão consciente dele antes de fazer.
-6. **Hospedagem do vídeo:** só quando as primeiras aulas forem gravadas.
+5. **Hospedagem do vídeo:** só quando as primeiras aulas forem gravadas.
 
 **Vídeo (decisões e pesquisa):**
 - **YouTube "não listado" está descartado** (qualquer um repassa o link para quem não pagou). **Drive não serve em escala** (limite de acessos simultâneos/bloqueio por excesso; hoje só funciona nas gravações da mentoria porque são poucos alunos).
@@ -235,6 +234,8 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 
 **O que já existe e se reaproveita:** login do aluno (`aluno.html`, abas rolando para o lado com `P.comSetas`), Atividades (perguntas, respostas, correções), Estudos (questões de marcar com correção na hora e resolução, `admin-estudos.html`), avisos no celular, caderno em PDF, Financeiro, `api/criar-acesso.js`.
 - **Leitor de PDF para apostilas (`leitor.js`, 27/10/2026):** a tela do leitor (caneta, marca-texto, borracha, pinça, dois toques, corta as margens brancas pela medida do texto de até 12 páginas, tela toda, dedo escreve no celular quando escolhe uma ferramenta e não há caneta) mora em `leitor.js` e é **genérica**: `Leitor.abrir({ pagina, voltar, obterPdf(progresso), carregarTracos(pg), salvarTracos(pg, tracos), salvarPagina(pg, total) })`. O painel (`admin-leitor.html`) usa tabelas `leitor_livros`/`leitor_tracos` e baixa o PDF do Drive com o token do administrador. **Para o aluno/cliente abrir PDF no leitor, falta o servidor entregar o arquivo** (o aluno não tem acesso ao Drive do administrador): uma rota na Vercel que confere o login do aluno, confere que o PDF é dele e devolve o arquivo; as marcações do aluno ficam em tabela própria por aluno. Ainda NÃO feito.
+
+**Acesso do curso (NÃO é questão, está decidido):** a regra "o acesso só nasce pelo painel, ninguém cria conta sozinho" vale **só para a MENTORIA** (o aluno de mentoria é escolhido por ele). **O curso é outra coisa, aberto a quem comprar:** quem paga ganha o acesso automaticamente (pagamento confirmado → servidor cria o acesso, reaproveitando `api/criar-acesso.js`). Nunca tratar a regra da mentoria como obstáculo do curso.
 
 **Ordem combinada (uma coisa por vez):**
 1. Estrutura: curso, módulos, aulas (texto, apostila, vídeo de teste), módulos com cadeado, por aluno. Painel do administrador para montar.
