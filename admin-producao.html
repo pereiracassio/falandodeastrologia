@@ -789,6 +789,7 @@
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
+      cartao.appendChild(fila([1, 1], [el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return titulo.value.trim(); }, 'Copiar o título')]), el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return capaTexto.value.trim(); }, 'Copiar o texto da capa')])]));
       cartao.appendChild(fila([0.7, 1.1, 2], [campo('Número na série', numero), campo('Disponível para membros', data), campo('Link do YouTube', link)]));
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter(v.data_postar) });
       data.addEventListener('change', function () { jupV.textContent = textoJupiter(data.value); });
