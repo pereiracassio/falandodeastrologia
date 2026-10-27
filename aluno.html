@@ -338,7 +338,12 @@
       var vazioP = null, qtdAtividades = 0, abaAtual = 'caderno';
       function rotuloAvisos() { if (botoes.avisos) botoes.avisos.textContent = 'Avisos' + (totalAvisos() ? ' (' + totalAvisos() + ')' : ''); pintarSino(); }
       atualizarAvisos = rotuloAvisos;
-      irParaAvisos = function () { abaAtual = 'avisos'; mostrar('avisos'); barra.scrollIntoView({ block: 'start' }); };
+      irParaAvisos = function () {
+        abaAtual = 'avisos'; mostrar('avisos');
+        /* leva a tela até a barra de abas, sem animação (a rolagem suave travava em alguns celulares) */
+        var subir = function () { window.scrollTo(0, Math.max(0, barra.getBoundingClientRect().top + (window.pageYOffset || 0) - 60)); };
+        subir(); setTimeout(subir, 250);
+      };
       avisarQuando(function (qtd) {
         qtdAtividades = qtd;
         var ab = ABAS[0], itensAba = lista.filter(function (i) { return i.bloco === ab.chave; }).length;
