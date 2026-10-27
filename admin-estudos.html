@@ -95,6 +95,7 @@
 
     /* ---------- lista ---------- */
     function lista(aviso) {
+      if (typeof aviso !== 'string') aviso = ''; /* o toque do ← Voltar chega aqui como evento, não como aviso */
       limpar(); P.estado.gravar({});
       app.appendChild(topo(nomeAdmin));
       if (aviso) { var av = el('p', { class: 'portal-msg' }); app.appendChild(av); P.mensagem(av, aviso, 'ok'); }
