@@ -54,20 +54,25 @@ module.exports = async (req, res) => {
     if (!conexao) { res.status(200).json({ atendimento: null }); return; }
     const t = await tokenDeAcesso(conexao);
     const agora = new Date();
-    const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?' + new URLSearchParams({
-      timeMin: agora.toISOString(), timeMax: new Date(agora.getTime() + DIAS_A_FRENTE * 86400000).toISOString(),
-      singleEvents: 'true', orderBy: 'startTime', maxResults: '250', q: codigo,
-      fields: 'items(summary,status,start,end,hangoutLink,conferenceData/entryPoints(entryPointType,uri))'
-    });
-    const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + t.valor } });
-    if (!resp.ok) {
-      // 403 = a conexão ainda não tem a permissão da agenda (o administrador precisa conectar o Drive de novo): a página simplesmente não mostra o cartão
-      console.error('meu-atendimento google:', resp.status);
-      res.status(200).json({ atendimento: null });
-      return;
+    /* o "q" do Google casa palavra inteira: "123" não acha "0123 - Fulano". Por isso busca com o código como está na agenda (4 dígitos com zeros) e também sem zeros */
+    const itens = [];
+    for (const q of [...new Set([codigo.padStart(4, '0'), codigo])]) {
+      const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?' + new URLSearchParams({
+        timeMin: agora.toISOString(), timeMax: new Date(agora.getTime() + DIAS_A_FRENTE * 86400000).toISOString(),
+        singleEvents: 'true', orderBy: 'startTime', maxResults: '250', q,
+        fields: 'items(summary,status,start,end,hangoutLink,conferenceData/entryPoints(entryPointType,uri))'
+      });
+      const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + t.valor } });
+      if (!resp.ok) {
+        // 403 = a conexão ainda não tem a permissão da agenda (o administrador precisa conectar o Drive de novo): a página simplesmente não mostra o cartão
+        console.error('meu-atendimento google:', resp.status);
+        res.status(200).json({ atendimento: null });
+        return;
+      }
+      itens.push(...((await resp.json()).items || []));
     }
-    const dados = await resp.json();
-    const achado = (dados.items || []).find((ev) => {
+    itens.sort((a, b) => String(a.start && a.start.dateTime).localeCompare(String(b.start && b.start.dateTime)));
+    const achado = itens.find((ev) => {
       if (ev.status === 'cancelled' || !ev.start || !ev.start.dateTime) return false;
       const m = String(ev.summary || '').match(/^\s*(\d{3,6})\b/);
       return m && semZeros(m[1]) === codigo;
