@@ -305,7 +305,27 @@
       if (e.convidados.length) filhos.push(el('p', { text: 'Com ' + e.convidados.join(', '), style: 'margin:6px 0 0' }));
       var nota = String(e.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
       if (nota) filhos.push(el('p', { text: nota.length > 600 ? nota.slice(0, 600) + '…' : nota, style: 'white-space:pre-line;margin:10px 0 0' }));
-      filhos.push(el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, acoes));
+      /* título "0123 - Fulano": acha o cliente pelo código e põe o WhatsApp com o lembrete pronto (quem envia é ele) */
+      var mc = !e.diaTodo && e.fim > Date.now() && /^\s*(\d{3,6})(?!\d)/.exec(e.titulo || '');
+      if (mc) {
+        var cod = mc[1], semZ = cod.replace(/^0+/, '');
+        P.client.from('cliente_codigos').select('cliente_id,codigo').in('codigo', [cod, semZ, semZ.padStart(4, '0')]).limit(1).then(function (rc) {
+          var ligacao = rc && rc.data && rc.data[0];
+          if (!ligacao) return;
+          return P.client.from('clientes').select('nome,whatsapp').eq('id', ligacao.cliente_id).maybeSingle().then(function (rl) {
+            var c = rl && rl.data, dig = String(c && c.whatsapp || '').replace(/\D/g, '');
+            if (!dig) return;
+            if (dig.length === 10 || dig.length === 11) dig = '55' + dig;
+            var dia = isoDia(e.ini), hora = hhmm(e.ini).replace(':00', 'h').replace(':', 'h');
+            var quandoTxt = dia === isoDia(Date.now()) ? 'hoje' : dia === isoDia(Date.now() + DIA) ? 'amanhã' : 'no dia ' + curto(dia);
+            var msg = 'Oi ' + String(c.nome || '').trim().split(/\s+/)[0] + '. Tudo bem?\n\nPassando para lembrar da nossa consulta ' + quandoTxt + ', às ' + hora + '. Você consegue confirmar para mim?';
+            var zap = el('a', { class: 'icone-whats', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(msg), target: '_blank', rel: 'noopener', title: 'Lembrar pelo WhatsApp', 'aria-label': 'Lembrar pelo WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]);
+            linhaAcoes.insertBefore(zap, linhaAcoes.firstChild);
+          });
+        }).then(function () {}, function () {});
+      }
+      var linhaAcoes = el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes);
+      filhos.push(linhaAcoes);
       destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
     }
     function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
