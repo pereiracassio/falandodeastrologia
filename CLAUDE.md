@@ -237,6 +237,8 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 
 **Acesso do curso (NÃO é questão, está decidido):** a regra "o acesso só nasce pelo painel, ninguém cria conta sozinho" vale **só para a MENTORIA** (o aluno de mentoria é escolhido por ele). **O curso é outra coisa, aberto a quem comprar:** quem paga ganha o acesso automaticamente (pagamento confirmado → servidor cria o acesso, reaproveitando `api/criar-acesso.js`). Nunca tratar a regra da mentoria como obstáculo do curso.
 
+**ETAPA 1 FEITA no código (27/10/2026, não publicada até ele rodar o SQL):** `docs/curso.sql` (tabelas `cursos`, `curso_modulos`, `curso_aulas`, `curso_matriculas`; o aluno matriculado só lê as aulas dos módulos com `ordem <= modulo_liberado`), painel `admin-curso.html` (aba **Curso** antes do Leitor: curso → módulos/aulas com ↑↓, apostila escolhida no Drive, vídeo YouTube ou Drive, marca "vídeo de teste", alunos do curso com "Liberar o próximo"/"Trancar o último" na mão) e aba **Curso** em `aluno.html` (`curso.js`; aparece só para matriculado; módulos acima do liberado com cadeado; módulos já liberados continuam abertos). **A apostila só aparece como nome: abrir no leitor depende da rota do servidor (ainda não feita).** Matrícula por enquanto é manual (e-mail do aluno).
+
 **Ordem combinada (uma coisa por vez):**
 1. Estrutura: curso, módulos, aulas (texto, apostila, vídeo de teste), módulos com cadeado, por aluno. Painel do administrador para montar.
 2. Avaliação do módulo e desbloqueio com nota 7.
