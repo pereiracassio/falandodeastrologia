@@ -69,7 +69,7 @@
         P.marcarAnivVisto();
         lista.forEach(function (p) {
           var dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
-          var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas. Um abraço, Cássio.';
+          var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas. De presente, você tem 10% de desconto em qualquer um dos meus serviços disponíveis no site, por 30 dias. É só usar o cupom aniversário no carrinho. Aproveite para fazer a sua Revolução Solar. Um abraço.';
           var linha = el('a', { href: '#', class: 'portal-item-titulo', style: 'display:block;text-decoration:none;color:#A03E25;margin:0 0 14px', text: 'Aniversário de ' + p.nome });
           var detalhe = el('div', { style: 'display:none;margin:-6px 0 14px' });
           if (dig) detalhe.appendChild(el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]));

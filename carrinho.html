@@ -294,7 +294,7 @@
   var botao = document.getElementById("pay-button");
   var erro = document.getElementById("erro-dados");
   document.getElementById("aplicar-cupom").addEventListener("click", function () {
-    var codigo = document.getElementById("cli-cupom").value.trim().toUpperCase();
+    var codigo = document.getElementById("cli-cupom").value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // aceita com ou sem acento
     var email = document.getElementById("cli-email").value.trim();
     cupomAtivo = false;
     if (!codigo) { avisoCupom("Digite o cupom.", true); desenhar(); return; }

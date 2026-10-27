@@ -276,7 +276,7 @@
     /* tocar num compromisso só MOSTRA; o lápis abre a edição. Cores: título terracota, horário azul, o resto preto */
     function detalheAniversario(destino, e) {
       var p = e.aniversario, dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
-      var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas. Um abraço, Cássio.';
+      var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas. De presente, você tem 10% de desconto em qualquer um dos meus serviços disponíveis no site, por 30 dias. É só usar o cupom aniversário no carrinho. Aproveite para fazer a sua Revolução Solar. Um abraço.';
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
       var acoes = [];
