@@ -37,6 +37,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=89"></script>
+  <script src="leitor.js?v=2"></script>
   <script src="menu.js?v=38" defer></script>
   <script>
   (function () {
@@ -115,320 +116,43 @@
       });
     }
 
-    /* ---------- leitor ---------- */
+    /* ---------- leitor (a tela em si mora em leitor.js) ---------- */
     function abrir(livro) {
       P.estado.mesclar({ livro: livro.id });
-      var COR = '#A03E25';
-      var tela = el('div');
-      tela.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:99990;background:#d9c78f;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none';
-      var overflowAntes = document.body.style.overflow; document.body.style.overflow = 'hidden';
-      document.body.appendChild(tela);
-
-      function semContorno(b) { ['border', 'box-shadow', 'border-radius'].forEach(function (k) { b.style.setProperty(k, k === 'border' ? '0' : k === 'box-shadow' ? 'none' : '0', 'important'); }); b.style.setProperty('background', 'transparent', 'important'); }
-      function btn(txt, fn) {
-        var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: txt });
-        semContorno(b); b.style.cssText += ';padding:8px 10px;margin:0;font-size:13px;min-width:0';
-        b.addEventListener('click', fn); return b;
-      }
-      function marcar(b, on) { b.style.setProperty('color', on ? COR : '', 'important'); b.style.textDecoration = on ? 'underline' : 'none'; }
-      function barra() {
-        var d = el('div'); d.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;padding:6px 8px;background:#e6d3a0;flex:none;-webkit-user-select:none;user-select:none';
-        return d;
-      }
-      var voltarTopo = P.botaoVoltar(fechar), voltarBaixo = P.botaoVoltar(fechar);
-      [voltarTopo, voltarBaixo].forEach(function (v) { semContorno(v); v.style.setProperty('padding', '8px 10px'); });
-
-      /* ferramentas */
-      var ferr = 'caneta', cores = { caneta: '#1A1410', marca: '#F2C230' };
-      var PALETA = { caneta: ['#1A1410', '#1034A6', '#A03E25'], marca: ['#F2C230', '#7CC47C', '#F08FB0'] };
-      var bCaneta = btn('Caneta', function () { ferr = 'caneta'; pintarFerr(); });
-      var bMarca = btn('Marca-texto', function () { ferr = 'marca'; pintarFerr(); });
-      var bBorracha = btn('Borracha', function () { ferr = 'borracha'; pintarFerr(); });
-      var bDesfazer = btn('Desfazer', desfazer);
-      var bolas = el('span'); bolas.style.cssText = 'display:inline-flex;gap:6px;align-items:center;margin:0 4px';
-      function pintarFerr() {
-        marcar(bCaneta, ferr === 'caneta'); marcar(bMarca, ferr === 'marca'); marcar(bBorracha, ferr === 'borracha');
-        bolas.textContent = '';
-        if (ferr === 'borracha') return;
-        PALETA[ferr].forEach(function (c) {
-          var b = el('button', { type: 'button', 'aria-label': 'Cor' });
-          b.style.cssText = 'width:22px;height:22px;padding:0;margin:0;border:0;border-radius:50%;background:' + c + ';cursor:pointer;box-sizing:content-box;border-bottom:3px solid ' + (cores[ferr] === c ? COR : 'transparent') + ';';
-          b.style.borderRadius = '0';
-          b.addEventListener('click', function () { cores[ferr] = c; pintarFerr(); });
-          bolas.appendChild(b);
-        });
-      }
-      var barraTopo = barra();
-      [voltarTopo, bCaneta, bMarca, bBorracha, bolas, bDesfazer].forEach(function (x) { barraTopo.appendChild(x); });
-      tela.appendChild(barraTopo);
-
-      var area = el('div'); area.style.cssText = 'flex:1;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0';
-      var holder = el('div'); holder.style.cssText = 'position:absolute;left:0;top:0;background:#fff;box-shadow:0 1px 10px rgba(0,0,0,.25)';
-      function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;' + (css || ''); holder.appendChild(c); return c; }
-      var cvPdf = lona(), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();
-      var status = el('div', { text: 'Abrindo o livro...' }); status.style.cssText = 'position:absolute;left:0;right:0;top:40%;text-align:center;color:#16233F;font-size:16px;padding:0 20px';
-      area.appendChild(holder); area.appendChild(status); tela.appendChild(area);
-      holder.style.display = 'none';
-
-      var barraBaixo = barra();
-      var bAnt = btn('‹', function () { ir(n - 1); }), bProx = btn('›', function () { ir(n + 1); });
-      bAnt.style.fontSize = bProx.style.fontSize = '20px';
-      var campo = el('input', { type: 'number', min: '1', value: String(livro.pagina || 1) });
-      campo.style.cssText = 'width:64px;text-align:center;background:transparent;border:0;border-bottom:1px solid #1F5FA3;font:inherit;font-size:15px;color:#16233F;border-radius:0;padding:4px';
-      var totalTxt = el('span', { text: '' }); totalTxt.style.cssText = 'font-size:14px;color:#16233F;margin-right:6px';
-      campo.addEventListener('change', function () { ir(parseInt(campo.value, 10) || n); });
-      campo.addEventListener('keydown', function (e) { e.stopPropagation(); });
-      var bMenos = btn('−', function () { zoomPor(1 / 1.3); }), bMais = btn('+', function () { zoomPor(1.3); });
-      bMenos.style.fontSize = bMais.style.fontSize = '20px';
-      [voltarBaixo, bAnt, campo, totalTxt, bProx, bMenos, bMais].forEach(function (x) { barraBaixo.appendChild(x); });
-      tela.appendChild(barraBaixo);
-      pintarFerr();
-
-      /* estado do leitor */
-      var dpr = Math.max(1, window.devicePixelRatio || 1);
-      var pdf = null, pagObj = null, n = livro.pagina || 1, zoom = 1, pw = 1, ph = 1, cssW = 1, cssH = 1, left = 0, top = 0;
-      var tracos = [], pilha = [], paginaDosTracos = 0, pendente = false, esperaSalvar = null, esperaPagina = null, esperaRender = null;
-      var idRender = 0, tarefa = null, idCarga = 0, fechado = false;
-
-      function medir() {
-        var aw = area.clientWidth, ah = area.clientHeight, fit = Math.min(aw / pw, ah / ph);
-        cssW = pw * fit * zoom; cssH = ph * fit * zoom;
-      }
-      function posicionar() {
-        var aw = area.clientWidth, ah = area.clientHeight;
-        left = cssW <= aw ? (aw - cssW) / 2 : Math.min(0, Math.max(aw - cssW, left));
-        top = cssH <= ah ? (ah - cssH) / 2 : Math.min(0, Math.max(ah - cssH, top));
-        holder.style.left = left + 'px'; holder.style.top = top + 'px'; holder.style.width = cssW + 'px'; holder.style.height = cssH + 'px';
-      }
-      function pintarTudo() {
-        var r = Math.min(dpr, Math.sqrt(16e6 / Math.max(1, cssW * cssH)));
-        [cvMarca, cvTinta].forEach(function (c) { c.width = Math.max(1, Math.round(cssW * r)); c.height = Math.max(1, Math.round(cssH * r)); });
-        tracos.forEach(function (s) { desenhar(s); });
-        return r;
-      }
-      function renderizar() {
-        if (!pagObj) return;
-        var eu = ++idRender; if (tarefa) { try { tarefa.cancel(); } catch (e) { /* ok */ } }
-        medir(); posicionar();
-        var r = pintarTudo();
-        var vp = pagObj.getViewport({ scale: (cssW / pw) * r });
-        var tmp = document.createElement('canvas'); tmp.width = Math.round(vp.width); tmp.height = Math.round(vp.height);
-        tarefa = pagObj.render({ canvasContext: tmp.getContext('2d'), viewport: vp });
-        tarefa.promise.then(function () {
-          if (eu !== idRender) return;
-          cvPdf.width = tmp.width; cvPdf.height = tmp.height; cvPdf.getContext('2d').drawImage(tmp, 0, 0);
-        }, function () { /* cancelado */ });
-      }
-      function renderizarDepois() { clearTimeout(esperaRender); esperaRender = setTimeout(renderizar, 220); }
-
-      /* ---- traços ---- */
-      function ctxDe(s) { return (s.t === 'm' ? cvMarca : cvTinta); }
-      function desenhar(s) {
-        var cv = ctxDe(s), g = cv.getContext('2d');
-        g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = s.c; g.fillStyle = s.c; g.lineWidth = s.w * cv.width;
-        var p = s.p;
-        if (p.length === 1) { g.beginPath(); g.arc(p[0][0] * cv.width, p[0][1] * cv.height, g.lineWidth / 2, 0, 7); g.fill(); }
-        else { g.beginPath(); g.moveTo(p[0][0] * cv.width, p[0][1] * cv.height); for (var i = 1; i < p.length; i++) g.lineTo(p[i][0] * cv.width, p[i][1] * cv.height); g.stroke(); }
-        g.restore();
-      }
-      function repintarTracos() {
-        [cvMarca, cvTinta].forEach(function (c) { c.getContext('2d').clearRect(0, 0, c.width, c.height); });
-        tracos.forEach(desenhar);
-      }
-      function trecho(s, a, b) { /* só o último pedaço, enquanto escreve */
-        var cv = ctxDe(s), g = cv.getContext('2d');
-        g.save(); g.lineCap = 'round'; g.strokeStyle = s.c; g.lineWidth = s.w * cv.width;
-        g.beginPath(); g.moveTo(a[0] * cv.width, a[1] * cv.height); g.lineTo(b[0] * cv.width, b[1] * cv.height); g.stroke(); g.restore();
-      }
-      function salvar() { pendente = true; clearTimeout(esperaSalvar); esperaSalvar = setTimeout(gravarAgora, 700); }
-      function gravarAgora() {
-        clearTimeout(esperaSalvar);
-        if (!pendente || !paginaDosTracos) return Promise.resolve();
-        pendente = false;
-        var pg = paginaDosTracos, copia = tracos.slice();
-        if (!copia.length) return C.from('leitor_tracos').delete().eq('livro_id', livro.id).eq('pagina', pg).then(function () {});
-        return C.from('leitor_tracos').upsert({ livro_id: livro.id, pagina: pg, tracos: copia, atualizado_em: new Date().toISOString() }, { onConflict: 'livro_id,pagina' }).then(function (x) {
-          if (x.error) { pendente = true; status.textContent = 'Não consegui salvar as marcações: ' + P.traduzErro(x.error.message); status.style.top = '8px'; status.style.display = ''; setTimeout(function () { status.style.display = 'none'; }, 4000); }
-        });
-      }
-      function desfazer() {
-        var op = pilha.pop(); if (!op) return;
-        if (op.a === 'add') tracos = tracos.filter(function (s) { return s !== op.s; });
-        else tracos = tracos.concat(op.ss);
-        repintarTracos(); salvar();
-      }
-
-      /* ---- páginas ---- */
-      function ir(novo) {
-        if (!pdf) return;
-        novo = Math.max(1, Math.min(pdf.numPages, novo));
-        campo.value = String(novo);
-        if (novo === n && pagObj) return;
-        gravarAgora(); n = novo; carregarPagina(true);
-        clearTimeout(esperaPagina);
-        esperaPagina = setTimeout(function () { C.from('leitor_livros').update({ pagina: n, total: pdf.numPages, atualizado_em: new Date().toISOString() }).eq('id', livro.id).then(function () {}); }, 600);
-      }
-      function carregarPagina(aoTopo) {
-        var eu = ++idCarga;
-        pdf.getPage(n).then(function (p) {
-          if (eu !== idCarga) return;
-          var vp = p.getViewport({ scale: 1 }); pw = vp.width; ph = vp.height; pagObj = p;
-          if (aoTopo) top = 0;
-          tracos = []; pilha = []; paginaDosTracos = n; pendente = false;
-          renderizar();
-          C.from('leitor_tracos').select('tracos').eq('livro_id', livro.id).eq('pagina', n).maybeSingle().then(function (x) {
-            if (eu !== idCarga || !x.data) return;
-            tracos = x.data.tracos || []; repintarTracos();
+      Leitor.abrir({
+        nome: livro.nome,
+        pagina: livro.pagina || 1,
+        voltar: function () { P.estado.mesclar({ livro: '' }); lista(); },
+        obterPdf: function (progresso) {
+          return P.tokenGoogle().then(function (token) {
+            return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(livro.drive_id) + '?alt=media&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } });
+          }).then(function (r) {
+            if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'drive');
+            var total = Number(r.headers.get('Content-Length')) || 0;
+            if (!r.body || !r.body.getReader) return r.arrayBuffer();
+            var leitor = r.body.getReader(), partes = [], lido = 0;
+            return (function passo() {
+              return leitor.read().then(function (x) {
+                if (x.done) { var tudo = new Uint8Array(lido), o = 0; partes.forEach(function (p) { tudo.set(p, o); o += p.length; }); return tudo.buffer; }
+                partes.push(x.value); lido += x.value.length;
+                progresso(total ? Math.round(lido / total * 100) + '%' : Math.round(lido / 1048576) + ' MB');
+                return passo();
+              });
+            })();
           });
-        });
-      }
-      function zoomPor(k, cx, cy) {
-        if (!pdf) return;
-        var aw = area.clientWidth, ah = area.clientHeight; cx = cx == null ? aw / 2 : cx; cy = cy == null ? ah / 2 : cy;
-        var u = (cx - left) / cssW, v = (cy - top) / cssH;
-        zoom = Math.max(1, Math.min(6, zoom * k)); medir(); left = cx - u * cssW; top = cy - v * cssH; posicionar(); renderizarDepois();
-      }
-
-      /* ---- toque: caneta/mouse escrevem; dedos viram a página, arrastam e dão zoom ---- */
-      var atual = null, apagou = null, toques = {}, pinca = null, gestoPinca = false, canetaNaTela = false, penAte = 0;
-      function pontoDe(e) { var r = holder.getBoundingClientRect(); return [Math.round((e.clientX - r.left) / r.width * 10000) / 10000, Math.round((e.clientY - r.top) / r.height * 10000) / 10000]; }
-      function apagarEm(e) {
-        var r = holder.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, raio = 16;
-        var tira = tracos.filter(function (s) {
-          for (var i = 0; i < s.p.length; i++) {
-            var ax = s.p[i][0] * cssW, ay = s.p[i][1] * cssH, bx = ax, by = ay;
-            if (i + 1 < s.p.length) { bx = s.p[i + 1][0] * cssW; by = s.p[i + 1][1] * cssH; }
-            var dx = bx - ax, dy = by - ay, t = dx || dy ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))) : 0;
-            if (Math.hypot(x - (ax + t * dx), y - (ay + t * dy)) < raio + (s.t === 'm' ? s.w * cssW / 2 : 0)) return true;
-          }
-          return false;
-        });
-        if (!tira.length) return;
-        tracos = tracos.filter(function (s) { return tira.indexOf(s) < 0; });
-        apagou = (apagou || []).concat(tira); repintarTracos();
-      }
-      area.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-      area.addEventListener('pointerdown', function (e) {
-        e.preventDefault();
-        if (!pagObj) return;
-        if (e.pointerType === 'touch') {
-          if (canetaNaTela || Date.now() < penAte || e.width > 28 || e.height > 28) return;
-          toques[e.pointerId] = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY };
-          var ids = Object.keys(toques);
-          if (ids.length === 2) {
-            var a = toques[ids[0]], b = toques[ids[1]], ar = area.getBoundingClientRect();
-            var cx = (a.x + b.x) / 2 - ar.left, cy = (a.y + b.y) / 2 - ar.top;
-            pinca = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: zoom, u: (cx - left) / cssW, v: (cy - top) / cssH }; gestoPinca = true;
-          }
-          return;
+        },
+        carregarTracos: function (pg) {
+          return C.from('leitor_tracos').select('tracos').eq('livro_id', livro.id).eq('pagina', pg).maybeSingle().then(function (x) { return x.data ? (x.data.tracos || []) : null; });
+        },
+        salvarTracos: function (pg, tracos) {
+          var q = tracos.length
+            ? C.from('leitor_tracos').upsert({ livro_id: livro.id, pagina: pg, tracos: tracos, atualizado_em: new Date().toISOString() }, { onConflict: 'livro_id,pagina' })
+            : C.from('leitor_tracos').delete().eq('livro_id', livro.id).eq('pagina', pg);
+          return q.then(function (x) { if (x.error) throw x.error; });
+        },
+        salvarPagina: function (pg, total) {
+          C.from('leitor_livros').update({ pagina: pg, total: total, atualizado_em: new Date().toISOString() }).eq('id', livro.id).then(function () {});
         }
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        if (e.pointerType === 'pen') canetaNaTela = true;
-        try { area.setPointerCapture(e.pointerId); } catch (x) { /* sem captura */ }
-        if (ferr === 'borracha') { apagou = []; atual = { borracha: true }; apagarEm(e); return; }
-        var p = pontoDe(e);
-        atual = { t: ferr === 'marca' ? 'm' : 'c', c: cores[ferr], w: ferr === 'marca' ? 0.026 : 0.0022, p: [p] };
-        desenhar(atual);
-      });
-      area.addEventListener('pointermove', function (e) {
-        if (e.pointerType === 'touch') {
-          var t = toques[e.pointerId]; if (!t) return;
-          var ids = Object.keys(toques);
-          if (ids.length >= 2 && pinca) {
-            t.x = e.clientX; t.y = e.clientY;
-            var a = toques[ids[0]], b = toques[ids[1]], ar = area.getBoundingClientRect();
-            var cx = (a.x + b.x) / 2 - ar.left, cy = (a.y + b.y) / 2 - ar.top;
-            zoom = Math.max(1, Math.min(6, pinca.z0 * Math.hypot(a.x - b.x, a.y - b.y) / pinca.d0));
-            medir(); left = cx - pinca.u * cssW; top = cy - pinca.v * cssH; posicionar(); renderizarDepois();
-          } else if (ids.length === 1 && zoom > 1 && !gestoPinca) {
-            left += e.clientX - t.x; top += e.clientY - t.y; t.x = e.clientX; t.y = e.clientY; posicionar(); renderizarDepois();
-          } else { t.x = e.clientX; t.y = e.clientY; }
-          return;
-        }
-        if (!atual) return;
-        var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; if (!evs.length) evs = [e];
-        evs.forEach(function (ev) {
-          if (atual.borracha) { apagarEm(ev); return; }
-          var p = pontoDe(ev), ult = atual.p[atual.p.length - 1];
-          if (Math.abs(p[0] - ult[0]) < 0.0004 && Math.abs(p[1] - ult[1]) < 0.0004) return;
-          atual.p.push(p); trecho(atual, ult, p);
-        });
-      });
-      function soltar(e) {
-        if (e.pointerType === 'touch') {
-          var t = toques[e.pointerId]; if (!t) return;
-          var dx = e.clientX - t.x0, dy = e.clientY - t.y0, sozinho = Object.keys(toques).length === 1;
-          delete toques[e.pointerId];
-          if (Object.keys(toques).length < 2) pinca = null;
-          if (!Object.keys(toques).length) {
-            if (sozinho && !gestoPinca && zoom === 1 && e.type === 'pointerup' && Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) ir(n + (dx < 0 ? 1 : -1));
-            gestoPinca = false;
-          }
-          return;
-        }
-        if (e.pointerType === 'pen') { canetaNaTela = false; penAte = Date.now() + 400; }
-        if (!atual) return;
-        if (atual.borracha) { if (apagou && apagou.length) { pilha.push({ a: 'del', ss: apagou }); salvar(); } apagou = null; }
-        else { tracos.push(atual); pilha.push({ a: 'add', s: atual }); if (pilha.length > 100) pilha.shift(); salvar(); }
-        atual = null;
-      }
-      area.addEventListener('pointerup', soltar); area.addEventListener('pointercancel', soltar);
-      area.addEventListener('wheel', function (e) {
-        if (!pagObj) return; e.preventDefault();
-        if (e.ctrlKey || e.metaKey) { var ar = area.getBoundingClientRect(); zoomPor(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - ar.left, e.clientY - ar.top); }
-        else if (zoom > 1) { left -= e.deltaX; top -= e.deltaY; posicionar(); renderizarDepois(); }
-        else ir(n + (e.deltaY > 0 ? 1 : -1));
-      }, { passive: false });
-      function teclado(e) {
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') ir(n + 1);
-        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') ir(n - 1);
-        else if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) desfazer();
-      }
-      document.addEventListener('keydown', teclado);
-      function aoRedimensionar() { if (pagObj) { medir(); posicionar(); renderizarDepois(); } }
-      window.addEventListener('resize', aoRedimensionar);
-      function aoEsconder() { if (document.visibilityState === 'hidden') gravarAgora(); }
-      document.addEventListener('visibilitychange', aoEsconder);
-
-      function fechar() {
-        fechado = true; clearTimeout(esperaRender);
-        gravarAgora().then(function () {}, function () {});
-        document.removeEventListener('keydown', teclado); window.removeEventListener('resize', aoRedimensionar); document.removeEventListener('visibilitychange', aoEsconder);
-        document.body.style.overflow = overflowAntes; tela.remove();
-        try { if (pdf) pdf.destroy(); } catch (e) { /* ok */ }
-        P.estado.mesclar({ livro: '' }); lista();
-      }
-
-      /* ---- baixar o PDF do Drive e abrir ---- */
-      function erro(t) { status.textContent = t; }
-      if (!window.pdfjsLib) { erro('Não consegui carregar o leitor de PDF. Verifique a internet.'); return; }
-      P.tokenGoogle().then(function (token) {
-        return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(livro.drive_id) + '?alt=media&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } });
-      }).then(function (r) {
-        if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'drive');
-        var total = Number(r.headers.get('Content-Length')) || 0;
-        if (!r.body || !r.body.getReader) return r.arrayBuffer();
-        var leitor = r.body.getReader(), partes = [], lido = 0;
-        return (function passo() {
-          return leitor.read().then(function (x) {
-            if (x.done) { var tudo = new Uint8Array(lido), o = 0; partes.forEach(function (p) { tudo.set(p, o); o += p.length; }); return tudo.buffer; }
-            partes.push(x.value); lido += x.value.length;
-            if (!fechado) status.textContent = 'Abrindo o livro... ' + (total ? Math.round(lido / total * 100) + '%' : Math.round(lido / 1048576) + ' MB');
-            return passo();
-          });
-        })();
-      }).then(function (dados) {
-        if (fechado) return;
-        return pdfjsLib.getDocument({ data: dados }).promise;
-      }).then(function (doc) {
-        if (!doc || fechado) return;
-        pdf = doc; n = Math.max(1, Math.min(doc.numPages, n)); campo.value = String(n); campo.max = String(doc.numPages); totalTxt.textContent = 'de ' + doc.numPages;
-        status.style.display = 'none'; holder.style.display = '';
-        if (livro.total !== doc.numPages) C.from('leitor_livros').update({ total: doc.numPages }).eq('id', livro.id).then(function () {});
-        carregarPagina(true);
-      }).catch(function (e) {
-        var m = e && e.message;
-        erro(m === 'desconectado' ? 'O Google Drive não está conectado. Conecte em Configurações.' : m === 'sumiu' ? 'Esse arquivo não está mais no Drive.' : 'Não consegui abrir o livro.');
       });
     }
 
