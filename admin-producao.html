@@ -936,18 +936,15 @@
         }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Foto salva.', 'ok'); avisoFlutuante('Salvo'); marcarSeoSePronto(); } })
           .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto (' + (e && e.message ? e.message : 'erro') + ')', 'erro'); });
       }
-      /* tudo preenchido = SEO marcado sozinho (só na passagem de "faltando" para "completo", para não remarcar quem desmarcou à mão) */
-      var seoCompleto = faltaParaSeo(v).length === 0;
+      /* tudo o que é obrigatório preenchido = SEO marcado sozinho (também ao abrir um vídeo que já estava completo) */
       function marcarSeoSePronto() {
-        var vf = Object.assign({}, v, { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim(), numero: numero.value ? +numero.value : null, data_postar: data.value || null, capa_url: capaUrl || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim(), cards: cardsTxt.value });
+        var vf = Object.assign({}, v, { titulo: titulo.value.trim(), capa_texto: capaTexto.value.trim(), numero: numero.value ? +numero.value : null, data_postar: data.value || null, capa_url: capaUrl || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() });
         if (usaBlocos) vf.roteiro_blocos = rb;
-        var completo = faltaParaSeo(vf).length === 0, passou = completo && !seoCompleto;
-        seoCompleto = completo;
-        if (passou && !v.seo_ok) {
-          var campos = { seo_ok: true, numero: vf.numero, data_postar: vf.data_postar, capa_url: vf.capa_url };
-          gravar('prod_videos', videos, v, campos).then(function (r) { if (r && !r.error) { pintarEtapas(v); avisoFlutuante('Marcado: SEO'); } });
-        }
+        if (v.seo_ok || faltaParaSeo(vf).length) return;
+        var campos = { seo_ok: true, numero: vf.numero, data_postar: vf.data_postar, capa_url: vf.capa_url };
+        gravar('prod_videos', videos, v, campos).then(function (r) { if (r && !r.error) { pintarEtapas(v); avisoFlutuante('Marcado: SEO'); } });
       }
+      marcarSeoSePronto();
       /* salva sozinho enquanto digita (todos os campos; a foto é enviada na hora que é escolhida) */
       var tempoSalvar = null;
       function salvarSozinho() {
