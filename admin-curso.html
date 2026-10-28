@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=114"></script>
+  <script src="portal.js?v=115"></script>
   <script src="curso.js?v=1"></script>
   <script src="menu.js?v=42" defer></script>
   <script>
@@ -122,7 +122,7 @@
           if (!tit.value.trim()) return;
           C.from('cursos').update({ titulo: tit.value.trim() }).eq('id', id).then(function (r) { if (r.error) msgErro(msgT, r.error); else P.mensagem(msgT, 'Salvo.', 'ok'); });
         });
-        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes' }, [salvarT])])));
+        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes' }, [salvarT])]))); P.salvarSozinho(salvarT);
 
         var caixaM = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Módulos' })]);
         if (!mods.length) caixaM.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }));
@@ -216,11 +216,11 @@
               .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
               .then(function (f) {
                 if (f.mimeType !== 'application/pdf') { P.mensagem(msgAp, 'Esse arquivo não é um PDF.', 'erro'); return; }
-                apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apTxt.textContent = apNome;
+                apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apTxt.textContent = apNome; salvar.click();
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false);
         });
-        var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apTxt.textContent = 'Nenhuma'; });
+        var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apTxt.textContent = 'Nenhuma'; salvar.click(); });
         var msg = el('p', { class: 'portal-msg' });
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
@@ -229,7 +229,7 @@
         });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
           [el('h2', { text: 'Módulo ' + m.ordem })], campo('Nome', tit),
-          [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])])));
+          [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
 
         var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aulas' })]);
         if (!aulas.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }));
@@ -298,7 +298,7 @@
             .then(function (x) { if (x.error) msgErro(msg, x.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          [el('h2', { text: 'Aula ' + a.ordem })], campo('Nome', tit), campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])])));
+          [el('h2', { text: 'Aula ' + a.ordem })], campo('Nome', tit), campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;

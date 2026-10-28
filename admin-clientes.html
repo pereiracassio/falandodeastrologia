@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=114"></script>
+  <script src="portal.js?v=115"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -226,6 +226,7 @@
         el('label', { for: 'clienteNasc', text: 'Aniversário' }), nascInput,
         pastaDrive, msgCod, salvarCod
       ]);
+      P.salvarSozinho(salvarCod);
       formCod.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var valor = codInput.value.trim();
@@ -242,7 +243,7 @@
             salvarCod.disabled = false;
             if (r.error) { P.mensagem(msgCod, /duplicate|unique/i.test(r.error.message) ? 'Nome salvo, mas esse código já é de outro cliente.' : P.traduzErro(r.error.message), 'erro'); return; }
             cliente.nome = novoNome; cliente.email = novoEmail || null; cliente.codigo = valor; cliente.whatsapp = whatsInput.value.trim() || null; cliente.nascimento = nascInput.value || null;
-            paginaDoCliente(user, cliente);
+            P.mensagem(msgCod, 'Salvo.', 'ok');
           });
         });
       });

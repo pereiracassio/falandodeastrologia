@@ -36,7 +36,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=114"></script>
+  <script src="portal.js?v=115"></script>
   <script src="menu.js?v=42" defer></script>
   <script>
   (function () {
@@ -117,7 +117,7 @@
           navigator.geolocation.getCurrentPosition(function (pos) {
             lista.value = 'outro'; mostrar();
             nomeC.value = 'localização do aparelho'; latC.value = pos.coords.latitude.toFixed(4); lonC.value = pos.coords.longitude.toFixed(4); fusoC.value = String(-new Date().getTimezoneOffset() / 60);
-            P.mensagem(msg, 'Pronto. Confira e toque em Salvar o lugar.', 'ok');
+            salvar.click();
           }, function () { P.mensagem(msg, 'Não consegui a localização. Escolha na lista ou digite.', 'erro'); }, { timeout: 10000 });
         });
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar o lugar' });
@@ -134,7 +134,7 @@
         });
         [].concat(campo('Lugar', lista)).forEach(function (n) { corpo.appendChild(n); });
         corpo.appendChild(manual);
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, aqui])); corpo.appendChild(msg);
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, aqui])); corpo.appendChild(msg); P.salvarSozinho(salvar);
       }
       desenhar();
       C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) {

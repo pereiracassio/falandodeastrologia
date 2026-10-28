@@ -1200,6 +1200,16 @@
   }
 
   /* campo de escrever "livre": sem caixa, só uma linha embaixo, e cresce com o texto (nada de rolagem dentro de uma caixa pequena) */
+  /* salvar sozinho: o botão "Salvar" some e o que ele faz roda sozinho logo depois de cada mudança nos campos do cartão (sem redesenhar a tela) */
+  function salvarSozinho(botao, raiz) {
+    botao.style.display = 'none';
+    setTimeout(function () {
+      var r = raiz || botao.closest('.portal-cartao, form'); if (!r) return;
+      var t = null, agendar = function (ms) { clearTimeout(t); t = setTimeout(function () { if (!botao.disabled) botao.click(); }, ms); };
+      r.addEventListener('change', function () { agendar(500); });
+      r.addEventListener('input', function (ev) { var tp = ev.target && ev.target.type; if (ev.target && (ev.target.tagName === 'TEXTAREA' || /^(text|tel|url|email|search|number)$/.test(tp))) agendar(1500); });
+    }, 0);
+  }
   function escritaLivre(ta) {
     if (ta.classList.contains('escrita-livre')) return ta;
     ta.classList.add('escrita-livre');
@@ -1229,7 +1239,7 @@
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') setTimeout(renovarInscricao, 800); });
 
   window.portal = {
-    escritaLivre: escritaLivre, tokenGoogle: tokenDoDrive, escolherDoDrive: escolherDoDrive,
+    escritaLivre: escritaLivre, salvarSozinho: salvarSozinho, tokenGoogle: tokenDoDrive, escolherDoDrive: escolherDoDrive,
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,

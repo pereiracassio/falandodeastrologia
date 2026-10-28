@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=114"></script>
+  <script src="portal.js?v=115"></script>
   <script src="atividades.js?v=32"></script>
   <script>
   (function () {
@@ -345,11 +345,12 @@
             salvarDados.disabled = false;
             if (r2.error) { P.mensagem(msgDados, /duplicate|unique/i.test(r2.error.message) ? 'Nome salvo, mas esse código já é de outro aluno.' : P.traduzErro(r2.error.message), 'erro'); return; }
             aluno.nome = novoNome; aluno.codigo = valor; aluno.whatsapp = whatsInput.value.trim() || null; aluno.nascimento = nascInput.value || null; aluno.meet_link = seguro;
-            paginaDoAluno(user, aluno);
+            P.mensagem(msgDados, 'Salvo.', 'ok');
           });
         });
       });
       formDados.querySelector('h2').remove();
+      P.salvarSozinho(salvarDados);
 
       /* seção de itens (materiais ou gravações): botão "Adicionar" no topo, que abre o cadastro (fecha ao salvar); embaixo, a lista dos que já estão cadastrados */
       function secaoDeItens(o) {
@@ -460,6 +461,7 @@
         });
       }
       salvarPag.addEventListener('click', gravarPag);
+      P.salvarSozinho(salvarPag);
       /* o dia do vencimento é fixo: o próximo é sempre 1 mês depois do vencimento anterior (pagar atrasado não muda o dia); sem vencimento ainda, 1 mês depois de hoje */
       pagouHoje.addEventListener('click', function () {
         var hoje = new Date(), base = proximoIn.value ? new Date(proximoIn.value + 'T00:00:00') : hoje;
