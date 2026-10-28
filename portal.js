@@ -546,7 +546,7 @@
     try {
       localStorage.setItem('fda_ultimo_uso', String(Date.now())); /* a abertura do zero do app se reconhece por isto estar velho (ver o <head> das páginas de entrada) */
       if (window.__fdaRestaurando) return; /* a página só está de passagem, indo para a última tela: não sobrescrever */
-      if (!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches))) return; /* só o app da tela de início guarda o último lugar: navegador e app nunca se misturam */
+      if (!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (localStorage.getItem('fda_admin') === '1' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches))) return; /* só o app da tela de início guarda o último lugar: navegador e app nunca se misturam */
       if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
       localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
@@ -557,7 +557,7 @@
   (function restaurarUltimaTela() {
     try {
       if (!/\/(aluno|cliente|admin-agenda)\.html$/.test(location.pathname) || window.__fdaRestaurando) return; /* as páginas onde os ícones do app abrem (Alunos, Seu espaço, Agenda): o app sempre vai para a última tela em que ele estava */
-      var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      var app = (window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (localStorage.getItem('fda_admin') === '1' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches));
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
       if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
       if (/[?&](aviso|atividade|aba|e|ver|code|error)=/.test(location.search)) return; /* aviso tocado, atividade, prévia ou volta do login: o endereço já traz o destino. Qualquer outro ? ou # (o ícone foi salvo com estado na ponta do endereço) NÃO impede de voltar à última tela */
