@@ -281,3 +281,11 @@ O astrólogo quer widgets na tela de início do iPhone/iPad **com a cara do site
 - [ ] 3. **Widget de Horas planetárias:** hora planetária de agora e a próxima, com o ícone do planeta (usa `hora-planetaria.js`, lugar de `site_config.prod_local_horas`).
 - **Mapa do momento NÃO é para fazer (ele só perguntou se dava; não puxar o assunto de novo).**
 - [ ] 4. **Widget da Mentoria: AINDA NÃO DECIDIU** (ideia minha; ele pediu para explicar o que seria antes de decidir): próximos encontros com os alunos (nome, dia, hora), mensalidades a vencer e atividades que os alunos responderam e esperam correção. Toque abre `admin-alunos.html`.
+
+## Projetos (28/10/2026) — aba Projetos do painel, `admin-projetos.html`
+
+Substituiu o artefato do Claude. Tabelas `projetos` (`nome`, `ordem`, `prioridade`, `data_fim`) e `projeto_passos` (`titulo`, `nota`, `feito`, `feito_em`, `ordem`), só `sou_admin()`. **Regras dele:** projeto é uma COISA a fazer (Curso, Widgets, INPI...), nunca o "lugar" (Astro Hellenic, Falando de Astrologia); leva TODOS os passos, inclusive os já feitos (a % sai daí); **antes de montar qualquer arquivo de projeto, mostrar a lista na conversa e esperar ele aprovar** (já levou bronca por mandar arquivo antes).
+- Uma aba por projeto, com a **bolinha de número** (prioridade) antes do nome: número repetido empurra o resto (3 vira 4...), apagar o número faz os seguintes subirem. Última aba: **Concluídos** (projeto sai das abas quando todos os passos estão feitos; "Reabrir" desmarca o último passo feito).
+- Tela do projeto: barra de progresso com "% concluído"; próximo passo no topo, depois os outros, feitos embaixo; **data final opcional** (só grava no botão Salvar data: o calendário do iPhone fechava a cada mudança) com **barra de tempo** azul → ocre (50%) → terracota. A mesma barra de tempo está na Produção (vídeos e cortes; fim do vídeo público = `data_publico`, só membros = `data_postar`; a barra NÃO some quando o item fica pronto).
+- **Importar projetos:** arquivo `{"projetos":[{"nome","passos":[{"titulo","nota","feito"}]}]}` que o Claude gera e ele importa; projeto de mesmo nome só ganha os passos que faltam.
+- **Ideia dele, ainda NÃO feita:** a mesma estrutura como **trilha de cada aluno** (o aluno só VÊ, não edita; o astrólogo monta e edita), a ser levada ao curso depois; ele mesmo acrescenta esse passo no projeto do curso.
