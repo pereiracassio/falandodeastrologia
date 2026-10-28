@@ -442,7 +442,7 @@
     function fimDoVideo(v) { return (rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar || null; }
     function cortePostado(c) { return !!(c.shorts && c.instagram && c.tiktok); }
     function barraTempo(criado, fimISO, pronto) {
-      if (!fimISO || pronto || !criado) return null;
+      if (!fimISO || !criado) return null; /* a barra fica sempre, mesmo com o item pronto */
       var fim = new Date(String(fimISO).slice(0, 10) + 'T23:59:59'), ini = new Date(criado), agora = new Date();
       var f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
       return el('div', { style: 'margin:4px 0 6px' }, [
