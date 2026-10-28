@@ -46,6 +46,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=97"></script>
   <script src="menu.js?v=39" defer></script>
+  <style>
+  /* o que abre (cartão, formulário) leva uma barra ocre do lado esquerdo, de cima até embaixo, para ficar claro onde começa e onde termina */
+  .barra-ocre{margin:8px 0}
+  .barra-ocre:not(:empty){border-left:5px solid #B5852F;padding-left:12px}
+  .pagina-papiro .barra-ocre .portal-cartao{border-top:0!important;border-bottom:0!important;padding-top:4px!important;padding-bottom:4px!important;margin:0!important}
+  </style>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
   (function () {
@@ -273,7 +279,7 @@
     function abrirFolha() {
       var antiga = document.getElementById('folha-agenda'); if (antiga) antiga.remove();
       var fundo = el('div', { id: 'folha-agenda', style: 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:99990;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4vh 10px;box-sizing:border-box;background:rgba(22,35,63,.35)' });
-      var corpo = el('div', { style: 'max-width:600px;margin:0 auto;box-sizing:border-box;border:2px solid #1F5FA3;padding:4px 14px 14px;background:var(--papiro-fundo-simples,#e6d3a0)' });
+      var corpo = el('div', { class: 'barra-ocre', style: 'max-width:600px;margin:0 auto;box-sizing:border-box;border:2px solid #1F5FA3;border-left:6px solid #B5852F;padding:4px 14px 14px;background:var(--papiro-fundo-simples,#e6d3a0)' });
       fundo.appendChild(corpo); app.appendChild(fundo);
       var obs = new MutationObserver(function () { if (!corpo.firstChild) { obs.disconnect(); fundo.remove(); } });
       obs.observe(corpo, { childList: true });
@@ -541,7 +547,7 @@
           linha.appendChild(el('span', { text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
           var nome = el('span', { style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
           linha.appendChild(nome);
-          var aberto = el('div'); /* o cartão abre aqui embaixo, sem sair de onde você está */
+          var aberto = el('div', { class: 'barra-ocre' }); /* o cartão abre aqui embaixo, sem sair de onde você está */
           linha.addEventListener('click', function () { if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, e); });
           bloco1.appendChild(linha); bloco1.appendChild(aberto);
         });
@@ -878,7 +884,7 @@
           propostas.push({ iso: iso, slot: slots[0] || null });
         }
         var itens = propostas.filter(function (p) { return p.slot; }).map(function (p) { return { iso: p.iso, ini: p.slot.ini, fim: p.slot.ini + o.minutos * 60000, hora: p.slot.hora, marcado: true }; });
-        var confirmar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px' }), destinoForm = el('div');
+        var confirmar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px' }), destinoForm = el('div', { class: 'barra-ocre' });
         var atualizaBotao = function () { var n = itens.filter(function (x) { return x.marcado; }).length; confirmar.textContent = 'Colocar na agenda (' + n + ')'; confirmar.disabled = !n; };
         propostas.forEach(function (p) {
           if (!p.slot) { res.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:10px 0 0', text: rotuloDia(p.iso) + ' · sem horário livre' })); return; }
