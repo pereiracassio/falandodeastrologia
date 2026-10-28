@@ -63,7 +63,7 @@
     }
     tela.appendChild(barraTopo);
 
-    var area = el('div'); area.style.cssText = 'flex:1;background:#fff;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0';
+    var area = el('div'); area.style.cssText = 'flex:1;background:#a8a28f;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0';
     var holder = el('div'); holder.style.cssText = 'position:absolute;left:0;top:0;background:#fff';
     function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;' + (css || ''); holder.appendChild(c); return c; }
     var cvPdf = lona(), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();
