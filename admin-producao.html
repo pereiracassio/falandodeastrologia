@@ -774,7 +774,7 @@
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
       var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || FIM_DESCRICAO; /* vídeo sem texto ainda já nasce com a linha e a palavra Capítulos */
-      var tags = el('input', { type: 'text', placeholder: 'tag1, tag2, tag3' }); tags.value = v.tags || '';
+      var tags = el('textarea', { rows: '3', placeholder: 'tag1, tag2, tag3' }); tags.value = v.tags || '';
       var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha, no máximo 5, assim: 03:45:12 Título do vídeo do card' }); cardsTxt.value = v.cards || '';
       var cardsLista = el('div', {});
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
@@ -1046,7 +1046,7 @@
         });
         /* o corte não tem roteiro, mas tem o texto e as tags do YouTube Shorts; depois das tags, a data e os horários de Júpiter */
         var tx = el('textarea', { rows: '4', placeholder: 'Texto do corte (descrição, legenda)' }); tx.value = c.texto || '';
-        var tg = el('input', { type: 'text', placeholder: 'tag1, tag2, tag3' }); tg.value = c.tags || '';
+        var tg = el('textarea', { rows: '3', placeholder: 'tag1, tag2, tag3' }); tg.value = c.tags || '';
         var tempoC = null;
         function agendarCorte() { clearTimeout(tempoC); tempoC = setTimeout(function () { gravar('prod_cortes', cortes, c, { texto: tx.value, tags: tg.value.trim() || null }); }, 1000); }
         tx.addEventListener('input', agendarCorte); tg.addEventListener('input', agendarCorte);
