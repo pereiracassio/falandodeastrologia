@@ -33,6 +33,7 @@
       { label: "Estudos", href: "admin-estudos.html" },
       { label: "Curso", href: "admin-curso.html" },
       { label: "Leitor", href: "admin-leitor.html" },
+      { label: "Projetos", href: "https://claude.ai/artifact/4xU2NgNXroqWoXRoDgtdGR" },
       { label: "Psicanálise", href: "https://pereiracassio.com.br/admin.html" },
       { label: "Ver o site", href: "index.html", sep: true }
     ];
