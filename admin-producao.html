@@ -408,9 +408,9 @@
         b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
     }
-    /* marcar "No YouTube" marca também o que vem antes (roteiro, gravado, as duas edições); desmarcar não mexe nos outros.
+    /* marcar "No YouTube" marca também o que vem antes (roteiro, gravado, as duas edições, SEO); desmarcar não mexe nos outros.
        "Cortes feitos" e "No blog" ficam de fora: cortes é você que marca, e o blog pode sair antes do vídeo. */
-    var ANTES_DO_YOUTUBE = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina'];
+    var ANTES_DO_YOUTUBE = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina', 'seo_ok'];
     function marcarEtapa(v, campo, valor) {
       var campos = {}; campos[campo] = valor;
       if (campo === 'seo_ok' && valor) {
