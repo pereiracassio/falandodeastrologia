@@ -97,6 +97,7 @@
       var ativos = projetos.filter(function (p) { return !concluidoO(p); }), concl = projetos.filter(concluidoO);
       if (aberto !== 'concluidos' && !ativos.some(function (p) { return p.id === aberto; })) aberto = concl.some(function (p) { return p.id === aberto; }) ? 'concluidos' : (ativos.length ? ativos[0].id : 'concluidos');
       if (verConcluido && !concl.some(function (p) { return p.id === verConcluido; })) verConcluido = null;
+      var velha = app.querySelector('.portal-abas-rola'), rolagemBarra = velha ? velha.scrollLeft : null; /* a barra fica onde estava */
       limpar();
       app.appendChild(topo(nomeAdmin));
       if (aberto === 'concluidos' && verConcluido) { telaConcluido(concl.filter(function (p) { return p.id === verConcluido; })[0]); return; }
@@ -115,9 +116,14 @@
       abaConcl.className = 'portal-aba' + (aberto === 'concluidos' ? ' ativa' : '');
       abaConcl.addEventListener('click', function () { aberto = 'concluidos'; P.estado.gravar({ projeto: aberto }); desenhar(); });
       barraAbas.appendChild(abaConcl);
-      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
+      var rola = el('div', { class: 'portal-abas-rola' }, [barraAbas]);
+      app.appendChild(P.comSetas(rola));
       var conteudo = el('div', { class: 'portal-cartao' });
       app.appendChild(conteudo);
+      var ativaAba = barraAbas.querySelector('.ativa');
+      if (rolagemBarra != null) rola.scrollLeft = rolagemBarra;
+      /* só leva o projeto aberto para a frente se ele não estiver à vista (primeira vez, ou projeto recém-criado) */
+      if (ativaAba && (rolagemBarra == null || ativaAba.offsetLeft < rola.scrollLeft || ativaAba.offsetLeft + ativaAba.offsetWidth > rola.scrollLeft + rola.clientWidth)) rola.scrollLeft = Math.max(0, ativaAba.offsetLeft - (rola.clientWidth - ativaAba.offsetWidth) / 2);
       var proj = aberto === 'concluidos' ? null : ativos.filter(function (p) { return p.id === aberto; })[0];
       if (aberto === 'concluidos') {
         if (!concl.length) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto concluído ainda.' }));
