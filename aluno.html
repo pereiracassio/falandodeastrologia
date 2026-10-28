@@ -224,7 +224,7 @@
     /* três abas na mesma página (Atividades, Gravações, Materiais); abre em Atividades, que é o que o aluno precisa fazer; as gravações são para rever quando tiver dúvida.
        A chave interna 'caderno' continua a mesma (é o que está salvo no banco); só o nome na tela mudou. */
     var ABAS = [
-      { chave: 'trilha', nome: 'Trilha' },   /* por enquanto só aparece na prévia do administrador ("Ver como aluno"); liberar para os alunos quando ele mandar */
+      { chave: 'trilha', nome: 'Trilha' },   /* liberada para todos os alunos em 29/10/2026 */
       { chave: 'caderno', nome: 'Atividades', vazio: 'Nenhuma atividade ainda.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
       { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' },
@@ -464,7 +464,7 @@
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       var conteudo = el('div', { class: 'portal-cartao' });
       var botoes = {};
-      var abas = ABAS.filter(function (ab) { return (ab.chave !== 'curso' || temCurso) && (ab.chave !== 'trilha' || previa); });
+      var abas = ABAS.filter(function (ab) { return (ab.chave !== 'curso' || temCurso); });
       function mostrar(chave) {
         abas.forEach(function (ab) {
           var ativa = ab.chave === chave;
