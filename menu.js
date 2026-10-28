@@ -106,6 +106,7 @@
   links.forEach(function (link) {
     var a = document.createElement("a");
     a.href = /^https?:/.test(link.href) ? link.href : "/" + link.href; /* com a barra no começo, vale também dentro de /blog/ e /assunto/ */
+    if (link.label === "Projetos") a.target = "aba-projetos"; /* abre numa aba separada, sempre a mesma */
     a.textContent = link.label;
     if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
     if (link.sep) { a.classList.add("is-sep"); if (nav.lastChild) nav.lastChild.classList.add("sem-linha"); } /* onde entra a linha ocre, a linha fina de cima sai */
