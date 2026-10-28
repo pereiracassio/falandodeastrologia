@@ -96,11 +96,16 @@
     }
     function pctDe(lista) { return lista.length ? Math.floor(lista.filter(function (x) { return x.feito; }).length * 100 / lista.length) : 0; }
 
+    /* nome que começa com número ("1 Curso", "2. Retificação") vai na ordem do número; sem número, depois deles, na ordem de sempre */
+    function porNumero(lista) {
+      var n = function (p) { var m = /^\s*(\d+)/.exec(p.nome); return m ? parseInt(m[1], 10) : Infinity; };
+      return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) { var x = n(a.p), y = n(b.p); return x === y ? a.i - b.i : (x < y ? -1 : 1); }).map(function (o) { return o.p; });
+    }
     function concluidoO(p) { var m = passos.filter(function (x) { return x.projeto_id === p.id; }); return m.length > 0 && m.every(function (x) { return x.feito; }); }
 
     /* projeto concluído (todos os passos feitos) sai das abas e vai para "Concluídos"; "Reabrir" desmarca o último passo feito e ele volta para as abas */
     function desenhar() {
-      var ativos = projetos.filter(function (p) { return !concluidoO(p); }), concl = projetos.filter(concluidoO);
+      var ativos = porNumero(projetos.filter(function (p) { return !concluidoO(p); })), concl = porNumero(projetos.filter(concluidoO));
       if (aberto !== 'concluidos' && !ativos.some(function (p) { return p.id === aberto; })) aberto = concl.some(function (p) { return p.id === aberto; }) ? 'concluidos' : (ativos.length ? ativos[0].id : 'concluidos');
       if (verConcluido && !concl.some(function (p) { return p.id === verConcluido; })) verConcluido = null;
       var velha = app.querySelector('.portal-abas-rola'), rolagemBarra = velha ? velha.scrollLeft : null; /* a barra fica onde estava */
