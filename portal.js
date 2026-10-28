@@ -450,7 +450,7 @@
   var sinoAdminLigado = false;
   function sinoAdmin(n) {
     var pintar = function (q) {
-      var cfg = { n: q, aoTocar: function () { location.href = 'admin-avisos.html'; } };
+      var cfg = { n: q, aoTocar: function () { try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } location.href = 'admin-avisos.html'; } }; /* o carimbo de uso novo evita que a página de destino ache que o app abriu do zero e volte para a última tela */
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
       numeroNoIcone(q);
     };
@@ -554,7 +554,7 @@
      vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
   (function restaurarUltimaTela() {
     try {
-      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando) return;
+      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando || /admin-avisos\.html$/.test(location.pathname)) return;
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
       if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return;
@@ -1073,6 +1073,11 @@
     if (!entregaId || !tipos || !tipos.length) return Promise.resolve();
     return chamarPush('entrega', { entrega_id: entregaId, tipos: tipos }).then(function () {}, function () {});
   }
+  /* comentário em uma pergunta: quem não escreveu recebe o aviso (o servidor decide quem) */
+  function avisarComentario(perguntaId) {
+    if (!perguntaId) return Promise.resolve();
+    return chamarPush('comentario', { pergunta_id: perguntaId }).then(function () {}, function () {});
+  }
   /* o cliente tocou em baixar: o administrador recebe o aviso */
   function avisarBaixa(entregaId, tipo) {
     return chamarPush('baixou', { entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {});
@@ -1234,6 +1239,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, comentario: avisarComentario, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
   };
 })();

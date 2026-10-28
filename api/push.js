@@ -23,7 +23,7 @@ function decidirAviso({ evento, atividade, aluno, usuario, ehAdmin, agora = new 
   if (evento === 'enviada') {
     if (email !== String(aluno.email || '').toLowerCase()) return { erro: 'Só o próprio aluno avisa que enviou.', status: 403 };
     if (!atividade.enviada_em || atividade.antiga || atividade.somente_leitura) return { ignorar: 'não é um envio' };
-    return { para: 'admins', carga: { title: 'Atividade enviada', body: primeiroNome(aluno.nome) + ' enviou: ' + titulo, url: URL_ADMIN + '?aluno=' + aluno.id } };
+    return { para: 'admins', carga: { title: 'Atividade enviada', body: primeiroNome(aluno.nome) + ' enviou: ' + titulo, url: URL_ADMIN + '#aluno=' + aluno.id + '&atividade=' + atividade.id } };
   }
   if (evento === 'nova' || evento === 'corrigida') {
     if (!ehAdmin) return { erro: 'Só quem administra avisa o aluno.', status: 403 };
@@ -152,6 +152,26 @@ async function tratar(req, res) {
     for (const email of await emailsDoAviso(d.para, aluno)) {
       r = somar(r, await entregarAviso(email, d.carga, { atividade_id: atividade.id }));
     }
+    res.status(200).json({ ok: true, ...r }); return;
+  }
+  /* comentário em uma pergunta de atividade: o aluno comentou → o administrador é avisado; o administrador respondeu → o aluno é avisado */
+  if (acao === 'comentario') {
+    const pid = String(corpo.pergunta_id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(pid)) { res.status(400).json({ erro: 'Pergunta inválida.' }); return; }
+    const [perg] = (await supa('/rest/v1/atividade_perguntas?id=eq.' + pid + '&select=atividade_id')) || [];
+    const [atividade] = perg ? ((await supa('/rest/v1/atividades?id=eq.' + perg.atividade_id + '&select=id,titulo,aluno_id')) || []) : [];
+    const [aluno] = atividade ? ((await supa('/rest/v1/alunos?id=eq.' + atividade.aluno_id + '&select=id,nome,email')) || []) : [];
+    if (!aluno) { res.status(404).json({ erro: 'Atividade não encontrada.' }); return; }
+    const titulo = String(atividade.titulo || '').slice(0, 120);
+    const doAluno = String(usuario.email).toLowerCase() === String(aluno.email || '').toLowerCase();
+    let r = { enviados: 0, removidos: 0, falhas: 0 };
+    if (doAluno) {
+      const carga = { title: 'Comentário novo', body: primeiroNome(aluno.nome) + ' comentou na atividade: ' + titulo, url: URL_ADMIN + '#aluno=' + aluno.id + '&atividade=' + atividade.id };
+      for (const email of await emailsDoAviso('admins', null)) r = somar(r, await entregarAviso(email, carga, { atividade_id: atividade.id }));
+    } else if (await souAdmin(jwt)) {
+      const carga = { title: 'Resposta', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Respondi o seu comentário na atividade: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id };
+      r = somar(r, await entregarAviso(String(aluno.email).toLowerCase(), carga, { atividade_id: atividade.id }));
+    } else { res.status(403).json({ erro: 'Sem permissão.' }); return; }
     res.status(200).json({ ok: true, ...r }); return;
   }
   /* o administrador acabou de disponibilizar PDF e/ou gravação para o cliente: o cliente recebe o aviso (e ele fica guardado sempre) */

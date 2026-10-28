@@ -213,6 +213,7 @@
         enviar.disabled = false;
         if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
         lista.push(r.data); texto.value = ''; P.mensagem(msg, ''); desenhar();
+        if (!comoAluno) P.avisos.comentario(perguntaId); /* o outro lado recebe o aviso no celular */
       });
     });
     desenhar();
