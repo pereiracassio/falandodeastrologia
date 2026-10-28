@@ -20,8 +20,8 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=68">
-  <link rel="stylesheet" href="portal.css?v=18">
+  <link rel="stylesheet" href="page.css?v=69">
+  <link rel="stylesheet" href="portal.css?v=19">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -41,7 +41,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=103"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="leitor.js?v=3"></script>
+  <script src="leitor.js?v=4"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -115,17 +115,20 @@
       if (e.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(e.data) }));
       var botoes = el('div', { class: 'portal-acoes' });
       var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
+      var idPdf = pdf ? P.idArquivoDrive(pdf) : null;
+      function abrirPdf(ev) {
+        registrarBaixa(e.id, 'pdf', verId);
+        if (!idPdf || !window.Leitor || !window.pdfjsLib) return;
+        if (ev) ev.preventDefault();
+        Leitor.abrirDoServidor({ nome: e.servico, id: idPdf, baixar: pdf, voltar: function () {} });
+      }
       if (pdf) {
-        /* o PDF abre no leitor do site; o botão Baixar do leitor leva ao Drive */
-        var idPdf = P.idArquivoDrive(pdf);
-        var aPdf = el('a', { class: 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: idPdf ? 'Abrir o PDF' : 'Baixar o PDF' });
-        aPdf.addEventListener('click', function (ev) {
-          registrarBaixa(e.id, 'pdf', verId);
-          if (!idPdf || !window.Leitor || !window.pdfjsLib) return;
-          ev.preventDefault();
-          Leitor.abrirDoServidor({ nome: e.servico, id: idPdf, baixar: pdf, voltar: function () {} });
-        });
+        /* o PDF abre no leitor do site (a linha toda, se não há gravação); o "Baixar" discreto leva ao Drive */
+        var aPdf = el('a', { class: idPdf && !gravacao ? 'portal-baixar' : 'portal-btn', href: pdf, target: '_blank', rel: 'noopener', text: idPdf ? (gravacao ? 'Abrir o PDF' : 'Baixar') : 'Baixar o PDF' });
+        if (idPdf && !gravacao) aPdf.addEventListener('click', function (ev) { ev.stopPropagation(); });
+        else aPdf.addEventListener('click', abrirPdf);
         botoes.appendChild(aPdf);
+        if (idPdf && gravacao) botoes.appendChild(el('a', { class: 'portal-baixar', href: pdf, target: '_blank', rel: 'noopener', text: 'Baixar' }));
       }
       if (gravacao) {
         var aGrav = el('a', { class: 'portal-btn', href: gravacao, target: '_blank', rel: 'noopener', text: 'Baixar a gravação' });
@@ -140,6 +143,12 @@
         caixa.appendChild(botoes);
       } else {
         caixa.appendChild(el('div', { class: 'portal-item-linha' }, [titulo, botoes]));
+      }
+      if (idPdf && !gravacao) {
+        caixa.className += ' portal-item-clicavel';
+        caixa.setAttribute('role', 'button'); caixa.setAttribute('tabindex', '0');
+        caixa.addEventListener('click', function () { abrirPdf(); });
+        caixa.addEventListener('keydown', function (ev) { if (ev.target === caixa && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirPdf(); } });
       }
       return caixa;
     }

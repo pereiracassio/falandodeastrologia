@@ -32,8 +32,8 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=68">
-  <link rel="stylesheet" href="portal.css?v=18">
+  <link rel="stylesheet" href="page.css?v=69">
+  <link rel="stylesheet" href="portal.css?v=19">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -54,7 +54,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=103"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="leitor.js?v=3"></script>
+  <script src="leitor.js?v=4"></script>
   <script src="curso.js?v=1"></script>
   <script src="atividades.js?v=32"></script>
   <script src="caderno.js?v=11"></script>
@@ -166,7 +166,7 @@
 
     /* um item da lista: gravações têm player embutido do Drive (com botão de abrir no Drive de reserva); o resto abre no Drive. (Antes era sempre em outra aba: o player embutido do Drive não
        funcionava em arquivo restrito no Safari, que bloqueia o login do Google dentro da página — se isso voltar a acontecer, é por isso.) */
-    var pdfsDoAluno = {};   /* id do arquivo do Drive -> true, quando o servidor confirmou que é PDF dele */
+    var pdfsDoAluno = {}, aoSerPdf = {};   /* id do arquivo do Drive -> true, quando o servidor confirmou que é PDF dele */
     function descobrirPdfs(lista) {
       var ids = [];
       lista.forEach(function (it) { var id = it.bloco === 'gravacoes' ? null : P.idArquivoDrive(P.linkSeguro(it.link)); if (id && ids.indexOf(id) < 0) ids.push(id); });
@@ -175,7 +175,7 @@
         var sessao = r.data && r.data.session; if (!sessao) return;
         return fetch('https://falandodeastrologia.vercel.app/api/pdf?acao=tipos&ids=' + encodeURIComponent(ids.join(',')), { headers: { Authorization: 'Bearer ' + sessao.access_token } })
           .then(function (x) { return x.ok ? x.json() : null; })
-          .then(function (d) { ((d && d.pdfs) || []).forEach(function (id) { pdfsDoAluno[id] = true; }); });
+          .then(function (d) { ((d && d.pdfs) || []).forEach(function (id) { pdfsDoAluno[id] = true; (aoSerPdf[id] || []).forEach(function (f) { f(); }); }); });
       }).catch(function () { /* sem a resposta, os links abrem no Drive como sempre */ });
     }
     function itemDaLista(item, bloco) {
@@ -193,8 +193,9 @@
       if (bloco === 'materiais' && seguro) {
         try { var h = new URL(seguro).hostname.replace(/^www\./, ''); if (!/(^|\.)google\.com$/.test(h)) siteFora = h; } catch (e) { /* link inválido: abre normal */ }
       }
-      /* arquivo do Drive que o servidor confirmou ser PDF (pdfsDoAluno): abre no leitor do site, e o Baixar do leitor leva ao Drive */
+      /* arquivo do Drive que o servidor confirmou ser PDF (pdfsDoAluno): a linha inteira abre no leitor do site e um "Baixar" discreto, ao lado, leva ao Drive */
       var idDrive = bloco === 'gravacoes' ? null : P.idArquivoDrive(seguro);
+      var abrir = null, baixar = null;
       function abrirPdfNoLeitor(ev) {
         if (!idDrive || !pdfsDoAluno[idDrive] || !window.Leitor || !window.pdfjsLib) return false;
         if (ev) ev.preventDefault();
@@ -202,11 +203,19 @@
         Leitor.abrirDoServidor({ nome: item.titulo, id: idDrive, baixar: seguro, voltar: function () {} });
         return true;
       }
+      function virarPdf() {
+        if (!abrir || baixar) return;
+        abrir.style.display = 'none';
+        baixar = el('a', { class: 'portal-baixar', href: seguro, target: '_blank', rel: 'noopener', text: 'Baixar' });
+        baixar.addEventListener('click', anotarAbertura);
+        linha.appendChild(baixar);
+      }
       if (seguro && !player) {
         var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : siteFora ? 'Ir para a página' : 'Abrir';
-        var abrir = el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto });
+        abrir = el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto });
         abrir.addEventListener('click', function (ev) { if (!abrirPdfNoLeitor(ev)) anotarAbertura(); });
         linha.appendChild(abrir);
+        if (idDrive) { if (pdfsDoAluno[idDrive]) virarPdf(); else (aoSerPdf[idDrive] = aoSerPdf[idDrive] || []).push(virarPdf); }
       }
       var caixa = el('div', { class: 'portal-item' }, [linha]);
       /* a linha inteira abre o link (como o botão): só quando é "abrir" um link; gravação com player e botões de baixar seguem como estavam */

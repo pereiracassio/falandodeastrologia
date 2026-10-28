@@ -56,7 +56,11 @@
     }
     var barraTopo = barra(true);
     [voltarTopo, bMao, bCaneta, bMarca, bBorracha, bolas, bDesfazer].forEach(function (x) { barraTopo.appendChild(x); });
-    if (o.baixar) barraTopo.appendChild(btn('Baixar', function () { window.open(o.baixar, '_blank', 'noopener'); }));
+    if (o.baixar) { /* discreto, como o Apagar: texto pequeno, apagado e sublinhado */
+      var bBaixar = btn('Baixar', function () { window.open(o.baixar, '_blank', 'noopener'); });
+      bBaixar.style.cssText += ';font-size:12px;opacity:.6;text-decoration:underline';
+      barraTopo.appendChild(bBaixar);
+    }
     tela.appendChild(barraTopo);
 
     var area = el('div'); area.style.cssText = 'flex:1;background:#fff;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0';

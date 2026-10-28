@@ -262,9 +262,9 @@ html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important
 .pagina-papiro .portal-item-clicavel:hover .portal-item-titulo,.pagina-papiro .portal-item-clicavel:focus-visible .portal-item-titulo{color:#A03E25}
 
 /* Apagar/Excluir/Remover: sempre discreto (texto pequeno, apagado, sublinhado). Regra do astrólogo, vale para qualquer tela nova. */
-html body .pagina-papiro .portal-apagar,html body .pagina-papiro .portal-apagar:hover{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:6px 4px!important;color:#16233F!important;font-size:12px!important;text-decoration:underline!important;font-family:var(--fonte-mao)!important;text-transform:none!important;letter-spacing:0!important;font-weight:400!important;transform:none!important}
-html body .pagina-papiro .portal-apagar{opacity:.6}
-html body .pagina-papiro .portal-apagar:hover{opacity:.9}
+html body .pagina-papiro .portal-apagar,html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-baixar,html body .pagina-papiro .portal-baixar:hover{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:6px 4px!important;color:#16233F!important;font-size:12px!important;text-decoration:underline!important;font-family:var(--fonte-mao)!important;text-transform:none!important;letter-spacing:0!important;font-weight:400!important;transform:none!important}
+html body .pagina-papiro .portal-apagar,html body .pagina-papiro .portal-baixar{opacity:.6}
+html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-baixar:hover{opacity:.9}
 
 /* ===== Página do aluno enxuta para celular (26/10/2026): título e subtítulo numa linha só, tudo mais para cima ===== */
 .pagina-papiro .portal-caixa.aluno-dentro{padding-top:0}
