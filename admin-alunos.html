@@ -222,7 +222,7 @@
       limpar();
       app.appendChild(topo(nomeAdmin));
       var voltar = P.botaoVoltar(function () { listaDeAlunos(user); });
-      var verComoAluno = el('a', { class: 'portal-btn', href: 'aluno.html?ver=' + encodeURIComponent(aluno.id), target: '_blank', rel: 'noopener', text: 'Ver como aluno' });
+      var verComoAluno = el('a', { class: 'portal-btn', href: 'aluno.html?ver=' + encodeURIComponent(aluno.id), text: 'Ver como aluno' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoAluno]));
       P.voltarNoFim(app, function () { listaDeAlunos(user); });
 

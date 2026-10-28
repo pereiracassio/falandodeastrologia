@@ -447,7 +447,7 @@
         titulos(true);
         var topoPrevia = null; /* na prévia, o "entrar no encontro" fica na mesma linha do Voltar */
         if (previa) {
-          var paraOPainel = function () { location.href = 'admin-alunos.html'; };
+          var paraOPainel = function () { location.href = 'admin-alunos.html#aluno=' + encodeURIComponent(aluno.id); }; /* volta para o aluno em que você estava, não para a lista */
           topoPrevia = el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + aluno.nome + ' vê (modo administrador)' }), el('div', {}, [P.botaoVoltar(paraOPainel)])]);
           app.appendChild(topoPrevia);
           P.voltarNoFim(app, paraOPainel);
