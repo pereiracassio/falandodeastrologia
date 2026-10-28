@@ -1,0 +1,5 @@
+{
+  "functions": {
+    "api/widget-*.js": { "includeFiles": "{fonts/**,hora-planetaria.js}", "maxDuration": 30 }
+  }
+}

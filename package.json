@@ -3,6 +3,7 @@
   "private": true,
   "description": "Servidor (Vercel) do site Falando de Astrologia. O site em si é estático (GitHub Pages).",
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "web-push": "3.6.7"
   }
 }
