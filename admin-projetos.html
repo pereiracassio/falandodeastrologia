@@ -108,14 +108,48 @@
       var conteudo = el('div', { class: 'portal-cartao' });
       app.appendChild(conteudo);
       var proj = projetos.filter(function (p) { return p.id === aberto; })[0];
-      if (!proj) { conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' })); return; }
-      mostrarProjeto(conteudo, proj);
+      if (!proj) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' })); else mostrarProjeto(conteudo, proj);
+      var arquivo = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
+      var importar = el('button', { type: 'button', class: 'portal-btn', text: 'Importar projetos' });
+      importar.addEventListener('click', function () { arquivo.click(); });
+      arquivo.addEventListener('change', function () { var f = arquivo.files && arquivo.files[0]; arquivo.value = ''; if (f) importarArquivo(f); });
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [importar, arquivo]));
+      if (!proj) return;
       var apagar = P.botaoApagar('Apagar este projeto');
       apagar.addEventListener('click', function () {
         if (!confirm('Apagar o projeto "' + proj.nome + '" e todos os passos dele? Não dá para desfazer.')) return;
         C.from('projetos').delete().eq('id', proj.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; carregar(); } });
       });
       P.apagarNoFim(app, apagar);
+    }
+
+    /* arquivo { "projetos": [ { "nome", "passos": [ { "titulo", "nota", "feito" } ] } ] }: projeto que já existe (mesmo nome) só ganha os passos que faltam, sem mexer nos que já estão */
+    function importarArquivo(f) {
+      f.text().then(function (txt) {
+        var dados;
+        try { dados = JSON.parse(txt); } catch (e) { alert('Esse arquivo não é válido.'); return; }
+        var lista = (dados && dados.projetos) || [];
+        if (!lista.length) { alert('Não achei projetos nesse arquivo.'); return; }
+        var ordemProj = projetos.reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0);
+        var passoAPasso = lista.reduce(function (cadeia, item) {
+          return cadeia.then(function () {
+            var nome = String(item.nome || '').trim(); if (!nome) return;
+            var existente = projetos.filter(function (p) { return p.nome.toLowerCase() === nome.toLowerCase(); })[0];
+            var pronto = existente ? Promise.resolve(existente.id) : C.from('projetos').insert({ nome: nome, ordem: ++ordemProj }).select('id').then(function (r) { if (r.error) throw r.error; return r.data[0].id; });
+            return pronto.then(function (id) {
+              var jaTem = passos.filter(function (x) { return x.projeto_id === id; });
+              var ordem = jaTem.reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0);
+              var titulos = jaTem.map(function (x) { return x.titulo.toLowerCase(); });
+              var novos = (item.passos || []).filter(function (x) { return x && String(x.titulo || '').trim() && titulos.indexOf(String(x.titulo).trim().toLowerCase()) < 0; }).map(function (x) {
+                return { projeto_id: id, titulo: String(x.titulo).trim(), nota: x.nota ? String(x.nota).trim() : null, feito: !!x.feito, feito_em: x.feito ? new Date().toISOString() : null, ordem: ++ordem };
+              });
+              if (!novos.length) return;
+              return C.from('projeto_passos').insert(novos).then(function (r) { if (r.error) throw r.error; });
+            });
+          });
+        }, Promise.resolve());
+        passoAPasso.then(function () { carregar(); }, function (e) { alert('Não foi possível importar: ' + P.traduzErro(e.message)); carregar(); });
+      });
     }
 
     function novoProjeto() {
