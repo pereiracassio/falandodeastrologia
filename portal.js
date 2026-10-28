@@ -554,7 +554,7 @@
      vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
   (function restaurarUltimaTela() {
     try {
-      if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando || /admin-avisos\.html$/.test(location.pathname)) return;
+      if (!/\/(aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando) return; /* painel do administrador NUNCA é desviado: voltar ao app fica onde estava; abrir do zero cai na Agenda (start_url) */
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
       if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
