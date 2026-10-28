@@ -509,7 +509,7 @@
         { chave: 'dados', nome: 'Dados do aluno', el: formDados },
         { chave: 'pagamentos', nome: 'Pagamentos', el: painelPagamento }
       ];
-      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div'), botoesAbas = {};
+      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div', { class: 'portal-cartao' }), botoesAbas = {};
       function mostrarAba(chave) {
         ABAS_ADMIN.forEach(function (ab) {
           var ativa = ab.chave === chave;

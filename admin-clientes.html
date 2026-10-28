@@ -364,8 +364,8 @@
         });
 
       /* as duas abas */
-      var ABAS_ADMIN = [{ chave: 'servicos', nome: 'Serviços', el: abaServicos }, { chave: 'dados', nome: 'Dados do cliente', el: formCod }];
-      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div'), botoesAbas = {};
+      var ABAS_ADMIN = [{ chave: 'servicos', nome: 'Serviços', el: abaServicos }, { chave: 'dados', nome: 'Dados', el: formCod }];
+      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div', { class: 'portal-cartao' }), botoesAbas = {};
       function mostrarAba(chave) {
         ABAS_ADMIN.forEach(function (ab) {
           var ativa = ab.chave === chave;
@@ -381,7 +381,7 @@
         b.addEventListener('click', function () { mostrarAba(ab.chave); });
         botoesAbas[ab.chave] = b; barraAbas.appendChild(b);
       });
-      app.appendChild(barraAbas);
+      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
       app.appendChild(conteudoAba);
       mostrarAba(botoesAbas[abaInicial] ? abaInicial : 'servicos');
 
