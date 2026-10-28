@@ -1109,7 +1109,9 @@
           .then(function (resp) { return resp.ok ? resp.json() : null; }).then(function (d) { return d && d.atendimento && d.atendimento.inicio ? d.atendimento.inicio : null; });
       });
     }
-    var quanto = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Avisar quanto falta' });
+    /* o botão é só o reloginho azul (sem quadrado): conta quanto falta e avisa */
+    var quanto = el('button', { type: 'button', title: 'Avisar quanto falta', 'aria-label': 'Avisar quanto falta', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer;min-height:0' });
+    quanto.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1034A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
     quanto.addEventListener('click', function () {
       quanto.disabled = true; mensagem(msg, 'Vendo o horário na agenda...');
       inicioDoCompromisso().then(function (inicio) {
@@ -1122,9 +1124,11 @@
     var prontos = [quanto];
     var mandar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar' });
     mandar.addEventListener('click', function () { enviar(texto.value, false); });
+    /* no lugar do título escrito, o sininho vermelho (o mesmo da Agenda) */
+    var sininho = el('span', { title: 'Enviar aviso', 'aria-label': 'Enviar aviso', style: 'display:inline-block;line-height:0' });
+    sininho.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A03E25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
     return el('div', { class: 'portal-cartao' }, [
-      el('h2', { text: 'Enviar aviso' }),
-      el('div', { class: 'portal-acoes' }, prontos),
+      el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px;margin:0 0 10px' }, [sininho].concat(prontos)),
       texto,
       el('div', { class: 'portal-acoes' }, [mandar]),
       msg
