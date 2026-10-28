@@ -293,3 +293,14 @@ Substituiu o artefato do Claude. Tabelas `projetos` (`nome`, `ordem`, `prioridad
 ## Salvar sozinho (28/10/2026) — pedido dele, vale para TODA tela nova
 
 Edição de algo que já existe **salva sozinha** (sem botão "Salvar"), com "Salvo." discreto e **sem redesenhar a tela** (redesenhar fecha o calendário de data do iPhone e tira o foco): `P.salvarSozinho(botaoSalvar)` (`portal.js`) esconde o botão e o aciona sozinho depois de cada mudança nos campos do cartão (500 ms; texto digitado, 1,5 s). Já feito: Dados e Pagamento do aluno, Dados do cliente, data final dos Projetos, lugar das horas (Configurações), nome do curso, módulo e aula. **Ficam com botão** as ações que criam, mandam ou publicam (Adicionar, Enviar aviso, Novo..., Importar, Salvar atividade/correção, modelos da Capa, Financeiro, formulário de compromisso da Agenda): ali o botão é a decisão. Telas ainda a revisar uma a uma: Atividades, Capa, Financeiro, Agenda.
+
+## Como o painel está funcionando agora (28/10/2026) — resumo do dia
+
+- **Aluno no painel (`admin-alunos.html`) em 6 abas:** Acompanhamento (primeira: Meet, próximo encontro, avisos e os registros "Paramos em / Vou trabalhar", tabela `aluno_acompanhamento`), Atividades, Materiais (o "Caderno baixado pelo aluno" fica no topo), Gravações, Dados do aluno, Pagamentos. A aba escolhida fica no endereço (`#aba=`). O conteúdo das abas é UM `.portal-cartao` só (cartões de dentro sem a linha de cima: ele reclamou de linha sobrando).
+- **Cliente no painel (`admin-clientes.html`) em 2 abas:** Serviços (atendimento, avisos, formulário de serviço e "O que fulano vê") e Dados.
+- **Campo de escrever (`textarea.escrita-livre`) não tem mais a linha embaixo** (a linha parecia fim da seção e os botões vinham depois dela). **Regra dele: linha só no FIM de uma seção; nada que pertença à seção vem depois de uma linha.**
+- **Foto do Sobre** (`sobre.html` e Configurações): nunca mostra a foto antiga do repositório antes da nova (começa vazia e só cai na do arquivo se não houver nenhuma salva).
+- **Agenda:** a folha que abre ao tocar num compromisso fica centralizada e com folga em cima (para não ficar embaixo do menu lateral e do sino); o formulário "Onde encaixar uma tarefa" só aparece depois da grade.
+- **Produção:** tags do vídeo e do corte são `textarea` que cresce (antes era uma linha só e o texto ficava escondido); barra de tempo nos vídeos e cortes.
+- **Projetos** (aba nova, ver a seção acima) e **salvar sozinho** (seção acima).
+- **Fluxo de SQL dele:** "se está publicado, o SQL foi rodado": ele roda o SQL colado na conversa, avisa "já rodei" e SÓ ENTÃO pede para publicar. Nunca publicar código que depende de coluna/tabela nova antes dele avisar.
