@@ -221,7 +221,7 @@
       var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
       function carregar() {
         Promise.all([
-          P.client.from('aluno_trilhas').select('id,nome,ordem').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
+          P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
           P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem').order('ordem').order('criado_em')
         ]).then(function (rs) {
           raiz.textContent = '';
@@ -230,6 +230,11 @@
           passos = rs[1].data.filter(function (x) { return ids.indexOf(x.trilha_id) >= 0; });
           desenhar();
         });
+      }
+      /* azul no começo, ocre na metade, terracota no fim */
+      function corDoTempo(f) {
+        var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, k = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
+        return 'rgb(' + de.map(function (c, i) { return Math.round(c + (para[i] - c) * k); }).join(',') + ')';
       }
       var meus = function (t) { return passos.filter(function (x) { return x.trilha_id === t.id; }); };
       var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return x.feito; }); };
@@ -271,6 +276,18 @@
         c.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), renomear]));
         c.appendChild(barra(pct));
         c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (m.length ? ' · ' + feitos.length + ' de ' + m.length + ' passos' : '') }));
+        /* prazo opcional: com data final aparece a barra do tempo (muda de cor); sem data, só a barra azul de cima */
+        if (t.data_fim) {
+          var fim = new Date(t.data_fim + 'T23:59:59'), ini = new Date(t.criado_em), agora = new Date();
+          var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
+          c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
+          c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') + ' (até ' + P.dataBR(t.data_fim) + ')' }));
+        }
+        var dataFim = el('input', { type: 'date', style: 'width:auto' }); dataFim.value = t.data_fim || '';
+        var sujo = false;
+        dataFim.addEventListener('change', function () { P.client.from('aluno_trilhas').update({ data_fim: dataFim.value || null }).eq('id', t.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { t.data_fim = dataFim.value || null; sujo = true; } }); });
+        dataFim.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; carregar(); } }, 300); });
+        c.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap' }, [el('label', { text: 'Data final (opcional)', style: 'margin:0' }), dataFim]));
         if (pend.length) { c.appendChild(rotulo('Próximo passo')); listaDePassos(c, pend.slice(0, 1), false, true); }
         if (pend.length > 1) {
           c.appendChild(rotulo('Depois'));
