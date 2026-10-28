@@ -1093,7 +1093,7 @@
         texto.value = '';
         var d = r.dados || {};
         if (d.erroGuardar) { mensagem(msg, 'Não consegui guardar o aviso na lista dele: ' + d.erroGuardar, 'erro'); return; }
-        mensagem(msg, d.enviados ? 'Aviso enviado: ' + t : d.falhas ? 'O celular dele recusou o aviso (falhas: ' + d.falhas + ').' : 'Aviso guardado na lista dele. O celular dele ainda não está com os avisos ativados.', d.enviados ? 'ok' : 'erro');
+        mensagem(msg, d.enviados ? 'Aviso enviado para ' + d.enviados + ' aparelho(s): ' + t : d.falhas ? 'O celular dele recusou o aviso: ' + (d.erroEnvio || d.falhas + ' falha(s)') + '.' : 'Aviso guardado na lista dele. O celular dele ainda não está com os avisos ativados.', d.enviados ? 'ok' : 'erro');
       }, function () { mensagem(msg, 'Não foi possível enviar agora.', 'erro'); });
     }
     /* "Avisar quanto falta": na hora do toque, busca o horário do próximo compromisso na agenda e conta quanto falta; assim o aviso nunca sai com o tempo errado */

@@ -61,16 +61,17 @@ async function chaves() {
 async function enviar(inscricoes, carga, wp = webpush, apagar = apagarInscricao) {
   const k = await chaves();
   wp.setVapidDetails(VAPID_CONTATO, k.publica, k.privada);
-  let enviados = 0, removidos = 0, falhas = 0;
+  let enviados = 0, removidos = 0, falhas = 0, erroEnvio = null;
   for (const s of inscricoes) {
     try {
-      await wp.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(carga), { TTL: 86400 });
+      /* urgency alta: no Android, o aviso normal pode esperar o celular "acordar" (modo economia) e chegar minutos depois */
+      await wp.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(carga), { TTL: 86400, urgency: 'high' });
       enviados++;
     } catch (e) {
-      if (e && (e.statusCode === 404 || e.statusCode === 410)) { removidos++; await apagar(s.endpoint); } else falhas++;
+      if (e && (e.statusCode === 404 || e.statusCode === 410)) { removidos++; await apagar(s.endpoint); } else { falhas++; erroEnvio = String((e && e.statusCode) || '') + ' ' + String((e && (e.body || e.message)) || '').slice(0, 140); console.error('push:', erroEnvio); }
     }
   }
-  return { enviados, removidos, falhas };
+  return { enviados, removidos, falhas, erroEnvio };
 }
 const apagarInscricao = (endpoint) => supa('/rest/v1/push_inscricoes?endpoint=eq.' + encodeURIComponent(endpoint), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
 
@@ -103,7 +104,7 @@ async function entregarAviso(email, carga, extras = {}) {
   if (!lista.length) return vazio;
   return { ...vazio, ...(await enviar(lista, { ...carga, contagem: naoLidos })) };
 }
-const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas, aparelhos: (a.aparelhos || 0) + (b.aparelhos || 0), erroGuardar: a.erroGuardar || b.erroGuardar || null });
+const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas, erroEnvio: a.erroEnvio || b.erroEnvio || null, aparelhos: (a.aparelhos || 0) + (b.aparelhos || 0), erroGuardar: a.erroGuardar || b.erroGuardar || null });
 const URL_CLIENTE = '/cliente.html?aviso=1', URL_ADMIN_CLIENTES = '/admin-clientes.html';
 const urlDaEntrega = (id) => URL_CLIENTE + '&e=' + id;
 const NOME_DO_ARQUIVO = { pdf: 'o PDF', gravacao: 'a gravação' };
