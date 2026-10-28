@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest-producao.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Produção">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Projetos - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="stylesheet" href="page.css?v=69">
+  <link rel="stylesheet" href="portal.css?v=20">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="tipografia.css?v=18">
+  <style>
+    .proj-barra{height:14px;border:1px solid #1F5FA3;margin:8px 0 6px}
+    .proj-barra i{display:block;height:100%;background:#1F5FA3}
+    .proj-passo{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid #1F5FA3}
+    .proj-passo:last-child{border-bottom:0}
+    .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid #1F5FA3;background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
+    .proj-passo input[type=checkbox]:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#A03E25;font-size:20px;font-weight:700;font-family:Arial,sans-serif}
+    .proj-passo.feito .proj-titulo{text-decoration:line-through;opacity:.6}
+    .proj-titulo{font-size:16px;color:#16233F;display:block;overflow-wrap:anywhere}
+    .proj-acoes{display:flex;gap:14px;flex:none;align-items:center}
+    .proj-mini{background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline}
+    .proj-mini:disabled{opacity:.2;cursor:default}
+  </style>
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo cab-logo-menor"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/blog.html">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Projetos</h1>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=114"></script>
+  <script src="menu.js?v=42" defer></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '', projetos = [], passos = [], aberto = null;
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('projetos', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          aberto = P.estado.ler().projeto || null;
+          carregar();
+        });
+      });
+    }
+
+    function carregar() {
+      Promise.all([
+        C.from('projetos').select('id,nome,ordem').order('ordem').order('criado_em'),
+        C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,ordem').order('ordem').order('criado_em')
+      ]).then(function (res) {
+        if (res[0].error || res[1].error) { limpar(); app.appendChild(topo(nomeAdmin)); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os projetos.' })); return; }
+        projetos = res[0].data; passos = res[1].data;
+        if (!projetos.some(function (p) { return p.id === aberto; })) aberto = projetos.length ? projetos[0].id : null;
+        desenhar();
+      });
+    }
+
+    function pctDe(lista) { return lista.length ? Math.floor(lista.filter(function (x) { return x.feito; }).length * 100 / lista.length) : 0; }
+
+    function desenhar() {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
+      projetos.forEach(function (p) {
+        var b = el('button', { type: 'button', role: 'tab', text: p.nome });
+        b.className = 'portal-aba' + (p.id === aberto ? ' ativa' : '');
+        b.addEventListener('click', function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); });
+        barraAbas.appendChild(b);
+      });
+      var novo = el('button', { type: 'button', role: 'tab', text: '+ Novo projeto' });
+      novo.className = 'portal-aba';
+      novo.addEventListener('click', novoProjeto);
+      barraAbas.appendChild(novo);
+      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
+      var conteudo = el('div', { class: 'portal-cartao' });
+      app.appendChild(conteudo);
+      var proj = projetos.filter(function (p) { return p.id === aberto; })[0];
+      if (!proj) { conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' })); return; }
+      mostrarProjeto(conteudo, proj);
+      var apagar = P.botaoApagar('Apagar este projeto');
+      apagar.addEventListener('click', function () {
+        if (!confirm('Apagar o projeto "' + proj.nome + '" e todos os passos dele? Não dá para desfazer.')) return;
+        C.from('projetos').delete().eq('id', proj.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; carregar(); } });
+      });
+      P.apagarNoFim(app, apagar);
+    }
+
+    function novoProjeto() {
+      var nome = (prompt('Nome do projeto') || '').trim();
+      if (!nome) return;
+      var ordem = projetos.reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0) + 1;
+      C.from('projetos').insert({ nome: nome, ordem: ordem }).select('id').then(function (r) {
+        if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar.'); return; }
+        aberto = r.data[0].id; P.estado.gravar({ projeto: aberto }); carregar();
+      });
+    }
+
+    function mostrarProjeto(conteudo, proj) {
+      var meus = passos.filter(function (x) { return x.projeto_id === proj.id; });
+      var pct = pctDe(meus), feitos = meus.filter(function (x) { return x.feito; }).length;
+      var renomear = el('button', { type: 'button', class: 'proj-mini', text: 'Renomear' });
+      renomear.addEventListener('click', function () {
+        var n = (prompt('Nome do projeto', proj.nome) || '').trim();
+        if (!n || n === proj.nome) return;
+        C.from('projetos').update({ nome: n }).eq('id', proj.id).then(function (r) { if (r.error) alert('Não foi possível salvar.'); else carregar(); });
+      });
+      conteudo.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: proj.nome, style: 'margin:0' }), renomear]));
+      conteudo.appendChild(el('div', { class: 'proj-barra' }, [el('i', { style: 'width:' + pct + '%' })]));
+      conteudo.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (meus.length ? ' · ' + feitos + ' de ' + meus.length + ' passos' : '') + (meus.length && feitos === meus.length ? ' · Projeto concluído' : '') }));
+
+      var lista = el('div', { style: 'border-top:1px solid #1F5FA3;margin-top:14px' });
+      if (!meus.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum passo ainda.' }));
+      var areaForm = el('div', { class: 'barra-ocre' });
+      meus.forEach(function (x, i) {
+        var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito' });
+        cb.checked = !!x.feito;
+        cb.addEventListener('change', function () {
+          x.feito = cb.checked; desenhar();
+          C.from('projeto_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
+        });
+        var textos = [el('span', { class: 'proj-titulo', text: x.titulo })];
+        if (x.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: x.nota }));
+        var acoes = el('div', { class: 'proj-acoes' });
+        var sobe = el('button', { type: 'button', class: 'proj-mini', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'proj-mini', text: '↓', 'aria-label': 'Descer' });
+        sobe.disabled = i === 0; desce.disabled = i === meus.length - 1;
+        function trocar(com) {
+          Promise.all([C.from('projeto_passos').update({ ordem: com.ordem }).eq('id', x.id), C.from('projeto_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar);
+        }
+        sobe.addEventListener('click', function () { trocar(meus[i - 1]); });
+        desce.addEventListener('click', function () { trocar(meus[i + 1]); });
+        var editar = el('button', { type: 'button', class: 'proj-mini', text: 'Editar' });
+        editar.addEventListener('click', function () { formPasso(x); });
+        var apagar = P.botaoApagar('Apagar');
+        apagar.addEventListener('click', function () {
+          if (!confirm('Apagar o passo "' + x.titulo + '"?')) return;
+          C.from('projeto_passos').delete().eq('id', x.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
+        });
+        [sobe, desce, editar, apagar].forEach(function (b) { acoes.appendChild(b); });
+        lista.appendChild(el('div', { class: 'proj-passo' + (x.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos), acoes]));
+      });
+      conteudo.appendChild(lista);
+
+      function formPasso(item) {
+        areaForm.textContent = '';
+        var msg = el('p', { class: 'portal-msg' });
+        var titulo = el('input', { type: 'text', id: 'pTitulo', required: '' });
+        var nota = el('textarea', { id: 'pNota', rows: '2', placeholder: 'Anotação (opcional)' });
+        if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; }
+        var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Adicionar passo' });
+        var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+        cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
+        var form = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pTitulo', text: 'Passo' }), titulo, nota, msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
+        form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
+          salvar.disabled = true;
+          var campos = { titulo: t, nota: nota.value.trim() || null };
+          var ordem = meus.reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0) + 1;
+          var pedido = item ? C.from('projeto_passos').update(campos).eq('id', item.id) : C.from('projeto_passos').insert(Object.assign({ projeto_id: proj.id, ordem: ordem }, campos));
+          pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else carregar(); });
+        });
+        areaForm.appendChild(form);
+        titulo.focus();
+      }
+      var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
+      add.addEventListener('click', function () { if (!areaForm.firstChild) formPasso(null); });
+      conteudo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:16px' }, [add]));
+      conteudo.appendChild(areaForm);
+    }
+
+    C.auth.getSession().then(function (r) {
+      var sessao = r.data && r.data.session;
+      if (sessao) iniciar(sessao.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>
