@@ -206,7 +206,7 @@ O aviso "Instale o app" já existe no topo de `aluno.html` e `cliente.html` (só
 - **Tabela `avisos_recebidos`** (SQL já rodado): cada aviso fica guardado por e-mail de quem recebe; aluno e administrador guardam só os 10 mais novos (gatilho apaga o resto); cliente guarda sempre (`guardar_sempre`). Leitura e "lido" só do dono (RLS pelo e-mail do login).
 - **Servidor** `api/push.js`: avisos em primeira pessoa ("Oi, fulano! Corrigi a sua atividade"); ações `entrega` (admin disponibilizou PDF/gravação → cliente) e `baixou` (cliente baixou → admin); manda a contagem de não lidos para o número no ícone do app (`sw.js` usa `setAppBadge`). Aluno/admin: `?aviso=1` abre a aba/tela de Avisos.
 - **Telas:** o carrinho vira SINO (`window.fdaSinoAvisos` em `menu.js`) dentro de `aluno.html` (aba Avisos), `cliente.html` (cartão Avisos que abre/fecha) e todas as telas `admin-*` (leva a `admin-avisos.html`). Fora dessas áreas continua carrinho.
-- **PENDENTE, ele pediu para LEMBRAR (não insistir, só quando ele estiver disponível):** configurar na Vercel (projeto falandodeastrologia e Astro Hellenic) o **Ignored Build Step** para ela não guardar cópia a cada envio (já chegou a 8 GB no Astro Hellenic). Comando: `[ "$VERCEL_GIT_COMMIT_REF" != "main" ] || git diff --quiet HEAD^ HEAD -- api package.json package-lock.json`. Até lá, não enviar para branches (só `main`, quando ele pedir).
+- **PENDENTE, ele pediu para LEMBRAR (não insistir, só quando ele estiver disponível):** configurar na Vercel (projeto falandodeastrologia e Astro Hellenic) o **Ignored Build Step** para ela não guardar cópia a cada envio (já chegou a 8 GB no Astro Hellenic). Comando: `[ "$VERCEL_GIT_COMMIT_REF" != "main" ] || git diff --quiet HEAD^ HEAD -- api package.json package-lock.json`.
 - **Deixado para depois por ele (NÃO lembrar, só quando ele puxar):** aviso 2 h e 10 min antes da sessão.
 
 ## Curso "Fundamentos da Astrologia Natal" na página do aluno (27/10/2026) — PLANEJAMENTO, nada construído ainda
@@ -244,3 +244,19 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 2. Avaliação do módulo e desbloqueio com nota 7.
 3. Pagamento e matrícula automática (quando escolher a plataforma).
 4. Vídeo protegido (quando houver aulas gravadas).
+
+## Widgets da tela de início do iPhone (28/10/2026) — PLANEJAMENTO, nada construído ainda
+
+O astrólogo quer widgets na tela de início do iPhone/iPad **com a cara do site** (papiro, moldura, Cinzel, ícones dos planetas). Ele está só estudando e **sem tempo agora**: não começar nada até ele dizer "vamos fazer o widget". Atualizar esta seção a cada etapa (marcar [x]).
+
+**Como funciona (decidido):** site/PWA não cria widget no iOS (só app nativo). Caminho escolhido: app grátis **Scriptable** (App Store, já instalado no iPad e no iPhone; scripts sincronizam pelo iCloud Drive, widget da tela de início é adicionado uma vez em cada aparelho). O servidor (Vercel) monta uma **imagem PNG pronta** com a cara do site e o script do Scriptable só baixa e mostra. Por isso **todo widget passa pela Vercel** (ele não quer widget sem a cara do site, nem o de horas planetárias). Dados privados (agenda, produção) exigem a rota no servidor: o Supabase só deixa o `sou_admin()` ler e o Google Agenda usa a conexão permanente do Drive (`drive_conexao`, escopos de calendário já existem).
+- Limites: o iOS atualiza o widget a cada ~15 a 30 min, sem garantia; sem botão nem rolagem; ao tocar abre o site no **Safari** (não dá para abrir o app instalado na tela de início); tamanhos pequeno/médio/grande e tela de bloqueio.
+- Segurança: variável `WIDGET_CHAVE` na Vercel (ele cria; mexeu = redeploy); a chave vai no endereço da imagem, guardada no script do Scriptable. Nunca vai para a conversa nem para o repositório.
+- Não verificado ainda: qual biblioteca SVG→PNG funciona na Vercel (o gerador de PDF do Astro Hellenic já deu erros de ESM/versão de Node lá: carregar com `import()` dinâmico, testar de verdade). Fontes (Cinzel, Architects Daughter, `AstroIcones`) precisam estar no projeto da Vercel. Servidor não se testa daqui: simular em Node e pedir o teste real a ele.
+
+**Etapas (uma coisa por vez):**
+- [ ] 0. Base comum: ele cria `WIDGET_CHAVE` na Vercel (eu explico o passo a passo na hora) e redeploy; rota `api/widget-*.js` com a conferência da chave; desenho do papiro com moldura em PNG; fontes e ícones no servidor; script-modelo do Scriptable.
+- [ ] 1. **Widget da Agenda:** próximos compromissos (só das agendas marcadas em Configurações → "Agendas que aparecem", horário de Brasília, cor de cada agenda) + hora planetária. Toque abre `admin-agenda.html`.
+- [ ] 2. **Widget da Produção:** pendências da semana, "o que está perto de acontecer" (ex.: corte para postar), etapas que faltam (Corte, Legenda, SEO, YouTube Shorts, Instagram, TikTok) com barra de progresso; atrasados em destaque. A regra de "perto" (7 dias?) é a combinar quando chegar nele. Toque abre `admin-producao.html`.
+- [ ] 3. **Widget de Horas planetárias:** hora planetária de agora e a próxima, com o ícone do planeta (usa `hora-planetaria.js`, lugar de `site_config.prod_local_horas`).
+- **Mapa do momento NÃO é para fazer (ele só perguntou se dava; não puxar o assunto de novo).** Mentoria também não foi pedida.
