@@ -20,7 +20,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=67">
+  <link rel="stylesheet" href="page.css?v=68">
   <link rel="stylesheet" href="portal.css?v=18">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
@@ -85,7 +85,7 @@
       app.appendChild(topo(nomeAdmin));
       /* só o conteúdo dos clientes (botão de adicionar no topo, busca e lista); a pasta e o Google Drive ficam em ⚙ */
       var novoCliente = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar novo cliente' });
-      var areaForm = el('div');
+      var areaForm = el('div', { class: 'barra-ocre' });
       var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoCliente]), areaForm]);
       app.appendChild(cartao);
 

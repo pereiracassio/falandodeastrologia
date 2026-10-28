@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=67">
+  <link rel="stylesheet" href="page.css?v=68">
   <link rel="stylesheet" href="portal.css?v=18">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
@@ -168,7 +168,7 @@
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Entradas' })]);
 
       var novo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Entrada' });
-      var areaForm = el('div');
+      var areaForm = el('div', { class: 'barra-ocre' });
       novo.addEventListener('click', function () { formEntrada(areaForm, null); });
       cartao.appendChild(el('div', { class: 'portal-acoes' }, [novo]));
       cartao.appendChild(areaForm);

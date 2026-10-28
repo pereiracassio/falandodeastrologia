@@ -20,7 +20,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=67">
+  <link rel="stylesheet" href="page.css?v=68">
   <link rel="stylesheet" href="portal.css?v=18">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
@@ -86,7 +86,7 @@
       app.appendChild(topo(nomeAdmin));
       /* só o conteúdo dos alunos (botão de adicionar no topo, busca e lista); pasta, Google Drive e avisos ficam em ⚙ (admin-site.html) */
       var novoAluno = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar novo aluno' });
-      var areaForm = el('div');
+      var areaForm = el('div', { class: 'barra-ocre' });
       var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoAluno]), areaForm]);
       app.appendChild(cartao);
 
@@ -290,7 +290,7 @@
 
       /* seção de itens (materiais ou gravações): botão "Adicionar" no topo, que abre o cadastro (fecha ao salvar); embaixo, a lista dos que já estão cadastrados */
       function secaoDeItens(o) {
-        var lista = el('div'), areaForm = el('div');
+        var lista = el('div'), areaForm = el('div', { class: 'barra-ocre' });
         var novo = el('button', { type: 'button', class: 'portal-btn', text: o.rotuloNovo });
         var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: o.titulo }), el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
 
