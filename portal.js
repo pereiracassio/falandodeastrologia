@@ -556,7 +556,7 @@
      vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
   (function restaurarUltimaTela() {
     try {
-      if (!/\/(aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando) return; /* painel do administrador NUNCA é desviado: voltar ao app fica onde estava; abrir do zero cai na Agenda (start_url) */
+      if (!/\/(aluno|cliente|admin-agenda)\.html$/.test(location.pathname) || window.__fdaRestaurando) return; /* as páginas onde os ícones do app abrem (Alunos, Seu espaço, Agenda): o app sempre vai para a última tela em que ele estava */
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
       if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */

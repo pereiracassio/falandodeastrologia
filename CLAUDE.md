@@ -259,7 +259,7 @@ Sanfona, formulário que aparece ao tocar num botão ("Novo cliente", "Novo alun
 - Já aplicado: Agenda (Lista, folha, encaixe), Novo cliente, Novo aluno, formulário do Financeiro e todas as sanfonas (`P.sanfona`).
 
 ## O app SEMPRE abre na última tela em que ele estava (28/10/2026, ordem dele, vale acima do resto desta seção)
-Ele usa o ícone do app Alunos (`manifest-alunos.json`, abre em `aluno.html`) no iPhone e quer cair onde parou, sempre, sem saber de "abrir do zero". `aluno.html` (no `<head>`) e `portal.js` (`restaurarUltimaTela`) levam à `fda_ultima_pagina` sempre que o app (standalone) abre `aluno.html`/`cliente.html` sem destino no endereço e sem vir de um toque dentro do site. Não existe mais critério de relógio nem de sessão. Texto abaixo é o histórico anterior.
+Ele usa o ícone do app Alunos (`manifest-alunos.json`, abre em `aluno.html`) no iPhone e quer cair onde parou, sempre, sem saber de "abrir do zero". `aluno.html` (no `<head>`) e `portal.js` (`restaurarUltimaTela`, que vale também para `admin-agenda.html`, o início do ícone do painel) levam à `fda_ultima_pagina` sempre que o app (standalone) abre `aluno.html`/`cliente.html`/`admin-agenda.html` sem destino no endereço e sem vir de um toque dentro do site. Não existe mais critério de relógio nem de sessão. Texto abaixo é o histórico anterior.
 
 ## (histórico) App do painel: voltar ao app fica onde estava; abrir do zero cai na Agenda (28/10/2026)
 
