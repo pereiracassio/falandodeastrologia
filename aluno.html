@@ -224,6 +224,7 @@
     /* três abas na mesma página (Atividades, Gravações, Materiais); abre em Atividades, que é o que o aluno precisa fazer; as gravações são para rever quando tiver dúvida.
        A chave interna 'caderno' continua a mesma (é o que está salvo no banco); só o nome na tela mudou. */
     var ABAS = [
+      { chave: 'trilha', nome: 'Trilha' },   /* por enquanto só aparece na prévia do administrador ("Ver como aluno"); liberar para os alunos quando ele mandar */
       { chave: 'caderno', nome: 'Atividades', vazio: 'Nenhuma atividade ainda.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
       { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' },
@@ -351,11 +352,114 @@
       });
       return caixa;
     }
+    /* trilha do aluno: só para ver (quem monta é o administrador). Material: o aluno abre e marca "li"; atividade: abre a tela dela e a barra anda com o envio e a correção. */
+    function telaTrilha(aluno, itens, previa) {
+      var raiz = el('div', {});
+      raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+      var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
+      var corDoTempo = function (f) {
+        var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, k = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
+        return 'rgb(' + de.map(function (c, i) { return Math.round(c + (para[i] - c) * k); }).join(',') + ')';
+      };
+      Promise.all([
+        P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
+        P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em').order('ordem').order('criado_em'),
+        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga').eq('aluno_id', aluno.id).eq('antiga', false)
+      ]).then(function (rs) {
+        raiz.textContent = '';
+        if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a trilha agora.' })); return; }
+        var trilhas = rs[0].data, ids = trilhas.map(function (t) { return t.id; });
+        var passos = rs[1].data.filter(function (x) { return ids.indexOf(x.trilha_id) >= 0; });
+        var ativs = (rs[2] && rs[2].data) || [];
+        var meus = function (t) { return passos.filter(function (x) { return x.trilha_id === t.id; }); };
+        var ativDe = function (x) { return x.atividade_id ? ativs.filter(function (a) { return a.id === x.atividade_id; })[0] : null; };
+        var itemDe = function (x) { return x.item_id ? (itens || []).filter(function (i) { return i.id === x.item_id; })[0] : null; };
+        var pontos = function (x) {
+          if (x.tipo === 'material') return x.lido_em ? 1 : (itemDe(x) ? 0.5 : 0);
+          if (x.tipo === 'atividade') { var a = ativDe(x); return !a ? 0 : (a.enviada_em ? (a.corrigida_em ? 1 : 2 / 3) : 1 / 3); }
+          return x.feito ? 1 : 0;
+        };
+        var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
+        function linha(x) {
+          var feito = pontos(x) >= 1, it = itemDe(x), at = ativDe(x);
+          var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
+          var cb = el('input', { type: 'checkbox', disabled: '', style: 'flex:none;width:24px;height:24px;margin:1px 0 0;accent-color:#A03E25' }); cb.checked = feito;
+          if (x.tipo === 'material') {
+            if (!it) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
+            else {
+              texto.push(itemDaLista(it, 'materiais'));
+              if (x.lido_em) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'Você já leu' }));
+              else {
+                var li = el('button', { type: 'button', class: 'portal-btn', text: 'Marquei que li', style: 'margin-top:8px' });
+                li.disabled = !!previa;
+                li.addEventListener('click', function () { li.disabled = true; P.client.rpc('marcar_li_trilha', { p_passo: x.id }).then(function (r) { if (r.error) { li.disabled = false; alert('Não foi possível marcar agora.'); } else { abaAoVoltar = 'trilha'; desenharPaginaDoAluno(userAtual, aluno, previa); } }); });
+                texto.push(li);
+              }
+            }
+          } else if (x.tipo === 'atividade') {
+            if (!at) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
+            else {
+              texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at.enviada_em ? 'Para responder' : at.corrigida_em ? 'Corrigida' : 'Enviada para correção' }));
+              var abrirAt = el('button', { type: 'button', class: 'portal-btn', text: at.enviada_em ? 'Ver a atividade' : 'Responder', style: 'margin-top:8px' });
+              abrirAt.addEventListener('click', function () { at.alunoNome = aluno.nome; abaAoVoltar = 'trilha'; window.atividades.telaDaAtividadeAluno(app, at, function () { desenharPaginaDoAluno(userAtual, aluno, previa); }, previa); });
+              texto.push(abrirAt);
+            }
+          }
+          return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid #1F5FA3' }, [cb, el('div', { style: 'flex:1;min-width:0' }, texto)]);
+        }
+        var ativas = trilhas.filter(function (t) { return !completa(t); }), concl = trilhas.filter(completa), aberta = null;
+        if (!trilhas.length) raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma trilha ainda.' }));
+        ativas.forEach(function (t) {
+          var m = meus(t), soma = m.reduce(function (a, x) { return a + pontos(x); }, 0), pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
+          var pend = m.filter(function (x) { return pontos(x) < 1; }), feitos = m.filter(function (x) { return pontos(x) >= 1; });
+          var c = el('div', { style: 'margin-bottom:26px' });
+          c.appendChild(el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }));
+          c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:#1F5FA3;width:' + pct + '%' })]));
+          c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' }));
+          if (t.data_fim) {
+            var fim = new Date(t.data_fim + 'T23:59:59'), ini = new Date(t.criado_em), agora = new Date();
+            var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
+            c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
+            c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') }));
+          }
+          raiz.appendChild(c);
+          [['Próximo passo', pend.slice(0, 1), true], ['Depois', pend.slice(1), false], ['Feitos', feitos, false]].forEach(function (g) {
+            if (!g[1].length) return;
+            c.appendChild(rotulo(g[0]));
+            var caixa = el('div', { style: 'border-bottom:1px solid #1F5FA3' + (g[2] ? ';border-top:2px solid #1F5FA3' : '') });
+            g[1].forEach(function (x, i) { var l = linha(x); if (g[2] && i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
+            c.appendChild(caixa);
+          });
+        });
+        if (concl.length) {
+          raiz.appendChild(rotulo('Trilhas concluídas'));
+          var areaConcl = el('div', {});
+          function desenharConcl() {
+            areaConcl.textContent = '';
+            concl.forEach(function (t) {
+              var m = meus(t);
+              var l = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, [
+                el('span', { class: 'portal-item-titulo', text: t.nome }),
+                el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') })])])]);
+              var abrir = function () { aberta = aberta === t.id ? null : t.id; desenharConcl(); };
+              l.addEventListener('click', abrir);
+              l.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+              areaConcl.appendChild(l);
+              if (aberta === t.id) { var dentro = el('div', { class: 'barra-ocre' }); var cx = el('div', { class: 'portal-cartao' }); m.forEach(function (x) { cx.appendChild(linha(x)); }); dentro.appendChild(cx); areaConcl.appendChild(dentro); }
+            });
+          }
+          desenharConcl();
+          raiz.appendChild(areaConcl);
+        }
+      });
+      return raiz;
+    }
+
     function abasDaTela(lista, atividadesEl, avisarQuando, aluno, previa, caixaCaderno) {
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       var conteudo = el('div', { class: 'portal-cartao' });
       var botoes = {};
-      var abas = ABAS.filter(function (ab) { return ab.chave !== 'curso' || temCurso; });
+      var abas = ABAS.filter(function (ab) { return (ab.chave !== 'curso' || temCurso) && (ab.chave !== 'trilha' || previa); });
       function mostrar(chave) {
         abas.forEach(function (ab) {
           var ativa = ab.chave === chave;
@@ -364,6 +468,7 @@
         });
         conteudo.textContent = '';
         if (chave === 'mensalidade') { conteudo.appendChild(telaMensalidade(aluno, previa)); return; }
+        if (chave === 'trilha') { conteudo.appendChild(telaTrilha(aluno, lista, previa)); return; }
         if (chave === 'curso') { conteudo.appendChild(window.curso.cartao(temCurso, app, function () { abaAoVoltar = 'curso'; desenharPaginaDoAluno(userAtual, aluno, previa); })); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -391,7 +496,7 @@
       });
       var deUmAviso = /[?&]atividade=([0-9a-f-]{36})/i.exec(location.search);
       var daUrl = (/[?&]aba=(\w+)/.exec(location.search) || [])[1];   /* ?aba=materiais vem do aviso no celular */
-      var inicial = abaAoVoltar && botoes[abaAoVoltar] ? abaAoVoltar : (daUrl && botoes[daUrl] ? daUrl : 'caderno'); abaAoVoltar = null; abaAtual = inicial;
+      var inicial = abaAoVoltar && botoes[abaAoVoltar] ? abaAoVoltar : (daUrl && botoes[daUrl] ? daUrl : (previa ? 'trilha' : 'caderno')); abaAoVoltar = null; abaAtual = inicial;
       mostrar(inicial);
       /* veio do aviso no celular: mostra onde está a atividade e marca o aviso dela como lido */
       if (deUmAviso && !previa) {
