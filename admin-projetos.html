@@ -29,6 +29,7 @@
     .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid #1F5FA3;background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
     .proj-passo input[type=checkbox]:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#A03E25;font-size:20px;font-weight:700;font-family:Arial,sans-serif}
     .proj-passo.feito .proj-titulo{text-decoration:line-through;opacity:.6}
+    .proj-grupo{font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:22px 0 6px;text-transform:lowercase}
     .proj-titulo{font-size:17px;line-height:1.4;color:#16233F;display:block;overflow-wrap:anywhere}
     .proj-acoes{display:flex;gap:18px;align-items:center;margin-top:6px}
     .proj-mini{background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline}
@@ -175,10 +176,10 @@
       conteudo.appendChild(el('div', { class: 'proj-barra' }, [el('i', { style: 'width:' + pct + '%' })]));
       conteudo.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (meus.length ? ' · ' + feitos + ' de ' + meus.length + ' passos' : '') + (meus.length && feitos === meus.length ? ' · Projeto concluído' : '') }));
 
-      var lista = el('div', { style: 'border-top:1px solid #1F5FA3;margin-top:14px' });
+      var lista = el('div', { style: 'margin-top:14px' });
       if (!meus.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum passo ainda.' }));
       var areaForm = el('div', { class: 'barra-ocre' });
-      meus.forEach(function (x, i) {
+      function linhaDoPasso(x, grupo, i) {
         var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito' });
         cb.checked = !!x.feito;
         cb.addEventListener('change', function () {
@@ -189,12 +190,12 @@
         if (x.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: x.nota }));
         var acoes = el('div', { class: 'proj-acoes' });
         var sobe = el('button', { type: 'button', class: 'proj-mini', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'proj-mini', text: '↓', 'aria-label': 'Descer' });
-        sobe.disabled = i === 0; desce.disabled = i === meus.length - 1;
+        sobe.disabled = i === 0; desce.disabled = i === grupo.length - 1;
         function trocar(com) {
           Promise.all([C.from('projeto_passos').update({ ordem: com.ordem }).eq('id', x.id), C.from('projeto_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar);
         }
-        sobe.addEventListener('click', function () { trocar(meus[i - 1]); });
-        desce.addEventListener('click', function () { trocar(meus[i + 1]); });
+        sobe.addEventListener('click', function () { trocar(grupo[i - 1]); });
+        desce.addEventListener('click', function () { trocar(grupo[i + 1]); });
         var editar = el('button', { type: 'button', class: 'proj-mini', text: 'Editar' });
         editar.addEventListener('click', function () { formPasso(x); });
         var apagar = P.botaoApagar('Apagar');
@@ -204,8 +205,26 @@
         });
         [sobe, desce, editar, apagar].forEach(function (b) { acoes.appendChild(b); });
         textos.push(acoes);
-        lista.appendChild(el('div', { class: 'proj-passo' + (x.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]));
-      });
+        return el('div', { class: 'proj-passo' + (x.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]);
+      }
+      /* o próximo passo no topo, os outros pendentes depois, e o que já foi feito embaixo */
+      var pendentes = meus.filter(function (x) { return !x.feito; }), prontos = meus.filter(function (x) { return x.feito; });
+      function grupoDe(titulo, itens, grande) {
+        if (!itens.length) return;
+        lista.appendChild(el('p', { class: 'proj-grupo', text: titulo }));
+        var caixa = el('div', { style: 'border-top:1px solid #1F5FA3' + (grande ? ';border-top-width:3px' : '') });
+        itens.forEach(function (x, k) { caixa.appendChild(linhaDoPasso(x, itens, k)); });
+        lista.appendChild(caixa);
+      }
+      grupoDe('Próximo passo', pendentes.slice(0, 1), true);
+      var depois = pendentes.slice(1);
+      if (depois.length) {
+        lista.appendChild(el('p', { class: 'proj-grupo', text: 'Depois' }));
+        var cx = el('div', { style: 'border-top:1px solid #1F5FA3' });
+        depois.forEach(function (x, k) { cx.appendChild(linhaDoPasso(x, pendentes, k + 1)); });
+        lista.appendChild(cx);
+      }
+      grupoDe('Feitos', prontos, false);
       conteudo.appendChild(lista);
 
       function formPasso(item) {
