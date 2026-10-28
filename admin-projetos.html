@@ -79,7 +79,7 @@
 
     function carregar() {
       Promise.all([
-        C.from('projetos').select('id,nome,ordem,data_fim,criado_em').order('ordem').order('criado_em'),
+        C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em').order('ordem').order('criado_em'),
         C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem').order('ordem').order('criado_em')
       ]).then(function (res) {
         if (res[0].error || res[1].error) { limpar(); app.appendChild(topo(nomeAdmin)); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os projetos.' })); return; }
@@ -96,10 +96,28 @@
     }
     function pctDe(lista) { return lista.length ? Math.floor(lista.filter(function (x) { return x.feito; }).length * 100 / lista.length) : 0; }
 
-    /* nome que começa com número ("1 Curso", "2. Retificação") vai na ordem do número; sem número, depois deles, na ordem de sempre */
+    /* na ordem do número da bolinha (prioridade); sem número, depois deles, na ordem de sempre */
     function porNumero(lista) {
-      var n = function (p) { var m = /^\s*(\d+)/.exec(p.nome); return m ? parseInt(m[1], 10) : Infinity; };
+      var n = function (p) { return p.prioridade == null ? Infinity : p.prioridade; };
       return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) { var x = n(a.p), y = n(b.p); return x === y ? a.i - b.i : (x < y ? -1 : 1); }).map(function (o) { return o.p; });
+    }
+    /* põe o número no projeto; se já havia outro com esse número, ele e os seguintes descem um lugar (o 3 vira 4, o 4 vira 5...) */
+    function definirNumero(p, texto, ativos) {
+      var n = texto === '' ? null : parseInt(texto, 10);
+      if (n !== null && (isNaN(n) || n < 0 || n > 99)) { desenhar(); return; }
+      if (n === (p.prioridade == null ? null : p.prioridade)) return;
+      var mudancas = [{ id: p.id, prioridade: n }];
+      if (n !== null) {
+        var precisa = n;
+        ativos.filter(function (x) { return x.id !== p.id && x.prioridade != null && x.prioridade >= n; }).sort(function (a, b) { return a.prioridade - b.prioridade; }).some(function (o) {
+          if (o.prioridade === precisa) { mudancas.push({ id: o.id, prioridade: precisa + 1 }); precisa++; return false; }
+          return o.prioridade > precisa;
+        });
+      }
+      Promise.all(mudancas.map(function (m) { return C.from('projetos').update({ prioridade: m.prioridade }).eq('id', m.id); })).then(function (rs) {
+        if (rs.some(function (r) { return r.error; })) alert('Não foi possível salvar o número.');
+        carregar();
+      });
     }
     function concluidoO(p) { var m = passos.filter(function (x) { return x.projeto_id === p.id; }); return m.length > 0 && m.every(function (x) { return x.feito; }); }
 
@@ -114,9 +132,20 @@
       if (aberto === 'concluidos' && verConcluido) { telaConcluido(concl.filter(function (p) { return p.id === verConcluido; })[0]); return; }
       var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
       ativos.forEach(function (p) {
-        var b = el('button', { type: 'button', role: 'tab', text: p.nome });
+        /* a bolinha com o número (ou vazia) fica na própria aba, antes do nome */
+        var bolinha = el('input', { type: 'text', inputmode: 'numeric', maxlength: '2', 'aria-label': 'Número do projeto ' + p.nome });
+        bolinha.value = p.prioridade == null ? '' : String(p.prioridade);
+        bolinha.style.cssText = 'flex:none;width:26px;height:26px;box-sizing:border-box;padding:0;margin:0;border:1.5px solid #1F5FA3;border-radius:50%;background:transparent;text-align:center;font:700 13px Arial,sans-serif;color:#16233F;min-height:0';
+        bolinha.addEventListener('click', function (ev) { ev.stopPropagation(); });
+        bolinha.addEventListener('keydown', function (ev) { ev.stopPropagation(); if (ev.key === 'Enter') bolinha.blur(); });
+        bolinha.addEventListener('input', function () { bolinha.value = bolinha.value.replace(/\D/g, ''); });
+        bolinha.addEventListener('change', function () { definirNumero(p, bolinha.value.trim(), ativos); });
+        var b = el('div', { role: 'tab', tabindex: '0' }, [bolinha, el('span', { text: p.nome })]);
         b.className = 'portal-aba' + (p.id === aberto ? ' ativa' : '');
-        b.addEventListener('click', function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); });
+        b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.justifyContent = 'center'; b.style.gap = '8px';
+        var abrirAba = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); };
+        b.addEventListener('click', abrirAba);
+        b.addEventListener('keydown', function (ev) { if (ev.target === b && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirAba(); } });
         barraAbas.appendChild(b);
       });
       var novo = el('button', { type: 'button', role: 'tab', text: '+ Novo projeto' });
