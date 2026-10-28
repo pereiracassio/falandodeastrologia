@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=69">
-  <link rel="stylesheet" href="portal.css?v=20">
+  <link rel="stylesheet" href="portal.css?v=21">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -383,7 +383,7 @@
         function linha(x) {
           var feito = pontos(x) >= 1, it = itemDe(x), at = ativDe(x);
           var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
-          var cb = el('input', { type: 'checkbox', disabled: '', style: 'flex:none;width:24px;height:24px;margin:1px 0 0;accent-color:#A03E25' }); cb.checked = feito;
+          var cb = el('input', { type: 'checkbox', class: 'caixinha', disabled: '' }); cb.checked = feito;
           if (x.tipo === 'material') {
             if (!it) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
             else {

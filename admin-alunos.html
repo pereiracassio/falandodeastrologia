@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=69">
-  <link rel="stylesheet" href="portal.css?v=20">
+  <link rel="stylesheet" href="portal.css?v=21">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -259,7 +259,7 @@
       }
       function linhaPasso(x, grupo, i, leitura) {
         var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade';
-        var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito', style: 'flex:none;width:24px;height:24px;margin:1px 0 0;accent-color:#A03E25' });
+        var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito' });
         cb.checked = ehMaterial ? !!x.lido_em : ehAtividade ? pontos(x) >= 1 : !!x.feito; cb.disabled = !!leitura || ehMaterial || ehAtividade; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
           x.feito = cb.checked; desenhar();
