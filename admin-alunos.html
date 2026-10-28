@@ -223,7 +223,7 @@
         Promise.all([
           P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
           P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em').order('ordem').order('criado_em'),
-          P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno']).order('criado_em')
+          P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em')
         ]).then(function (rs) {
           raiz.textContent = '';
           itensAluno = (rs[2] && rs[2].data) || [];
@@ -246,6 +246,7 @@
       /* pontos de cada passo (a barra anda por etapas): comum 0 ou 1; material em preparação 0, ligado ½, lido pelo aluno 1 */
       var pontos = function (x) {
         if (x.tipo === 'material') return x.lido_em ? 1 : (x.item_id ? 0.5 : 0);
+        if (x.tipo === 'gravacao') return tituloDoItem(x.item_id) ? 1 : 0; /* gravação ligada = aula já feita ao vivo: passo completo */
         if (x.tipo === 'atividade') { var a = ativDoPasso(x); return !a ? 0 : (a.enviada_em ? (a.corrigida_em ? 1 : 2 / 3) : 1 / 3); }
         return x.feito ? 1 : 0;
       };
@@ -258,7 +259,7 @@
         P.client.from('aluno_trilhas').insert({ aluno_id: aluno.id, nome: nome, ordem: ordem }).then(function (r) { if (r.error) alert('Não foi possível criar.'); else carregar(); });
       }
       function linhaPasso(x, grupo, i, leitura) {
-        var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade';
+        var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade' || x.tipo === 'gravacao';
         var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito' });
         cb.checked = ehMaterial ? !!x.lido_em : ehAtividade ? pontos(x) >= 1 : !!x.feito; cb.disabled = !!leitura || ehMaterial || ehAtividade; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
@@ -267,7 +268,8 @@
         });
         var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (pontos(x) >= 1 ? 'text-decoration:line-through;opacity:.6' : '') })];
         if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
-        if (ehAtividade) { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (!at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
+        if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
+        if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (!at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
         if (!leitura) {
           var acoes = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:6px' });
           var troca = function (com) { Promise.all([P.client.from('aluno_trilha_passos').update({ ordem: com.ordem }).eq('id', x.id), P.client.from('aluno_trilha_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar); };
@@ -276,10 +278,10 @@
           var areaLigar = el('div');
           function abrirLigacao(tipo) {
             if (areaLigar.firstChild) { areaLigar.textContent = ''; return; }
-            var campoId = tipo === 'material' ? 'item_id' : 'atividade_id';
+            var campoId = tipo === 'atividade' ? 'atividade_id' : 'item_id';
             var usados = passos.filter(function (y) { return y[campoId] && y.id !== x.id; }).map(function (y) { return y[campoId]; });
-            var fonte = tipo === 'material' ? itensAluno : ativsAluno;
-            var sel = el('select', { style: 'max-width:100%' }, [el('option', { value: '', text: tipo === 'material' ? 'Escolha o material' : 'Escolha a atividade' }), el('option', { value: '__prep', text: 'Ainda não criado (em preparação)' })].concat(
+            var fonte = tipo === 'atividade' ? ativsAluno : itensAluno.filter(function (i) { return tipo === 'gravacao' ? i.bloco === 'gravacoes' : i.bloco !== 'gravacoes'; });
+            var sel = el('select', { style: 'max-width:100%' }, [el('option', { value: '', text: tipo === 'material' ? 'Escolha o material' : tipo === 'gravacao' ? 'Escolha a gravação' : 'Escolha a atividade' }), el('option', { value: '__prep', text: 'Ainda não criado (em preparação)' })].concat(
               fonte.filter(function (i) { return usados.indexOf(i.id) < 0; }).map(function (i) { return el('option', { value: i.id, text: i.titulo }); })));
             sel.addEventListener('change', function () {
               if (!sel.value) return;
@@ -291,6 +293,7 @@
           }
           acoes.appendChild(mini(x.tipo === 'material' ? 'Trocar material' : 'Ligar a um material', function () { abrirLigacao('material'); }));
           acoes.appendChild(mini(x.tipo === 'atividade' ? 'Trocar atividade' : 'Ligar a uma atividade', function () { abrirLigacao('atividade'); }));
+          acoes.appendChild(mini(x.tipo === 'gravacao' ? 'Trocar gravação' : 'Ligar a uma gravação', function () { abrirLigacao('gravacao'); }));
           if (x.tipo !== 'comum' && x.tipo) acoes.appendChild(mini('Tirar a ligação', function () { P.client.from('aluno_trilha_passos').update({ tipo: 'comum', item_id: null, atividade_id: null, lido_em: null }).eq('id', x.id).then(carregar); }));
           acoes.appendChild(mini('Editar', function () { var t = (prompt('Passo', x.titulo) || '').trim(); if (!t || t === x.titulo) return; P.client.from('aluno_trilha_passos').update({ titulo: t }).eq('id', x.id).then(carregar); }));
           var ap = P.botaoApagar('Apagar');
@@ -373,7 +376,7 @@
               listaDePassos(dentro, m, true, false);
               var reabrir = el('button', { type: 'button', class: 'portal-btn', text: 'Reabrir esta trilha' });
               reabrir.addEventListener('click', function () {
-                var candidatos = m.filter(function (y) { return y.tipo !== 'atividade'; });
+                var candidatos = m.filter(function (y) { return y.tipo !== 'atividade' && y.tipo !== 'gravacao'; });
                 if (!candidatos.length) { alert('Para reabrir, acrescente um passo novo na trilha.'); return; }
                 var u = candidatos.slice().sort(function (a, b) { return String(b.feito_em || b.lido_em || '') < String(a.feito_em || a.lido_em || '') ? -1 : 1; })[0]; if (!u) return;
                 reabrir.disabled = true; P.client.from('aluno_trilha_passos').update(u.tipo === 'material' ? { lido_em: null } : { feito: false, feito_em: null }).eq('id', u.id).then(function () { abertaConcl = null; carregar(); });

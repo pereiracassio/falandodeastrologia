@@ -376,6 +376,7 @@
         var itemDe = function (x) { return x.item_id ? (itens || []).filter(function (i) { return i.id === x.item_id; })[0] : null; };
         var pontos = function (x) {
           if (x.tipo === 'material') return x.lido_em ? 1 : (itemDe(x) ? 0.5 : 0);
+          if (x.tipo === 'gravacao') return itemDe(x) ? 1 : 0;
           if (x.tipo === 'atividade') { var a = ativDe(x); return !a ? 0 : (a.enviada_em ? (a.corrigida_em ? 1 : 2 / 3) : 1 / 3); }
           return x.feito ? 1 : 0;
         };
@@ -396,6 +397,9 @@
                 texto.push(li);
               }
             }
+          } else if (x.tipo === 'gravacao') {
+            if (!it) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
+            else texto.push(itemDaLista(it, 'gravacoes'));
           } else if (x.tipo === 'atividade') {
             if (!at) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
             else {
