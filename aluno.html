@@ -6,7 +6,7 @@
   (function () { try {
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app || /access_token|refresh_token|type=/.test(location.hash)) return;
-    if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
+    if (sessionStorage.getItem('fda_app_aberto')) return; /* já navegando dentro do app (a página anterior deixou a marca): você tocou para ir lá. O ícone abre o app com a sessão vazia, então não existe marca. Não usa document.referrer: no iPhone ele pode vir preenchido na abertura pelo ícone */
     if (/[?&](aviso|atividade|aba|e|ver|code|error)=/.test(location.search)) return; /* aviso tocado, atividade, prévia ou volta do login: o endereço já traz o destino. Qualquer outro ? ou # (o ícone foi salvo com estado na ponta do endereço) NÃO impede de voltar à última tela */
     var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
     if (u && /^\/[a-z-]+\.html/.test(u)) { if (u !== aqui) { window.__fdaRestaurando = true; location.replace(u); } return; }
@@ -51,7 +51,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=108"></script>
+  <script src="portal.js?v=111"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="leitor.js?v=5"></script>
   <script src="curso.js?v=1"></script>

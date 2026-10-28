@@ -559,7 +559,7 @@
       if (!/\/(aluno|cliente|admin-agenda)\.html$/.test(location.pathname) || window.__fdaRestaurando) return; /* as páginas onde os ícones do app abrem (Alunos, Seu espaço, Agenda): o app sempre vai para a última tela em que ele estava */
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
-      if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
+      if (sessionStorage.getItem('fda_app_aberto')) return; /* já navegando dentro do app (a página anterior deixou a marca): você tocou para ir lá. O ícone abre o app com a sessão vazia, então não existe marca. Não usa document.referrer: no iPhone ele pode vir preenchido na abertura pelo ícone */
       if (/[?&](aviso|atividade|aba|e|ver|code|error)=/.test(location.search)) return; /* aviso tocado, atividade, prévia ou volta do login: o endereço já traz o destino. Qualquer outro ? ou # (o ícone foi salvo com estado na ponta do endereço) NÃO impede de voltar à última tela */
       var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
       if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; location.replace(u); }
