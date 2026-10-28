@@ -3,7 +3,7 @@
   "short_name": "Alunos",
   "description": "Área do aluno: atividades, gravações e materiais",
   "lang": "pt-BR",
-  "start_url": "/aluno.html",
+  "start_url": "/abrir.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#e6d3a0",

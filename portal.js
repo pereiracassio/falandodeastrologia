@@ -540,43 +540,16 @@
     },
     mesclar: function (o) { var a = estado.ler(); Object.keys(o).forEach(function (k) { a[k] = o[k]; }); estado.gravar(a); }
   };
-  /* lembrar onde você parou: o app da tela de início sempre abre na página inicial dele (Produção, Alunos); ao abrir de novo, a primeira
-     linha do <head> dessas páginas lê isto e leva você de volta ao lugar exato (página + o que estava aberto, que fica no endereço). */
+  /* lembrar onde você parou: guarda a última tela do app; quem leva até ela é a página abrir.html (o ícone do app abre nela). */
   function lembrarOndeParou() {
     try {
       localStorage.setItem('fda_ultimo_uso', String(Date.now())); /* a abertura do zero do app se reconhece por isto estar velho (ver o <head> das páginas de entrada) */
-      if (window.__fdaRestaurando) return; /* a página só está de passagem, indo para a última tela: não sobrescrever */
       if (!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches))) return; /* só o app da tela de início guarda o último lugar: navegador e app nunca se misturam */
       if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
       localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
     } catch (e) { /* sem armazenamento */ }
   }
-  /* abertura do zero (o iPhone/iPad jogou o app fora e o ícone o abriu de novo): em QUALQUER página do painel/aluno/cliente, não só nas três de entrada,
-     vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
-  (function restaurarUltimaTela() {
-    function irParaUltima(u) {
-    var aqui = location.pathname + location.search + location.hash;
-    try { var dg = JSON.parse(localStorage.getItem('fda_diag') || '[]'); dg.push(aqui + ' -> ' + u); localStorage.setItem('fda_diag', JSON.stringify(dg.slice(-8))); } catch (e) { /* ok */ }
-    try { document.documentElement.style.visibility = 'hidden'; } catch (e) { /* ok */ } /* não mostra o Alunos por um instante */
-    var feito = false;
-    function ir() { if (feito && location.pathname + location.search + location.hash !== aqui) return; feito = true; try { location.replace(u); } catch (e) { /* tenta de novo abaixo */ } }
-    ir();
-    /* o iPhone às vezes engole o desvio feito no começo da página: repete até a página mudar */
-    [150, 400, 900, 1800].forEach(function (t) { setTimeout(ir, t); });
-    document.addEventListener('DOMContentLoaded', ir); window.addEventListener('load', ir); window.addEventListener('pageshow', ir);
-    setTimeout(function () { try { document.documentElement.style.visibility = ''; } catch (e) { /* ok */ } }, 3000); /* se nada funcionar, a página aparece */
-  }
-    try {
-      if (!/\/(aluno|cliente|admin-agenda)\.html$/.test(location.pathname) || window.__fdaRestaurando) return; /* as páginas onde os ícones do app abrem (Alunos, Seu espaço, Agenda): o app sempre vai para a última tela em que ele estava */
-      var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-      if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
-      if (sessionStorage.getItem('fda_app_aberto')) return; /* já navegando dentro do app (a página anterior deixou a marca): você tocou para ir lá. O ícone abre o app com a sessão vazia, então não existe marca. Não usa document.referrer: no iPhone ele pode vir preenchido na abertura pelo ícone */
-      if (/[?&](aviso|atividade|aba|e|ver|code|error)=/.test(location.search)) return; /* aviso tocado, atividade, prévia ou volta do login: o endereço já traz o destino. Qualquer outro ? ou # (o ícone foi salvo com estado na ponta do endereço) NÃO impede de voltar à última tela */
-      var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
-      if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; irParaUltima(u); }
-    } catch (e) { /* sem armazenamento */ }
-  })();
   lembrarOndeParou();
   try { sessionStorage.setItem('fda_app_aberto', '1'); } catch (e) { /* sem armazenamento */ } /* qualquer página aberta conta como "app já aberto": só a abertura do zero volta ao último lugar */
   var gravarEstado = estado.gravar;
