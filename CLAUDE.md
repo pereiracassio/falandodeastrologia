@@ -248,3 +248,7 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 ## Linha de lista abre ao tocar em QUALQUER lugar dela (27/10/2026) — regra do astrólogo, vale para TODA lista nova
 
 **Nada de botão "Abrir"/"Rever"/"Continuar" no canto da linha:** a linha inteira é o toque (`role="button"`, `cursor:pointer`), porque o intuitivo é tocar no item. Feito na lista da aba Estudos (`admin-estudos.html`). Listas antigas com botão "Editar"/"Abrir" ao lado (Alunos, Clientes, Blog etc.) ainda NÃO foram trocadas: fazer só quando ele pedir, uma tela de cada vez.
+
+## App que abre "na última tela": toque dentro do site NUNCA é abertura do zero (28/10/2026)
+
+Bug dele: no app, estava em Clientes, tocou na aba Agenda e caiu em Estudos (a "última tela" gravada). Causa: a abertura do zero se reconhece pelo relógio `fda_ultimo_uso`, que uma tela antiga guardada na memória do app não atualiza; o toque parecia uma abertura nova. **Regra:** além do relógio, se `document.referrer` é do próprio site (toque num link dentro do app), nunca restaura a última tela (`<head>` de `admin-agenda`, `admin-producao`, `aluno` e `restaurarUltimaTela` em `portal.js`). Abertura pelo ícone não tem página de origem e continua indo para a última tela. Reproduzido e conferido em Playwright (relógio velho + toque na aba).

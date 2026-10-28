@@ -557,6 +557,7 @@
       if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando || /admin-avisos\.html$/.test(location.pathname)) return;
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
+      if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
       if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return;
       var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
       if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; location.replace(u); }
