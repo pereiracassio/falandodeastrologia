@@ -269,10 +269,18 @@
       pinta();
       return { el: el('div', { style: 'display:flex;align-items:center;gap:12px;margin:14px 0 10px' }, [cx, nome]), valor: function () { return marcada; } };
     }
-    function abrirEvento(e) {
-      detalhe(areaForm, e);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    /* abre no lugar onde ele está (nunca leva para o topo): uma folha por cima da tela, que some sozinha quando o conteúdo é fechado ou salvo */
+    function abrirFolha() {
+      var antiga = document.getElementById('folha-agenda'); if (antiga) antiga.remove();
+      var fundo = el('div', { id: 'folha-agenda', style: 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:99990;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4vh 10px;box-sizing:border-box;background:rgba(22,35,63,.35)' });
+      var corpo = el('div', { style: 'max-width:600px;margin:0 auto;box-sizing:border-box;border:2px solid #1F5FA3;padding:4px 14px 14px;background:var(--papiro-fundo-simples,#e6d3a0)' });
+      fundo.appendChild(corpo); app.appendChild(fundo);
+      var obs = new MutationObserver(function () { if (!corpo.firstChild) { obs.disconnect(); fundo.remove(); } });
+      obs.observe(corpo, { childList: true });
+      fundo.addEventListener('click', function (ev) { if (ev.target === fundo) corpo.textContent = ''; });
+      return corpo;
     }
+    function abrirEvento(e) { detalhe(abrirFolha(), e); }
     /* tocar num compromisso só MOSTRA; o lápis abre a edição. Cores: título terracota, horário azul, o resto preto */
     function detalheAniversario(destino, e) {
       var p = e.aniversario, dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
@@ -380,7 +388,7 @@
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
       var novo = el('button', { type: 'button', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
-      novo.addEventListener('click', function () { formulario(areaForm, null, { dia: visao === 'dia' ? ancora : undefined }); });
+      novo.addEventListener('click', function () { formulario(abrirFolha(), null, { dia: visao === 'dia' ? ancora : undefined }); });
       var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:14px' }), botoes = {};
       VISOES.forEach(function (v) {
         var b = el('button', { type: 'button', class: 'portal-aba', text: v[1] });
@@ -394,7 +402,7 @@
       hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
       var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje, novo]);
       corpo.appendChild(areaForm); corpo.appendChild(abas); corpo.appendChild(nav); corpo.appendChild(vista);
-      encaixe.appendChild(painelEncaixe(areaForm)); corpo.appendChild(encaixe);
+      encaixe.appendChild(painelEncaixe()); corpo.appendChild(encaixe);
 
       var pedido = 0;
       function mudou() {
@@ -503,8 +511,7 @@
           if (!segs.length) return;
           var t0 = segs[k].ini + (y / H - k) * (segs[k].fim - segs[k].ini); t0 = Math.floor(t0 / 300000) * 300000;
           var t1 = Math.min(t0 + 3600000, d1 - 60000);
-          formulario(areaForm, null, { dia: iso, ini: hhmm(t0), fim: hhmm(t1) });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          formulario(abrirFolha(), null, { dia: iso, ini: hhmm(t0), fim: hhmm(t1) });
         });
         var itens = doDia(iso, evs).filter(function (e) { return !e.diaTodo; }).map(function (e) { return { e: e, i: Math.max(e.ini, d0), f: Math.min(e.fim, d1) }; }).sort(function (p, q) { return p.i - q.i; });
         colunas(itens).forEach(function (x) {
@@ -820,7 +827,7 @@
     }
 
     /* ---------- encaixar uma tarefa pela hora planetária ---------- */
-    function painelEncaixe(area) {
+    function painelEncaixe() {
       /* campo comum onde se escreve o que quiser, com a lista de sugestões embaixo (a mesma peça do Financeiro: P.combo) */
       var o = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Escreva ou escolha na lista' });
       var planeta = el('select'); HP.CALDEIA.forEach(function (n) { planeta.appendChild(el('option', { value: n, text: n })); });
@@ -830,8 +837,10 @@
       var caixaTarefa = P.combo(o, function () { return TAREFAS.map(function (t) { return { valor: t[0], rotulo: t[0], busca: t[0].toLowerCase() }; }); }, function (i) { o.value = i.valor; doPreset(i.valor); }, true);
       var dur = el('select'); [30, 45, 60, 90, 120, 180].forEach(function (m) { dur.appendChild(el('option', { value: String(m), text: duracaoTxt(m) })); }); dur.value = '60';
       var folga = el('select'); [[0, 'Nenhuma'], [15, '15 minutos'], [30, '30 minutos'], [45, '45 minutos'], [60, '1 hora']].forEach(function (x) { folga.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); folga.value = '30';
-      var repete = el('select'); [['uma', 'Só uma vez'], ['todos', 'Todos os dias'], ['dias', 'Dias da semana']].forEach(function (x) { repete.appendChild(el('option', { value: x[0], text: x[1] })); });
-      var dow = [1, 2, 3, 4, 5], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
+      var hoje = isoDia(Date.now());
+      var de = el('input', { type: 'date', value: hoje }), ate = el('input', { type: 'date', value: somaDias(hoje, 6) });
+      /* dias da semana: ele marca quais */
+      var dow = [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
       ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
         var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
         var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
@@ -839,25 +848,56 @@
         b.addEventListener('click', function () { var i = dow.indexOf(k); if (i >= 0) dow.splice(i, 1); else dow.push(k); pinta(); });
         blocoDias.appendChild(b);
       });
-      var por = el('select'); [[14, '2 semanas'], [30, '1 mês'], [60, '2 meses'], [90, '3 meses']].forEach(function (x) { por.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); por.value = '30';
-      var blocoPor = el('div'); [el('label', { text: 'Durante' }), por].forEach(function (n) { blocoPor.appendChild(n); });
-      var mostraPor = function () { blocoPor.style.display = repete.value === 'uma' ? 'none' : ''; blocoDias.style.display = repete.value === 'dias' ? 'flex' : 'none'; }; repete.addEventListener('change', mostraPor); mostraPor();
-      var de = el('input', { type: 'time', value: '06:00' }), ate = el('input', { type: 'time', value: '22:00' });
+      var hDe = el('input', { type: 'time', value: '06:00' }), hAte = el('input', { type: 'time', value: '22:00' });
       var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Ver horários' });
       var res = el('div');
-      botao.addEventListener('click', function () { sugerir(res, area, o.value.trim(), planeta.value, +dur.value, de.value, ate.value, +folga.value, { modo: repete.value, dias: +por.value, dow: dow.slice() }); });
+      botao.addEventListener('click', function () { sugerir(res, { tarefa: o.value.trim(), planeta: planeta.value, minutos: +dur.value, de: de.value, ate: ate.value, dow: dow.slice(), hDe: hDe.value, hAte: hAte.value, folga: +folga.value }); });
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
-        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga), campo('Repetir', repete), [blocoDias, blocoPor], campo('Não antes de', de), campo('Não depois de', ate),
+        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga),
+        campo('Do dia', de), campo('Até o dia', ate), [el('label', { text: 'Nos dias' }), blocoDias], campo('Não antes de', hDe), campo('Não depois de', hAte),
         [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
     }
 
-    function sugerir(res, area, tarefa, planeta, minutos, deHora, ateHora, folga, rep) {
+    /* mostra, dia a dia do período, onde a tarefa encaixa (um horário por dia); ele tira os que não quer e coloca tudo de uma vez */
+    function sugerir(res, o) {
       res.textContent = '';
-      var primeiro = meiaNoiteDe(Date.now());
+      if (!o.de || !o.ate) return;
+      var ini = o.de, fim = o.ate; if (fim < ini) { var t = ini; ini = fim; fim = t; }
+      var total = Math.min(366, Math.round((doIso(fim) - doIso(ini)) / DIA) + 1);
       res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Procurando...' }));
-      eventosEntre(primeiro, primeiro + DIAS_BUSCA * DIA).then(function (evs) { res.textContent = ''; if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; } acharHorarios(res, area, evs, tarefa, planeta, minutos, deHora, ateHora, folga || 0, rep); }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+      eventosEntre(doIso(ini), doIso(somaDias(ini, total))).then(function (evs) {
+        res.textContent = '';
+        if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; }
+        var hojeIso = isoDia(Date.now()), fg = o.folga * 60000, propostas = [];
+        for (var i = 0; i < total; i++) {
+          var iso = somaDias(ini, i);
+          if (iso < hojeIso || o.dow.indexOf(diaSem(iso)) < 0) continue;
+          var agora = iso === hojeIso ? Math.ceil(Date.now() / 300000) * 300000 : 0;
+          var slots = slotsDoDia(iso, evs, o.planeta, o.minutos, o.hDe, o.hAte, fg, agora).sort(function (p, q) { return p.ini - q.ini; });
+          propostas.push({ iso: iso, slot: slots[0] || null });
+        }
+        var itens = propostas.filter(function (p) { return p.slot; }).map(function (p) { return { iso: p.iso, ini: p.slot.ini, fim: p.slot.ini + o.minutos * 60000, hora: p.slot.hora, marcado: true }; });
+        var confirmar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px' }), destinoForm = el('div');
+        var atualizaBotao = function () { var n = itens.filter(function (x) { return x.marcado; }).length; confirmar.textContent = 'Colocar na agenda (' + n + ')'; confirmar.disabled = !n; };
+        propostas.forEach(function (p) {
+          if (!p.slot) { res.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:10px 0 0', text: rotuloDia(p.iso) + ' · sem horário livre' })); return; }
+          var it = itens.filter(function (x) { return x.iso === p.iso; })[0];
+          var cx = caixinha(rotuloDia(p.iso) + ', ' + hhmm(it.ini) + ' às ' + hhmm(it.fim), true, function (m) { it.marcado = m; atualizaBotao(); });
+          var det = el('div', { class: 'portal-item-data', style: 'margin:-6px 0 4px 38px' }, [iconePlaneta(o.planeta, 14, '#A03E25'), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })]);
+          res.appendChild(cx.el); res.appendChild(det);
+        });
+        if (!itens.length) return;
+        atualizaBotao();
+        confirmar.addEventListener('click', function () {
+          var esc = itens.filter(function (x) { return x.marcado; });
+          if (!esc.length) return;
+          formulario(destinoForm, null, { titulo: o.tarefa, dia: esc[0].iso, ini: hhmm(esc[0].ini), fim: hhmm(esc[0].fim), serie: esc.map(function (x) { return { ini: x.ini, fim: x.fim }; }) });
+        });
+        res.appendChild(el('div', { class: 'portal-acoes' }, [confirmar])); res.appendChild(destinoForm);
+      }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
     }
+
     /* os horários da hora do planeta que cabem num dia (a tarefa COMEÇA dentro da hora do planeta e cabe inteira num trecho livre) */
     function slotsDoDia(dia, eventos, planeta, minutos, deHora, ateHora, fg, agora) {
       var achados = [], ja = Math.max(doIso(dia, deHora), agora), fimJ = doIso(dia, ateHora);
@@ -874,48 +914,6 @@
       });
       return achados;
     }
-    /* repetir: um compromisso por dia escolhido, cada um na hora do planeta que cai mais perto do horário da sugestão (a hora do planeta muda de um dia para o outro) */
-    function montarSerie(a, planeta, minutos, deHora, ateHora, fg, rep, eventos) {
-      var b0 = loc(a.ini), baseMin = b0.getUTCHours() * 60 + b0.getUTCMinutes(), fimIso = somaDias(a.dia, rep.dias - 1), saida = [];
-      for (var iso = a.dia; iso <= fimIso; iso = somaDias(iso, 1)) {
-        var dw = diaSem(iso);
-        if (rep.modo === 'dias' && rep.dow.indexOf(dw) < 0) continue;
-        var slots = iso === a.dia ? [a] : slotsDoDia(iso, eventos, planeta, minutos, deHora, ateHora, fg, 0), melhor = null, dist = 1e9;
-        slots.forEach(function (s) { var l = loc(s.ini), d = Math.abs(l.getUTCHours() * 60 + l.getUTCMinutes() - baseMin); if (d < dist) { dist = d; melhor = s; } });
-        if (melhor && dist <= 180) saida.push({ ini: melhor.ini, fim: melhor.ini + minutos * 60000 });
-      }
-      return saida;
-    }
-    function acharHorarios(res, area, eventos, tarefa, planeta, minutos, deHora, ateHora, folga, rep) {
-      var fg = folga * 60000; /* folga: tempo livre antes e depois de cada compromisso (ir e voltar da academia, por exemplo) */
-      var agora = Math.ceil(Date.now() / 300000) * 300000, primeiro = meiaNoiteDe(Date.now()), achados = [], dias = DIAS_BUSCA;
-      for (var i = 0; i < dias && achados.length < 8; i++) {
-        var dia = isoDia(primeiro + i * 86400000 + 12 * 3600000);
-        achados = achados.concat(slotsDoDia(dia, eventos, planeta, minutos, deHora, ateHora, fg, agora));
-      }
-      achados.sort(function (a, b) { return a.ini - b.ini; });
-      achados = achados.slice(0, 8);
-      if (!achados.length) { res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Nenhuma hora de ' + planeta + ' livre com ' + duracaoTxt(minutos) + ' nos próximos ' + dias + ' dias.' })); return; }
-      achados.forEach(function (a) {
-        var fimSug = a.ini + minutos * 60000;
-        var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar na agenda' });
-        b.addEventListener('click', function () {
-          var abrir = function (serie) { formulario(area, null, { titulo: tarefa, dia: a.dia, ini: hhmm(a.ini), fim: hhmm(fimSug), serie: serie }); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-          if (!rep || rep.modo === 'uma') { abrir(null); return; }
-          b.disabled = true;
-          eventosEntre(doIso(a.dia), doIso(somaDias(a.dia, rep.dias))).then(function (evs) {
-            b.disabled = false;
-            if (evs.falhas && evs.falhas.length) { P.mensagem(area.appendChild(el('p', { class: 'portal-msg' })), 'Não consegui ler a agenda ' + evs.falhas.join(', ') + '.', 'erro'); return; }
-            abrir(montarSerie(a, planeta, minutos, deHora, ateHora, fg, rep, evs));
-          }, function () { b.disabled = false; });
-        });
-        var detalhe = el('div', { class: 'portal-item-data' }, [iconePlaneta(planeta, 14, '#A03E25'), el('span', { text: ' livre até ' + hhmm(a.limite) + ' · hora de ' + planeta + ' das ' + hhmm(a.hora.ini) + ' às ' + hhmm(a.hora.fim) })]);
-        var l = el('div', { class: 'portal-item' }, [el('div', {}, [el('strong', { text: rotuloDia(a.dia) + ', ' + hhmm(a.ini) + ' às ' + hhmm(fimSug) }), detalhe]), b]);
-        l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
-        res.appendChild(l);
-      });
-    }
-
     C.auth.getSession().then(function (r) {
       var u = r.data && r.data.session && r.data.session.user;
       if (u) iniciar(u); else mostrarLogin();
