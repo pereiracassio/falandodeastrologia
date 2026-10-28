@@ -212,6 +212,126 @@
       return 'Atrasado: venceu em ' + P.dataBR(proximo) + ' (há ' + (-dias) + (dias === -1 ? ' dia).' : ' dias).');
     }
 
+    /* trilhas do aluno: uma por assunto, com passos e barra de progresso (mesma ideia dos Projetos); trilha com todos os passos feitos vai para "Trilhas concluídas" */
+    function painelTrilhas(aluno) {
+      var raiz = el('div');
+      var trilhas = [], passos = [], abertaConcl = null;
+      var barra = function (pct) { return el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:#1F5FA3;width:' + pct + '%' })]); };
+      var mini = function (txt, aoClicar, desligado) { var b = el('button', { type: 'button', text: txt, style: 'background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:' + (desligado ? '.2' : '.6') + ';cursor:pointer;text-decoration:underline' }); b.disabled = !!desligado; b.addEventListener('click', aoClicar); return b; };
+      var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
+      function carregar() {
+        Promise.all([
+          P.client.from('aluno_trilhas').select('id,nome,ordem').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
+          P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem').order('ordem').order('criado_em')
+        ]).then(function (rs) {
+          raiz.textContent = '';
+          if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as trilhas.' })); return; }
+          trilhas = rs[0].data; var ids = trilhas.map(function (t) { return t.id; });
+          passos = rs[1].data.filter(function (x) { return ids.indexOf(x.trilha_id) >= 0; });
+          desenhar();
+        });
+      }
+      var meus = function (t) { return passos.filter(function (x) { return x.trilha_id === t.id; }); };
+      var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return x.feito; }); };
+      function novaTrilha() {
+        var nome = (prompt('Assunto da trilha (ex.: Liberação zodiacal)') || '').trim(); if (!nome) return;
+        var ordem = trilhas.reduce(function (m, t) { return Math.max(m, t.ordem || 0); }, 0) + 1;
+        P.client.from('aluno_trilhas').insert({ aluno_id: aluno.id, nome: nome, ordem: ordem }).then(function (r) { if (r.error) alert('Não foi possível criar.'); else carregar(); });
+      }
+      function linhaPasso(x, grupo, i, leitura) {
+        var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito', style: 'flex:none;width:24px;height:24px;margin:1px 0 0;accent-color:#A03E25' });
+        cb.checked = !!x.feito; cb.disabled = !!leitura;
+        cb.addEventListener('change', function () {
+          x.feito = cb.checked; desenhar();
+          P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
+        });
+        var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (x.feito ? 'text-decoration:line-through;opacity:.6' : '') })];
+        if (!leitura) {
+          var acoes = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:6px' });
+          var troca = function (com) { Promise.all([P.client.from('aluno_trilha_passos').update({ ordem: com.ordem }).eq('id', x.id), P.client.from('aluno_trilha_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar); };
+          acoes.appendChild(mini('↑', function () { troca(grupo[i - 1]); }, i === 0));
+          acoes.appendChild(mini('↓', function () { troca(grupo[i + 1]); }, i === grupo.length - 1));
+          acoes.appendChild(mini('Editar', function () { var t = (prompt('Passo', x.titulo) || '').trim(); if (!t || t === x.titulo) return; P.client.from('aluno_trilha_passos').update({ titulo: t }).eq('id', x.id).then(carregar); }));
+          var ap = P.botaoApagar('Apagar');
+          ap.addEventListener('click', function () { if (confirm('Apagar o passo "' + x.titulo + '"?')) P.client.from('aluno_trilha_passos').delete().eq('id', x.id).then(carregar); });
+          acoes.appendChild(ap); texto.push(acoes);
+        }
+        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid #1F5FA3' }, [cb, el('div', { style: 'flex:1;min-width:0' }, texto)]);
+      }
+      function listaDePassos(alvo, lista, leitura, grande) {
+        var caixa = el('div', { style: 'border-bottom:1px solid #1F5FA3' + (grande ? ';border-top:2px solid #1F5FA3' : '') });
+        lista.forEach(function (x, i) { var l = linhaPasso(x, lista, i, leitura); if (grande && i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
+        alvo.appendChild(caixa);
+      }
+      function cartaoDaTrilha(t) {
+        var m = meus(t), feitos = m.filter(function (x) { return x.feito; }), pend = m.filter(function (x) { return !x.feito; });
+        var pct = m.length ? Math.floor(feitos.length * 100 / m.length) : 0;
+        var c = el('div', { class: 'portal-cartao', style: 'border-top:2px solid #1F5FA3' });
+        var renomear = mini('Renomear', function () { var n = (prompt('Assunto da trilha', t.nome) || '').trim(); if (n && n !== t.nome) P.client.from('aluno_trilhas').update({ nome: n }).eq('id', t.id).then(carregar); });
+        c.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), renomear]));
+        c.appendChild(barra(pct));
+        c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (m.length ? ' · ' + feitos.length + ' de ' + m.length + ' passos' : '') }));
+        if (pend.length) { c.appendChild(rotulo('Próximo passo')); listaDePassos(c, pend.slice(0, 1), false, true); }
+        if (pend.length > 1) {
+          c.appendChild(rotulo('Depois'));
+          var cx = el('div', { style: 'border-bottom:1px solid #1F5FA3' });
+          pend.slice(1).forEach(function (x, k) { cx.appendChild(linhaPasso(x, pend, k + 1, false)); });
+          c.appendChild(cx);
+        }
+        if (feitos.length) { c.appendChild(rotulo('Feitos')); listaDePassos(c, feitos, false, false); }
+        var campo = el('input', { type: 'text', placeholder: 'Novo passo', style: 'flex:1;min-width:0' });
+        var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
+        var enviar = function () {
+          var tt = campo.value.trim(); if (!tt) return; add.disabled = true;
+          var ordem = m.reduce(function (mx, y) { return Math.max(mx, y.ordem || 0); }, 0) + 1;
+          P.client.from('aluno_trilha_passos').insert({ trilha_id: t.id, titulo: tt, ordem: ordem }).then(function (r) { if (r.error) { add.disabled = false; alert('Não foi possível adicionar.'); } else carregar(); });
+        };
+        add.addEventListener('click', enviar);
+        campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); enviar(); } });
+        c.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap' }, [campo, add]));
+        var apagarT = P.botaoApagar('Apagar esta trilha');
+        apagarT.addEventListener('click', function () { if (confirm('Apagar a trilha "' + t.nome + '" e todos os passos? Não dá para desfazer.')) P.client.from('aluno_trilhas').delete().eq('id', t.id).then(carregar); });
+        c.appendChild(el('div', { style: 'margin-top:14px' }, [apagarT]));
+        return c;
+      }
+      function desenhar() {
+        raiz.textContent = '';
+        var novo = el('button', { type: 'button', class: 'portal-btn', text: 'Nova trilha' });
+        novo.addEventListener('click', novaTrilha);
+        raiz.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]));
+        var ativas = trilhas.filter(function (t) { return !completa(t); }), concl = trilhas.filter(completa);
+        if (!trilhas.length) raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma trilha ainda.' }));
+        ativas.forEach(function (t) { raiz.appendChild(cartaoDaTrilha(t)); });
+        if (concl.length) {
+          raiz.appendChild(rotulo('Trilhas concluídas'));
+          concl.forEach(function (t) {
+            var m = meus(t), ultima = m.reduce(function (a, x) { return x.feito_em && x.feito_em > a ? x.feito_em : a; }, '');
+            var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, [
+              el('span', { class: 'portal-item-titulo', text: t.nome }),
+              el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + (ultima ? ' · concluída em ' + P.dataBR(ultima.slice(0, 10)) : '') })])])]);
+            var abrir = function () { abertaConcl = abertaConcl === t.id ? null : t.id; desenhar(); };
+            linha.addEventListener('click', abrir);
+            linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+            raiz.appendChild(linha);
+            if (abertaConcl === t.id) {
+              var area = el('div', { class: 'barra-ocre' });
+              var dentro = el('div', { class: 'portal-cartao' });
+              listaDePassos(dentro, m, true, false);
+              var reabrir = el('button', { type: 'button', class: 'portal-btn', text: 'Reabrir esta trilha' });
+              reabrir.addEventListener('click', function () {
+                var u = m.slice().sort(function (a, b) { return String(b.feito_em || '') < String(a.feito_em || '') ? -1 : 1; })[0]; if (!u) return;
+                reabrir.disabled = true; P.client.from('aluno_trilha_passos').update({ feito: false, feito_em: null }).eq('id', u.id).then(function () { abertaConcl = null; carregar(); });
+              });
+              dentro.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [reabrir]));
+              area.appendChild(dentro); raiz.appendChild(area);
+            }
+          });
+        }
+      }
+      carregar();
+      return raiz;
+    }
+
     /* primeira aba: o que está sendo feito com o aluno (onde parou e o que vem agora); o registro mais novo fica no topo */
     function painelAcompanhamento(aluno) {
       var lista = el('div'), areaForm = el('div', { class: 'barra-ocre' });
@@ -500,6 +620,7 @@
         });
       });
 
+      abaAcomp.appendChild(painelTrilhas(aluno));
       abaAcomp.appendChild(painelAcompanhamento(aluno));
 
       /* as seis abas, como na tela do aluno */
