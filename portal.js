@@ -560,7 +560,6 @@
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
       if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
-      if (/[?&](aviso|atividade|aba|e|ver|code|error)=/.test(location.search)) return; /* aviso tocado, atividade, prévia ou volta do login: o endereço já traz o destino. Qualquer outro ? ou # (o ícone foi salvo com estado na ponta do endereço) NÃO impede de voltar à última tela */
       var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
       if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; location.replace(u); }
     } catch (e) { /* sem armazenamento */ }
