@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=69">
-  <link rel="stylesheet" href="portal.css?v=19">
+  <link rel="stylesheet" href="portal.css?v=20">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -386,13 +386,13 @@
       limpar();
       app.appendChild(topo(nomeAdmin));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Foto da página Sobre' })]);
-      var foto = el('img', { alt: 'Foto atual', src: 'foto-perfil.jpg?v=3' });
+      var foto = el('img', { alt: 'Foto atual', src: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' }); /* a foto do arquivo só entra se não houver outra */
       foto.style.cssText = 'display:block;width:180px;height:180px;border-radius:50%;object-fit:cover;margin:0 auto 14px;border:1px solid #1F5FA3';
       var msg = el('p', { class: 'portal-msg' });
       var acoes = el('div', { class: 'portal-acoes', style: 'justify-content:center' });
-      var atual = null; /* endereço da foto guardada no Supabase */
+      var previaAtiva = false, atual = null; /* endereço da foto guardada no Supabase */
       C.from('site_config').select('valor').eq('chave', 'foto_sobre').maybeSingle().then(function (r) {
-        if (r.data && r.data.valor) { atual = r.data.valor; foto.src = atual; }
+        if (r.data && r.data.valor) { atual = r.data.valor; foto.src = atual; } else if (!previaAtiva) foto.src = 'foto-perfil.jpg?v=3';
       });
 
       var escolher = el('input', { type: 'file', accept: 'image/*' }); escolher.style.display = 'none';
@@ -406,7 +406,7 @@
         P.mensagem(msg, 'Preparando a foto...');
         prepararFoto(arq).then(function (blob) {
           /* mostra como vai ficar e só troca quando você confirmar */
-          var previa = URL.createObjectURL(blob); foto.src = previa;
+          var previa = URL.createObjectURL(blob); previaAtiva = true; foto.src = previa;
           acoes.textContent = '';
           var usar = el('button', { type: 'button', class: 'portal-btn', text: 'Usar esta foto' });
           var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });

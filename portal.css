@@ -69,5 +69,5 @@ body>.picker-dialog{position:absolute!important;z-index:1001!important}
 .portal-proximo{text-align:center;margin:0 0 18px;font-size:17px;color:#16233F}
 
 /* escrita livre (resposta do aluno, comentários e correção): sem caixa, só a linha embaixo; a altura acompanha o texto */
-textarea.escrita-livre{border:0!important;border-bottom:2px solid #1F5FA3!important;padding:8px 0 10px!important;margin:0 0 18px;min-height:130px;overflow:hidden;resize:none;line-height:1.75;font-size:18px;display:block}
-textarea.escrita-livre:focus{outline:none;border-bottom-width:4px!important}
+textarea.escrita-livre{border:0!important;padding:8px 0 10px!important;margin:0 0 18px;min-height:130px;overflow:hidden;resize:none;line-height:1.75;font-size:18px;display:block}
+textarea.escrita-livre:focus{outline:none}

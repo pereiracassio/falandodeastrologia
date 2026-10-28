@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=69">
-  <link rel="stylesheet" href="portal.css?v=19">
+  <link rel="stylesheet" href="portal.css?v=20">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -191,15 +191,17 @@
     }
 
     function paginaDoCliente(user, cliente) {
-      P.estado.gravar({ cliente: cliente.id });
+      var abaInicial = (P.estado.ler().cliente === cliente.id && P.estado.ler().aba) || 'servicos';
+      P.estado.gravar({ cliente: cliente.id, aba: abaInicial });
+      var abaServicos = el('div'); /* primeira aba: atendimento, avisos e os serviços */
       limpar();
       app.appendChild(topo(nomeAdmin));
       var voltar = P.botaoVoltar(function () { listaDeClientes(user); });
       var verComoCliente = el('a', { class: 'portal-btn', href: 'cliente.html?ver=' + encodeURIComponent(cliente.id), target: '_blank', rel: 'noopener', text: 'Ver como cliente' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoCliente]));
       P.voltarNoFim(app, function () { listaDeClientes(user); });
-      app.appendChild(P.cartaoAtendimento(cliente.id, true, { nome: cliente.nome, whatsapp: cliente.whatsapp })); /* próximo atendimento e Meet, sem caçar o link */
-      app.appendChild(P.avisos.cartaoEnviar('cliente', cliente.id, cliente.nome));
+      abaServicos.appendChild(P.cartaoAtendimento(cliente.id, true, { nome: cliente.nome, whatsapp: cliente.whatsapp })); /* próximo atendimento e Meet, sem caçar o link */
+      abaServicos.appendChild(P.avisos.cartaoEnviar('cliente', cliente.id, cliente.nome));
 
       /* dados do cliente: código, nome e pasta no Drive (o código só o administrador vê) */
       var msgCod = el('p', { class: 'portal-msg' });
@@ -217,7 +219,6 @@
         codigo: function () { return cliente.codigo; },
         nome: function () { return (cliente.codigo ? cliente.codigo + ' - ' : '') + cliente.nome; } });
       var formCod = el('form', { class: 'portal-cartao' }, [
-        el('h2', { text: 'Dados do cliente' }),
         el('label', { for: 'clienteCodigo', text: 'Código' }), codInput,
         el('label', { for: 'clienteNome', text: 'Nome' }), nomeInput,
         el('label', { for: 'clienteWhats', text: 'WhatsApp' }), whatsInput,
@@ -245,7 +246,6 @@
           });
         });
       });
-      app.appendChild(formCod);
 
       var msg = el('p', { class: 'portal-msg' });
       var servico = el('input', { type: 'text', id: 'entServico', required: '', autocomplete: 'off' });
@@ -295,10 +295,10 @@
           if (id && novos.length) P.avisos.entrega(id, novos).then(depois, depois); else depois();
         });
       });
-      app.appendChild(form);
+      abaServicos.appendChild(form);
 
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + cliente.nome + ' vê' })]);
-      app.appendChild(cartao);
+      abaServicos.appendChild(cartao);
       var itensPorId = {};
       P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link').eq('cliente_id', cliente.id)
         .order('data', { ascending: false, nullsFirst: false }).then(function (r) {
@@ -362,6 +362,28 @@
             });
           }
         });
+
+      /* as duas abas */
+      var ABAS_ADMIN = [{ chave: 'servicos', nome: 'Serviços', el: abaServicos }, { chave: 'dados', nome: 'Dados', el: formCod }];
+      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div', { class: 'portal-cartao' }), botoesAbas = {};
+      function mostrarAba(chave) {
+        ABAS_ADMIN.forEach(function (ab) {
+          var ativa = ab.chave === chave;
+          botoesAbas[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
+          botoesAbas[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
+        });
+        conteudoAba.textContent = '';
+        conteudoAba.appendChild(ABAS_ADMIN.filter(function (ab) { return ab.chave === chave; })[0].el);
+        P.estado.mesclar({ aba: chave });
+      }
+      ABAS_ADMIN.forEach(function (ab) {
+        var b = el('button', { type: 'button', role: 'tab', text: ab.nome });
+        b.addEventListener('click', function () { mostrarAba(ab.chave); });
+        botoesAbas[ab.chave] = b; barraAbas.appendChild(b);
+      });
+      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
+      app.appendChild(conteudoAba);
+      mostrarAba(botoesAbas[abaInicial] ? abaInicial : 'servicos');
 
       var remover = P.botaoApagar('Remover este cliente');
       remover.addEventListener('click', function () {
