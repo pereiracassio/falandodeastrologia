@@ -545,7 +545,7 @@
     try {
       localStorage.setItem('fda_ultimo_uso', String(Date.now())); /* a abertura do zero do app se reconhece por isto estar velho (ver o <head> das páginas de entrada) */
       if (window.__fdaRestaurando) return; /* a página só está de passagem, indo para a última tela: não sobrescrever */
-      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname)) return;
+      if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
       localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
     } catch (e) { /* sem armazenamento */ }
@@ -554,9 +554,11 @@
      vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
   (function restaurarUltimaTela() {
     try {
-      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando || /admin-avisos\.html$/.test(location.pathname)) return;
+      if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando || /admin-avisos\.html$/.test(location.pathname)) return;
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
+      if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
+      if (location.search || location.hash) return; /* endereço com destino próprio (aviso, atividade...): nunca desviar */
       if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return;
       var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
       if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; location.replace(u); }
