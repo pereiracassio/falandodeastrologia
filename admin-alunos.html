@@ -701,12 +701,12 @@
         });
       });
 
-      abaAcomp.appendChild(painelTrilhas(aluno));
       abaAcomp.appendChild(painelAcompanhamento(aluno));
 
       /* as seis abas, como na tela do aluno */
       var ABAS_ADMIN = [
         { chave: 'acompanhamento', nome: 'Acompanhamento', el: abaAcomp },
+        { chave: 'trilha', nome: 'Trilha', el: painelTrilhas(aluno) },
         { chave: 'atividades', nome: 'Atividades', el: el('div', { class: 'portal-cartao' }, [window.atividades.painelAdmin(aluno, atividadeAberta)]) },
         { chave: 'materiais', nome: 'Materiais', el: painelMateriais },
         { chave: 'gravacoes', nome: 'Gravações', el: painelGravacoes },
