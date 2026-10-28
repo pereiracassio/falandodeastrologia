@@ -29,8 +29,8 @@
     .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid #1F5FA3;background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
     .proj-passo input[type=checkbox]:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#A03E25;font-size:20px;font-weight:700;font-family:Arial,sans-serif}
     .proj-passo.feito .proj-titulo{text-decoration:line-through;opacity:.6}
-    .proj-titulo{font-size:16px;color:#16233F;display:block;overflow-wrap:anywhere}
-    .proj-acoes{display:flex;gap:14px;flex:none;align-items:center}
+    .proj-titulo{font-size:17px;line-height:1.4;color:#16233F;display:block;overflow-wrap:anywhere}
+    .proj-acoes{display:flex;gap:18px;align-items:center;margin-top:6px}
     .proj-mini{background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline}
     .proj-mini:disabled{opacity:.2;cursor:default}
   </style>
@@ -203,7 +203,8 @@
           C.from('projeto_passos').delete().eq('id', x.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
         });
         [sobe, desce, editar, apagar].forEach(function (b) { acoes.appendChild(b); });
-        lista.appendChild(el('div', { class: 'proj-passo' + (x.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos), acoes]));
+        textos.push(acoes);
+        lista.appendChild(el('div', { class: 'proj-passo' + (x.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]));
       });
       conteudo.appendChild(lista);
 
