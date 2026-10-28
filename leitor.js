@@ -63,7 +63,7 @@
     }
     tela.appendChild(barraTopo);
 
-    var area = el('div'); area.style.cssText = 'flex:1;background:#fff;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0';
+    var area = el('div'); area.style.cssText = 'flex:1;background:#d9c78f;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0';
     var holder = el('div'); holder.style.cssText = 'position:absolute;left:0;top:0;background:#fff';
     function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;' + (css || ''); holder.appendChild(c); return c; }
     var cvPdf = lona(), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();
@@ -81,7 +81,8 @@
     campo.addEventListener('keydown', function (e) { e.stopPropagation(); });
     var bMenos = btn('−', function () { zoomPor(1 / 1.3); }), bMais = btn('+', function () { zoomPor(1.3); });
     bMenos.style.fontSize = bMais.style.fontSize = '22px';
-    [voltarBaixo, bAnt, campo, totalTxt, bProx, bMenos, bMais].forEach(function (x) { barraBaixo.appendChild(x); });
+    var bPaginas = btn('Páginas', function () { alternarPaginas(); });
+    [voltarBaixo, bAnt, campo, totalTxt, bProx, bPaginas, bMenos, bMais].forEach(function (x) { barraBaixo.appendChild(x); });
     tela.appendChild(barraBaixo);
     pintarFerr();
 
@@ -157,6 +158,54 @@
       if (op.a === 'add') tracos = tracos.filter(function (s) { return s !== op.s; });
       else tracos = tracos.concat(op.ss);
       repintarTracos(); salvar();
+    }
+
+    /* ---- visão geral das páginas: miniaturas, toque numa e vai para ela ---- */
+    var painelPag = null;
+    function alternarPaginas() {
+      if (painelPag) { painelPag.remove(); painelPag = null; marcar(bPaginas, false); return; }
+      if (!pdf) return;
+      marcar(bPaginas, true);
+      painelPag = el('div');
+      painelPag.style.cssText = 'position:absolute;left:0;right:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#d9c78f;border-left:6px solid #B5852F;box-sizing:border-box;'
+        + 'top:' + barraTopo.offsetHeight + 'px;bottom:' + barraBaixo.offsetHeight + 'px';
+      var grade = el('div'); grade.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px 12px;padding:14px';
+      painelPag.appendChild(grade); tela.appendChild(painelPag);
+      var fila = [], rodando = false;
+      function renderizar(cel, i) {
+        fila.push([cel, i]);
+        if (!rodando) proximo();
+      }
+      function proximo() {
+        var item = fila.shift(); if (!item || !painelPag) { rodando = false; return; }
+        rodando = true;
+        var cel = item[0];
+        pdf.getPage(item[1]).then(function (p) {
+          var v0 = p.getViewport({ scale: 1 }), esc = 220 / v0.width, vp = p.getViewport({ scale: esc });
+          var c = cel.querySelector('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+          cel.firstChild.style.aspectRatio = '';
+          return p.render({ canvasContext: g, viewport: vp }).promise;
+        }).then(proximo, proximo);
+      }
+      var vigia = window.IntersectionObserver ? new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { vigia.unobserve(e.target); renderizar(e.target, Number(e.target.getAttribute('data-p'))); } });
+      }, { root: painelPag, rootMargin: '300px' }) : null;
+      var atual = null;
+      for (var i = 1; i <= pdf.numPages; i++) (function (i) {
+        var cel = el('div', { 'data-p': String(i), role: 'button' });
+        cel.style.cssText = 'cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent';
+        var moldura = el('div'); moldura.style.cssText = 'background:#fff;aspect-ratio:0.707;display:flex';
+        var c = el('canvas'); c.style.cssText = 'width:100%;height:auto;display:block';
+        moldura.appendChild(c); cel.appendChild(moldura);
+        var num = el('div', { text: String(i) }); num.style.cssText = 'margin-top:4px;font-size:13px;color:#16233F';
+        if (i === n) { num.style.cssText += ';color:' + COR + ';font-weight:700;text-decoration:underline'; atual = cel; }
+        cel.appendChild(num);
+        cel.addEventListener('click', function () { alternarPaginas(); ir(i); });
+        grade.appendChild(cel);
+        if (vigia) vigia.observe(cel); else renderizar(cel, i);
+      })(i);
+      if (atual) painelPag.scrollTop = Math.max(0, atual.offsetTop - painelPag.clientHeight / 3);
     }
 
     /* ---- páginas ---- */
