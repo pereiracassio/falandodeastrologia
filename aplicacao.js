@@ -134,7 +134,10 @@
       /* robô (campo-isca preenchido): finge que deu certo e não grava nada */
       var gravar = est.robo ? Promise.resolve() : salvar(ultimo);
       gravar.then(function () {
-        if (ultimo) { agradecimento(); return; }
+        if (ultimo) {
+          if (!est.robo && est.id) { try { fetch('https://falandodeastrologia.vercel.app/api/push?acao=aplicacao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: est.id }) }).catch(function () {}); } catch (e) { /* o aviso é só apoio */ } } /* o Cássio recebe o aviso no celular */
+          agradecimento(); return;
+        }
         passo++; mostrar();
         raiz.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }).catch(function () {

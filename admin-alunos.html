@@ -20,7 +20,7 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=67">
+  <link rel="stylesheet" href="page.css?v=68">
   <link rel="stylesheet" href="portal.css?v=18">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
@@ -38,8 +38,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=90"></script>
-  <script src="atividades.js?v=29"></script>
+  <script src="portal.js?v=103"></script>
+  <script src="atividades.js?v=32"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -86,7 +86,7 @@
       app.appendChild(topo(nomeAdmin));
       /* só o conteúdo dos alunos (botão de adicionar no topo, busca e lista); pasta, Google Drive e avisos ficam em ⚙ (admin-site.html) */
       var novoAluno = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar novo aluno' });
-      var areaForm = el('div');
+      var areaForm = el('div', { class: 'barra-ocre' });
       var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novoAluno]), areaForm]);
       app.appendChild(cartao);
 
@@ -148,12 +148,12 @@
         P.client.from('alunos').select('id,nome,email,nascimento,meet_link,whatsapp').order('nome'),
         P.client.from('aluno_codigos').select('aluno_id,codigo'),
         /* atividades que o aluno já enviou e que ainda esperam a sua correção */
-        P.client.from('atividades').select('aluno_id').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
+        P.client.from('atividades').select('id,aluno_id,titulo,enviada_em').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
         P.client.from('aluno_pagamentos').select('aluno_id,ultimo_pagamento,proximo_pagamento')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
-        var paraCorrigir = {}, totalParaCorrigir = 0;
-        ((res[2] && res[2].data) || []).forEach(function (x) { paraCorrigir[x.aluno_id] = (paraCorrigir[x.aluno_id] || 0) + 1; totalParaCorrigir++; });
+        var paraCorrigir = {}, totalParaCorrigir = 0, esperando = ((res[2] && res[2].data) || []).slice().sort(function (a, b) { return String(a.enviada_em) < String(b.enviada_em) ? -1 : 1; });
+        esperando.forEach(function (x) { paraCorrigir[x.aluno_id] = (paraCorrigir[x.aluno_id] || 0) + 1; totalParaCorrigir++; });
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
         var pagamentos = {};
         ((res[3] && res[3].data) || []).forEach(function (x) { pagamentos[x.aluno_id] = x; });
@@ -164,7 +164,18 @@
         if (!alunos.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' })); return; }
         var busca = el('input', { type: 'search', id: 'buscaAluno', placeholder: 'Buscar por código, nome ou e-mail' });
         var lista = el('div');
-        if (totalParaCorrigir) cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 12px', text: totalParaCorrigir === 1 ? '1 atividade esperando a sua correção' : totalParaCorrigir + ' atividades esperando a sua correção' }));
+        /* o aviso diz QUAIS são: uma linha por atividade ("Fulano · título"), e tocar abre a atividade dele na hora */
+        if (totalParaCorrigir) {
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 6px', text: totalParaCorrigir === 1 ? '1 atividade esperando a sua correção' : totalParaCorrigir + ' atividades esperando a sua correção' }));
+          esperando.forEach(function (x) {
+            var aluno = r.data.filter(function (a) { return a.id === x.aluno_id; })[0];
+            if (!aluno) return;
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + ' · ' + (x.titulo || 'atividade') });
+            l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, atividade: x.id }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
+            cartao.appendChild(l);
+          });
+          cartao.appendChild(el('div', { style: 'height:8px' }));
+        }
         cartao.appendChild(busca);
         cartao.appendChild(lista);
         function desenhar() {
@@ -279,7 +290,7 @@
 
       /* seção de itens (materiais ou gravações): botão "Adicionar" no topo, que abre o cadastro (fecha ao salvar); embaixo, a lista dos que já estão cadastrados */
       function secaoDeItens(o) {
-        var lista = el('div'), areaForm = el('div');
+        var lista = el('div'), areaForm = el('div', { class: 'barra-ocre' });
         var novo = el('button', { type: 'button', class: 'portal-btn', text: o.rotuloNovo });
         var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: o.titulo }), el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
 
@@ -311,10 +322,11 @@
             if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
             salvar.disabled = true;
             var campos = { bloco: item ? item.bloco : o.bloco, titulo: titulo.value.trim(), link: seguro, data: data.value || null, descricao: descricao.value.trim() || null };
-            var pedido = item ? P.client.from('itens').update(campos).eq('id', item.id) : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos));
+            var pedido = item ? P.client.from('itens').update(campos).eq('id', item.id) : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos)).select('id');
             pedido.then(function (r) {
               salvar.disabled = false;
               if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+              if (!item && r.data && r.data[0]) P.avisos.item(r.data[0].id); /* o aluno recebe o aviso no celular */
               areaForm.textContent = ''; carregar(); /* salvou: o cadastro se fecha e a lista atualiza */
             });
           });
@@ -442,6 +454,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=39" defer></script>
+  <script src="menu.js?v=41" defer></script>
 </body>
 </html>

@@ -450,7 +450,7 @@
   var sinoAdminLigado = false;
   function sinoAdmin(n) {
     var pintar = function (q) {
-      var cfg = { n: q, aoTocar: function () { location.href = 'admin-avisos.html'; } };
+      var cfg = { n: q, aoTocar: function () { try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } location.href = 'admin-avisos.html'; } }; /* o carimbo de uso novo evita que a página de destino ache que o app abriu do zero e volte para a última tela */
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
       numeroNoIcone(q);
     };
@@ -458,20 +458,24 @@
     if (sinoAdminLigado) return;
     sinoAdminLigado = true;
     pintar(0);
-    /* o número do sino = avisos não lidos + aniversariantes de hoje (até você abrir a tela de Avisos no dia) */
-    Promise.all([
+    /* o número do sino = avisos não lidos + aniversariantes de hoje (até você abrir a tela de Avisos no dia); confere de novo a cada minuto e quando o app volta para a frente */
+    var contar = function () { Promise.all([
       client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) { return r && !r.error && r.count ? r.count : 0; }, function () { return 0; }),
       aniversariosHoje().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; }),
       lembretesProducao().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; })
-    ]).then(function (v) { var t = v[0] + v[1] + v[2]; if (t) pintar(t); });
+    ]).then(function (v) { pintar(v[0] + v[1] + v[2]); }); };
+    contar();
+    setInterval(function () { if (document.visibilityState === 'visible') contar(); }, 60000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contar(); });
   }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
-    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
+    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['projetos', 'Projetos', 'https://claude.ai/artifact/4xU2NgNXroqWoXRoDgtdGR'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* a ⚙ (configurações) é SEMPRE a última aba, mesmo quando entrarem abas novas: abas novas entram na lista acima, nunca depois dela */
     itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
+      if (i[0] === 'projetos') a.target = 'aba-projetos'; /* abre numa aba separada, sempre a mesma */
       if (i[0] === 'site') { a.setAttribute('aria-label', 'Configurações'); a.title = 'Configurações'; a.appendChild(el('span', { class: 'engrenagem', text: i[1] })); } /* a engrenagem é maior que a letra, para ficar do tamanho dos botões escritos */
       if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid #1F5FA3;padding:10px 22px;color:#A03E25'; }
       return a;
@@ -542,7 +546,7 @@
     try {
       localStorage.setItem('fda_ultimo_uso', String(Date.now())); /* a abertura do zero do app se reconhece por isto estar velho (ver o <head> das páginas de entrada) */
       if (window.__fdaRestaurando) return; /* a página só está de passagem, indo para a última tela: não sobrescrever */
-      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname)) return;
+      if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
       localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
     } catch (e) { /* sem armazenamento */ }
@@ -551,9 +555,11 @@
      vai para a última tela em que você estava neste aparelho. Navegar dentro do app não conta: a página anterior acabou de gravar fda_ultimo_uso. */
   (function restaurarUltimaTela() {
     try {
-      if (!/\/(admin-[a-z]+|aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando) return;
+      if (!/\/(aluno|cliente)\.html$/.test(location.pathname) || window.__fdaRestaurando) return; /* painel do administrador NUNCA é desviado: voltar ao app fica onde estava; abrir do zero cai na Agenda (start_url) */
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
+      if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
+      if (location.search || location.hash) return; /* endereço com destino próprio (aviso, atividade...): nunca desviar */
       if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return;
       var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
       if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; location.replace(u); }
@@ -1070,6 +1076,21 @@
     if (!entregaId || !tipos || !tipos.length) return Promise.resolve();
     return chamarPush('entrega', { entrega_id: entregaId, tipos: tipos }).then(function () {}, function () {});
   }
+  /* pagamento lançado no Financeiro: o aluno ou cliente (achado pelo código ou pelo nome) recebe o aviso */
+  function avisarPagamento(entradaId) {
+    if (!entradaId) return Promise.resolve();
+    return chamarPush('pagamento', { entrada_id: entradaId }).then(function () {}, function () {});
+  }
+  /* material ou gravação novos na página do aluno: o aluno recebe o aviso */
+  function avisarItem(itemId) {
+    if (!itemId) return Promise.resolve();
+    return chamarPush('item', { item_id: itemId }).then(function () {}, function () {});
+  }
+  /* comentário em uma pergunta: quem não escreveu recebe o aviso (o servidor decide quem) */
+  function avisarComentario(perguntaId) {
+    if (!perguntaId) return Promise.resolve();
+    return chamarPush('comentario', { pergunta_id: perguntaId }).then(function () {}, function () {});
+  }
   /* o cliente tocou em baixar: o administrador recebe o aviso */
   function avisarBaixa(entregaId, tipo) {
     return chamarPush('baixou', { entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {});
@@ -1086,9 +1107,11 @@
       if (pedirConfirmacao && !confirm('Enviar para ' + (primeiro || 'ele') + ': "' + t + '"?')) return;
       mensagem(msg, 'Enviando...');
       chamarPush('manual', { para: para, id: id, texto: t }).then(function (r) {
-        if (!r.ok) { mensagem(msg, (r.dados && r.dados.erro) || 'Não foi possível enviar agora.', 'erro'); return; }
+        if (!r.ok) { mensagem(msg, ((r.dados && r.dados.erro) || 'Não foi possível enviar agora.') + (r.dados && r.dados.detalhe ? ' (' + r.dados.detalhe + ')' : ''), 'erro'); return; }
         texto.value = '';
-        mensagem(msg, r.dados.enviados ? 'Aviso enviado: ' + t : 'Aviso guardado na lista dele (o celular dele não está com os avisos ativados).', 'ok');
+        var d = r.dados || {};
+        if (d.erroGuardar) { mensagem(msg, 'Não consegui guardar o aviso na lista dele: ' + d.erroGuardar, 'erro'); return; }
+        mensagem(msg, d.enviados ? 'Aviso enviado para ' + d.enviados + ' aparelho(s): ' + t : d.falhas ? 'O celular dele recusou o aviso: ' + (d.erroEnvio || d.falhas + ' falha(s)') + '.' : 'Aviso guardado na lista dele. O celular dele ainda não está com os avisos ativados.', d.enviados ? 'ok' : 'erro');
       }, function () { mensagem(msg, 'Não foi possível enviar agora.', 'erro'); });
     }
     /* "Avisar quanto falta": na hora do toque, busca o horário do próximo compromisso na agenda e conta quanto falta; assim o aviso nunca sai com o tempo errado */
@@ -1107,7 +1130,9 @@
           .then(function (resp) { return resp.ok ? resp.json() : null; }).then(function (d) { return d && d.atendimento && d.atendimento.inicio ? d.atendimento.inicio : null; });
       });
     }
-    var quanto = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Avisar quanto falta' });
+    /* o botão é só o reloginho azul (sem quadrado): conta quanto falta e avisa */
+    var quanto = el('button', { type: 'button', title: 'Avisar quanto falta', 'aria-label': 'Avisar quanto falta', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer;min-height:0' });
+    quanto.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1034A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
     quanto.addEventListener('click', function () {
       quanto.disabled = true; mensagem(msg, 'Vendo o horário na agenda...');
       inicioDoCompromisso().then(function (inicio) {
@@ -1120,9 +1145,11 @@
     var prontos = [quanto];
     var mandar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar' });
     mandar.addEventListener('click', function () { enviar(texto.value, false); });
+    /* no lugar do título escrito, o sininho vermelho (o mesmo da Agenda) */
+    var sininho = el('span', { title: 'Enviar aviso', 'aria-label': 'Enviar aviso', style: 'display:inline-block;line-height:0' });
+    sininho.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A03E25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
     return el('div', { class: 'portal-cartao' }, [
-      el('h2', { text: 'Enviar aviso' }),
-      el('div', { class: 'portal-acoes' }, prontos),
+      el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px;margin:0 0 10px' }, [sininho].concat(prontos)),
       texto,
       el('div', { class: 'portal-acoes' }, [mandar]),
       msg
@@ -1206,6 +1233,17 @@
   }
   if (document.body) ligarEscritaLivre(); else document.addEventListener('DOMContentLoaded', ligarEscritaLivre);
 
+  /* Aparelho que já tem os avisos ativados se cadastra de novo no servidor, com o login de quem está usando agora, a cada vez que o app abre.
+     Sem isso, um aparelho cadastrado antes (com outro login, ou quando o servidor ainda era outro) mostra "ativado" mas o servidor não sabe de quem é. */
+  function renovarInscricao() {
+    if (!suportaAvisos() || Notification.permission !== 'granted') return;
+    navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+      if (sub) return chamarPush('inscrever', { subscription: sub.toJSON(), aparelho: navigator.userAgent.slice(0, 160) });
+    }).catch(function () { /* sem login ou sem rede: tenta de novo na próxima abertura */ });
+  }
+  setTimeout(renovarInscricao, 2500);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') setTimeout(renovarInscricao, 800); });
+
   window.portal = {
     escritaLivre: escritaLivre, tokenGoogle: tokenDoDrive, escolherDoDrive: escolherDoDrive,
     cartaoAtendimento: cartaoAtendimento,
@@ -1214,6 +1252,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
   };
 })();

@@ -213,6 +213,7 @@
         enviar.disabled = false;
         if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
         lista.push(r.data); texto.value = ''; P.mensagem(msg, ''); desenhar();
+        if (!comoAluno) P.avisos.comentario(perguntaId); /* o outro lado recebe o aviso no celular */
       });
     });
     desenhar();
@@ -486,7 +487,7 @@
       if (!aluno.whatsapp) corpo.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Dica: se você guardar o WhatsApp do aluno em "Dados do aluno", a conversa já abre direto com ele.' }));
     }
 
-    /* criar uma atividade: nova (o aluno vai responder) ou antiga (já feita: você cola as respostas e as correções) */
+    /* criar uma atividade: nova (o aluno vai responder) ou texto para leitura. Criar atividade ANTIGA (já feita) foi retirado em 28/10/2026; as que já existem continuam funcionando */
     function construtor() {
       corpo.textContent = '';
       var msg = el('p', { class: 'portal-msg' });
@@ -522,10 +523,9 @@
       function desenharModo() {
         modo.textContent = '';
         var b1 = botaoOpcao('Atividade nova (o aluno vai responder)', !antiga && !leitura, function () { antiga = false; leitura = false; aplicarModo(); });
-        var b2 = botaoOpcao('Atividade antiga (já feita)', antiga, function () { antiga = true; leitura = false; aplicarModo(); });
         var b3 = botaoOpcao('Texto para leitura (sem perguntas)', leitura, function () { antiga = false; leitura = true; aplicarModo(); });
-        b1.style.margin = b2.style.margin = b3.style.margin = '0'; b1.style.width = b2.style.width = b3.style.width = 'auto';
-        modo.appendChild(b1); modo.appendChild(b2); modo.appendChild(b3);
+        b1.style.margin = b3.style.margin = '0'; b1.style.width = b3.style.width = 'auto';
+        modo.appendChild(b1); modo.appendChild(b3);
       }
       function aplicarModo() {
         desenharModo();
@@ -907,21 +907,25 @@
 
         var msg = el('p', { class: 'portal-msg' });
         area.appendChild(autoMsg);
+        /* o aluno recebe o aviso toda vez que você aperta "Salvar correção" e a correção mudou desde a última vez (atividade nova ou antiga);
+           apertar sem ter mudado nada, ou só mexer em outras coisas da atividade, não avisa */
+        var assinaturaCorrecao = function () { return JSON.stringify(autoLinhas()); };
+        var assinaturaAvisada = assinaturaCorrecao();
         function salvarCorrecao() {
           var linhas = Object.keys(campos).map(function (id) {
             return { pergunta_id: id, situacao: campos[id].sit.value || null, comentario: campos[id].com.value.trim() || null };
           });
           return C.from('atividade_correcoes').upsert(linhas, { onConflict: 'pergunta_id' }).then(function (r) {
             if (r.error) throw r.error;
+            var agora = assinaturaCorrecao(), devoAvisar = agora !== assinaturaAvisada && linhas.some(function (l) { return l.situacao || l.comentario; });
+            if (devoAvisar) assinaturaAvisada = agora;
             /* atividade nova: a data da correção é a de hoje; antiga: só se você preencheu */
             var quando = dCorr.value || (a.antiga ? null : (a.corrigida_em || hojeISO()));
-            if (!quando || quando === a.corrigida_em) return;
-            var primeiraCorrecao = !a.corrigida_em && !a.antiga;
-            return C.from('atividades').update({ corrigida_em: quando }).eq('id', a.id).then(function (r2) {
+            var datas = (!quando || quando === a.corrigida_em) ? Promise.resolve() : C.from('atividades').update({ corrigida_em: quando }).eq('id', a.id).then(function (r2) {
               if (r2.error) throw r2.error;
               a.corrigida_em = quando; dCorr.value = quando;
-              if (primeiraCorrecao) P.avisos.avisar('corrigida', a.id); /* o aluno recebe "o Cássio já corrigiu" no celular, só na primeira vez */
             });
+            return datas.then(function () { if (devoAvisar) P.avisos.avisar('corrigida', a.id); });
           });
         }
         var avisoCorrecao = el('div', { style: 'margin:10px 0' });

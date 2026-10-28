@@ -302,3 +302,8 @@ html body .pagina-papiro .portal-apagar:hover{opacity:.9}
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-top:0!important;padding-top:0!important;margin:0!important}
 
 .pagina-papiro .engrenagem{font-size:2em;line-height:.5;vertical-align:-.14em;display:inline-block}
+
+/* REGRA DO SITE (28/10/2026): tudo que ABRE (sanfona, formulário ou cartão que aparece ao tocar) leva uma barra ocre só do lado esquerdo, de cima até embaixo, para a pessoa não se perder sem saber onde termina */
+.pagina-papiro .barra-ocre{margin:8px 0}
+.pagina-papiro .barra-ocre:not(:empty),.pagina-papiro .sanfona-corpo{border-left:5px solid #B5852F;padding-left:12px}
+.pagina-papiro .barra-ocre .portal-cartao,.pagina-papiro .sanfona-corpo>.portal-cartao{border-top:0!important;border-bottom:0!important;padding-top:4px!important;padding-bottom:4px!important;margin:0!important}

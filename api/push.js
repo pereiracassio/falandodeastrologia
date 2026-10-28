@@ -22,21 +22,17 @@ function decidirAviso({ evento, atividade, aluno, usuario, ehAdmin, agora = new 
   const titulo = String(atividade.titulo || '').slice(0, 120);
   if (evento === 'enviada') {
     if (email !== String(aluno.email || '').toLowerCase()) return { erro: 'Só o próprio aluno avisa que enviou.', status: 403 };
-    if (!atividade.enviada_em || atividade.antiga || atividade.somente_leitura) return { ignorar: 'não é um envio' };
-    return { para: 'admins', carga: { title: 'Atividade enviada', body: primeiroNome(aluno.nome) + ' enviou: ' + titulo, url: URL_ADMIN + '?aluno=' + aluno.id } };
+    if (!atividade.enviada_em || atividade.somente_leitura) return { ignorar: 'não é um envio' };
+    return { para: 'admins', carga: { title: 'Atividade enviada', body: primeiroNome(aluno.nome) + ' enviou: ' + titulo, url: URL_ADMIN + '#aluno=' + aluno.id + '&atividade=' + atividade.id } };
   }
   if (evento === 'nova' || evento === 'corrigida') {
     if (!ehAdmin) return { erro: 'Só quem administra avisa o aluno.', status: 403 };
-    const ontem = dia(new Date(agora.getTime() - 86400000));
     if (evento === 'nova') {
-      if (atividade.antiga && !atividade.somente_leitura) return { ignorar: 'atividade antiga' };
-      if (Date.parse(atividade.criado_em) < agora.getTime() - 86400000) return { ignorar: 'não é nova' };
-      if (atividade.data_atividade && String(atividade.data_atividade).slice(0, 10) < ontem) return { ignorar: 'material de data passada' };
+      /* quem chama é o painel, só na criação (editar não chama): sem filtro de data nem de "antiga" */
       return { para: 'aluno', carga: atividade.somente_leitura
         ? { title: 'Material novo', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei um novo material para você: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id }
         : { title: 'Atividade nova', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei uma nova atividade para você: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id } };
     }
-    if (!atividade.corrigida_em || atividade.antiga || String(atividade.corrigida_em).slice(0, 10) < ontem) return { ignorar: 'não é uma correção de agora' };
     return { para: 'aluno', carga: { title: 'Atividade corrigida', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id } };
   }
   return { erro: 'Aviso desconhecido.', status: 400 };
@@ -61,16 +57,17 @@ async function chaves() {
 async function enviar(inscricoes, carga, wp = webpush, apagar = apagarInscricao) {
   const k = await chaves();
   wp.setVapidDetails(VAPID_CONTATO, k.publica, k.privada);
-  let enviados = 0, removidos = 0, falhas = 0;
+  let enviados = 0, removidos = 0, falhas = 0, erroEnvio = null;
   for (const s of inscricoes) {
     try {
-      await wp.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(carga), { TTL: 86400 });
+      /* urgency alta: no Android, o aviso normal pode esperar o celular "acordar" (modo economia) e chegar minutos depois */
+      await wp.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(carga), { TTL: 86400, urgency: 'high' });
       enviados++;
     } catch (e) {
-      if (e && (e.statusCode === 404 || e.statusCode === 410)) { removidos++; await apagar(s.endpoint); } else falhas++;
+      if (e && (e.statusCode === 404 || e.statusCode === 410)) { removidos++; await apagar(s.endpoint); } else { falhas++; erroEnvio = String((e && e.statusCode) || '') + ' ' + String((e && (e.body || e.message)) || '').slice(0, 140); console.error('push:', erroEnvio); }
     }
   }
-  return { enviados, removidos, falhas };
+  return { enviados, removidos, falhas, erroEnvio };
 }
 const apagarInscricao = (endpoint) => supa('/rest/v1/push_inscricoes?endpoint=eq.' + encodeURIComponent(endpoint), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
 
@@ -95,13 +92,15 @@ const aparelhosDe = (email) => supa('/rest/v1/push_inscricoes?select=endpoint,p2
 
 /* guarda o aviso na lista de quem recebe e manda para o celular dele, com a quantidade de não lidos (número no ícone do app) */
 async function entregarAviso(email, carga, extras = {}) {
-  await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: carga.title, corpo: carga.body, url: carga.url, ...extras }) }).catch(() => {});
+  let erroGuardar = null;
+  await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: carga.title, corpo: carga.body, url: carga.url, ...extras }) }).catch((e) => { erroGuardar = String(e.message || e); console.error('avisos_recebidos:', erroGuardar); });
   const naoLidos = ((await supa('/rest/v1/avisos_recebidos?select=id&lido=eq.false&email=eq.' + encodeURIComponent(email)).catch(() => [])) || []).length;
   const lista = (await aparelhosDe(email)) || [];
-  if (!lista.length) return { enviados: 0, removidos: 0, falhas: 0 };
-  return enviar(lista, { ...carga, contagem: naoLidos });
+  const vazio = { enviados: 0, removidos: 0, falhas: 0, erroGuardar, aparelhos: lista.length };
+  if (!lista.length) return vazio;
+  return { ...vazio, ...(await enviar(lista, { ...carga, contagem: naoLidos })) };
 }
-const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas });
+const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas, erroEnvio: a.erroEnvio || b.erroEnvio || null, aparelhos: (a.aparelhos || 0) + (b.aparelhos || 0), erroGuardar: a.erroGuardar || b.erroGuardar || null });
 const URL_CLIENTE = '/cliente.html?aviso=1', URL_ADMIN_CLIENTES = '/admin-clientes.html';
 const urlDaEntrega = (id) => URL_CLIENTE + '&e=' + id;
 const NOME_DO_ARQUIVO = { pdf: 'o PDF', gravacao: 'a gravação' };
@@ -114,6 +113,22 @@ async function entregaECliente(id) {
 }
 
 async function tratar(req, res) {
+  /* aplicação da mentoria enviada (quem preenche não tem login): o servidor confere no banco que ela existe e está completa, e avisa o administrador uma vez só */
+  if (String((req.query && req.query.acao) || '') === 'aplicacao') {
+    const corpoA = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const aid = String(corpoA.id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(aid)) { res.status(400).json({ erro: 'Aplicação inválida.' }); return; }
+    const [ap] = (await supa('/rest/v1/aplicacoes_mentoria?id=eq.' + aid + '&select=id,nome,concluida')) || [];
+    if (!ap || ap.concluida !== true) { res.status(200).json({ ok: true, enviados: 0, motivo: 'não está completa' }); return; }
+    const urlAp = '/admin-aplicacoes.html#aplicacao=' + aid;
+    let r = { enviados: 0, removidos: 0, falhas: 0 };
+    for (const email of await emailsDoAviso('admins', null)) {
+      const ja = (await supa('/rest/v1/avisos_recebidos?select=id&email=eq.' + encodeURIComponent(email) + '&url=eq.' + encodeURIComponent(urlAp) + '&limit=1').catch(() => [])) || [];
+      if (ja.length) continue;
+      r = somar(r, await entregarAviso(email, { title: 'Nova aplicação', body: String(ap.nome || 'Alguém').trim() + ' enviou a aplicação para a mentoria', url: urlAp }));
+    }
+    res.status(200).json({ ok: true, ...r }); return;
+  }
   if (String((req.query && req.query.acao) || '') === 'chave') { res.status(200).json({ chave: (await chaves()).publica }); return; } /* a chave pública não é segredo: o aparelho precisa dela para se cadastrar */
   const jwt = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const usuario = await usuarioDoToken(jwt);
@@ -149,6 +164,67 @@ async function tratar(req, res) {
     for (const email of await emailsDoAviso(d.para, aluno)) {
       r = somar(r, await entregarAviso(email, d.carga, { atividade_id: atividade.id }));
     }
+    res.status(200).json({ ok: true, ...r }); return;
+  }
+  /* o administrador acabou de cadastrar um material ou uma gravação na página do aluno (aba Materiais / Gravações): o aluno recebe o aviso */
+  if (acao === 'item') {
+    if (!(await souAdmin(jwt))) { res.status(403).json({ erro: 'Só quem administra avisa o aluno.' }); return; }
+    const iid = String(corpo.item_id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(iid)) { res.status(400).json({ erro: 'Item inválido.' }); return; }
+    const [item] = (await supa('/rest/v1/itens?id=eq.' + iid + '&select=id,aluno_id,bloco,titulo')) || [];
+    const [aluno] = item ? ((await supa('/rest/v1/alunos?id=eq.' + item.aluno_id + '&select=id,nome,email')) || []) : [];
+    if (!aluno || !aluno.email) { res.status(404).json({ erro: 'Aluno não encontrado.' }); return; }
+    const nome = primeiroNome(aluno.nome), titulo = String(item.titulo || '').slice(0, 120);
+    const aba = ['gravacoes', 'materiais', 'caderno'].includes(item.bloco) ? item.bloco : 'materiais';
+    const carga = item.bloco === 'gravacoes'
+      ? { title: 'Gravação disponível', body: 'Oi, ' + nome + '! Já disponibilizei a gravação do nosso encontro: ' + titulo, url: URL_ALUNO + '?aba=' + aba }
+      : { title: 'Material novo', body: 'Oi, ' + nome + '! Deixei um novo material para você: ' + titulo, url: URL_ALUNO + '?aba=' + aba };
+    const r = await entregarAviso(String(aluno.email).toLowerCase(), carga);
+    res.status(200).json({ ok: true, ...r }); return;
+  }
+  /* pagamento lançado no Financeiro: quem pagou (aluno ou cliente, achado pelo código do "código - nome" ou pelo nome) recebe o aviso */
+  if (acao === 'pagamento') {
+    if (!(await souAdmin(jwt))) { res.status(403).json({ erro: 'Só quem administra avisa.' }); return; }
+    const eid = String(corpo.entrada_id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(eid)) { res.status(400).json({ erro: 'Entrada inválida.' }); return; }
+    const [ent] = (await supa('/rest/v1/fin_entradas?id=eq.' + eid + '&select=id,cliente_nome,produto')) || [];
+    const rotulo = String((ent && ent.cliente_nome) || '').trim();
+    if (!ent || !rotulo) { res.status(200).json({ ok: true, enviados: 0, motivo: 'sem cliente na entrada' }); return; }
+    const mc = /^(\d{3,6})\s*-\s*(.*)$/.exec(rotulo), cod = mc ? mc[1] : '', nomeSo = (mc ? mc[2] : rotulo).trim();
+    const cods = cod ? [cod, cod.replace(/^0+/, ''), cod.replace(/^0+/, '').padStart(4, '0')] : [];
+    const achar = async (tabelaCod, campo, tabela) => {
+      let id = null;
+      if (cods.length) { const [l] = (await supa('/rest/v1/' + tabelaCod + '?select=' + campo + '&codigo=in.(' + cods.join(',') + ')&limit=1').catch(() => [])) || []; id = l && l[campo]; }
+      if (id) { const [p] = (await supa('/rest/v1/' + tabela + '?id=eq.' + id + '&select=id,nome,email').catch(() => [])) || []; return p || null; }
+      const todos = (await supa('/rest/v1/' + tabela + '?select=id,nome,email&nome=ilike.' + encodeURIComponent(nomeSo)).catch(() => [])) || [];
+      return todos.length === 1 ? todos[0] : null; /* só avisa se achar UMA pessoa */
+    };
+    const aluno = await achar('aluno_codigos', 'aluno_id', 'alunos');
+    const pessoa = aluno || await achar('cliente_codigos', 'cliente_id', 'clientes');
+    if (!pessoa || !pessoa.email) { res.status(200).json({ ok: true, enviados: 0, motivo: 'pessoa não encontrada' }); return; }
+    const oque = String(ent.produto || '').slice(0, 120);
+    const carga = { title: 'Pagamento recebido', body: 'Oi, ' + primeiroNome(pessoa.nome) + '! Recebi o seu pagamento' + (oque ? ': ' + oque : '') + '.', url: aluno ? URL_ALUNO + '?aba=mensalidade' : URL_CLIENTE };
+    const r = await entregarAviso(String(pessoa.email).toLowerCase(), carga, aluno ? {} : { guardar_sempre: true });
+    res.status(200).json({ ok: true, ...r }); return;
+  }
+  /* comentário em uma pergunta de atividade: o aluno comentou → o administrador é avisado; o administrador respondeu → o aluno é avisado */
+  if (acao === 'comentario') {
+    const pid = String(corpo.pergunta_id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(pid)) { res.status(400).json({ erro: 'Pergunta inválida.' }); return; }
+    const [perg] = (await supa('/rest/v1/atividade_perguntas?id=eq.' + pid + '&select=atividade_id')) || [];
+    const [atividade] = perg ? ((await supa('/rest/v1/atividades?id=eq.' + perg.atividade_id + '&select=id,titulo,aluno_id')) || []) : [];
+    const [aluno] = atividade ? ((await supa('/rest/v1/alunos?id=eq.' + atividade.aluno_id + '&select=id,nome,email')) || []) : [];
+    if (!aluno) { res.status(404).json({ erro: 'Atividade não encontrada.' }); return; }
+    const titulo = String(atividade.titulo || '').slice(0, 120);
+    const doAluno = String(usuario.email).toLowerCase() === String(aluno.email || '').toLowerCase();
+    let r = { enviados: 0, removidos: 0, falhas: 0 };
+    if (doAluno) {
+      const carga = { title: 'Comentário novo', body: primeiroNome(aluno.nome) + ' comentou na atividade: ' + titulo, url: URL_ADMIN + '#aluno=' + aluno.id + '&atividade=' + atividade.id };
+      for (const email of await emailsDoAviso('admins', null)) r = somar(r, await entregarAviso(email, carga, { atividade_id: atividade.id }));
+    } else if (await souAdmin(jwt)) {
+      const carga = { title: 'Resposta', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Respondi o seu comentário na atividade: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id };
+      r = somar(r, await entregarAviso(String(aluno.email).toLowerCase(), carga, { atividade_id: atividade.id }));
+    } else { res.status(403).json({ erro: 'Sem permissão.' }); return; }
     res.status(200).json({ ok: true, ...r }); return;
   }
   /* o administrador acabou de disponibilizar PDF e/ou gravação para o cliente: o cliente recebe o aviso (e ele fica guardado sempre) */
@@ -207,3 +283,5 @@ async function handler(req, res) {
 module.exports = handler;
 module.exports.decidirAviso = decidirAviso;
 module.exports.enviar = enviar;
+module.exports.entregarAviso = entregarAviso;
+module.exports.emailsDoAviso = emailsDoAviso;
