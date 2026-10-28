@@ -55,7 +55,7 @@ module.exports = async (req, res) => {
     let nome = String(cli.name || corpo.customer_name || '').trim() || null;
 
     /* quem comprou: vem do que o carrinho guardou (o aviso do InfinitePay não traz o nome) */
-    let clienteCadastrado = null;
+    let clienteCadastrado = null, emailComprador = null;
     try {
       const achados = await supa('/rest/v1/pedidos?order_nsu=eq.' + q(corpo.order_nsu) + '&select=order_nsu,nome,email,whatsapp');
       const ped = achados && achados[0];
@@ -78,7 +78,7 @@ module.exports = async (req, res) => {
         /* o nome é o que a pessoa digitou no carrinho (pode comprar para outra pessoa, com o mesmo e-mail); o código só entra se for a mesma pessoa da ficha */
         const mesmaPessoa = String(cliente.nome || '').trim().toLowerCase() === String(ped.nome).trim().toLowerCase();
         nome = (codigo && mesmaPessoa ? codigo + ' - ' : '') + ped.nome;
-        clienteCadastrado = cliente.id;
+        clienteCadastrado = cliente.id; emailComprador = email;
       }
     } catch (e) { console.error('infinitepay cadastro:', e.message); }
     const forma = FORMAS[String(corpo.capture_method || '').toLowerCase()] || null;
@@ -107,6 +107,7 @@ module.exports = async (req, res) => {
       const quem = String(nome || '').replace(/^\d+\s*-\s*/, '').trim() || 'Alguém';
       const oque = partes.map((p) => p.desc).filter(Boolean).join(' + ') || 'um serviço';
       for (const email of await emailsDoAviso('admins', null)) await entregarAviso(email, { title: 'Compra nova', body: quem + ' comprou: ' + oque, url: '/admin-financeiro.html' });
+      if (emailComprador) await entregarAviso(emailComprador, { title: 'Pagamento recebido', body: 'Oi, ' + (quem.split(/\s+/)[0] || '') + '! Recebi o seu pagamento: ' + oque + '.', url: '/cliente.html?aviso=1' }, { guardar_sempre: true });
     } catch (e) { console.error('infinitepay aviso:', e.message); }
     await resultado('entrada lançada' + (clienteCadastrado ? ' e cliente cadastrado' : ''));
     res.status(200).json({ ok: true, entrada: true });

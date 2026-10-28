@@ -44,7 +44,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=96"></script>
+  <script src="portal.js?v=97"></script>
   <script src="menu.js?v=39" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
@@ -346,6 +346,25 @@
       var linhaAcoes = el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes);
       filhos.push(linhaAcoes);
       destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
+    }
+    /* compromisso NOVO com "0123 - Fulano" no título: a pessoa (cliente ou aluno, achada pelo código) recebe o aviso da marcação; editar não avisa */
+    function avisarMarcacao(tituloEv, corpo) {
+      var mc = /^\s*(\d{3,6})(?!\d)/.exec(tituloEv || '');
+      if (!mc || !corpo.start || !corpo.start.dateTime) return;
+      var cod = mc[1], semZ = cod.replace(/^0+/, ''), cods = [cod, semZ, semZ.padStart(4, '0')], ini = Date.parse(corpo.start.dateTime);
+      var achar = function (tabelaCod, campo, tabela, para) {
+        return P.client.from(tabelaCod).select(campo + ',codigo').in('codigo', cods).limit(1).then(function (rc) {
+          var lig = rc && rc.data && rc.data[0];
+          if (!lig) return null;
+          return P.client.from(tabela).select('id,nome').eq('id', lig[campo]).maybeSingle().then(function (rl) { return rl && rl.data ? { para: para, p: rl.data } : null; });
+        });
+      };
+      Promise.all([achar('cliente_codigos', 'cliente_id', 'clientes', 'cliente'), achar('aluno_codigos', 'aluno_id', 'alunos', 'aluno')]).then(function (r) {
+        var f = r[0] || r[1];
+        if (!f) return;
+        var primeiro = String(f.p.nome || '').trim().split(/\s+/)[0], dia = isoDia(ini), hora = hhmm(ini).replace(':00', 'h').replace(':', 'h');
+        return P.avisos.manual(f.para, f.p.id, 'Oi, ' + primeiro + '! Marquei o seu ' + (f.para === 'aluno' ? 'encontro' : 'atendimento') + ' para o dia ' + curto(dia) + ', às ' + hora + '.');
+      }).then(function () {}, function () {});
     }
     function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
     var linhaFina = '1px solid rgba(31,95,163,.35)';
@@ -781,7 +800,7 @@
         var idAlvo = todos ? e.recorrenteId : (e ? e.id : null);
         var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(idAlvo) + '?' + params.join('&'), opc('PATCH'))
           : gapi('/calendars/' + encodeURIComponent(qual.value || 'primary') + '/events?' + params.join('&'), opc('POST'));
-        cham.then(function () { destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
+        cham.then(function () { if (!e) avisarMarcacao(t, corpo); destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
       });
       var filhos = [el('h2', { text: e ? 'Editar compromisso' : pre.serie ? pre.serie.length + ' compromissos' : 'Novo compromisso' })];
       if (serie) filhos = filhos.concat(campo('Esta mudança vale para', escopoSel));

@@ -182,6 +182,31 @@ async function tratar(req, res) {
     const r = await entregarAviso(String(aluno.email).toLowerCase(), carga);
     res.status(200).json({ ok: true, ...r }); return;
   }
+  /* pagamento lançado no Financeiro: quem pagou (aluno ou cliente, achado pelo código do "código - nome" ou pelo nome) recebe o aviso */
+  if (acao === 'pagamento') {
+    if (!(await souAdmin(jwt))) { res.status(403).json({ erro: 'Só quem administra avisa.' }); return; }
+    const eid = String(corpo.entrada_id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(eid)) { res.status(400).json({ erro: 'Entrada inválida.' }); return; }
+    const [ent] = (await supa('/rest/v1/fin_entradas?id=eq.' + eid + '&select=id,cliente_nome,produto')) || [];
+    const rotulo = String((ent && ent.cliente_nome) || '').trim();
+    if (!ent || !rotulo) { res.status(200).json({ ok: true, enviados: 0, motivo: 'sem cliente na entrada' }); return; }
+    const mc = /^(\d{3,6})\s*-\s*(.*)$/.exec(rotulo), cod = mc ? mc[1] : '', nomeSo = (mc ? mc[2] : rotulo).trim();
+    const cods = cod ? [cod, cod.replace(/^0+/, ''), cod.replace(/^0+/, '').padStart(4, '0')] : [];
+    const achar = async (tabelaCod, campo, tabela) => {
+      let id = null;
+      if (cods.length) { const [l] = (await supa('/rest/v1/' + tabelaCod + '?select=' + campo + '&codigo=in.(' + cods.join(',') + ')&limit=1').catch(() => [])) || []; id = l && l[campo]; }
+      if (id) { const [p] = (await supa('/rest/v1/' + tabela + '?id=eq.' + id + '&select=id,nome,email').catch(() => [])) || []; return p || null; }
+      const todos = (await supa('/rest/v1/' + tabela + '?select=id,nome,email&nome=ilike.' + encodeURIComponent(nomeSo)).catch(() => [])) || [];
+      return todos.length === 1 ? todos[0] : null; /* só avisa se achar UMA pessoa */
+    };
+    const aluno = await achar('aluno_codigos', 'aluno_id', 'alunos');
+    const pessoa = aluno || await achar('cliente_codigos', 'cliente_id', 'clientes');
+    if (!pessoa || !pessoa.email) { res.status(200).json({ ok: true, enviados: 0, motivo: 'pessoa não encontrada' }); return; }
+    const oque = String(ent.produto || '').slice(0, 120);
+    const carga = { title: 'Pagamento recebido', body: 'Oi, ' + primeiroNome(pessoa.nome) + '! Recebi o seu pagamento' + (oque ? ': ' + oque : '') + '.', url: aluno ? URL_ALUNO + '?aba=mensalidade' : URL_CLIENTE };
+    const r = await entregarAviso(String(pessoa.email).toLowerCase(), carga, aluno ? {} : { guardar_sempre: true });
+    res.status(200).json({ ok: true, ...r }); return;
+  }
   /* comentário em uma pergunta de atividade: o aluno comentou → o administrador é avisado; o administrador respondeu → o aluno é avisado */
   if (acao === 'comentario') {
     const pid = String(corpo.pergunta_id || '');

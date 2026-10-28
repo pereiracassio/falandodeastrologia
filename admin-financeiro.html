@@ -76,7 +76,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=96"></script>
+  <script src="portal.js?v=97"></script>
   <script src="menu.js?v=39" defer></script>
   <script src="carrinho.js?v=6"></script>
   <script>
@@ -693,10 +693,11 @@
         var reg = { data: data.value, cliente_nome: nomeCli || null, cliente_id: achado ? achado.id : null, produto: produto.value.trim() || null,
           valor: v, area_id: area.value || null, forma_pagamento: forma.value || null, observacao: obs.value.trim() || null };
         salvar.disabled = true;
-        var req = e ? C.from('fin_entradas').update(reg).eq('id', e.id) : C.from('fin_entradas').insert(reg);
+        var req = e ? C.from('fin_entradas').update(reg).eq('id', e.id) : C.from('fin_entradas').insert(reg).select('id');
         req.then(function (r) {
           salvar.disabled = false;
           if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+          if (!e && r.data && r.data[0]) P.avisos.pagamento(r.data[0].id); /* quem pagou recebe o aviso (entrada nova; editar não avisa) */
           var d = reg.data.split('-'); mes = { ano: Number(d[0]), mes: Number(d[1]) - 1 };
           carregar();
         });
