@@ -558,6 +558,7 @@
       var app = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
       if (!app || /access_token|refresh_token|type=/.test(String(location.hash))) return;
       if (document.referrer && document.referrer.indexOf(location.origin) === 0) return; /* veio de um toque dentro do site: nunca é abertura do zero */
+      if (location.search || location.hash) return; /* endereço com destino próprio (aviso, atividade...): nunca desviar */
       if (Date.now() - (Number(localStorage.getItem('fda_ultimo_uso')) || 0) < 8000) return;
       var u = localStorage.getItem('fda_ultima_pagina'), aqui = location.pathname + location.search + location.hash;
       if (u && /^\/[a-z-]+\.html/.test(u) && u !== aqui) { window.__fdaRestaurando = true; location.replace(u); }
