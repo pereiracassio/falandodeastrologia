@@ -37,7 +37,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=115"></script>
   <script src="caderno.js?v=11"></script>
-  <script src="caderno-estudos.js?v=1"></script>
+  <script src="caderno-estudos.js?v=2"></script>
   <script src="menu.js?v=42" defer></script>
   <script>
   (function () {
@@ -62,8 +62,11 @@
         }
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email; nomeCurto = rn.data && rn.data.nome ? rn.data.nome : '';
-          var ent = P.estado.ler();
-          if (ent.aula) aula(ent.aula); else lista();
+          carregarEstudos().then(function () {
+            var ent = P.estado.ler();
+            if (ent.estudo) aberto = ent.estudo;
+            if (ent.aula) aula(ent.aula); else lista();
+          });
         });
       });
     }
@@ -93,26 +96,107 @@
       return b;
     }
 
+    /* ---------- estudos: cada um tem as suas aulas, a barra de progresso da semana e, se tiver data final, a barra do tempo ---------- */
+    var estudos = [], aberto = null, verEncerrado = null; /* aberto = id do estudo ativo na tela, ou 'encerrados' */
+    function corDoTempo(f) { /* azul no começo, ocre na metade, terracota no fim (a mesma dos Projetos e da Produção) */
+      var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37];
+      var de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, t = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
+      return 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')';
+    }
+    function carregarEstudos() {
+      return C.from('estudos').select('*').order('criado_em').then(function (r) {
+        if (r.error) return r.error;
+        estudos = r.data || []; return null;
+      });
+    }
+    function novoEstudo() {
+      var nome = (prompt('Nome do estudo') || '').trim();
+      if (!nome) return;
+      C.from('estudos').insert({ nome: nome, data_inicio: hojeISO() }).select('id').then(function (r) {
+        if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar (já existe um estudo com esse nome?).'); return; }
+        aberto = r.data[0].id; verEncerrado = null; lista();
+      });
+    }
+
     /* ---------- lista ---------- */
     function lista(aviso) {
       if (typeof aviso !== 'string') aviso = ''; /* o toque do ← Voltar chega aqui como evento, não como aviso */
-      limpar(); P.estado.gravar({});
-      app.appendChild(topo(nomeAdmin));
-      if (aviso) { var av = el('p', { class: 'portal-msg' }); app.appendChild(av); P.mensagem(av, aviso, 'ok'); }
-      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
-      app.appendChild(corpo);
+      carregarEstudos().then(function (erro) {
+        var ativos = estudos.filter(function (e) { return !e.encerrado; }), enc = estudos.filter(function (e) { return e.encerrado; });
+        if (aberto !== 'encerrados' && !ativos.some(function (e) { return e.id === aberto; })) aberto = ativos.length ? ativos[0].id : (enc.length ? 'encerrados' : null);
+        if (verEncerrado && !enc.some(function (e) { return e.id === verEncerrado; })) verEncerrado = null;
+        var velha = app.querySelector('.portal-abas-rola'), rolagem = velha ? velha.scrollLeft : null; /* a barra de abas fica onde estava */
+        limpar(); P.estado.gravar(aberto && aberto !== 'encerrados' ? { estudo: aberto } : {});
+        app.appendChild(topo(nomeAdmin));
+        if (aviso) { var av = el('p', { class: 'portal-msg' }); app.appendChild(av); P.mensagem(av, aviso, 'ok'); }
+        if (erro) { app.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(erro.message) })); return; }
+        /* estudo encerrado aberto para ver: sem abas, só ele, com ← Voltar em cima e embaixo */
+        if (aberto === 'encerrados' && verEncerrado) {
+          var voltar = function () { verEncerrado = null; lista(); };
+          app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
+          var dest = el('div'); app.appendChild(dest);
+          mostrarEstudo(enc.filter(function (e) { return e.id === verEncerrado; })[0], dest, true);
+          P.voltarNoFim(app, voltar);
+          return;
+        }
+        var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
+        ativos.forEach(function (e) {
+          var b = el('button', { type: 'button', role: 'tab', text: e.nome });
+          b.className = 'portal-aba' + (e.id === aberto ? ' ativa' : '');
+          b.addEventListener('click', function () { aberto = e.id; lista(); });
+          barraAbas.appendChild(b);
+        });
+        var novo = el('button', { type: 'button', role: 'tab', text: '+ Novo estudo' }); novo.className = 'portal-aba';
+        novo.addEventListener('click', novoEstudo); barraAbas.appendChild(novo);
+        if (enc.length) {
+          var abaEnc = el('button', { type: 'button', role: 'tab', text: 'Encerrados (' + enc.length + ')' });
+          abaEnc.className = 'portal-aba' + (aberto === 'encerrados' ? ' ativa' : '');
+          abaEnc.addEventListener('click', function () { aberto = 'encerrados'; lista(); });
+          barraAbas.appendChild(abaEnc);
+        }
+        var rola = el('div', { class: 'portal-abas-rola' }, [barraAbas]);
+        app.appendChild(P.comSetas(rola));
+        if (rolagem != null) rola.scrollLeft = rolagem;
+        var ativaAba = barraAbas.querySelector('.ativa');
+        if (ativaAba && (rolagem == null || ativaAba.offsetLeft < rola.scrollLeft || ativaAba.offsetLeft + ativaAba.offsetWidth > rola.scrollLeft + rola.clientWidth)) rola.scrollLeft = Math.max(0, ativaAba.offsetLeft - (rola.clientWidth - ativaAba.offsetWidth) / 2);
+        var destino = el('div'); app.appendChild(destino);
+        if (aberto === 'encerrados') {
+          var cx = el('div', { class: 'portal-cartao' });
+          enc.forEach(function (e) {
+            var l = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [el('div', {}, [el('strong', { text: e.nome }),
+              el('div', { class: 'portal-item-data', text: P.dataBR(e.data_inicio) + (e.encerrado_em ? ' a ' + P.dataBR(e.encerrado_em) : '') })])]);
+            l.style.cssText = 'padding:12px 0;border-bottom:1px solid rgba(31,95,163,.7);cursor:pointer;-webkit-tap-highlight-color:transparent';
+            var abrir = function () { verEncerrado = e.id; lista(); };
+            l.addEventListener('click', abrir);
+            l.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+            cx.appendChild(l);
+          });
+          if (cx.lastChild) cx.lastChild.style.borderBottom = '0';
+          destino.appendChild(cx);
+        } else if (!aberto) destino.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhum estudo ainda.' })]));
+        else {
+          mostrarEstudo(ativos.filter(function (e) { return e.id === aberto; })[0], destino, false);
+        }
+      });
+    }
+
+    /* o estudo aberto: nome, barra da semana, barra do tempo (se tiver data final), datas, aulas e os botões do fim */
+    function mostrarEstudo(est, corpo, encerrado) {
+      corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       Promise.all([
-        C.from('estudo_aulas').select('id,data,materia,titulo').order('data').order('criado_em'),
+        C.from('estudo_aulas').select('id,data,materia,titulo').eq('estudo_id', est.id).order('data').order('criado_em'),
         C.from('estudo_questoes').select('id,aula_id,tipo,correta'),
         C.from('estudo_respostas').select('questao_id,opcao,texto')
       ]).then(function (rs) {
         corpo.textContent = '';
         var erro = rs[0].error || rs[1].error || rs[2].error;
         if (erro) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(erro.message) })); return; }
-        var aulas = rs[0].data || [], resp = {};
+        var aulas = rs[0].data || [], resp = {}, ids = {};
+        aulas.forEach(function (a) { ids[a.id] = true; });
         (rs[2].data || []).forEach(function (x) { resp[x.questao_id] = x; });
         var prog = {};
         (rs[1].data || []).forEach(function (q) {
+          if (!ids[q.aula_id]) return;
           var p = prog[q.aula_id] = prog[q.aula_id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 };
           var r = resp[q.id]; p.total++;
           if (q.tipo === 'multipla') { p.multiplas++; if (r && r.opcao != null) { p.feitas++; if (r.opcao === q.correta) p.certas++; } }
@@ -130,25 +214,58 @@
           l.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aula(a.id); } });
           return l;
         };
-        if (!aulas.length) {
-          corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhuma aula ainda. Toque em "Importar aulas" e escolha o arquivo que o Claude mandou.' })]));
-        }
         var dia = function (a) { return String(a.data).slice(0, 10); };
-        /* barra de progresso da SEMANA (segunda a domingo; sábado e domingo mostram a semana que vem): aula concluída = todas as questões respondidas */
+        var concluida = function (x) { var p = prog[x.id]; return !!p && p.total > 0 && p.feitas === p.total; };
+
+        /* cartão do estudo: nome; barra de progresso da SEMANA (segunda a domingo; sábado e domingo mostram a semana que vem); barra do TEMPO se tiver data final */
+        var cartao = el('div', { class: 'portal-cartao' });
+        var renomear = el('button', { type: 'button', text: 'Renomear' });
+        renomear.style.cssText = 'background:none;border:0;padding:0;color:#1034A6;font:inherit;font-size:13px;font-weight:700;cursor:pointer;display:' + (encerrado ? 'none' : 'inline');
+        renomear.addEventListener('click', function () {
+          var n = (prompt('Nome do estudo', est.nome) || '').trim();
+          if (!n || n === est.nome) return;
+          C.from('estudos').update({ nome: n }).eq('id', est.id).then(function (r) { if (r.error) alert('Não foi possível salvar.'); else lista(); });
+        });
+        cartao.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: est.nome, style: 'margin:0' }), renomear]));
         var base = new Date(hoje + 'T12:00:00'), dow = base.getDay();
         base.setDate(base.getDate() + (dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow));
         var iso = function (d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
         var segunda = iso(base); base.setDate(base.getDate() + 6); var domingo = iso(base);
         var daSemana = aulas.filter(function (a) { return dia(a) >= segunda && dia(a) <= domingo; });
         if (daSemana.length) {
-          var feitas = daSemana.filter(function (a) { var p = prog[a.id]; return p && p.total > 0 && p.feitas === p.total; }).length, pct = Math.round(feitas * 100 / daSemana.length);
-          var ini = diaCurto(daSemana[0].data), fim = diaCurto(daSemana[daSemana.length - 1].data);
-          var barra = el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('div', { style: 'height:100%;width:' + pct + '%;background:#1F5FA3' })]);
-          corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Semana de ' + ini + ' a ' + fim }), barra,
-            el('p', { class: 'portal-item-data', text: feitas + ' de ' + daSemana.length + ' aulas concluídas (' + pct + '%)' })]));
+          var nFeitas = daSemana.filter(concluida).length, pct = Math.round(nFeitas * 100 / daSemana.length);
+          cartao.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:10px 0 6px' }, [el('div', { style: 'height:100%;width:' + pct + '%;background:#1F5FA3' })]));
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: 'Semana de ' + diaCurto(daSemana[0].data) + ' a ' + diaCurto(daSemana[daSemana.length - 1].data) + ' · ' + nFeitas + ' de ' + daSemana.length + ' aulas concluídas (' + pct + '%)' }));
         }
+        if (est.data_fim) {
+          var fim = new Date(est.data_fim + 'T23:59:59'), ini = new Date(est.data_inicio + 'T00:00:00'), agora = new Date();
+          var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, pt = Math.floor(fr * 100), dias = Math.ceil((fim - agora) / 86400000);
+          cartao.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:14px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + pt + '%;background:' + corDoTempo(fr) })]));
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pt + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo encerrado') + ' (até ' + P.dataBR(est.data_fim) + ')' }));
+        }
+        /* início e data final (opcional): grava sozinho a cada mudança, sem redesenhar; a tela só se atualiza quando o campo perde o foco (redesenhar no meio fechava o calendário) */
+        if (!encerrado) {
+          var campoData = function (rotulo, coluna, id, opcional) {
+            var inp = el('input', { type: 'date', id: id, style: 'width:auto' }); inp.value = est[coluna] || '';
+            var sujo = false;
+            inp.addEventListener('change', function () {
+              if (!inp.value && !opcional) return;
+              var o = {}; o[coluna] = inp.value || null;
+              C.from('estudos').update(o).eq('id', est.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { est[coluna] = inp.value || null; sujo = true; } });
+            });
+            inp.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; lista(); } }, 300); });
+            var linha = [el('label', { for: id, text: rotulo, style: 'margin:0' }), inp];
+            if (opcional && est[coluna]) { var tirar = P.botaoApagar('Tirar a data'); tirar.addEventListener('click', function () { C.from('estudos').update(o2(coluna)).eq('id', est.id).then(function () { lista(); }); }); linha.push(tirar); }
+            return el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap' }, linha);
+          };
+          var o2 = function (c) { var o = {}; o[c] = null; return o; };
+          cartao.appendChild(campoData('Início', 'data_inicio', 'estIni', false));
+          cartao.appendChild(campoData('Data final (opcional)', 'data_fim', 'estFim', true));
+        }
+        corpo.appendChild(cartao);
+
+        if (!aulas.length) corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhuma aula ainda.' })]));
         /* a lista: o que falta fazer, na ordem das datas; uma linha grossa; e, mais apagado, o que já foi feito (o mais recente primeiro) */
-        var concluida = function (x) { var p = prog[x.id]; return !!p && p.total > 0 && p.feitas === p.total; };
         var faltam = aulas.filter(function (x) { return !concluida(x); }), feitas = aulas.filter(concluida).reverse();
         if (faltam.length) {
           var cf = el('div', { class: 'portal-cartao' });
@@ -163,33 +280,36 @@
           cd.lastChild.style.borderBottom = '0';
           corpo.appendChild(cd);
         }
-        var imp = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar aulas' });
-        var arq = el('input', { type: 'file', accept: '.json,application/json' }); arq.style.display = 'none';
-        imp.addEventListener('click', function () { arq.click(); });
-        var msg = el('p', { class: 'portal-msg' });
-        arq.addEventListener('change', function () {
-          if (!arq.files || !arq.files[0]) return;
-          imp.disabled = true; P.mensagem(msg, 'Importando...');
-          arq.files[0].text().then(importar).then(function (n) { lista('Pronto! ' + n + (n === 1 ? ' aula importada.' : ' aulas importadas.')); })
-            .catch(function (e) { imp.disabled = false; P.mensagem(msg, 'Não consegui importar: ' + (e && e.message ? e.message : e), 'erro'); });
-        });
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [imp, arq]));
-        corpo.appendChild(msg);
+        var botoes = [];
+        if (!encerrado) {
+          var imp = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar aulas' });
+          var arq = el('input', { type: 'file', accept: '.json,application/json' }); arq.style.display = 'none';
+          imp.addEventListener('click', function () { arq.click(); });
+          var msg = el('p', { class: 'portal-msg' });
+          arq.addEventListener('change', function () {
+            if (!arq.files || !arq.files[0]) return;
+            imp.disabled = true; P.mensagem(msg, 'Importando...');
+            arq.files[0].text().then(importar).then(function (n) { lista('Pronto! ' + n + (n === 1 ? ' aula importada.' : ' aulas importadas.')); })
+              .catch(function (e) { imp.disabled = false; P.mensagem(msg, 'Não consegui importar: ' + (e && e.message ? e.message : e), 'erro'); });
+          });
+          corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [imp, arq]));
+          corpo.appendChild(msg);
+        }
         /* no fim das lições: gera o caderno em PDF e abre para ver */
         var cad = el('button', { type: 'button', class: 'portal-btn', text: 'Gerar meu caderno' });
         var msgCad = el('p', { class: 'portal-msg' });
         cad.addEventListener('click', function () { /* a aba do PDF precisa abrir já no toque: nada assíncrono antes */
           cad.disabled = true;
-          window.cadernoEstudos.gerar(nomeCurto, function (t, tipo) { P.mensagem(msgCad, t, tipo); }).then(function () { cad.disabled = false; });
+          window.cadernoEstudos.gerar(nomeCurto, function (t, tipo) { P.mensagem(msgCad, t, tipo); }, est).then(function () { cad.disabled = false; });
         });
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:28px' }, [cad]));
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:' + (encerrado ? '18' : '28') + 'px' }, [cad]));
         corpo.appendChild(msgCad);
-        /* resultado da semana para o Claude: copia o texto (é só colar na conversa); se o aparelho não deixar copiar, baixa como arquivo */
+        /* resultado para o Claude: copia o texto (é só colar na conversa); se o aparelho não deixar copiar, baixa como arquivo */
         var env = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Enviar resultado' });
         var msgEnv = el('p', { class: 'portal-msg' });
         env.addEventListener('click', function () {
           env.disabled = true; P.mensagem(msgEnv, 'Juntando o seu resultado...', 'ok');
-          montarResultado().then(function (txt) {
+          montarResultado(est).then(function (txt) {
             var baixar = function () {
               var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'application/json' })); a.download = 'resultado-estudos.json';
               document.body.appendChild(a); a.click(); a.remove();
@@ -201,14 +321,31 @@
         });
         corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [env]));
         corpo.appendChild(msgEnv);
+        /* encerrar (ou reabrir) o estudo */
+        var enc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: encerrado ? 'Reabrir estudo' : 'Encerrar estudo' });
+        enc.addEventListener('click', function () {
+          if (!encerrado && !confirm('Encerrar o estudo "' + est.nome + '"? Ele vai para Encerrados e dá para reabrir.')) return;
+          var o = encerrado ? { encerrado: false, encerrado_em: null } : { encerrado: true, encerrado_em: hojeISO() };
+          C.from('estudos').update(o).eq('id', est.id).then(function (r) {
+            if (r.error) { alert('Não foi possível salvar.'); return; }
+            if (encerrado) { aberto = est.id; verEncerrado = null; } else aberto = null;
+            lista();
+          });
+        });
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:28px' }, [enc]));
+        var apagar = P.botaoApagar('Apagar este estudo');
+        apagar.addEventListener('click', function () {
+          if (!confirm('Apagar o estudo "' + est.nome + '" com todas as aulas, respostas e desenhos? Não dá para desfazer.')) return;
+          C.from('estudos').delete().eq('id', est.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; verEncerrado = null; lista(); } });
+        });
+        P.apagarNoFim(corpo, apagar);
       });
     }
 
-
     /* ---------- resultado da semana: texto compacto para colar na conversa com o Claude (acertos, erros, motivos e o que já está dominado) ---------- */
-    function montarResultado() {
+    function montarResultado(est) {
       return Promise.all([
-        C.from('estudo_aulas').select('id,codigo,data,materia,titulo').order('data'),
+        C.from('estudo_aulas').select('id,codigo,data,materia,titulo').eq('estudo_id', est.id).order('data'),
         C.from('estudo_questoes').select('aula_id,ordem,tipo,enunciado,opcoes,correta,id').order('ordem'),
         C.from('estudo_respostas').select('*')
       ]).then(function (rs) {
@@ -234,7 +371,7 @@
           linhas.forEach(function (x) { if (x.tipo === 'multipla' && x.resposta) { m.respondidas++; if (x.acertou) m.acertos++; } });
           aulas.push({ data: a.data, materia: a.materia, aula: a.titulo, concluida: feitas.length === qs.length, questoes: linhas });
         });
-        return JSON.stringify({ resultado_estudos: { gerado_em: hojeISO(), por_materia: porMateria, aulas: aulas } });
+        return JSON.stringify({ resultado_estudos: { estudo: est.nome, gerado_em: hojeISO(), por_materia: porMateria, aulas: aulas } });
       });
     }
 
@@ -249,7 +386,19 @@
           if (q.tipo === 'multipla' && (!Array.isArray(q.opcoes) || q.opcoes.length < 2 || typeof q.correta !== 'number')) throw new Error('a questão ' + (k + 1) + ' da aula "' + a.titulo + '" precisa de alternativas e da certa.');
         });
       });
-      var linhas = aulas.map(function (a) { return { codigo: a.codigo, data: a.data, materia: a.materia, titulo: a.titulo, explicacao: a.explicacao || null }; });
+      /* o estudo das aulas: o do arquivo (criado se ainda não existe) ou, sem isso, o que está aberto na tela */
+      var pedido = d.estudo && d.estudo.nome ? String(d.estudo.nome).trim() : '';
+      var alvo = pedido ? (estudos.filter(function (e) { return e.nome.toLowerCase() === pedido.toLowerCase(); })[0] || null) : (estudos.filter(function (e) { return e.id === aberto; })[0] || null);
+      if (!alvo && !pedido) throw new Error('abra um estudo antes de importar.');
+      var obter = alvo ? Promise.resolve({ data: [alvo] }) : C.from('estudos').insert({ nome: pedido, data_inicio: d.estudo.inicio || hojeISO(), data_fim: d.estudo.fim || null }).select('*');
+      return obter.then(function (re) {
+        if (re.error || !re.data || !re.data[0]) throw new Error('não consegui criar o estudo "' + pedido + '".');
+        var est = re.data[0]; aberto = est.id; verEncerrado = null;
+        var linhas = aulas.map(function (a) { return { estudo_id: est.id, codigo: a.codigo, data: a.data, materia: a.materia, titulo: a.titulo, explicacao: a.explicacao || null }; });
+        return importarLinhas(linhas, aulas);
+      });
+    }
+    function importarLinhas(linhas, aulas) {
       return C.from('estudo_aulas').upsert(linhas, { onConflict: 'codigo' }).select('id,codigo').then(function (r) {
         if (r.error) throw new Error(P.traduzErro(r.error.message));
         var idDe = {}; r.data.forEach(function (x) { idDe[x.codigo] = x.id; });
@@ -270,7 +419,7 @@
 
     /* ---------- uma aula ---------- */
     function aula(id) {
-      limpar(); P.estado.gravar({ aula: id });
+      limpar(); P.estado.gravar(aberto && aberto !== 'encerrados' ? { aula: id, estudo: aberto } : { aula: id });
       app.appendChild(topo(nomeAdmin));
       app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(lista)]));
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);

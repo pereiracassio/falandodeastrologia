@@ -7,10 +7,10 @@
   var LARGURA = A4.w - 2 * M, LIMITE = A4.h - M;
 
   /* tudo do banco: aulas, questões e respostas; só as aulas com alguma resposta */
-  function dados() {
+  function dados(estudo) {
     var C = P.client;
     return Promise.all([
-      C.from('estudo_aulas').select('id,data,materia,titulo,explicacao').order('data').order('criado_em'),
+      C.from('estudo_aulas').select('id,data,materia,titulo,explicacao').eq('estudo_id', estudo.id).order('data').order('criado_em'),
       C.from('estudo_questoes').select('*').order('ordem'),
       C.from('estudo_respostas').select('*')
     ]).then(function (rs) {
@@ -135,7 +135,7 @@
   }
 
   /* gera o PDF e abre numa aba para ver (se o navegador bloquear a aba, baixa); aviso(texto, tipo) mostra o andamento */
-  function gerar(nome, aviso) {
+  function gerar(nome, aviso, estudo) {
     var aba = null; try { aba = window.open('', '_blank'); } catch (e) { /* sem aba */ }
     aviso('Montando o seu caderno...', 'ok');
     return Promise.all([
@@ -143,7 +143,7 @@
       U.carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', function () { return !!(window.jspdf && window.jspdf.jsPDF); }),
       U.carregarScript('capa.js?v=7', function () { return !!window.capaFolha; })
     ]).then(function () {
-      return Promise.all([dados(), U.capaComoImagem(nome, { titulo: 'Caderno de Estudos', subtitulo: 'Preparação para o Vestibular', nome: 'Fatec · Desenvolvimento de Software Multiplataforma' }), U.baixarFontes()]);
+      return Promise.all([dados(estudo), U.capaComoImagem(nome, { titulo: 'Caderno de Estudos', subtitulo: estudo.nome, nome: estudo.data_fim ? dataBR(estudo.data_inicio) + ' a ' + dataBR(estudo.data_fim) : 'desde ' + dataBR(estudo.data_inicio) }), U.baixarFontes()]);
     }).then(function (r) {
       var blocos = r[0];
       return Promise.all(blocos.map(function (b) {
