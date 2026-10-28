@@ -54,7 +54,7 @@
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
-    var nomeAdmin = '', projetos = [], passos = [], aberto = null;
+    var nomeAdmin = '', projetos = [], passos = [], aberto = null, verConcluido = null;
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
@@ -80,22 +80,28 @@
     function carregar() {
       Promise.all([
         C.from('projetos').select('id,nome,ordem').order('ordem').order('criado_em'),
-        C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,ordem').order('ordem').order('criado_em')
+        C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem').order('ordem').order('criado_em')
       ]).then(function (res) {
         if (res[0].error || res[1].error) { limpar(); app.appendChild(topo(nomeAdmin)); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os projetos.' })); return; }
         projetos = res[0].data; passos = res[1].data;
-        if (!projetos.some(function (p) { return p.id === aberto; })) aberto = projetos.length ? projetos[0].id : null;
         desenhar();
       });
     }
 
     function pctDe(lista) { return lista.length ? Math.floor(lista.filter(function (x) { return x.feito; }).length * 100 / lista.length) : 0; }
 
+    function concluidoO(p) { var m = passos.filter(function (x) { return x.projeto_id === p.id; }); return m.length > 0 && m.every(function (x) { return x.feito; }); }
+
+    /* projeto concluído (todos os passos feitos) sai das abas e vai para "Concluídos"; "Reabrir" desmarca o último passo feito e ele volta para as abas */
     function desenhar() {
+      var ativos = projetos.filter(function (p) { return !concluidoO(p); }), concl = projetos.filter(concluidoO);
+      if (aberto !== 'concluidos' && !ativos.some(function (p) { return p.id === aberto; })) aberto = concl.some(function (p) { return p.id === aberto; }) ? 'concluidos' : (ativos.length ? ativos[0].id : 'concluidos');
+      if (verConcluido && !concl.some(function (p) { return p.id === verConcluido; })) verConcluido = null;
       limpar();
       app.appendChild(topo(nomeAdmin));
+      if (aberto === 'concluidos' && verConcluido) { telaConcluido(concl.filter(function (p) { return p.id === verConcluido; })[0]); return; }
       var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
-      projetos.forEach(function (p) {
+      ativos.forEach(function (p) {
         var b = el('button', { type: 'button', role: 'tab', text: p.nome });
         b.className = 'portal-aba' + (p.id === aberto ? ' ativa' : '');
         b.addEventListener('click', function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); });
@@ -105,11 +111,28 @@
       novo.className = 'portal-aba';
       novo.addEventListener('click', novoProjeto);
       barraAbas.appendChild(novo);
+      var abaConcl = el('button', { type: 'button', role: 'tab', text: 'Concluídos' + (concl.length ? ' (' + concl.length + ')' : '') });
+      abaConcl.className = 'portal-aba' + (aberto === 'concluidos' ? ' ativa' : '');
+      abaConcl.addEventListener('click', function () { aberto = 'concluidos'; P.estado.gravar({ projeto: aberto }); desenhar(); });
+      barraAbas.appendChild(abaConcl);
       app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
       var conteudo = el('div', { class: 'portal-cartao' });
       app.appendChild(conteudo);
-      var proj = projetos.filter(function (p) { return p.id === aberto; })[0];
-      if (!proj) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' })); else mostrarProjeto(conteudo, proj);
+      var proj = aberto === 'concluidos' ? null : ativos.filter(function (p) { return p.id === aberto; })[0];
+      if (aberto === 'concluidos') {
+        if (!concl.length) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto concluído ainda.' }));
+        concl.forEach(function (p) {
+          var m = passos.filter(function (x) { return x.projeto_id === p.id; });
+          var ultima = m.reduce(function (a, x) { return x.feito_em && x.feito_em > a ? x.feito_em : a; }, '');
+          var abrir = function () { verConcluido = p.id; desenhar(); window.scrollTo(0, 0); };
+          var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, [
+            el('span', { class: 'portal-item-titulo', text: p.nome }),
+            el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + (ultima ? ' · concluído em ' + P.dataBR(ultima.slice(0, 10)) : '') })])])]);
+          linha.addEventListener('click', abrir);
+          linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+          conteudo.appendChild(linha);
+        });
+      } else if (!proj) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' })); else mostrarProjeto(conteudo, proj, false);
       var arquivo = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
       var importar = el('button', { type: 'button', class: 'portal-btn', text: 'Importar projetos' });
       importar.addEventListener('click', function () { arquivo.click(); });
@@ -153,6 +176,27 @@
       });
     }
 
+    function telaConcluido(proj) {
+      var voltar = function () { verConcluido = null; desenhar(); };
+      app.appendChild(el('div', { class: 'portal-topo' }, [P.botaoVoltar(voltar)]));
+      P.voltarNoFim(app, voltar);
+      var conteudo = el('div', { class: 'portal-cartao' });
+      app.appendChild(conteudo);
+      mostrarProjeto(conteudo, proj, true);
+      /* concluído por engano: desmarca o último passo feito e o projeto volta para as abas, em edição */
+      var reabrir = el('button', { type: 'button', class: 'portal-btn', text: 'Reabrir este projeto' });
+      reabrir.addEventListener('click', function () {
+        var ultimo = passos.filter(function (x) { return x.projeto_id === proj.id; }).sort(function (a, b) { return String(b.feito_em || '') < String(a.feito_em || '') ? -1 : 1; })[0];
+        if (!ultimo) return;
+        reabrir.disabled = true;
+        C.from('projeto_passos').update({ feito: false, feito_em: null }).eq('id', ultimo.id).then(function (r) {
+          if (r.error) { reabrir.disabled = false; alert('Não foi possível reabrir.'); return; }
+          aberto = proj.id; verConcluido = null; P.estado.gravar({ projeto: aberto }); carregar();
+        });
+      });
+      conteudo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:16px' }, [reabrir]));
+    }
+
     function novoProjeto() {
       var nome = (prompt('Nome do projeto') || '').trim();
       if (!nome) return;
@@ -163,10 +207,10 @@
       });
     }
 
-    function mostrarProjeto(conteudo, proj) {
+    function mostrarProjeto(conteudo, proj, leitura) {
       var meus = passos.filter(function (x) { return x.projeto_id === proj.id; });
       var pct = pctDe(meus), feitos = meus.filter(function (x) { return x.feito; }).length;
-      var renomear = el('button', { type: 'button', class: 'proj-mini', text: 'Renomear' });
+      var renomear = el('button', { type: 'button', class: 'proj-mini', text: 'Renomear', style: leitura ? 'display:none' : '' });
       renomear.addEventListener('click', function () {
         var n = (prompt('Nome do projeto', proj.nome) || '').trim();
         if (!n || n === proj.nome) return;
@@ -181,7 +225,7 @@
       var areaForm = el('div', { class: 'barra-ocre' });
       function linhaDoPasso(x, grupo, i) {
         var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito' });
-        cb.checked = !!x.feito;
+        cb.checked = !!x.feito; cb.disabled = !!leitura;
         cb.addEventListener('change', function () {
           x.feito = cb.checked; desenhar();
           C.from('projeto_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
@@ -204,7 +248,7 @@
           C.from('projeto_passos').delete().eq('id', x.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
         });
         [sobe, desce, editar, apagar].forEach(function (b) { acoes.appendChild(b); });
-        textos.push(acoes);
+        if (!leitura) textos.push(acoes);
         return el('div', { class: 'proj-passo' + (x.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]);
       }
       /* o próximo passo no topo, os outros pendentes depois, e o que já foi feito embaixo */
@@ -251,8 +295,7 @@
       }
       var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
       add.addEventListener('click', function () { if (!areaForm.firstChild) formPasso(null); });
-      conteudo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:16px' }, [add]));
-      conteudo.appendChild(areaForm);
+      if (!leitura) { conteudo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:16px' }, [add])); conteudo.appendChild(areaForm); }
     }
 
     C.auth.getSession().then(function (r) {
