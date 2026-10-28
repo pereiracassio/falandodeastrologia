@@ -801,7 +801,8 @@
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
       cartao.appendChild(fila([1, 1], [el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return titulo.value.trim(); }, 'Copiar o título')]), el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return capaTexto.value.trim(); }, 'Copiar o texto da capa')])]));
-      cartao.appendChild(fila([0.7, 1.1, 2], [campo('Número na série', numero), campo('Disponível para membros', data), campo('Link do YouTube', link)]));
+      cartao.appendChild(fila([0.7, 2], [campo('Número na série', numero), campo('Link do YouTube', link)]));
+      cartao.appendChild(P.linhaDatas([P.colunaData(data, 'Disponível para membros')]));
       /* horário de Júpiter é para o dia em que o vídeo fica PÚBLICO; vídeo só de membros (ou sem data pública) usa a data dos membros */
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
@@ -809,7 +810,7 @@
       data.addEventListener('change', atualizarJupiter);
       cartao.appendChild(jupV);
       var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
-      var blocoPublico = el('div', { style: 'max-width:240px' }, [campo('Fica público em', dataPublico)]);
+      var blocoPublico = el('div', {}, [P.linhaDatas([P.colunaData(dataPublico, 'Fica público em')])]);
       blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
       cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
       cartao.appendChild(blocoPublico);
@@ -1076,7 +1077,7 @@
         jupiterAzul(jupC, c.data, semDataJup);
         d.addEventListener('change', function () { jupiterAzul(jupC, d.value, semDataJup); });
         var editor = el('div', { class: 'prod-corte' }, [
-          el('div', { class: 'prod-corte-topo' }, [t, d]),
+          el('div', { class: 'prod-corte-topo' }, [t, P.colunaData(d, 'Data do corte')]),
           barraTempo(c.criado_em, c.data, cortePostado(c)),
           el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [botaoCopiar(function () { return t.value.trim(); }, 'Copiar o título')]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),

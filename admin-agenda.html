@@ -637,12 +637,13 @@
       var caixa = el('div');
       var opcoes = el('div');
       var rotulo = function (t) { return el('label', { text: t }); };
-      [rotulo('A cada'), cada, unidade, botoesDia, rotulo('Termina'), fim, data, vezes].forEach(function (n) { opcoes.appendChild(n); });
+      var colData = P.colunaData(data, 'Termina em');
+      [rotulo('A cada'), cada, unidade, botoesDia, rotulo('Termina'), fim, colData, vezes].forEach(function (n) { opcoes.appendChild(n); });
       var mostrar = function () {
         opcoes.style.display = freq.value ? '' : 'none';
         unidade.textContent = { DAILY: 'dia(s)', WEEKLY: 'semana(s)', MONTHLY: 'mês(es)', YEARLY: 'ano(s)' }[freq.value] || '';
         botoesDia.style.display = freq.value === 'WEEKLY' ? 'flex' : 'none';
-        data.style.display = fim.value === 'em' ? '' : 'none'; vezes.style.display = fim.value === 'vezes' ? '' : 'none';
+        colData.style.display = fim.value === 'em' ? '' : 'none'; vezes.style.display = fim.value === 'vezes' ? '' : 'none';
       };
       freq.addEventListener('change', mostrar); fim.addEventListener('change', mostrar); mostrar();
       if (!complexa) { caixa.appendChild(rotulo('Repetir')); caixa.appendChild(freq); caixa.appendChild(opcoes); }
@@ -711,9 +712,9 @@
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       var todo = caixinha('O dia todo', e ? e.diaTodo : !!pre.todo, function (m) { blocoHora.style.display = m ? 'none' : ''; blocoAte.style.display = m ? '' : 'none'; });
       var meet = caixinha('Google Meet', e ? !!e.meet : !!pre.meet);
-      campo('Dia', dia).forEach(function (n) { blocoData.appendChild(n); });
+      blocoData.appendChild(P.colunaData(dia, 'Dia'));
       campo('Início', ini).concat(campo('Fim', fim)).forEach(function (n) { blocoHora.appendChild(n); });
-      campo('Até o dia', ate).forEach(function (n) { blocoAte.appendChild(n); });
+      blocoAte.appendChild(P.colunaData(ate, 'Até o dia'));
       /* repetição, lembretes, cor, visibilidade, disponibilidade */
       var cal = e ? calendarios.filter(function (c) { return c.id === e.calId; })[0] : null;
       var repet = e ? editorRepeticao(e.recorrencia ? lerRegra(e.recorrencia) : null, isoDia(e.ini), todo.valor) : editorRepeticao(null, dia.value || isoDia(Date.now()), todo.valor);
@@ -849,7 +850,7 @@
       var campo = function (r, c) { return [el('label', { text: r }), c]; };
       return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
         [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga),
-        campo('Do dia', de), campo('Até o dia', ate), [el('label', { text: 'Nos dias' }), blocoDias], campo('Não antes de', hDe), campo('Não depois de', hAte),
+        [P.linhaDatas([P.colunaData(de, 'Do dia'), P.colunaData(ate, 'Até o dia')])], [el('label', { text: 'Nos dias' }), blocoDias], campo('Não antes de', hDe), campo('Não depois de', hAte),
         [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
     }
 
