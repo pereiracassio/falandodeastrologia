@@ -364,7 +364,7 @@
       Promise.all([
         P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
         P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em').order('ordem').order('criado_em'),
-        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga').eq('aluno_id', aluno.id).eq('antiga', false)
+        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,somente_leitura').eq('aluno_id', aluno.id)
       ]).then(function (rs) {
         raiz.textContent = '';
         if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a trilha agora.' })); return; }
@@ -377,7 +377,7 @@
         var pontos = function (x) {
           if (x.tipo === 'material') return x.lido_em ? 1 : (itemDe(x) ? 0.5 : 0);
           if (x.tipo === 'gravacao') return itemDe(x) ? 1 : 0;
-          if (x.tipo === 'atividade') { var a = ativDe(x); return !a ? 0 : (a.enviada_em ? (a.corrigida_em ? 1 : 2 / 3) : 1 / 3); }
+          if (x.tipo === 'atividade') { var a = ativDe(x); if (a && (a.antiga || a.somente_leitura)) return 1; return !a ? 0 : (a.enviada_em ? (a.corrigida_em ? 1 : 2 / 3) : 1 / 3); }
           return x.feito ? 1 : 0;
         };
         var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
@@ -403,8 +403,8 @@
           } else if (x.tipo === 'atividade') {
             if (!at) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
             else {
-              texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at.enviada_em ? 'Para responder' : at.corrigida_em ? 'Corrigida' : 'Enviada para correção' }));
-              var abrirAt = el('button', { type: 'button', class: 'portal-btn', text: at.enviada_em ? 'Ver a atividade' : 'Responder', style: 'margin-top:8px' });
+              texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: at.antiga || at.somente_leitura ? 'Já feita' : !at.enviada_em ? 'Para responder' : at.corrigida_em ? 'Corrigida' : 'Enviada para correção' }));
+              var abrirAt = el('button', { type: 'button', class: 'portal-btn', text: at.enviada_em || at.antiga || at.somente_leitura ? 'Ver a atividade' : 'Responder', style: 'margin-top:8px' });
               abrirAt.addEventListener('click', function () { at.alunoNome = aluno.nome; abaAoVoltar = 'trilha'; window.atividades.telaDaAtividadeAluno(app, at, function () { desenharPaginaDoAluno(userAtual, aluno, previa); }, previa); });
               texto.push(abrirAt);
             }
