@@ -154,6 +154,22 @@ async function tratar(req, res) {
     }
     res.status(200).json({ ok: true, ...r }); return;
   }
+  /* o administrador acabou de cadastrar um material ou uma gravação na página do aluno (aba Materiais / Gravações): o aluno recebe o aviso */
+  if (acao === 'item') {
+    if (!(await souAdmin(jwt))) { res.status(403).json({ erro: 'Só quem administra avisa o aluno.' }); return; }
+    const iid = String(corpo.item_id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(iid)) { res.status(400).json({ erro: 'Item inválido.' }); return; }
+    const [item] = (await supa('/rest/v1/itens?id=eq.' + iid + '&select=id,aluno_id,bloco,titulo')) || [];
+    const [aluno] = item ? ((await supa('/rest/v1/alunos?id=eq.' + item.aluno_id + '&select=id,nome,email')) || []) : [];
+    if (!aluno || !aluno.email) { res.status(404).json({ erro: 'Aluno não encontrado.' }); return; }
+    const nome = primeiroNome(aluno.nome), titulo = String(item.titulo || '').slice(0, 120);
+    const aba = ['gravacoes', 'materiais', 'caderno'].includes(item.bloco) ? item.bloco : 'materiais';
+    const carga = item.bloco === 'gravacoes'
+      ? { title: 'Gravação disponível', body: 'Oi, ' + nome + '! Já disponibilizei a gravação do nosso encontro: ' + titulo, url: URL_ALUNO + '?aba=' + aba }
+      : { title: 'Material novo', body: 'Oi, ' + nome + '! Deixei um novo material para você: ' + titulo, url: URL_ALUNO + '?aba=' + aba };
+    const r = await entregarAviso(String(aluno.email).toLowerCase(), carga);
+    res.status(200).json({ ok: true, ...r }); return;
+  }
   /* comentário em uma pergunta de atividade: o aluno comentou → o administrador é avisado; o administrador respondeu → o aluno é avisado */
   if (acao === 'comentario') {
     const pid = String(corpo.pergunta_id || '');

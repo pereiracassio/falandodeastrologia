@@ -50,7 +50,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=95"></script>
+  <script src="portal.js?v=96"></script>
   <script src="curso.js?v=1"></script>
   <script src="atividades.js?v=31"></script>
   <script src="caderno.js?v=11"></script>
@@ -296,7 +296,7 @@
       var voltar = function () { desenharPaginaDoAluno(user, aluno, previa); };
       app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
       var lista = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avisos' }),
-        telaAvisos(aluno, previa, function (a) { voltar(); if (a && a.atividade_id) window.atividades.destacar(a.atividade_id); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); })]);
+        telaAvisos(aluno, previa, function (a) { var m = /[?&]aba=(\w+)/.exec((a && a.url) || ''); if (m) abaAoVoltar = m[1]; voltar(); if (a && a.atividade_id) window.atividades.destacar(a.atividade_id); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); })]);
       app.appendChild(lista);
       app.appendChild(P.avisos.cartao('aluno'));
       P.voltarNoFim(app, voltar);
@@ -309,7 +309,7 @@
         caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
       }
       if (previa) return caixa;
-      P.client.from('avisos_recebidos').select('id,titulo,corpo,atividade_id,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
+      P.client.from('avisos_recebidos').select('id,titulo,corpo,url,atividade_id,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
         if (r.error || !r.data || !r.data.length) return;
         r.data.forEach(function (a) {
           var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
@@ -367,7 +367,8 @@
         barra.appendChild(b);
       });
       var deUmAviso = /[?&]atividade=([0-9a-f-]{36})/i.exec(location.search);
-      var inicial = abaAoVoltar && botoes[abaAoVoltar] ? abaAoVoltar : 'caderno'; abaAoVoltar = null; abaAtual = inicial;
+      var daUrl = (/[?&]aba=(\w+)/.exec(location.search) || [])[1];   /* ?aba=materiais vem do aviso no celular */
+      var inicial = abaAoVoltar && botoes[abaAoVoltar] ? abaAoVoltar : (daUrl && botoes[daUrl] ? daUrl : 'caderno'); abaAoVoltar = null; abaAtual = inicial;
       mostrar(inicial);
       /* veio do aviso no celular: mostra onde está a atividade e marca o aviso dela como lido */
       if (deUmAviso && !previa) {

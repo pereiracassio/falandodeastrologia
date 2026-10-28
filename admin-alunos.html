@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=95"></script>
+  <script src="portal.js?v=96"></script>
   <script src="atividades.js?v=31"></script>
   <script>
   (function () {
@@ -322,10 +322,11 @@
             if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
             salvar.disabled = true;
             var campos = { bloco: item ? item.bloco : o.bloco, titulo: titulo.value.trim(), link: seguro, data: data.value || null, descricao: descricao.value.trim() || null };
-            var pedido = item ? P.client.from('itens').update(campos).eq('id', item.id) : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos));
+            var pedido = item ? P.client.from('itens').update(campos).eq('id', item.id) : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos)).select('id');
             pedido.then(function (r) {
               salvar.disabled = false;
               if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+              if (!item && r.data && r.data[0]) P.avisos.item(r.data[0].id); /* o aluno recebe o aviso no celular */
               areaForm.textContent = ''; carregar(); /* salvou: o cadastro se fecha e a lista atualiza */
             });
           });
