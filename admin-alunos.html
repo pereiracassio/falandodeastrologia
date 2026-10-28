@@ -212,13 +212,77 @@
       return 'Atrasado: venceu em ' + P.dataBR(proximo) + ' (há ' + (-dias) + (dias === -1 ? ' dia).' : ' dias).');
     }
 
+    /* primeira aba: o que está sendo feito com o aluno (onde parou e o que vem agora); o registro mais novo fica no topo */
+    function painelAcompanhamento(aluno) {
+      var lista = el('div'), areaForm = el('div', { class: 'barra-ocre' });
+      var novo = el('button', { type: 'button', class: 'portal-btn', text: 'Novo registro' });
+      var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
+      function abrirForm(item) {
+        if (areaForm.firstChild && !item) return;
+        areaForm.textContent = '';
+        var msg = el('p', { class: 'portal-msg' });
+        var data = el('input', { type: 'date', id: 'acData' });
+        var paramos = el('textarea', { id: 'acParamos', rows: '3' });
+        var proximo = el('textarea', { id: 'acProximo', rows: '3' });
+        data.value = item ? String(item.data).slice(0, 10) : new Date().toLocaleDateString('sv-SE');
+        if (item) { paramos.value = item.paramos || ''; proximo.value = item.proximo || ''; }
+        var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Salvar' });
+        var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+        cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
+        var form = el('form', { class: 'portal-cartao' }, [
+          el('label', { for: 'acData', text: 'Data' }), data,
+          el('label', { for: 'acParamos', text: 'Paramos em' }), paramos,
+          el('label', { for: 'acProximo', text: 'Vou trabalhar' }), proximo, msg,
+          el('div', { class: 'portal-acoes' }, [salvar, cancelar])
+        ]);
+        form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          if (!paramos.value.trim() && !proximo.value.trim()) { P.mensagem(msg, 'Escreva alguma coisa.', 'erro'); return; }
+          salvar.disabled = true;
+          var campos = { data: data.value || null, paramos: paramos.value.trim() || null, proximo: proximo.value.trim() || null };
+          var pedido = item ? P.client.from('aluno_acompanhamento').update(campos).eq('id', item.id) : P.client.from('aluno_acompanhamento').insert(Object.assign({ aluno_id: aluno.id }, campos));
+          pedido.then(function (r) {
+            salvar.disabled = false;
+            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+            areaForm.textContent = ''; carregar();
+          });
+        });
+        areaForm.appendChild(form);
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      novo.addEventListener('click', function () { abrirForm(null); });
+      function carregar() {
+        lista.textContent = '';
+        P.client.from('aluno_acompanhamento').select('id,data,paramos,proximo').eq('aluno_id', aluno.id)
+          .order('data', { ascending: false }).order('criado_em', { ascending: false }).then(function (r) {
+            if (r.error) { lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
+            if (!r.data.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum registro ainda.' }));
+            r.data.forEach(function (i) {
+              var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
+              editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
+              editar.addEventListener('click', function () { abrirForm(i); });
+              var apagar = P.botaoApagar('Apagar');
+              apagar.addEventListener('click', function () {
+                if (!confirm('Apagar este registro?')) return;
+                P.client.from('aluno_acompanhamento').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
+              });
+              var textos = [el('span', { class: 'portal-item-titulo', text: P.dataBR(String(i.data).slice(0, 10)) })];
+              if (i.paramos) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap', text: 'Paramos em: ' + i.paramos }));
+              if (i.proximo) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap', text: 'Vou trabalhar: ' + i.proximo }));
+              lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, textos), el('div', { class: 'portal-acoes' }, [editar, apagar])])]));
+            });
+          });
+      }
+      carregar();
+      return cartao;
+    }
+
     function paginaDoAluno(user, aluno) {
       var h = P.estado.ler(); /* se veio de um recarregamento, "atividade" diz qual atividade estava aberta */
       var atividadeAberta = h.aluno === aluno.id ? h.atividade : '';
-      /* seções abertas: as que você deixou abertas (guardadas no endereço); na primeira vez, tudo fechado */
-      var abertas = (h.aluno === aluno.id && h.abertas != null) ? String(h.abertas).split(',').filter(function (x) { return x && x !== '-'; }) : [];
-      if (atividadeAberta && abertas.indexOf('atividades') < 0) abertas.push('atividades');
-      P.estado.gravar({ aluno: aluno.id, abertas: abertas.join(',') || '-' });
+      var abaInicial = atividadeAberta ? 'atividades' : (h.aluno === aluno.id && h.aba) || 'acompanhamento';
+      P.estado.gravar({ aluno: aluno.id, aba: abaInicial, atividade: atividadeAberta });
+      var abaAcomp = el('div'); /* primeira aba: avisos, encontro e acompanhamento */
       limpar();
       app.appendChild(topo(nomeAdmin));
       var voltar = P.botaoVoltar(function () { listaDeAlunos(user); });
@@ -229,9 +293,9 @@
       /* entrar no encontro e dia do próximo, sem procurar o link */
       var meetAdmin = P.linkSeguro(aluno.meet_link);
       var lugarEncontro = el('p', { class: 'portal-proximo', style: 'display:none' });
-      if (meetAdmin) app.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetAdmin, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
-      app.appendChild(lugarEncontro);
-      app.appendChild(P.avisos.cartaoEnviar('aluno', aluno.id, aluno.nome));
+      if (meetAdmin) abaAcomp.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: meetAdmin, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no encontro' })]));
+      abaAcomp.appendChild(lugarEncontro);
+      abaAcomp.appendChild(P.avisos.cartaoEnviar('aluno', aluno.id, aluno.nome));
       P.proximoEncontro(aluno.id).then(function (e) { /* puxado da Google Agenda */
         if (!e) return;
         if (e.motivo) { lugarEncontro.textContent = 'Próximo encontro não encontrado: ' + e.motivo + '.'; lugarEncontro.style.display = ''; return; }
@@ -285,8 +349,7 @@
           });
         });
       });
-      app.appendChild(P.sanfona(abertas, 'dados', 'Dados do aluno', [formDados]));
-      var secAtividades = P.sanfona(abertas, 'atividades', 'Atividades', [window.atividades.painelAdmin(aluno, atividadeAberta)]); /* entra na tela logo depois de "Novo material" */
+      formDados.querySelector('h2').remove();
 
       /* seção de itens (materiais ou gravações): botão "Adicionar" no topo, que abre o cadastro (fecha ao salvar); embaixo, a lista dos que já estão cadastrados */
       function secaoDeItens(o) {
@@ -373,7 +436,8 @@
             });
         }
         carregar();
-        return P.sanfona(abertas, o.chave, o.titulo, [cartao]);
+        cartao.querySelector('h2').remove();
+        return cartao;
       }
 
       /* pagamento: só o administrador vê (tabela própria, o aluno não lê) */
@@ -407,25 +471,23 @@
         if (r.data) { ultimoIn.value = r.data.ultimo_pagamento || ''; proximoIn.value = r.data.proximo_pagamento || ''; recorrenteSel.value = r.data.recorrente_ativo ? 'sim' : 'nao'; linkRecIn.value = r.data.link_recorrente || ''; }
         mostrarStatus();
       });
-      app.appendChild(P.sanfona(abertas, 'pagamento', 'Pagamento', [el('div', { class: 'portal-cartao' }, [
-        el('h2', { text: 'Pagamento' }), statusPag,
+      var painelPagamento = el('div', { class: 'portal-cartao' }, [
+        statusPag,
         el('label', { for: 'pagUltimo', text: 'Último pagamento' }), ultimoIn,
         el('label', { for: 'pagProximo', text: 'Próximo pagamento' }), proximoIn,
         el('label', { for: 'pagRecorrente', text: 'Pagamento recorrente por cartão' }), recorrenteSel,
         el('label', { for: 'pagLinkRec', text: 'Link do pagamento recorrente deste aluno' }), linkRecIn,
         msgPag, el('div', { class: 'portal-acoes' }, [salvarPag, pagouHoje])
-      ])]));
+      ]);
 
-      /* ordem na tela: Dados do aluno, Pagamento, Atividades, Materiais, Gravações dos encontros */
-      app.appendChild(secAtividades);
-      app.appendChild(secaoDeItens({ chave: 'materiais', titulo: 'Materiais', bloco: 'materiais', blocos: ['materiais', 'caderno'], rotuloNovo: 'Adicionar novo material',
-        placeholder: 'Ex.: texto de apoio da aula', vazio: 'Nenhum material adicionado ainda.' }));
-      app.appendChild(secaoDeItens({ chave: 'gravacoes', titulo: 'Gravações dos encontros', bloco: 'gravacoes', blocos: ['gravacoes'], rotuloNovo: 'Adicionar nova gravação',
-        placeholder: 'Ex.: neste encontro falamos de...', vazio: 'Nenhuma gravação adicionada ainda.' }));
+      var painelMateriais = secaoDeItens({ chave: 'materiais', titulo: 'Materiais', bloco: 'materiais', blocos: ['materiais', 'caderno'], rotuloNovo: 'Adicionar novo material',
+        placeholder: 'Ex.: texto de apoio da aula', vazio: 'Nenhum material adicionado ainda.' });
+      var painelGravacoes = secaoDeItens({ chave: 'gravacoes', titulo: 'Gravações dos encontros', bloco: 'gravacoes', blocos: ['gravacoes'], rotuloNovo: 'Adicionar nova gravação',
+        placeholder: 'Ex.: neste encontro falamos de...', vazio: 'Nenhuma gravação adicionada ainda.' });
 
       /* cada vez que o aluno baixou o caderno em PDF (só você vê isso) */
       var cartaoBaixas = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Caderno baixado pelo aluno' })]);
-      app.appendChild(cartaoBaixas);
+      painelMateriais.insertBefore(cartaoBaixas, painelMateriais.firstChild); /* o caderno baixado fica no topo de Materiais */
       P.client.from('caderno_baixas').select('criado_em').eq('aluno_id', aluno.id).order('criado_em', { ascending: false }).then(function (rb) {
         if (rb.error) { cartaoBaixas.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
         if (!rb.data.length) { cartaoBaixas.appendChild(el('p', { class: 'portal-vazio', text: 'Ainda não baixou o caderno.' })); return; }
@@ -435,6 +497,37 @@
           cartaoBaixas.appendChild(el('p', { class: 'portal-item-data', text: d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }));
         });
       });
+
+      abaAcomp.appendChild(painelAcompanhamento(aluno));
+
+      /* as seis abas, como na tela do aluno */
+      var ABAS_ADMIN = [
+        { chave: 'acompanhamento', nome: 'Acompanhamento', el: abaAcomp },
+        { chave: 'atividades', nome: 'Atividades', el: el('div', { class: 'portal-cartao' }, [window.atividades.painelAdmin(aluno, atividadeAberta)]) },
+        { chave: 'materiais', nome: 'Materiais', el: painelMateriais },
+        { chave: 'gravacoes', nome: 'Gravações', el: painelGravacoes },
+        { chave: 'dados', nome: 'Dados do aluno', el: formDados },
+        { chave: 'pagamentos', nome: 'Pagamentos', el: painelPagamento }
+      ];
+      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div'), botoesAbas = {};
+      function mostrarAba(chave) {
+        ABAS_ADMIN.forEach(function (ab) {
+          var ativa = ab.chave === chave;
+          botoesAbas[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
+          botoesAbas[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
+        });
+        conteudoAba.textContent = '';
+        conteudoAba.appendChild(ABAS_ADMIN.filter(function (ab) { return ab.chave === chave; })[0].el);
+        P.estado.mesclar({ aba: chave });
+      }
+      ABAS_ADMIN.forEach(function (ab) {
+        var b = el('button', { type: 'button', role: 'tab', text: ab.nome });
+        b.addEventListener('click', function () { mostrarAba(ab.chave); });
+        botoesAbas[ab.chave] = b; barraAbas.appendChild(b);
+      });
+      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
+      app.appendChild(conteudoAba);
+      mostrarAba(botoesAbas[abaInicial] ? abaInicial : 'acompanhamento');
 
       var remover = P.botaoApagar('Remover este aluno do portal');
       remover.addEventListener('click', function () {
