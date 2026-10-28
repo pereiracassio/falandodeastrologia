@@ -2,11 +2,16 @@
    Quem usa entrega de onde vem o PDF e onde ficam as marcações:
    Leitor.abrir({ nome, pagina, voltar, obterPdf(progresso) -> Promise<ArrayBuffer>,
                   carregarTracos(pg) -> Promise<array|null>, salvarTracos(pg, tracos) -> Promise,
-                  salvarPagina(pg, total) })                                                    */
+                  salvarPagina(pg, total), baixar (endereço do Drive: põe o botão Baixar na barra) })
+   Sem carregarTracos/salvarTracos, as marcações valem só enquanto o leitor está aberto.
+   Leitor.abrirDoServidor({ nome, id, baixar, voltar }): PDF do Drive do administrador entregue por api/pdf.js (aluno e cliente). */
 (function () {
   var P = window.portal, el = P.el;
 
   function abrir(o) {
+    var memoria = {};
+    if (!o.carregarTracos) o.carregarTracos = function (pg) { return Promise.resolve(memoria[pg] || null); };
+    if (!o.salvarTracos) o.salvarTracos = function (pg, t) { memoria[pg] = t; return Promise.resolve(); };
     var COR = '#A03E25';
     var tela = el('div');
     tela.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;height:100dvh;z-index:99990;background:#d9c78f;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none';
@@ -51,6 +56,7 @@
     }
     var barraTopo = barra(true);
     [voltarTopo, bMao, bCaneta, bMarca, bBorracha, bolas, bDesfazer].forEach(function (x) { barraTopo.appendChild(x); });
+    if (o.baixar) barraTopo.appendChild(btn('Baixar', function () { window.open(o.baixar, '_blank', 'noopener'); }));
     tela.appendChild(barraTopo);
 
     var area = el('div'); area.style.cssText = 'flex:1;background:#fff;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0';
@@ -376,5 +382,35 @@
     return { fechar: fechar };
   }
 
-  window.Leitor = { abrir: abrir };
+  var API_PDF = 'https://falandodeastrologia.vercel.app/api/pdf';
+  function baixarComProgresso(r, progresso) {
+    var total = Number(r.headers.get('Content-Length')) || 0;
+    if (!r.body || !r.body.getReader) return r.arrayBuffer();
+    var leitor = r.body.getReader(), partes = [], lido = 0;
+    return (function passo() {
+      return leitor.read().then(function (x) {
+        if (x.done) { var tudo = new Uint8Array(lido), o = 0; partes.forEach(function (p) { tudo.set(p, o); o += p.length; }); return tudo.buffer; }
+        partes.push(x.value); lido += x.value.length;
+        progresso(total ? Math.round(lido / total * 100) + '%' : Math.round(lido / 1048576) + ' MB');
+        return passo();
+      });
+    })();
+  }
+  function abrirDoServidor(o) {
+    return abrir({
+      nome: o.nome, voltar: o.voltar, baixar: o.baixar,
+      obterPdf: function (progresso) {
+        return P.client.auth.getSession().then(function (r) {
+          var sessao = r.data && r.data.session;
+          if (!sessao) throw new Error('sem login');
+          return fetch(API_PDF + '?id=' + encodeURIComponent(o.id), { headers: { Authorization: 'Bearer ' + sessao.access_token } });
+        }).then(function (r) {
+          if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'servidor');
+          return baixarComProgresso(r, progresso);
+        });
+      }
+    });
+  }
+
+  window.Leitor = { abrir: abrir, abrirDoServidor: abrirDoServidor };
 })();

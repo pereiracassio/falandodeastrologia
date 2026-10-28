@@ -53,6 +53,8 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=103"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="leitor.js?v=3"></script>
   <script src="curso.js?v=1"></script>
   <script src="atividades.js?v=32"></script>
   <script src="caderno.js?v=11"></script>
@@ -164,6 +166,18 @@
 
     /* um item da lista: gravações têm player embutido do Drive (com botão de abrir no Drive de reserva); o resto abre no Drive. (Antes era sempre em outra aba: o player embutido do Drive não
        funcionava em arquivo restrito no Safari, que bloqueia o login do Google dentro da página — se isso voltar a acontecer, é por isso.) */
+    var pdfsDoAluno = {};   /* id do arquivo do Drive -> true, quando o servidor confirmou que é PDF dele */
+    function descobrirPdfs(lista) {
+      var ids = [];
+      lista.forEach(function (it) { var id = it.bloco === 'gravacoes' ? null : P.idArquivoDrive(P.linkSeguro(it.link)); if (id && ids.indexOf(id) < 0) ids.push(id); });
+      if (!ids.length) return;
+      P.client.auth.getSession().then(function (r) {
+        var sessao = r.data && r.data.session; if (!sessao) return;
+        return fetch('https://falandodeastrologia.vercel.app/api/pdf?acao=tipos&ids=' + encodeURIComponent(ids.join(',')), { headers: { Authorization: 'Bearer ' + sessao.access_token } })
+          .then(function (x) { return x.ok ? x.json() : null; })
+          .then(function (d) { ((d && d.pdfs) || []).forEach(function (id) { pdfsDoAluno[id] = true; }); });
+      }).catch(function () { /* sem a resposta, os links abrem no Drive como sempre */ });
+    }
     function itemDaLista(item, bloco) {
       var seguro = P.linkSeguro(item.link);
       /* anota que o aluno abriu (só o administrador vê); se falhar, o link abre do mesmo jeito */
@@ -179,10 +193,19 @@
       if (bloco === 'materiais' && seguro) {
         try { var h = new URL(seguro).hostname.replace(/^www\./, ''); if (!/(^|\.)google\.com$/.test(h)) siteFora = h; } catch (e) { /* link inválido: abre normal */ }
       }
+      /* arquivo do Drive que o servidor confirmou ser PDF (pdfsDoAluno): abre no leitor do site, e o Baixar do leitor leva ao Drive */
+      var idDrive = bloco === 'gravacoes' ? null : P.idArquivoDrive(seguro);
+      function abrirPdfNoLeitor(ev) {
+        if (!idDrive || !pdfsDoAluno[idDrive] || !window.Leitor || !window.pdfjsLib) return false;
+        if (ev) ev.preventDefault();
+        anotarAbertura();
+        Leitor.abrirDoServidor({ nome: item.titulo, id: idDrive, baixar: seguro, voltar: function () {} });
+        return true;
+      }
       if (seguro && !player) {
         var texto = bloco === 'caderno' ? 'Abrir caderno' : bloco === 'gravacoes' ? 'Assistir' : siteFora ? 'Ir para a página' : 'Abrir';
         var abrir = el('a', { class: 'portal-btn', href: seguro, target: '_blank', rel: 'noopener', text: texto });
-        abrir.addEventListener('click', anotarAbertura);
+        abrir.addEventListener('click', function (ev) { if (!abrirPdfNoLeitor(ev)) anotarAbertura(); });
         linha.appendChild(abrir);
       }
       var caixa = el('div', { class: 'portal-item' }, [linha]);
@@ -190,7 +213,7 @@
       if (seguro && !player) {
         caixa.className += ' portal-item-clicavel';
         caixa.setAttribute('role', 'link'); caixa.setAttribute('tabindex', '0');
-        var abrirLinha = function () { anotarAbertura(); window.open(seguro, '_blank', 'noopener'); };
+        var abrirLinha = function () { if (abrirPdfNoLeitor()) return; anotarAbertura(); window.open(seguro, '_blank', 'noopener'); };
         caixa.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('a')) return; abrirLinha(); });
         caixa.addEventListener('keydown', function (ev) { if (ev.target === caixa && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirLinha(); } });
       }
@@ -467,6 +490,7 @@
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (ri) {
             if (ri.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus materiais agora.' })); return; }
             var lista = ri.data || [];
+            descobrirPdfs(lista);
             // atividades (perguntas pra responder): ficam dentro da aba "Atividades", antes dos documentos do Drive
             var avisar = function () {};
             var atividadesEl = window.atividades.cartaoDoAluno(aluno, function (a) {
