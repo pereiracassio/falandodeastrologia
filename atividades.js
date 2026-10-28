@@ -486,7 +486,7 @@
       if (!aluno.whatsapp) corpo.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:10px', text: 'Dica: se você guardar o WhatsApp do aluno em "Dados do aluno", a conversa já abre direto com ele.' }));
     }
 
-    /* criar uma atividade: nova (o aluno vai responder) ou antiga (já feita: você cola as respostas e as correções) */
+    /* criar uma atividade: nova (o aluno vai responder) ou texto para leitura. Criar atividade ANTIGA (já feita) foi retirado em 28/10/2026; as que já existem continuam funcionando */
     function construtor() {
       corpo.textContent = '';
       var msg = el('p', { class: 'portal-msg' });
@@ -522,10 +522,9 @@
       function desenharModo() {
         modo.textContent = '';
         var b1 = botaoOpcao('Atividade nova (o aluno vai responder)', !antiga && !leitura, function () { antiga = false; leitura = false; aplicarModo(); });
-        var b2 = botaoOpcao('Atividade antiga (já feita)', antiga, function () { antiga = true; leitura = false; aplicarModo(); });
         var b3 = botaoOpcao('Texto para leitura (sem perguntas)', leitura, function () { antiga = false; leitura = true; aplicarModo(); });
-        b1.style.margin = b2.style.margin = b3.style.margin = '0'; b1.style.width = b2.style.width = b3.style.width = 'auto';
-        modo.appendChild(b1); modo.appendChild(b2); modo.appendChild(b3);
+        b1.style.margin = b3.style.margin = '0'; b1.style.width = b3.style.width = 'auto';
+        modo.appendChild(b1); modo.appendChild(b3);
       }
       function aplicarModo() {
         desenharModo();
