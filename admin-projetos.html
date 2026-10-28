@@ -107,6 +107,8 @@
       if (n !== null && (isNaN(n) || n < 0 || n > 99)) { desenhar(); return; }
       if (n === (p.prioridade == null ? null : p.prioridade)) return;
       var mudancas = [{ id: p.id, prioridade: n }];
+      /* tirou o número: os que vinham depois sobem um lugar, para não ficar buraco (apagou o 4: o 5 vira 4, o 6 vira 5...) */
+      if (n === null && p.prioridade != null) ativos.filter(function (x) { return x.id !== p.id && x.prioridade != null && x.prioridade > p.prioridade; }).forEach(function (x) { mudancas.push({ id: x.id, prioridade: x.prioridade - 1 }); });
       if (n !== null) {
         var precisa = n;
         ativos.filter(function (x) { return x.id !== p.id && x.prioridade != null && x.prioridade >= n; }).sort(function (a, b) { return a.prioridade - b.prioridade; }).some(function (o) {
