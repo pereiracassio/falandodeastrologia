@@ -221,7 +221,7 @@
       var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
       function carregar() {
         Promise.all([
-          P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
+          P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
           P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em').order('ordem').order('criado_em'),
           P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em')
         ]).then(function (rs) {
@@ -233,6 +233,15 @@
           /* atividades do aluno e o que cada uma já andou (disponível, enviada, corrigida) */
           P.client.from('atividades').select('id,titulo,enviada_em,corrigida_em,antiga,somente_leitura,data_atividade').eq('aluno_id', aluno.id).order('criado_em').then(function (ra) {
             ativsAluno = (ra && ra.data) || [];
+            /* a data de conclusão se marca sozinha quando todos os passos ficam prontos (a última data conhecida, ou hoje) e sai se a trilha for reaberta; dá para ajustar à mão */
+            trilhas.forEach(function (t) {
+              var m = meus(t), pronta = m.length > 0 && m.every(function (x) { return pontos(x) >= 1; });
+              if (pronta && !t.concluida_em) {
+                var ult = m.reduce(function (a, x) { var at = ativDoPasso(x), d = x.feito_em || x.lido_em || (at && at.corrigida_em ? String(at.corrigida_em) : ''); return d && d > a ? d : a; }, '');
+                t.concluida_em = ult ? ult.slice(0, 10) : new Date().toLocaleDateString('sv-SE');
+                P.client.from('aluno_trilhas').update({ concluida_em: t.concluida_em }).eq('id', t.id).then(function () {});
+              } else if (!pronta && t.concluida_em) { t.concluida_em = null; P.client.from('aluno_trilhas').update({ concluida_em: null }).eq('id', t.id).then(function () {}); }
+            });
             desenhar();
           });
         });
@@ -253,6 +262,18 @@
       var ativDoPasso = function (x) { return x.atividade_id ? ativsAluno.filter(function (a) { return a.id === x.atividade_id; })[0] : null; };
       var tituloDoItem = function (id) { var i = itensAluno.filter(function (y) { return y.id === id; })[0]; return i ? i.titulo : ''; };
       var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
+      var inicioDe = function (t) { return t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE'); };
+      /* campo de data da trilha: grava sozinho, e só redesenha quando perde o foco (para não fechar o calendário) */
+      function campoDataTrilha(rotuloTxt, t, coluna, comPadrao) {
+        var inp = el('input', { type: 'date', style: 'width:auto' }); inp.value = coluna === 'data_inicio' ? inicioDe(t) : (t[coluna] || '');
+        var sujo = false;
+        inp.addEventListener('change', function () {
+          var campos = {}; campos[coluna] = inp.value || null;
+          P.client.from('aluno_trilhas').update(campos).eq('id', t.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { t[coluna] = inp.value || null; sujo = true; } });
+        });
+        inp.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; carregar(); } }, 300); });
+        return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap' }, [el('label', { text: rotuloTxt, style: 'margin:0' }), inp]);
+      }
       function novaTrilha() {
         var nome = (prompt('Assunto da trilha (ex.: Liberação zodiacal)') || '').trim(); if (!nome) return;
         var ordem = trilhas.reduce(function (m, t) { return Math.max(m, t.ordem || 0); }, 0) + 1;
@@ -318,16 +339,13 @@
         c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (m.length ? ' · ' + feitos.length + ' de ' + m.length + ' passos' : '') }));
         /* prazo opcional: com data final aparece a barra do tempo (muda de cor); sem data, só a barra azul de cima */
         if (t.data_fim) {
-          var fim = new Date(t.data_fim + 'T23:59:59'), ini = new Date(t.criado_em), agora = new Date();
+          var fim = new Date(t.data_fim + 'T23:59:59'), ini = new Date(inicioDe(t) + 'T00:00:00'), agora = new Date();
           var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
           c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
           c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') + ' (até ' + P.dataBR(t.data_fim) + ')' }));
         }
-        var dataFim = el('input', { type: 'date', style: 'width:auto' }); dataFim.value = t.data_fim || '';
-        var sujo = false;
-        dataFim.addEventListener('change', function () { P.client.from('aluno_trilhas').update({ data_fim: dataFim.value || null }).eq('id', t.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { t.data_fim = dataFim.value || null; sujo = true; } }); });
-        dataFim.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; carregar(); } }, 300); });
-        c.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap' }, [el('label', { text: 'Data final (opcional)', style: 'margin:0' }), dataFim]));
+        c.appendChild(campoDataTrilha('Início', t, 'data_inicio', true));
+        c.appendChild(campoDataTrilha('Data final prevista (opcional)', t, 'data_fim'));
         if (pend.length) { c.appendChild(rotulo('Próximo passo')); listaDePassos(c, pend.slice(0, 1), false, true); }
         if (pend.length > 1) {
           c.appendChild(rotulo('Depois'));
@@ -362,10 +380,10 @@
         if (concl.length) {
           raiz.appendChild(rotulo('Trilhas concluídas'));
           concl.forEach(function (t) {
-            var m = meus(t), ultima = m.reduce(function (a, x) { var at = ativDoPasso(x), d = x.feito_em || x.lido_em || (at && at.corrigida_em ? String(at.corrigida_em) : ''); return d && d > a ? d : a; }, '');
+            var m = meus(t), ultima = t.concluida_em || '';
             var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, [
               el('span', { class: 'portal-item-titulo', text: t.nome }),
-              el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + (ultima ? ' · concluída em ' + P.dataBR(ultima.slice(0, 10)) : '') })])])]);
+              el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + ' · iniciada em ' + P.dataBR(inicioDe(t)) + (ultima ? ' · concluída em ' + P.dataBR(String(ultima).slice(0, 10)) : '') + (t.data_fim ? ' · prevista para ' + P.dataBR(t.data_fim) : '') })])])]);
             var abrir = function () { abertaConcl = abertaConcl === t.id ? null : t.id; desenhar(); };
             linha.addEventListener('click', abrir);
             linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
@@ -373,6 +391,10 @@
             if (abertaConcl === t.id) {
               var area = el('div', { class: 'barra-ocre' });
               var dentro = el('div', { class: 'portal-cartao' });
+              dentro.appendChild(campoDataTrilha('Início', t, 'data_inicio'));
+              dentro.appendChild(campoDataTrilha('Data final prevista', t, 'data_fim'));
+              dentro.appendChild(campoDataTrilha('Concluída em', t, 'concluida_em'));
+              dentro.appendChild(el('div', { style: 'height:10px' }));
               listaDePassos(dentro, m, true, false);
               var reabrir = el('button', { type: 'button', class: 'portal-btn', text: 'Reabrir esta trilha' });
               reabrir.addEventListener('click', function () {
