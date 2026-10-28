@@ -985,6 +985,15 @@
     var b = el('button', { type: 'button', class: 'portal-apagar', text: texto });
     return b;
   }
+  /* Datas (início, data final...): UMA linha só (quebra no celular se não couber); cada caixa de data leva o nome PEQUENININHO embaixo
+     (e, se tiver, o "Tirar a data" ao lado do nome), igual ao "Tirar a data". Nunca o nome ao lado da caixa. */
+  function colunaData(input, legenda, extra) {
+    var pe = [el('span', { class: 'data-legenda-nome', text: legenda })];
+    if (extra) pe.push(extra);
+    input.setAttribute('aria-label', legenda);
+    return el('div', { class: 'data-coluna' }, [input, el('div', { class: 'data-legenda' }, pe)]);
+  }
+  function linhaDatas(colunas) { return el('div', { class: 'data-linha' }, colunas); }
   function apagarNoFim(app, botao) { /* no fim da tela, centralizado e bem afastado */
     app.appendChild(el('div', { style: 'margin:56px 0 8px;text-align:center' }, [botao]));
   }
@@ -1246,6 +1255,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim
   };
 })();

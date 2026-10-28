@@ -17,8 +17,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=69">
-  <link rel="stylesheet" href="portal.css?v=21">
+  <link rel="stylesheet" href="page.css?v=70">
+  <link rel="stylesheet" href="portal.css?v=22">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=115"></script>
+  <script src="portal.js?v=116"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=2"></script>
   <script src="menu.js?v=42" defer></script>
@@ -254,13 +254,12 @@
               C.from('estudos').update(o).eq('id', est.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { est[coluna] = inp.value || null; sujo = true; } });
             });
             inp.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; lista(); } }, 300); });
-            var linha = [el('label', { for: id, text: rotulo, style: 'margin:0' }), inp];
-            if (opcional && est[coluna]) { var tirar = P.botaoApagar('Tirar a data'); tirar.addEventListener('click', function () { C.from('estudos').update(o2(coluna)).eq('id', est.id).then(function () { lista(); }); }); linha.push(tirar); }
-            return el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap' }, linha);
+            var tirar = null;
+            if (opcional && est[coluna]) { tirar = P.botaoApagar('Tirar a data'); tirar.addEventListener('click', function () { C.from('estudos').update(o2(coluna)).eq('id', est.id).then(function () { lista(); }); }); }
+            return P.colunaData(inp, rotulo, tirar);
           };
           var o2 = function (c) { var o = {}; o[c] = null; return o; };
-          cartao.appendChild(campoData('Início', 'data_inicio', 'estIni', false));
-          cartao.appendChild(campoData('Data final (opcional)', 'data_fim', 'estFim', true));
+          cartao.appendChild(P.linhaDatas([campoData('Início', 'data_inicio', 'estIni', false), campoData('Data final (opcional)', 'data_fim', 'estFim', true)]));
         }
         corpo.appendChild(cartao);
 

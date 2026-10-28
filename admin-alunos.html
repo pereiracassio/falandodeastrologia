@@ -20,8 +20,8 @@
 
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=69">
-  <link rel="stylesheet" href="portal.css?v=21">
+  <link rel="stylesheet" href="page.css?v=70">
+  <link rel="stylesheet" href="portal.css?v=22">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
 </head>
@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=115"></script>
+  <script src="portal.js?v=116"></script>
   <script src="atividades.js?v=32"></script>
   <script>
   (function () {
@@ -274,7 +274,7 @@
           P.client.from('aluno_trilhas').update(campos).eq('id', t.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { t[coluna] = inp.value || null; sujo = true; } });
         });
         inp.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; carregar(); } }, 300); });
-        return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap' }, [el('label', { text: rotuloTxt, style: 'margin:0' }), inp]);
+        return P.colunaData(inp, rotuloTxt);
       }
       function novaTrilha() {
         var nome = (prompt('Assunto da trilha (ex.: Liberação zodiacal)') || '').trim(); if (!nome) return;
@@ -346,8 +346,7 @@
           c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
           c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') + ' (até ' + P.dataBR(t.data_fim) + ')' }));
         }
-        c.appendChild(campoDataTrilha('Início', t, 'data_inicio', true));
-        c.appendChild(campoDataTrilha('Data final prevista (opcional)', t, 'data_fim'));
+        c.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio', true), campoDataTrilha('Data final prevista (opcional)', t, 'data_fim')]));
         if (pend.length) { c.appendChild(rotulo('Próximo passo')); listaDePassos(c, pend.slice(0, 1), false, true); }
         if (pend.length > 1) {
           c.appendChild(rotulo('Depois'));
@@ -393,9 +392,7 @@
             if (abertaConcl === t.id) {
               var area = el('div', { class: 'barra-ocre' });
               var dentro = el('div', { class: 'portal-cartao' });
-              dentro.appendChild(campoDataTrilha('Início', t, 'data_inicio'));
-              dentro.appendChild(campoDataTrilha('Data final prevista', t, 'data_fim'));
-              dentro.appendChild(campoDataTrilha('Concluída em', t, 'concluida_em'));
+              dentro.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio'), campoDataTrilha('Data final prevista', t, 'data_fim'), campoDataTrilha('Concluída em', t, 'concluida_em')]));
               dentro.appendChild(el('div', { style: 'height:10px' }));
               listaDePassos(dentro, m, true, false);
               var reabrir = el('button', { type: 'button', class: 'portal-btn', text: 'Reabrir esta trilha' });

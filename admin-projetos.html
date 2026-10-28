@@ -17,8 +17,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=69">
-  <link rel="stylesheet" href="portal.css?v=21">
+  <link rel="stylesheet" href="page.css?v=70">
+  <link rel="stylesheet" href="portal.css?v=22">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
   <style>
@@ -49,7 +49,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=115"></script>
+  <script src="portal.js?v=116"></script>
   <script src="menu.js?v=42" defer></script>
   <script>
   (function () {
@@ -284,7 +284,6 @@
           C.from('projetos').update({ data_inicio: dataIni.value }).eq('id', proj.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { proj.data_inicio = dataIni.value; sujoIni = true; } });
         });
         dataIni.addEventListener('blur', function () { setTimeout(function () { if (sujoIni) { sujoIni = false; carregar(); } }, 300); });
-        conteudo.appendChild(el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap' }, [el('label', { for: 'projIni', text: 'Início', style: 'margin:0' }), dataIni]));
         var dataFim = el('input', { type: 'date', id: 'projFim', style: 'width:auto' }); dataFim.value = proj.data_fim || '';
         /* grava sozinho a cada mudança, sem redesenhar; a tela só se atualiza quando o campo perde o foco (redesenhar no meio fechava o calendário) */
         var sujo = false;
@@ -292,9 +291,9 @@
           C.from('projetos').update({ data_fim: dataFim.value || null }).eq('id', proj.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { proj.data_fim = dataFim.value || null; sujo = true; } });
         });
         dataFim.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; carregar(); } }, 300); });
-        var linhaFim = [el('label', { for: 'projFim', text: 'Data final (opcional)', style: 'margin:0' }), dataFim];
-        if (proj.data_fim) { var tirarFim = P.botaoApagar('Tirar a data'); tirarFim.addEventListener('click', function () { C.from('projetos').update({ data_fim: null }).eq('id', proj.id).then(function () { carregar(); }); }); linhaFim.push(tirarFim); }
-        conteudo.appendChild(el('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap' }, linhaFim));
+        var tirarFim = null;
+        if (proj.data_fim) { tirarFim = P.botaoApagar('Tirar a data'); tirarFim.addEventListener('click', function () { C.from('projetos').update({ data_fim: null }).eq('id', proj.id).then(function () { carregar(); }); }); }
+        conteudo.appendChild(P.linhaDatas([P.colunaData(dataIni, 'Início'), P.colunaData(dataFim, 'Data final (opcional)', tirarFim)]));
       }
 
       var lista = el('div', { style: 'margin-top:14px' });
