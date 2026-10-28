@@ -364,7 +364,7 @@
       Promise.all([
         P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
         P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em').order('ordem').order('criado_em'),
-        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,somente_leitura').eq('aluno_id', aluno.id)
+        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga').eq('aluno_id', aluno.id)
       ]).then(function (rs) {
         raiz.textContent = '';
         if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a trilha agora.' })); return; }

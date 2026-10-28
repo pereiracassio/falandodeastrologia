@@ -231,7 +231,9 @@
           trilhas = rs[0].data; var ids = trilhas.map(function (t) { return t.id; });
           passos = rs[1].data.filter(function (x) { return ids.indexOf(x.trilha_id) >= 0; });
           /* atividades do aluno e o que cada uma já andou (disponível, enviada, corrigida) */
-          P.client.from('atividades').select('id,titulo,enviada_em,corrigida_em,antiga,somente_leitura,data_atividade').eq('aluno_id', aluno.id).order('criado_em').then(function (ra) {
+          /* a coluna somente_leitura pode não existir neste banco: se o pedido falhar por causa dela, pede de novo sem ela (era isso que deixava a lista vazia) */
+          var pedirAtividades = function (colunas) { return P.client.from('atividades').select(colunas).eq('aluno_id', aluno.id).order('criado_em'); };
+          pedirAtividades('id,titulo,enviada_em,corrigida_em,antiga,somente_leitura,data_atividade').then(function (r1) { return r1.error ? pedirAtividades('id,titulo,enviada_em,corrigida_em,antiga,data_atividade') : r1; }).then(function (ra) {
             ativsAluno = (ra && ra.data) || [];
             /* a data de conclusão se marca sozinha quando todos os passos ficam prontos (a última data conhecida, ou hoje) e sai se a trilha for reaberta; dá para ajustar à mão */
             trilhas.forEach(function (t) {
