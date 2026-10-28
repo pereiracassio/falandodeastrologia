@@ -259,4 +259,5 @@ O astrólogo quer widgets na tela de início do iPhone/iPad **com a cara do site
 - [ ] 1. **Widget da Agenda:** próximos compromissos (só das agendas marcadas em Configurações → "Agendas que aparecem", horário de Brasília, cor de cada agenda) + hora planetária. Toque abre `admin-agenda.html`.
 - [ ] 2. **Widget da Produção:** pendências da semana, "o que está perto de acontecer" (ex.: corte para postar), etapas que faltam (Corte, Legenda, SEO, YouTube Shorts, Instagram, TikTok) com barra de progresso; atrasados em destaque. A regra de "perto" (7 dias?) é a combinar quando chegar nele. Toque abre `admin-producao.html`.
 - [ ] 3. **Widget de Horas planetárias:** hora planetária de agora e a próxima, com o ícone do planeta (usa `hora-planetaria.js`, lugar de `site_config.prod_local_horas`).
-- **Mapa do momento NÃO é para fazer (ele só perguntou se dava; não puxar o assunto de novo).** Mentoria também não foi pedida.
+- **Mapa do momento NÃO é para fazer (ele só perguntou se dava; não puxar o assunto de novo).**
+- [ ] 4. **Widget da Mentoria: AINDA NÃO DECIDIU** (ideia minha; ele pediu para explicar o que seria antes de decidir): próximos encontros com os alunos (nome, dia, hora), mensalidades a vencer e atividades que os alunos responderam e esperam correção. Toque abre `admin-alunos.html`.
