@@ -304,3 +304,7 @@ Edição de algo que já existe **salva sozinha** (sem botão "Salvar"), com "Sa
 - **Produção:** tags do vídeo e do corte são `textarea` que cresce (antes era uma linha só e o texto ficava escondido); barra de tempo nos vídeos e cortes.
 - **Projetos** (aba nova, ver a seção acima) e **salvar sozinho** (seção acima).
 - **Fluxo de SQL dele:** "se está publicado, o SQL foi rodado": ele roda o SQL colado na conversa, avisa "já rodei" e SÓ ENTÃO pede para publicar. Nunca publicar código que depende de coluna/tabela nova antes dele avisar.
+
+## Trilha dos alunos (28/10/2026) — DECIDIDO, nada construído ainda
+
+Projeto "Trilha dos alunos" (está nos Projetos dele). **Uma trilha por ASSUNTO, por aluno** (ex.: "Liberação zodiacal"): nome + passos + barra de progresso + próximo passo no topo (mesma estrutura dos Projetos); terminou o assunto, começa outra trilha; as concluídas ficam guardadas num histórico. **A trilha é a PRIMEIRA aba** da página do aluno (ele só VÊ; quem monta/edita é o astrólogo, na aba Acompanhamento do aluno no painel). **A trilha ABSORVE os registros "Paramos em / Vou trabalhar"** (`aluno_acompanhamento`); como, a combinar quando chegar lá. **Atividades e materiais poderão ser VINCULADOS a uma trilha** (uma marca dizendo de qual trilha é, nunca dentro da lista de passos); passo à parte, depois da trilha funcionando. Mockup aprovado por ele (aba Trilha: título do assunto, barra com "% concluído", próximo passo, depois, feitos, trilhas concluídas no fim).
