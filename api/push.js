@@ -95,13 +95,15 @@ const aparelhosDe = (email) => supa('/rest/v1/push_inscricoes?select=endpoint,p2
 
 /* guarda o aviso na lista de quem recebe e manda para o celular dele, com a quantidade de não lidos (número no ícone do app) */
 async function entregarAviso(email, carga, extras = {}) {
-  await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: carga.title, corpo: carga.body, url: carga.url, ...extras }) }).catch(() => {});
+  let erroGuardar = null;
+  await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: carga.title, corpo: carga.body, url: carga.url, ...extras }) }).catch((e) => { erroGuardar = String(e.message || e); console.error('avisos_recebidos:', erroGuardar); });
   const naoLidos = ((await supa('/rest/v1/avisos_recebidos?select=id&lido=eq.false&email=eq.' + encodeURIComponent(email)).catch(() => [])) || []).length;
   const lista = (await aparelhosDe(email)) || [];
-  if (!lista.length) return { enviados: 0, removidos: 0, falhas: 0 };
-  return enviar(lista, { ...carga, contagem: naoLidos });
+  const vazio = { enviados: 0, removidos: 0, falhas: 0, erroGuardar, aparelhos: lista.length };
+  if (!lista.length) return vazio;
+  return { ...vazio, ...(await enviar(lista, { ...carga, contagem: naoLidos })) };
 }
-const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas });
+const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas, aparelhos: (a.aparelhos || 0) + (b.aparelhos || 0), erroGuardar: a.erroGuardar || b.erroGuardar || null });
 const URL_CLIENTE = '/cliente.html?aviso=1', URL_ADMIN_CLIENTES = '/admin-clientes.html';
 const urlDaEntrega = (id) => URL_CLIENTE + '&e=' + id;
 const NOME_DO_ARQUIVO = { pdf: 'o PDF', gravacao: 'a gravação' };

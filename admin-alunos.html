@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=87"></script>
+  <script src="portal.js?v=88"></script>
   <script src="atividades.js?v=29"></script>
   <script>
   (function () {
@@ -148,12 +148,12 @@
         P.client.from('alunos').select('id,nome,email,nascimento,meet_link,whatsapp').order('nome'),
         P.client.from('aluno_codigos').select('aluno_id,codigo'),
         /* atividades que o aluno já enviou e que ainda esperam a sua correção */
-        P.client.from('atividades').select('aluno_id').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
+        P.client.from('atividades').select('id,aluno_id,titulo,enviada_em').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
         P.client.from('aluno_pagamentos').select('aluno_id,ultimo_pagamento,proximo_pagamento')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
-        var paraCorrigir = {}, totalParaCorrigir = 0;
-        ((res[2] && res[2].data) || []).forEach(function (x) { paraCorrigir[x.aluno_id] = (paraCorrigir[x.aluno_id] || 0) + 1; totalParaCorrigir++; });
+        var paraCorrigir = {}, totalParaCorrigir = 0, esperando = ((res[2] && res[2].data) || []).slice().sort(function (a, b) { return String(a.enviada_em) < String(b.enviada_em) ? -1 : 1; });
+        esperando.forEach(function (x) { paraCorrigir[x.aluno_id] = (paraCorrigir[x.aluno_id] || 0) + 1; totalParaCorrigir++; });
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
         var pagamentos = {};
         ((res[3] && res[3].data) || []).forEach(function (x) { pagamentos[x.aluno_id] = x; });
@@ -164,7 +164,18 @@
         if (!alunos.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aluno ainda.' })); return; }
         var busca = el('input', { type: 'search', id: 'buscaAluno', placeholder: 'Buscar por código, nome ou e-mail' });
         var lista = el('div');
-        if (totalParaCorrigir) cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 12px', text: totalParaCorrigir === 1 ? '1 atividade esperando a sua correção' : totalParaCorrigir + ' atividades esperando a sua correção' }));
+        /* o aviso diz QUAIS são: uma linha por atividade ("Fulano · título"), e tocar abre a atividade dele na hora */
+        if (totalParaCorrigir) {
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 6px', text: totalParaCorrigir === 1 ? '1 atividade esperando a sua correção' : totalParaCorrigir + ' atividades esperando a sua correção' }));
+          esperando.forEach(function (x) {
+            var aluno = r.data.filter(function (a) { return a.id === x.aluno_id; })[0];
+            if (!aluno) return;
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + ' · ' + (x.titulo || 'atividade') });
+            l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, atividade: x.id }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
+            cartao.appendChild(l);
+          });
+          cartao.appendChild(el('div', { style: 'height:8px' }));
+        }
         cartao.appendChild(busca);
         cartao.appendChild(lista);
         function desenhar() {

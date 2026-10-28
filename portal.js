@@ -1073,9 +1073,11 @@
       if (pedirConfirmacao && !confirm('Enviar para ' + (primeiro || 'ele') + ': "' + t + '"?')) return;
       mensagem(msg, 'Enviando...');
       chamarPush('manual', { para: para, id: id, texto: t }).then(function (r) {
-        if (!r.ok) { mensagem(msg, (r.dados && r.dados.erro) || 'Não foi possível enviar agora.', 'erro'); return; }
+        if (!r.ok) { mensagem(msg, ((r.dados && r.dados.erro) || 'Não foi possível enviar agora.') + (r.dados && r.dados.detalhe ? ' (' + r.dados.detalhe + ')' : ''), 'erro'); return; }
         texto.value = '';
-        mensagem(msg, r.dados.enviados ? 'Aviso enviado: ' + t : 'Aviso guardado na lista dele (o celular dele não está com os avisos ativados).', 'ok');
+        var d = r.dados || {};
+        if (d.erroGuardar) { mensagem(msg, 'Não consegui guardar o aviso na lista dele: ' + d.erroGuardar, 'erro'); return; }
+        mensagem(msg, d.enviados ? 'Aviso enviado: ' + t : d.falhas ? 'O celular dele recusou o aviso (falhas: ' + d.falhas + ').' : 'Aviso guardado na lista dele. O celular dele ainda não está com os avisos ativados.', d.enviados ? 'ok' : 'erro');
       }, function () { mensagem(msg, 'Não foi possível enviar agora.', 'erro'); });
     }
     /* "Avisar quanto falta": na hora do toque, busca o horário do próximo compromisso na agenda e conta quanto falta; assim o aviso nunca sai com o tempo errado */
