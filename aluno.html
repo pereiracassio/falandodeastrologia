@@ -50,7 +50,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=92"></script>
+  <script src="portal.js?v=93"></script>
   <script src="curso.js?v=1"></script>
   <script src="atividades.js?v=30"></script>
   <script src="caderno.js?v=11"></script>
@@ -375,9 +375,13 @@
         P.client.from('avisos_recebidos').update({ lido: true }).eq('atividade_id', deUmAviso[1]).eq('lido', false).then(function () {}, function () {});
       }
       /* quantos avisos ainda não foram lidos, ao lado do nome da aba */
-      if (!previa) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
-        if (r && !r.error && r.count) { naoLidos = r.count; rotuloAvisos(); }
-      }, function () {});
+      var contarNaoLidos = function () { P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
+        if (r && !r.error && typeof r.count === 'number' && r.count !== naoLidos) { naoLidos = r.count; rotuloAvisos(); }
+      }, function () {}); };
+      if (!previa) {
+        contarNaoLidos();
+        if (!window.__contagemAvisos) { window.__contagemAvisos = true; setInterval(function () { if (document.visibilityState === 'visible') contarNaoLidos(); }, 60000); document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contarNaoLidos(); }); }
+      }
       rotuloAvisos();
       /* cinco abas, mas cada uma com o tamanho de sempre (um terço): as outras ficam para o lado, é só correr a barra */
       var rola = el('div', { class: 'portal-abas-rola' }, [barra]);

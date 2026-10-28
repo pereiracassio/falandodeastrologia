@@ -458,12 +458,15 @@
     if (sinoAdminLigado) return;
     sinoAdminLigado = true;
     pintar(0);
-    /* o número do sino = avisos não lidos + aniversariantes de hoje (até você abrir a tela de Avisos no dia) */
-    Promise.all([
+    /* o número do sino = avisos não lidos + aniversariantes de hoje (até você abrir a tela de Avisos no dia); confere de novo a cada minuto e quando o app volta para a frente */
+    var contar = function () { Promise.all([
       client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) { return r && !r.error && r.count ? r.count : 0; }, function () { return 0; }),
       aniversariosHoje().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; }),
       lembretesProducao().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; })
-    ]).then(function (v) { var t = v[0] + v[1] + v[2]; if (t) pintar(t); });
+    ]).then(function (v) { pintar(v[0] + v[1] + v[2]); }); };
+    contar();
+    setInterval(function () { if (document.visibilityState === 'visible') contar(); }, 60000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contar(); });
   }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
@@ -1211,6 +1214,17 @@
     new MutationObserver(function (muds) { muds.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) { if (n.tagName === 'TEXTAREA') escritaLivre(n); else todasEscritaLivre(n); } }); }); }).observe(document.body, { childList: true, subtree: true });
   }
   if (document.body) ligarEscritaLivre(); else document.addEventListener('DOMContentLoaded', ligarEscritaLivre);
+
+  /* Aparelho que já tem os avisos ativados se cadastra de novo no servidor, com o login de quem está usando agora, a cada vez que o app abre.
+     Sem isso, um aparelho cadastrado antes (com outro login, ou quando o servidor ainda era outro) mostra "ativado" mas o servidor não sabe de quem é. */
+  function renovarInscricao() {
+    if (!suportaAvisos() || Notification.permission !== 'granted') return;
+    navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+      if (sub) return chamarPush('inscrever', { subscription: sub.toJSON(), aparelho: navigator.userAgent.slice(0, 160) });
+    }).catch(function () { /* sem login ou sem rede: tenta de novo na próxima abertura */ });
+  }
+  setTimeout(renovarInscricao, 2500);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') setTimeout(renovarInscricao, 800); });
 
   window.portal = {
     escritaLivre: escritaLivre, tokenGoogle: tokenDoDrive, escolherDoDrive: escolherDoDrive,

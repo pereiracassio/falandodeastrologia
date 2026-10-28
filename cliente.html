@@ -39,7 +39,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=92"></script>
+  <script src="portal.js?v=93"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -182,9 +182,13 @@
       abrirAvisos = function () { telaDeAvisos(user, verId); };
       if (paraDestacar && !verId) P.client.from('avisos_recebidos').update({ lido: true }).eq('url', '/cliente.html?aviso=1&e=' + paraDestacar).eq('lido', false).then(function () {}, function () {});
       pintarSino();
-      if (!verId) P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
-        if (r && !r.error && r.count) { naoLidos = r.count; pintarSino(); }
-      }, function () {});
+      var contarNaoLidos = function () { P.client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
+        if (r && !r.error && typeof r.count === 'number' && r.count !== naoLidos) { naoLidos = r.count; pintarSino(); }
+      }, function () {}); };
+      if (!verId) {
+        contarNaoLidos();
+        if (!window.__contagemAvisos) { window.__contagemAvisos = true; setInterval(function () { if (document.visibilityState === 'visible') contarNaoLidos(); }, 60000); document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contarNaoLidos(); }); }
+      }
       if (abrirAvisosNaEntrada) { abrirAvisosNaEntrada = false; setTimeout(abrirAvisos, 0); }
     }
 
