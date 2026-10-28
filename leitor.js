@@ -3,7 +3,7 @@
    Leitor.abrir({ nome, pagina, voltar, obterPdf(progresso) -> Promise<ArrayBuffer>,
                   carregarTracos(pg) -> Promise<array|null>, salvarTracos(pg, tracos) -> Promise,
                   salvarPagina(pg, total), baixar (endereço do Drive: põe o botão Baixar na barra) })
-   Sem carregarTracos/salvarTracos, as marcações valem só enquanto o leitor está aberto.
+   Sem carregarTracos/salvarTracos, as marcações valem só enquanto o leitor está aberto (só uso interno; aluno e cliente guardam no Supabase).
    Leitor.abrirDoServidor({ nome, id, baixar, voltar }): PDF do Drive do administrador entregue por api/pdf.js (aluno e cliente). */
 (function () {
   var P = window.portal, el = P.el;
@@ -400,19 +400,39 @@
       });
     })();
   }
+  /* aluno e cliente: as marcações e a página onde parou ficam guardadas no Supabase, por pessoa e por arquivo (tabelas leitor_marcacoes e leitor_posicao) */
   function abrirDoServidor(o) {
-    return abrir({
-      nome: o.nome, voltar: o.voltar, baixar: o.baixar,
-      obterPdf: function (progresso) {
-        return P.client.auth.getSession().then(function (r) {
-          var sessao = r.data && r.data.session;
-          if (!sessao) throw new Error('sem login');
-          return fetch(API_PDF + '?id=' + encodeURIComponent(o.id), { headers: { Authorization: 'Bearer ' + sessao.access_token } });
-        }).then(function (r) {
-          if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'servidor');
-          return baixarComProgresso(r, progresso);
-        });
-      }
+    var C = P.client, uid = null;
+    return C.auth.getSession().then(function (r) {
+      uid = r.data && r.data.session && r.data.session.user.id;
+      if (!uid) return null;
+      return C.from('leitor_posicao').select('pagina').eq('drive_id', o.id).eq('user_id', uid).maybeSingle().then(function (x) { return x.data ? x.data.pagina : null; }, function () { return null; });
+    }).then(function (pagina) {
+      return abrir({
+        nome: o.nome, voltar: o.voltar, baixar: o.baixar, pagina: pagina || 1,
+        obterPdf: function (progresso) {
+          return C.auth.getSession().then(function (r) {
+            var sessao = r.data && r.data.session;
+            if (!sessao) throw new Error('sem login');
+            return fetch(API_PDF + '?id=' + encodeURIComponent(o.id), { headers: { Authorization: 'Bearer ' + sessao.access_token } });
+          }).then(function (r) {
+            if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'servidor');
+            return baixarComProgresso(r, progresso);
+          });
+        },
+        carregarTracos: function (pg) {
+          return C.from('leitor_marcacoes').select('tracos').eq('user_id', uid).eq('drive_id', o.id).eq('pagina', pg).maybeSingle().then(function (x) { return x.data ? (x.data.tracos || []) : null; });
+        },
+        salvarTracos: function (pg, tracos) {
+          var q = tracos.length
+            ? C.from('leitor_marcacoes').upsert({ user_id: uid, drive_id: o.id, pagina: pg, tracos: tracos, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id,drive_id,pagina' })
+            : C.from('leitor_marcacoes').delete().eq('user_id', uid).eq('drive_id', o.id).eq('pagina', pg);
+          return q.then(function (x) { if (x.error) throw x.error; });
+        },
+        salvarPagina: function (pg) {
+          C.from('leitor_posicao').upsert({ user_id: uid, drive_id: o.id, pagina: pg, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id,drive_id' }).then(function () {});
+        }
+      });
     });
   }
 
