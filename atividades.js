@@ -907,21 +907,25 @@
 
         var msg = el('p', { class: 'portal-msg' });
         area.appendChild(autoMsg);
+        /* o aluno recebe o aviso toda vez que você aperta "Salvar correção" e a correção mudou desde a última vez (atividade nova ou antiga);
+           apertar sem ter mudado nada, ou só mexer em outras coisas da atividade, não avisa */
+        var assinaturaCorrecao = function () { return JSON.stringify(autoLinhas()); };
+        var assinaturaAvisada = assinaturaCorrecao();
         function salvarCorrecao() {
           var linhas = Object.keys(campos).map(function (id) {
             return { pergunta_id: id, situacao: campos[id].sit.value || null, comentario: campos[id].com.value.trim() || null };
           });
           return C.from('atividade_correcoes').upsert(linhas, { onConflict: 'pergunta_id' }).then(function (r) {
             if (r.error) throw r.error;
+            var agora = assinaturaCorrecao(), devoAvisar = agora !== assinaturaAvisada && linhas.some(function (l) { return l.situacao || l.comentario; });
+            if (devoAvisar) assinaturaAvisada = agora;
             /* atividade nova: a data da correção é a de hoje; antiga: só se você preencheu */
             var quando = dCorr.value || (a.antiga ? null : (a.corrigida_em || hojeISO()));
-            if (!quando || quando === a.corrigida_em) return;
-            var primeiraCorrecao = !a.corrigida_em && !a.antiga;
-            return C.from('atividades').update({ corrigida_em: quando }).eq('id', a.id).then(function (r2) {
+            var datas = (!quando || quando === a.corrigida_em) ? Promise.resolve() : C.from('atividades').update({ corrigida_em: quando }).eq('id', a.id).then(function (r2) {
               if (r2.error) throw r2.error;
               a.corrigida_em = quando; dCorr.value = quando;
-              if (primeiraCorrecao) P.avisos.avisar('corrigida', a.id); /* o aluno recebe "o Cássio já corrigiu" no celular, só na primeira vez */
             });
+            return datas.then(function () { if (devoAvisar) P.avisos.avisar('corrigida', a.id); });
           });
         }
         var avisoCorrecao = el('div', { style: 'margin:10px 0' });

@@ -101,6 +101,13 @@ module.exports = async (req, res) => {
       method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
       body: JSON.stringify(partes.map((p, n) => ({ data: hojeBR(), cliente_nome: nome, produto: p.desc, valor: p.centavos / 100, area_id: areaDe(p.desc), forma_pagamento: forma, observacao, origem: 'infinitepay', id_externo: 'infinitepay-' + idExterno + (partes.length > 1 ? '-' + (n + 1) : '') })))
     });
+    /* compra nova: o administrador recebe o aviso no celular (nunca deixa de lançar a entrada por causa disso) */
+    try {
+      const { entregarAviso, emailsDoAviso } = require('./push');
+      const quem = String(nome || '').replace(/^\d+\s*-\s*/, '').trim() || 'Alguém';
+      const oque = partes.map((p) => p.desc).filter(Boolean).join(' + ') || 'um serviço';
+      for (const email of await emailsDoAviso('admins', null)) await entregarAviso(email, { title: 'Compra nova', body: quem + ' comprou: ' + oque, url: '/admin-financeiro.html' });
+    } catch (e) { console.error('infinitepay aviso:', e.message); }
     await resultado('entrada lançada' + (clienteCadastrado ? ' e cliente cadastrado' : ''));
     res.status(200).json({ ok: true, entrada: true });
   } catch (e) {

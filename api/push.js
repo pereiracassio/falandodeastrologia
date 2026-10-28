@@ -22,21 +22,17 @@ function decidirAviso({ evento, atividade, aluno, usuario, ehAdmin, agora = new 
   const titulo = String(atividade.titulo || '').slice(0, 120);
   if (evento === 'enviada') {
     if (email !== String(aluno.email || '').toLowerCase()) return { erro: 'Só o próprio aluno avisa que enviou.', status: 403 };
-    if (!atividade.enviada_em || atividade.antiga || atividade.somente_leitura) return { ignorar: 'não é um envio' };
+    if (!atividade.enviada_em || atividade.somente_leitura) return { ignorar: 'não é um envio' };
     return { para: 'admins', carga: { title: 'Atividade enviada', body: primeiroNome(aluno.nome) + ' enviou: ' + titulo, url: URL_ADMIN + '#aluno=' + aluno.id + '&atividade=' + atividade.id } };
   }
   if (evento === 'nova' || evento === 'corrigida') {
     if (!ehAdmin) return { erro: 'Só quem administra avisa o aluno.', status: 403 };
-    const ontem = dia(new Date(agora.getTime() - 86400000));
     if (evento === 'nova') {
-      if (atividade.antiga && !atividade.somente_leitura) return { ignorar: 'atividade antiga' };
-      if (Date.parse(atividade.criado_em) < agora.getTime() - 86400000) return { ignorar: 'não é nova' };
-      if (atividade.data_atividade && String(atividade.data_atividade).slice(0, 10) < ontem) return { ignorar: 'material de data passada' };
+      /* quem chama é o painel, só na criação (editar não chama): sem filtro de data nem de "antiga" */
       return { para: 'aluno', carga: atividade.somente_leitura
         ? { title: 'Material novo', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei um novo material para você: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id }
         : { title: 'Atividade nova', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Deixei uma nova atividade para você: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id } };
     }
-    if (!atividade.corrigida_em || atividade.antiga || String(atividade.corrigida_em).slice(0, 10) < ontem) return { ignorar: 'não é uma correção de agora' };
     return { para: 'aluno', carga: { title: 'Atividade corrigida', body: 'Oi, ' + primeiroNome(aluno.nome) + '! Corrigi a sua atividade: ' + titulo, url: URL_ALUNO + '?atividade=' + atividade.id } };
   }
   return { erro: 'Aviso desconhecido.', status: 400 };
@@ -117,6 +113,22 @@ async function entregaECliente(id) {
 }
 
 async function tratar(req, res) {
+  /* aplicação da mentoria enviada (quem preenche não tem login): o servidor confere no banco que ela existe e está completa, e avisa o administrador uma vez só */
+  if (String((req.query && req.query.acao) || '') === 'aplicacao') {
+    const corpoA = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const aid = String(corpoA.id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(aid)) { res.status(400).json({ erro: 'Aplicação inválida.' }); return; }
+    const [ap] = (await supa('/rest/v1/aplicacoes_mentoria?id=eq.' + aid + '&select=id,nome,concluida')) || [];
+    if (!ap || ap.concluida !== true) { res.status(200).json({ ok: true, enviados: 0, motivo: 'não está completa' }); return; }
+    const urlAp = '/admin-aplicacoes.html#aplicacao=' + aid;
+    let r = { enviados: 0, removidos: 0, falhas: 0 };
+    for (const email of await emailsDoAviso('admins', null)) {
+      const ja = (await supa('/rest/v1/avisos_recebidos?select=id&email=eq.' + encodeURIComponent(email) + '&url=eq.' + encodeURIComponent(urlAp) + '&limit=1').catch(() => [])) || [];
+      if (ja.length) continue;
+      r = somar(r, await entregarAviso(email, { title: 'Nova aplicação', body: String(ap.nome || 'Alguém').trim() + ' enviou a aplicação para a mentoria', url: urlAp }));
+    }
+    res.status(200).json({ ok: true, ...r }); return;
+  }
   if (String((req.query && req.query.acao) || '') === 'chave') { res.status(200).json({ chave: (await chaves()).publica }); return; } /* a chave pública não é segredo: o aparelho precisa dela para se cadastrar */
   const jwt = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const usuario = await usuarioDoToken(jwt);
@@ -246,3 +258,5 @@ async function handler(req, res) {
 module.exports = handler;
 module.exports.decidirAviso = decidirAviso;
 module.exports.enviar = enviar;
+module.exports.entregarAviso = entregarAviso;
+module.exports.emailsDoAviso = emailsDoAviso;
