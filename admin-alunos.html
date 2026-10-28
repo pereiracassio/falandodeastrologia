@@ -266,9 +266,9 @@
                 if (!confirm('Apagar este registro?')) return;
                 P.client.from('aluno_acompanhamento').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
               });
-              var textos = [el('span', { class: 'portal-item-titulo', text: P.dataBR(String(i.data).slice(0, 10)) })];
-              if (i.paramos) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap', text: 'Paramos em: ' + i.paramos }));
-              if (i.proximo) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap', text: 'Vou trabalhar: ' + i.proximo }));
+              var textos = [el('span', { class: 'portal-item-titulo', style: 'color:#B5852F', text: P.dataBR(String(i.data).slice(0, 10)) })];
+              if (i.paramos) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px', text: 'Paramos em: ' + i.paramos }));
+              if (i.proximo) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px', text: 'Vou trabalhar: ' + i.proximo }));
               lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, textos), el('div', { class: 'portal-acoes' }, [editar, apagar])])]));
             });
           });
