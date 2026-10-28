@@ -467,7 +467,7 @@
   }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
-    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
+    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* a ⚙ (configurações) é SEMPRE a última aba, mesmo quando entrarem abas novas: abas novas entram na lista acima, nunca depois dela */
     itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
     var botoes = itens.map(function (i) {
@@ -895,7 +895,7 @@
 
   /* cartão do próximo atendimento de cliente, vindo da Google Agenda (api/meu-atendimento.js). clienteId só para o administrador.
      Sem atendimento marcado, o cartão nem aparece. paraAdmin = texto "Atendimento: ..." em vez de "Seu ... será ..." */
-  function cartaoAtendimento(clienteId, paraAdmin) {
+  function cartaoAtendimento(clienteId, paraAdmin, contato) {
     var lugar = el('div', {});
     client.auth.getSession().then(function (r) {
       var sessao = r.data && r.data.session;
@@ -914,6 +914,19 @@
           var link = linkSeguro(a.meet);
           if (link) cartao.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: link, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no atendimento' })]));
           else cartao.appendChild(el('p', { text: paraAdmin ? 'Esse compromisso não tem link do Meet.' : 'O link da videochamada chega pelo WhatsApp.' }));
+          /* administrador: ícone do WhatsApp com o lembrete pronto (quem envia é ele, nada sai sozinho) */
+          var dig = String(contato && contato.whatsapp || '').replace(/\D/g, '');
+          if (paraAdmin && dig) {
+            if (dig.length === 10 || dig.length === 11) dig = '55' + dig;
+            var dataDe = function (d) { return d.toLocaleDateString('en-CA', { timeZone: a.fuso }); };
+            var amanha = new Date(Date.now() + 86400000);
+            var quandoTxt = dataDe(quando) === dataDe(new Date()) ? 'hoje' : dataDe(quando) === dataDe(amanha) ? 'amanhã' : 'no dia ' + quando.toLocaleDateString('pt-BR', { timeZone: a.fuso, day: '2-digit', month: '2-digit' });
+            var primeiro = String(contato.nome || '').trim().split(/\s+/)[0];
+            var msg = 'Oi ' + primeiro + '. Tudo bem?\n\nPassando para lembrar da nossa consulta ' + quandoTxt + ', às ' + hora + '. Você consegue confirmar para mim?';
+            var zap = el('a', { class: 'icone-whats', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(msg), target: '_blank', rel: 'noopener', title: 'Lembrar pelo WhatsApp', 'aria-label': 'Lembrar pelo WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '32', height: '32' })]);
+            zap.style.cssText = 'display:inline-block;margin:10px 0 0 14px;line-height:0;vertical-align:middle';
+            cartao.appendChild(zap);
+          }
           lugar.appendChild(cartao);
         });
     }).catch(function () { /* sem o cartão, a página segue normal */ });
@@ -1203,6 +1216,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, cartaoEnviar: cartaoEnviarAviso }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, apagarNoFim: apagarNoFim
   };
 })();

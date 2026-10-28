@@ -63,7 +63,7 @@ O astrólogo reclamou várias vezes: cada lugar do site ficava de um jeito. **É
 - Publicar na `main` só quando ele pedir. Mexeu em `blog.css`/`blog.js`: bumpar `?v=` só em `blog.html`, `postagem.html` e `404.html`. **As páginas geradas por `api/_blog.js` NÃO levam `?v=` nos CSS/JS** (assim pegam o estilo e o menu atuais sozinhas, com até ~10 min de cache do GitHub Pages) e **só precisam de "Atualizar as páginas do blog" quando a ESTRUTURA do HTML gerado muda** (cabeçalho, seta, cartões), nunca por mudança de CSS/JS.
 - **Mostrar com imagem, não com artefato nem descrição:** ele quer ver o resultado (print do Playwright pelo `SendUserFile`) e não gosta de texto que descreve o que a imagem já mostra. A página de Alunos (`aluno.html`) e a de Seu espaço (`cliente.html`) já seguem esse padrão.
 
-## Acesso do aluno: criado pelo painel, nunca pelo aluno (21/10/2026)
+## Acesso do aluno DA MENTORIA: criado pelo painel, nunca pelo aluno (21/10/2026) — vale só para a mentoria; o curso (ver mais abaixo) é aberto a quem comprar
 A tela Alunos (`aluno.html`) **não tem e não pode ter lugar para criar conta** (só entrar: Google, e-mail e senha, "Esqueci minha senha"). Quem cria o acesso é o astrólogo, em `admin-alunos.html` → Novo aluno → Adicionar: o painel chama `api/criar-acesso.js` (Vercel, só `sou_admin`, usa `SUPABASE_SERVICE_ROLE_KEY`, cria o usuário já confirmado, sem senha) e depois grava a ficha em `alunos`. Nunca mais mandar o astrólogo criar usuário no Supabase à mão. Servidor não se testa daqui: foi simulado em Node; o teste real é dele.
 - **Nunca cortar palavra com hífen** (`hyphens:none` nas páginas de papiro) e **botão sempre numa linha só** (a letra diminui para caber, `white-space:nowrap`). Dúvida no WhatsApp = frase em azul-noite + só o ícone da home, nunca botão verde. Investimento e avisos soltos no papiro: nada de quadro dentro de quadro.
 
@@ -208,3 +208,43 @@ O aviso "Instale o app" já existe no topo de `aluno.html` e `cliente.html` (só
 - **Telas:** o carrinho vira SINO (`window.fdaSinoAvisos` em `menu.js`) dentro de `aluno.html` (aba Avisos), `cliente.html` (cartão Avisos que abre/fecha) e todas as telas `admin-*` (leva a `admin-avisos.html`). Fora dessas áreas continua carrinho.
 - **PENDENTE, ele pediu para LEMBRAR (não insistir, só quando ele estiver disponível):** configurar na Vercel (projeto falandodeastrologia e Astro Hellenic) o **Ignored Build Step** para ela não guardar cópia a cada envio (já chegou a 8 GB no Astro Hellenic). Comando: `[ "$VERCEL_GIT_COMMIT_REF" != "main" ] || git diff --quiet HEAD^ HEAD -- api package.json package-lock.json`. Até lá, não enviar para branches (só `main`, quando ele pedir).
 - **Deixado para depois por ele (NÃO lembrar, só quando ele puxar):** aviso 2 h e 10 min antes da sessão.
+
+## Curso "Fundamentos da Astrologia Natal" na página do aluno (27/10/2026) — PLANEJAMENTO, nada construído ainda
+
+O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravado ainda**) e decidiu **hospedá-lo no próprio site**, na parte do aluno, com a cara do site. **Não usar a Hotmart** (a área de membros dela não mantém a cara do site). Como não há vídeo gravado, não existe migração: construir a estrutura aqui primeiro, com calma. Projeto longo, feito em várias conversas: **atualizar esta seção a cada etapa**.
+
+**Estrutura (decidida):**
+- Curso → **módulos** → **aulas**. Cada aula = **um vídeo**. Número de aulas por módulo varia (N).
+- **Cada módulo tem UMA apostila (PDF)**, liberada ao aluno **no início do módulo**. Abre no leitor (`leitor.js`, ver abaixo) ou baixa.
+- **Só o módulo em que o aluno está fica aberto; os outros aparecem com cadeado.**
+- **Avaliação no fim do módulo: nota 7 ou mais desbloqueia o próximo módulo.** Abaixo de 7, o aluno fica no mesmo módulo e refaz a avaliação até conseguir.
+- Tom e visual: o do site (papiro, tipografia única, botões, "← Voltar" em cima e embaixo, nada de texto explicativo).
+
+**Em aberto (decidir lá na frente, não decidir pelo astrólogo):**
+1. **Como a avaliação reabre depois de nota abaixo de 7:** na hora, ou só depois de alguns dias para estudar mais? Mesmas perguntas ou sorteadas?
+2. **Atividades:** todas as aulas terão ou só a avaliação? Ele acha que a apostila basta e as atividades serão "mais avaliativas". Não criar atividade por aula sem ele decidir.
+3. **Formato da avaliação:** de marcar (o site corrige sozinho, como no Estudos) e/ou dissertativa (ele corrige à mão, como nas Atividades dos alunos)?
+4. **Meio de pagamento:** ainda não escolhido; provavelmente o mesmo do Astro Hellenic. **Requisito: precisa AVISAR o site quando alguém paga (webhook) e aceitar pagamento recorrente/parcelado.** O InfinitePay não serve para o curso (a recorrência no cartão dele não avisa o pagamento).
+5. **Hospedagem do vídeo:** só quando as primeiras aulas forem gravadas.
+
+**Vídeo (decisões e pesquisa):**
+- **YouTube "não listado" está descartado** (qualquer um repassa o link para quem não pagou). **Drive não serve em escala** (limite de acessos simultâneos/bloqueio por excesso; hoje só funciona nas gravações da mentoria porque são poucos alunos).
+- A proteção precisa ser: o vídeo **só toca dentro do site** (trava por domínio `falandodeastrologia.com.br`) e com **link assinado que expira** gerado pelo servidor para o aluno logado. Opções a conferir (preços e regras mudam): **Bunny Stream** e **Cloudflare Stream** (baratos, por uso, link assinado), **Panda Video** e **VdoCipher** (feitos para curso, anti-download, marca d'água com dados do aluno, mais caros), Vimeo (proteção mais fraca). Nenhuma impede gravar a tela; só dificultam e identificam quem vazou.
+- Até a escolha, a aula pode ter um vídeo de teste. O player entra por incorporação dentro da página do aluno.
+
+**O que já existe e se reaproveita:** login do aluno (`aluno.html`, abas rolando para o lado com `P.comSetas`), Atividades (perguntas, respostas, correções), Estudos (questões de marcar com correção na hora e resolução, `admin-estudos.html`), avisos no celular, caderno em PDF, Financeiro, `api/criar-acesso.js`.
+- **Leitor de PDF para apostilas (`leitor.js`, 27/10/2026):** a tela do leitor (caneta, marca-texto, borracha, pinça, dois toques, corta as margens brancas pela medida do texto de até 12 páginas, tela toda, dedo escreve no celular quando escolhe uma ferramenta e não há caneta) mora em `leitor.js` e é **genérica**: `Leitor.abrir({ pagina, voltar, obterPdf(progresso), carregarTracos(pg), salvarTracos(pg, tracos), salvarPagina(pg, total) })`. O painel (`admin-leitor.html`) usa tabelas `leitor_livros`/`leitor_tracos` e baixa o PDF do Drive com o token do administrador. **Para o aluno/cliente abrir PDF no leitor, falta o servidor entregar o arquivo** (o aluno não tem acesso ao Drive do administrador): uma rota na Vercel que confere o login do aluno, confere que o PDF é dele e devolve o arquivo; as marcações do aluno ficam em tabela própria por aluno. Ainda NÃO feito.
+
+**Acesso do curso (NÃO é questão, está decidido):** a regra "o acesso só nasce pelo painel, ninguém cria conta sozinho" vale **só para a MENTORIA** (o aluno de mentoria é escolhido por ele). **O curso é outra coisa, aberto a quem comprar:** quem paga ganha o acesso automaticamente (pagamento confirmado → servidor cria o acesso, reaproveitando `api/criar-acesso.js`). Nunca tratar a regra da mentoria como obstáculo do curso.
+
+**ETAPA 1 FEITA no código (27/10/2026, não publicada até ele rodar o SQL):** `docs/curso.sql` (tabelas `cursos`, `curso_modulos`, `curso_aulas`, `curso_matriculas`; o aluno matriculado só lê as aulas dos módulos com `ordem <= modulo_liberado`), painel `admin-curso.html` (aba **Curso** antes do Leitor: curso → módulos/aulas com ↑↓, apostila escolhida no Drive, vídeo YouTube ou Drive, marca "vídeo de teste", alunos do curso com "Liberar o próximo"/"Trancar o último" na mão) e aba **Curso** em `aluno.html` (`curso.js`; aparece só para matriculado; módulos acima do liberado com cadeado; módulos já liberados continuam abertos). **A apostila só aparece como nome: abrir no leitor depende da rota do servidor (ainda não feita).** Matrícula por enquanto é manual (e-mail do aluno).
+
+**Ordem combinada (uma coisa por vez):**
+1. Estrutura: curso, módulos, aulas (texto, apostila, vídeo de teste), módulos com cadeado, por aluno. Painel do administrador para montar.
+2. Avaliação do módulo e desbloqueio com nota 7.
+3. Pagamento e matrícula automática (quando escolher a plataforma).
+4. Vídeo protegido (quando houver aulas gravadas).
+
+## Linha de lista abre ao tocar em QUALQUER lugar dela (27/10/2026) — regra do astrólogo, vale para TODA lista nova
+
+**Nada de botão "Abrir"/"Rever"/"Continuar" no canto da linha:** a linha inteira é o toque (`role="button"`, `cursor:pointer`), porque o intuitivo é tocar no item. Feito na lista da aba Estudos (`admin-estudos.html`). Listas antigas com botão "Editar"/"Abrir" ao lado (Alunos, Clientes, Blog etc.) ainda NÃO foram trocadas: fazer só quando ele pedir, uma tela de cada vez.

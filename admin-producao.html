@@ -102,8 +102,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=88"></script>
-  <script src="menu.js?v=38" defer></script>
+  <script src="portal.js?v=91"></script>
+  <script src="menu.js?v=39" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -789,14 +789,18 @@
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
+      cartao.appendChild(fila([1, 1], [el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return titulo.value.trim(); }, 'Copiar o título')]), el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return capaTexto.value.trim(); }, 'Copiar o texto da capa')])]));
       cartao.appendChild(fila([0.7, 1.1, 2], [campo('Número na série', numero), campo('Disponível para membros', data), campo('Link do YouTube', link)]));
-      var jupV = el('span', { class: 'prod-jup', text: textoJupiter(v.data_postar) });
-      data.addEventListener('change', function () { jupV.textContent = textoJupiter(data.value); });
+      /* horário de Júpiter é para o dia em que o vídeo fica PÚBLICO; vídeo só de membros (ou sem data pública) usa a data dos membros */
+      function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
+      var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
+      function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
+      data.addEventListener('change', atualizarJupiter);
       cartao.appendChild(jupV);
       var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
       var blocoPublico = el('div', { style: 'max-width:240px' }, [campo('Fica público em', dataPublico)]);
       blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
-      cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
+      cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
       cartao.appendChild(blocoPublico);
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
@@ -915,14 +919,15 @@
       var jupFim = el('div', { style: 'margin:14px 0 18px;color:#1034A6;font-size:16px;line-height:1.5' });
       function pintarJupFim() {
         jupFim.textContent = '';
-        var d = data.value, h = d ? horasDeJupiter(d) : [];
+        var d = dataDeJupiter(), h = d ? horasDeJupiter(d) : [];
         if (!d) return;
         var p = d.split('-'), curta = p[2] + '/' + p[1] + '/' + p[0].slice(2);
         jupFim.appendChild(el('div', { style: 'font-weight:700', text: curta + ', horários de Júpiter' }));
         if (!h.length) jupFim.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
         h.forEach(function (x) { jupFim.appendChild(el('div', { text: hhmm(x[0]) + ' a ' + hhmm(x[1]) })); });
       }
-      data.addEventListener('change', pintarJupFim); pintarJupFim();
+      pintarJupFim();
+      dataPublico.addEventListener('change', atualizarJupiter);
       cartao.appendChild(jupFim);
       cartao.appendChild(estadoSalvo);
       /* a foto vai para o servidor e fica guardada assim que é escolhida (sem botão Salvar) */
@@ -1060,6 +1065,7 @@
         d.addEventListener('change', function () { jupiterAzul(jupC, d.value, semDataJup); });
         var editor = el('div', { class: 'prod-corte' }, [
           el('div', { class: 'prod-corte-topo' }, [t, d]),
+          el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [botaoCopiar(function () { return t.value.trim(); }, 'Copiar o título')]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
           campo('Texto do corte', tx),
           el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [botaoCopiar(function () { return tx.value; }, 'Copiar o texto')]),

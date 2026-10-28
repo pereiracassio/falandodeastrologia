@@ -35,10 +35,10 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=88"></script>
+  <script src="portal.js?v=91"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=1"></script>
-  <script src="menu.js?v=38" defer></script>
+  <script src="menu.js?v=39" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -95,6 +95,7 @@
 
     /* ---------- lista ---------- */
     function lista(aviso) {
+      if (typeof aviso !== 'string') aviso = ''; /* o toque do ← Voltar chega aqui como evento, não como aviso */
       limpar(); P.estado.gravar({});
       app.appendChild(topo(nomeAdmin));
       if (aviso) { var av = el('p', { class: 'portal-msg' }); app.appendChild(av); P.mensagem(av, aviso, 'ok'); }
@@ -120,13 +121,13 @@
         var hoje = hojeISO();
         var linhaDe = function (a) {
           var p = prog[a.id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 };
-          var feito = p.total > 0 && p.feitas === p.total;
           var info = p.total ? p.feitas + ' de ' + p.total + ' respondidas' + (p.multiplas ? ' · ' + p.certas + ' certas' : '') : 'sem questões';
-          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: feito ? 'Rever' : (p.feitas ? 'Continuar' : 'Abrir') });
-          abrir.addEventListener('click', function () { aula(a.id); });
-          var l = el('div', { class: 'portal-item' }, [
-            el('div', {}, [el('strong', { text: a.titulo }), el('div', { class: 'portal-item-data', text: diaCurto(a.data) + ' · ' + a.materia + ' · ' + info })]), abrir]);
-          l.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
+          /* a linha inteira abre a aula: nada de botão no canto */
+          var l = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [
+            el('div', {}, [el('strong', { text: a.titulo }), el('div', { class: 'portal-item-data', text: diaCurto(a.data) + ' · ' + a.materia + ' · ' + info })])]);
+          l.style.cssText = 'padding:12px 0;border-bottom:1px solid rgba(31,95,163,.7);cursor:pointer;-webkit-tap-highlight-color:transparent';
+          l.addEventListener('click', function () { aula(a.id); });
+          l.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aula(a.id); } });
           return l;
         };
         if (!aulas.length) {

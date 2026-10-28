@@ -44,8 +44,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=88"></script>
-  <script src="menu.js?v=38" defer></script>
+  <script src="portal.js?v=91"></script>
+  <script src="menu.js?v=39" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
   (function () {
@@ -305,7 +305,46 @@
       if (e.convidados.length) filhos.push(el('p', { text: 'Com ' + e.convidados.join(', '), style: 'margin:6px 0 0' }));
       var nota = String(e.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
       if (nota) filhos.push(el('p', { text: nota.length > 600 ? nota.slice(0, 600) + '…' : nota, style: 'white-space:pre-line;margin:10px 0 0' }));
-      filhos.push(el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, acoes));
+      /* título "0123 - Fulano": acha cliente ou aluno pelo código; põe o sino (aviso no app) e o WhatsApp com o lembrete pronto (quem envia é ele) */
+      var mc = !e.diaTodo && e.fim > Date.now() && /^\s*(\d{3,6})(?!\d)/.exec(e.titulo || '');
+      if (mc) {
+        var cod = mc[1], semZ = cod.replace(/^0+/, ''), cods = [cod, semZ, semZ.padStart(4, '0')];
+        var achar = function (tabelaCod, campo, tabela, para) {
+          return P.client.from(tabelaCod).select(campo + ',codigo').in('codigo', cods).limit(1).then(function (rc) {
+            var lig = rc && rc.data && rc.data[0];
+            if (!lig) return null;
+            return P.client.from(tabela).select('id,nome,whatsapp').eq('id', lig[campo]).maybeSingle().then(function (rl) { return rl && rl.data ? { para: para, p: rl.data } : null; });
+          });
+        };
+        Promise.all([achar('cliente_codigos', 'cliente_id', 'clientes', 'cliente'), achar('aluno_codigos', 'aluno_id', 'alunos', 'aluno')]).then(function (r) {
+          var f = r[0] || r[1];
+          if (!f) return;
+          var primeiro = String(f.p.nome || '').trim().split(/\s+/)[0];
+          var dia = isoDia(e.ini), hora = hhmm(e.ini).replace(':00', 'h').replace(':', 'h');
+          var quandoTxt = dia === isoDia(Date.now()) ? 'hoje' : dia === isoDia(Date.now() + DIA) ? 'amanhã' : 'no dia ' + curto(dia);
+          var sino = el('button', { type: 'button', title: 'Avisar no aplicativo', 'aria-label': 'Avisar no aplicativo', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer' });
+          sino.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A03E25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
+          sino.addEventListener('click', function () {
+            sino.disabled = true;
+            P.avisos.manual(f.para, f.p.id, 'Oi, ' + primeiro + '! Passando para lembrar do seu ' + (f.para === 'aluno' ? 'encontro' : 'atendimento') + ' ' + quandoTxt + ', às ' + hora + '.').then(function (x) {
+              sino.disabled = false;
+              if (!x.ok) { alert((x.dados && x.dados.erro) || 'Não foi possível enviar agora.'); return; }
+              sino.innerHTML = '<span style="font-size:28px;line-height:36px;color:#A03E25;font-weight:700">✓</span>';
+              sino.title = x.dados.enviados ? 'Aviso enviado' : 'Guardado na lista dele (avisos não ativados no celular)';
+            }, function () { sino.disabled = false; alert('Não foi possível enviar agora.'); });
+          });
+          linhaAcoes.insertBefore(sino, linhaAcoes.firstChild);
+          var dig = String(f.p.whatsapp || '').replace(/\D/g, '');
+          if (dig) {
+            if (dig.length === 10 || dig.length === 11) dig = '55' + dig;
+            var msg = 'Oi ' + primeiro + '. Tudo bem?\n\nPassando para lembrar da nossa consulta ' + quandoTxt + ', às ' + hora + '. Você consegue confirmar para mim?';
+            var zap = el('a', { class: 'icone-whats', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(msg), target: '_blank', rel: 'noopener', title: 'Lembrar pelo WhatsApp', 'aria-label': 'Lembrar pelo WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]);
+            linhaAcoes.insertBefore(zap, sino.nextSibling);
+          }
+        }).then(function () {}, function () {});
+      }
+      var linhaAcoes = el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes);
+      filhos.push(linhaAcoes);
       destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
     }
     function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }

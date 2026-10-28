@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest-producao.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Produção">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Curso - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="stylesheet" href="page.css?v=67">
+  <link rel="stylesheet" href="portal.css?v=18">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="tipografia.css?v=18">
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo cab-logo-menor"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/blog.html">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Curso</h1>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=91"></script>
+  <script src="curso.js?v=1"></script>
+  <script src="menu.js?v=39" defer></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    var nomeAdmin = '';
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function topo(texto) { return P.navAdmin('curso', texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function campo(rotulo, controle) { return [el('label', { text: rotulo }), controle]; }
+    function texto(t) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: t }); if (t.length === 1) b.style.fontSize = '20px'; return b; }
+    function msgErro(caixa, e) { P.mensagem(caixa, P.traduzErro((e && e.message) || ''), 'erro'); }
+    function voltarAcima(fn) { app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(fn)])); P.voltarNoFim(app, fn); }
+
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        C.from('admins').select('nome').maybeSingle().then(function (rn) {
+          nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+          var ent = P.estado.ler();
+          if (ent.aula) abrirAula(ent.aula);
+          else if (ent.modulo) abrirModulo(ent.modulo);
+          else if (ent.curso) abrirCurso(ent.curso);
+          else lista();
+        });
+      });
+    }
+
+    /* ---------- cursos ---------- */
+    function lista() {
+      limpar(); P.estado.gravar({});
+      app.appendChild(topo(nomeAdmin));
+      var msg = el('p', { class: 'portal-msg' });
+      var novo = el('button', { type: 'button', class: 'portal-btn', text: '+ Curso' });
+      novo.addEventListener('click', function () {
+        var t = (window.prompt('Nome do curso') || '').trim();
+        if (!t) return;
+        C.from('cursos').insert({ titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msg, r.error); else abrirCurso(r.data.id); });
+      });
+      app.appendChild(el('div', { class: 'portal-acoes' }, [novo])); app.appendChild(msg);
+      var caixa = el('div', { class: 'portal-cartao' }, [el('p', { text: 'Carregando...' })]); app.appendChild(caixa);
+      C.from('cursos').select('id,titulo').order('criado_em').then(function (r) {
+        caixa.textContent = '';
+        if (r.error) { caixa.appendChild(el('p', { text: P.traduzErro(r.error.message) })); return; }
+        if (!r.data.length) { caixa.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum curso ainda.' })); return; }
+        r.data.forEach(function (c) {
+          var l = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('span', { class: 'prod-titulo', style: 'display:block', text: c.titulo })]);
+          l.addEventListener('click', function () { abrirCurso(c.id); });
+          caixa.appendChild(l);
+        });
+      });
+    }
+
+    /* ---------- um curso: módulos e matrículas ---------- */
+    function trocar(tabela, a, b) {
+      return Promise.all([C.from(tabela).update({ ordem: b.ordem }).eq('id', a.id), C.from(tabela).update({ ordem: a.ordem }).eq('id', b.id)]);
+    }
+    function abrirCurso(id) {
+      limpar(); P.estado.gravar({ curso: id });
+      app.appendChild(topo(nomeAdmin));
+      voltarAcima(lista);
+      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
+      Promise.all([
+        C.from('cursos').select('id,titulo').eq('id', id).maybeSingle(),
+        C.from('curso_modulos').select('id,ordem,titulo,apostila_nome').eq('curso_id', id).order('ordem'),
+        C.from('curso_aulas').select('id,modulo_id'),
+        C.from('curso_matriculas').select('id,email,nome,modulo_liberado').eq('curso_id', id).order('criado_em')
+      ]).then(function (rs) {
+        corpo.textContent = '';
+        var erro = rs[0].error || rs[1].error || rs[2].error || rs[3].error;
+        if (erro || !rs[0].data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: erro ? P.traduzErro(erro.message) : 'Curso não encontrado.' })); return; }
+        var curso = rs[0].data, mods = rs[1].data || [], aulas = rs[2].data || [], mats = rs[3].data || [];
+        var tit = el('input', { type: 'text', value: curso.titulo });
+        var msgT = el('p', { class: 'portal-msg' });
+        var salvarT = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar nome' });
+        salvarT.addEventListener('click', function () {
+          if (!tit.value.trim()) return;
+          C.from('cursos').update({ titulo: tit.value.trim() }).eq('id', id).then(function (r) { if (r.error) msgErro(msgT, r.error); else P.mensagem(msgT, 'Salvo.', 'ok'); });
+        });
+        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes' }, [salvarT])])));
+
+        var caixaM = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Módulos' })]);
+        if (!mods.length) caixaM.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }));
+        mods.forEach(function (m, i) {
+          var qtd = aulas.filter(function (a) { return a.modulo_id === m.id; }).length;
+          var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
+            el('span', { class: 'prod-titulo', style: 'display:block', text: 'Módulo ' + m.ordem + ' · ' + m.titulo }),
+            el('span', { class: 'prod-sub', style: 'display:block', text: qtd + (qtd === 1 ? ' aula' : ' aulas') + (m.apostila_nome ? ' · apostila' : '') })
+          ]);
+          abrir.addEventListener('click', function () { abrirModulo(m.id); });
+          var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
+          if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_modulos', m, mods[i - 1]).then(function () { abrirCurso(id); }); }); linha.appendChild(sobe); }
+          if (i < mods.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { trocar('curso_modulos', m, mods[i + 1]).then(function () { abrirCurso(id); }); }); linha.appendChild(desce); }
+          caixaM.appendChild(linha);
+        });
+        var msgM = el('p', { class: 'portal-msg' });
+        var novoM = el('button', { type: 'button', class: 'portal-btn', text: '+ Módulo' });
+        novoM.addEventListener('click', function () {
+          var t = (window.prompt('Nome do módulo') || '').trim(); if (!t) return;
+          var ordem = mods.length ? mods[mods.length - 1].ordem + 1 : 1;
+          C.from('curso_modulos').insert({ curso_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgM, r.error); else abrirModulo(r.data.id); });
+        });
+        caixaM.appendChild(msgM); caixaM.appendChild(el('div', { class: 'portal-acoes' }, [novoM]));
+        corpo.appendChild(caixaM);
+
+        var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos do curso' })]);
+        if (!mats.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum aluno ainda.' }));
+        var msgA = el('p', { class: 'portal-msg' });
+        mats.forEach(function (a) {
+          var nome = el('div', { style: 'flex:1;min-width:0' }, [
+            el('span', { class: 'prod-titulo', style: 'display:block', text: a.nome || a.email }),
+            el('span', { class: 'prod-sub', style: 'display:block', text: (a.nome ? a.email + ' · ' : '') + 'módulo ' + a.modulo_liberado + ' liberado' })
+          ]);
+          var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px' }, [nome]);
+          function mudar(n) { C.from('curso_matriculas').update({ modulo_liberado: n }).eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else abrirCurso(id); }); }
+          if (a.modulo_liberado > 1) { var menos = texto('Trancar o último'); menos.addEventListener('click', function () { mudar(a.modulo_liberado - 1); }); linha.appendChild(menos); }
+          if (a.modulo_liberado < mods.length) { var mais = texto('Liberar o próximo'); mais.addEventListener('click', function () { mudar(a.modulo_liberado + 1); }); linha.appendChild(mais); }
+          var tirar = P.botaoApagar('Tirar');
+          tirar.addEventListener('click', function () {
+            if (!window.confirm('Tirar ' + (a.nome || a.email) + ' do curso? Não dá para desfazer.')) return;
+            C.from('curso_matriculas').delete().eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else abrirCurso(id); });
+          });
+          linha.appendChild(tirar);
+          caixaA.appendChild(linha);
+        });
+        var email = el('input', { type: 'email', placeholder: 'E-mail do aluno', autocomplete: 'off' });
+        var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' });
+        add.addEventListener('click', function () {
+          var e = email.value.trim().toLowerCase(); if (!e) return;
+          C.from('alunos').select('nome').eq('email', e).maybeSingle().then(function (ra) {
+            C.from('curso_matriculas').insert({ curso_id: id, email: e, nome: ra.data ? ra.data.nome : null, modulo_liberado: 1 }).then(function (r) { if (r.error) msgErro(msgA, r.error); else abrirCurso(id); });
+          });
+        });
+        caixaA.appendChild(msgA);
+        caixaA.appendChild(el('div', { style: 'margin-top:12px' }, campo('Adicionar aluno', email)));
+        caixaA.appendChild(el('div', { class: 'portal-acoes' }, [add]));
+        corpo.appendChild(caixaA);
+
+        var apagar = P.botaoApagar('Apagar este curso');
+        apagar.addEventListener('click', function () {
+          if (!window.confirm('Apagar o curso "' + curso.titulo + '" com todos os módulos e aulas? Não dá para desfazer.')) return;
+          C.from('cursos').delete().eq('id', id).then(function (r) { if (r.error) msgErro(msgM, r.error); else lista(); });
+        });
+        P.apagarNoFim(app, apagar);
+      });
+    }
+
+    /* ---------- um módulo: nome, apostila e aulas ---------- */
+    function abrirModulo(id) {
+      limpar(); P.estado.gravar({ modulo: id });
+      app.appendChild(topo(nomeAdmin));
+      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
+      Promise.all([
+        C.from('curso_modulos').select('id,curso_id,ordem,titulo,apostila_drive_id,apostila_nome').eq('id', id).maybeSingle(),
+        C.from('curso_aulas').select('id,ordem,titulo,video_codigo,video_teste').eq('modulo_id', id).order('ordem')
+      ]).then(function (rs) {
+        var erro = rs[0].error || rs[1].error;
+        corpo.textContent = '';
+        if (erro || !rs[0].data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: erro ? P.traduzErro(erro.message) : 'Módulo não encontrado.' })); return; }
+        var m = rs[0].data, aulas = rs[1].data || [], voltar = function () { abrirCurso(m.curso_id); };
+        var vt = el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]); corpo.parentNode.insertBefore(vt, corpo);
+        P.voltarNoFim(app, voltar);
+        var tit = el('input', { type: 'text', value: m.titulo });
+        var apNome = m.apostila_nome, apId = m.apostila_drive_id;
+        var apTxt = el('span', { text: apNome || 'Nenhuma' });
+        var escolher = texto('Escolher o PDF no Drive');
+        var msgAp = el('p', { class: 'portal-msg' });
+        escolher.addEventListener('click', function () {
+          P.escolherDoDrive(function (url, fid, token) {
+            fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fid) + '?fields=name,mimeType&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
+              .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
+              .then(function (f) {
+                if (f.mimeType !== 'application/pdf') { P.mensagem(msgAp, 'Esse arquivo não é um PDF.', 'erro'); return; }
+                apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apTxt.textContent = apNome;
+              }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
+          }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false);
+        });
+        var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apTxt.textContent = 'Nenhuma'; });
+        var msg = el('p', { class: 'portal-msg' });
+        var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
+        salvar.addEventListener('click', function () {
+          if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome do módulo.', 'erro'); return; }
+          C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
+        });
+        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
+          [el('h2', { text: 'Módulo ' + m.ordem })], campo('Nome', tit),
+          [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])])));
+
+        var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aulas' })]);
+        if (!aulas.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }));
+        aulas.forEach(function (a, i) {
+          var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
+            el('span', { class: 'prod-titulo', style: 'display:block', text: a.ordem + '. ' + a.titulo }),
+            el('span', { class: 'prod-sub', style: 'display:block', text: !a.video_codigo ? 'sem vídeo' : a.video_teste ? 'vídeo de teste' : 'vídeo' })
+          ]);
+          abrir.addEventListener('click', function () { abrirAula(a.id); });
+          var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
+          if (i > 0) { var sobe = texto('\u2191'); sobe.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i - 1]).then(function () { abrirModulo(id); }); }); linha.appendChild(sobe); }
+          if (i < aulas.length - 1) { var desce = texto('\u2193'); desce.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i + 1]).then(function () { abrirModulo(id); }); }); linha.appendChild(desce); }
+          caixaA.appendChild(linha);
+        });
+        var msgN = el('p', { class: 'portal-msg' });
+        var nova = el('button', { type: 'button', class: 'portal-btn', text: '+ Aula' });
+        nova.addEventListener('click', function () {
+          var t = (window.prompt('Nome da aula') || '').trim(); if (!t) return;
+          var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
+          C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
+        });
+        caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, [nova]));
+        corpo.appendChild(caixaA);
+
+        var apagar = P.botaoApagar('Apagar este módulo');
+        apagar.addEventListener('click', function () {
+          if (!window.confirm('Apagar o módulo "' + m.titulo + '" com todas as aulas? Não dá para desfazer.')) return;
+          C.from('curso_modulos').delete().eq('id', id).then(function (r) { if (r.error) msgErro(msgN, r.error); else voltar(); });
+        });
+        P.apagarNoFim(app, apagar);
+      });
+    }
+
+    /* ---------- uma aula ---------- */
+    function abrirAula(id) {
+      limpar(); P.estado.gravar({ aula: id });
+      app.appendChild(topo(nomeAdmin));
+      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
+      C.from('curso_aulas').select('id,modulo_id,ordem,titulo,video_origem,video_codigo,video_teste').eq('id', id).maybeSingle().then(function (r) {
+        corpo.textContent = '';
+        if (r.error || !r.data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: r.error ? P.traduzErro(r.error.message) : 'Aula não encontrada.' })); return; }
+        var a = r.data, voltar = function () { abrirModulo(a.modulo_id); };
+        corpo.parentNode.insertBefore(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]), corpo);
+        P.voltarNoFim(app, voltar);
+        var tit = el('input', { type: 'text', value: a.titulo });
+        var origem = el('select', {}, [el('option', { value: 'youtube', text: 'YouTube' }), el('option', { value: 'drive', text: 'Google Drive' })]);
+        origem.value = a.video_origem;
+        var cod = el('input', { type: 'text', value: a.video_codigo || '', placeholder: 'Link ou código do vídeo', autocomplete: 'off' });
+        var teste = el('input', { type: 'checkbox' }); teste.checked = !!a.video_teste; teste.style.cssText = 'width:22px;min-width:22px;height:22px;margin:0;flex:none';
+        var rotTeste = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:0 0 10px' }, [teste, el('span', { class: 'impresso', text: 'Vídeo de teste' })]);
+        var prev = el('div', { style: 'margin:0 0 12px' });
+        function previa() {
+          prev.textContent = '';
+          var u = window.curso.enderecoDoVideo(origem.value, cod.value);
+          if (!u) return;
+          var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;background:#000' });
+          var f = el('iframe', { src: u, allowfullscreen: '', allow: 'encrypted-media; picture-in-picture' }); f.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;border:0';
+          caixa.appendChild(f); prev.appendChild(caixa);
+        }
+        cod.addEventListener('change', previa); origem.addEventListener('change', previa); previa();
+        var msg = el('p', { class: 'portal-msg' });
+        var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
+        salvar.addEventListener('click', function () {
+          if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
+          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origem.value, video_codigo: cod.value.trim() || null, video_teste: teste.checked }).eq('id', id)
+            .then(function (x) { if (x.error) msgErro(msg, x.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
+        });
+        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
+          [el('h2', { text: 'Aula ' + a.ordem })], campo('Nome', tit), campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])])));
+        var apagar = P.botaoApagar('Apagar esta aula');
+        apagar.addEventListener('click', function () {
+          if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
+          C.from('curso_aulas').delete().eq('id', id).then(function (x) { if (x.error) msgErro(msg, x.error); else voltar(); });
+        });
+        P.apagarNoFim(app, apagar);
+      });
+    }
+
+    P.client.auth.onAuthStateChange(function (ev) { if (ev === 'PASSWORD_RECOVERY') { limpar(); P.montarNovaSenha(app, iniciar); } });
+    if (P.emRecuperacao) { limpar(); P.montarNovaSenha(app, iniciar); return; }
+    C.auth.getSession().then(function (r) {
+      var u = r.data && r.data.session && r.data.session.user;
+      if (u) iniciar(u); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>
