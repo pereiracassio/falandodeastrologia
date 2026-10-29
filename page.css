@@ -300,8 +300,8 @@ html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-b
 .pagina-papiro .portal-abas-rola .portal-aba,.pagina-papiro .portal-abas-rola .portal-aba.ativa{flex:1 0 auto!important;padding:9px 14px!important;white-space:nowrap;overflow:visible}
 .pagina-papiro .portal-abas-rola .portal-abas::after{display:none}
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-top:0!important;padding-top:0!important;margin:0!important}
-/* linha DIVIDINDO uma coisa da outra dentro da aba: uma só, no fim de cada cartão (menos o último), nunca duas coladas */
-.pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao:not(:last-child){border-bottom:2px solid #1F5FA3!important;padding-bottom:18px!important;margin-bottom:18px!important}
+/* linha DIVIDINDO uma coisa da outra dentro da aba: uma só, no fim de cada cartão (inclusive o último, que encerra), nunca duas coladas */
+.pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-bottom:2px solid #1F5FA3!important;padding-bottom:18px!important;margin-bottom:18px!important}
 
 .pagina-papiro .engrenagem{font-size:2em;line-height:.5;vertical-align:-.14em;display:inline-block}
 
