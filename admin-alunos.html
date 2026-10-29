@@ -281,7 +281,7 @@
         var ordem = trilhas.reduce(function (m, t) { return Math.max(m, t.ordem || 0); }, 0) + 1;
         P.client.from('aluno_trilhas').insert({ aluno_id: aluno.id, nome: nome, ordem: ordem }).then(function (r) { if (r.error) alert('Não foi possível criar.'); else carregar(); });
       }
-      /* arquivo { "trilhas": [ { "nome", "passos": [ { "titulo", "tipo": "comum"|"material"|"atividade"|"gravacao", "feito" } ] } ] }: trilha de mesmo nome só ganha os passos que faltam */
+      /* arquivo { "trilhas": [ { "nome", "inicio": "AAAA-MM-DD", "passos": [ { "titulo", "tipo": "comum"|"material"|"atividade"|"gravacao", "feito", "ligar": "título exato do material/atividade/gravação do aluno" } ] } ] }: trilha de mesmo nome só ganha os passos que faltam; "ligar" acha o item pelo título (se não achar, o passo fica em preparação) */
       function importarTrilhas(f) {
         f.text().then(function (txt) {
           var dados;
@@ -289,25 +289,33 @@
           var lista = (dados && dados.trilhas) || [];
           if (!lista.length) { alert('Não achei trilhas nesse arquivo.'); return; }
           var ordemT = trilhas.reduce(function (m, t) { return Math.max(m, t.ordem || 0); }, 0);
-          var tipos = ['comum', 'material', 'atividade', 'gravacao'];
+          var tipos = ['comum', 'material', 'atividade', 'gravacao'], semAcento = function (v) { return String(v || '').trim().toLowerCase(); }, naoAchou = [];
+          var usadosItem = passos.map(function (y) { return y.item_id; }).filter(Boolean), usadosAtiv = passos.map(function (y) { return y.atividade_id; }).filter(Boolean);
           lista.reduce(function (cadeia, item) {
             return cadeia.then(function () {
               var nome = String(item.nome || '').trim(); if (!nome) return;
               var existente = trilhas.filter(function (t) { return t.nome.toLowerCase() === nome.toLowerCase(); })[0];
-              var pronto = existente ? Promise.resolve(existente.id) : P.client.from('aluno_trilhas').insert({ aluno_id: aluno.id, nome: nome, ordem: ++ordemT }).select('id').then(function (r) { if (r.error) throw r.error; return r.data[0].id; });
+              var pronto = existente ? Promise.resolve(existente.id) : P.client.from('aluno_trilhas').insert({ aluno_id: aluno.id, nome: nome, ordem: ++ordemT, data_inicio: /^\d{4}-\d{2}-\d{2}$/.test(item.inicio || '') ? item.inicio : null }).select('id').then(function (r) { if (r.error) throw r.error; return r.data[0].id; });
               return pronto.then(function (id) {
                 var jaTem = passos.filter(function (x) { return x.trilha_id === id; });
                 var ordem = jaTem.reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0);
                 var titulos = jaTem.map(function (x) { return x.titulo.toLowerCase(); });
                 var novos = (item.passos || []).filter(function (x) { return x && String(x.titulo || '').trim() && titulos.indexOf(String(x.titulo).trim().toLowerCase()) < 0; }).map(function (x) {
                   var feito = !!x.feito && (!x.tipo || x.tipo === 'comum');
-                  return { trilha_id: id, titulo: String(x.titulo).trim(), tipo: tipos.indexOf(x.tipo) >= 0 ? x.tipo : 'comum', feito: feito, feito_em: feito ? new Date().toISOString() : null, ordem: ++ordem };
+                  var tipo = tipos.indexOf(x.tipo) >= 0 ? x.tipo : 'comum', linha = { trilha_id: id, titulo: String(x.titulo).trim(), tipo: tipo, feito: feito, feito_em: feito ? new Date().toISOString() : null, ordem: ++ordem };
+                  if (x.ligar && tipo !== 'comum') {
+                    var ehAtiv = tipo === 'atividade', usados = ehAtiv ? usadosAtiv : usadosItem;
+                    var fonte = ehAtiv ? ativsAluno : itensAluno.filter(function (i) { return tipo === 'gravacao' ? i.bloco === 'gravacoes' : i.bloco !== 'gravacoes'; });
+                    var achado = fonte.filter(function (i) { return semAcento(i.titulo) === semAcento(x.ligar) && usados.indexOf(i.id) < 0; })[0];
+                    if (achado) { linha[ehAtiv ? 'atividade_id' : 'item_id'] = achado.id; usados.push(achado.id); } else naoAchou.push(String(x.ligar));
+                  }
+                  return linha;
                 });
                 if (!novos.length) return;
                 return P.client.from('aluno_trilha_passos').insert(novos).then(function (r) { if (r.error) throw r.error; });
               });
             });
-          }, Promise.resolve()).then(carregar, function (e) { alert('Não foi possível importar: ' + P.traduzErro(e.message)); carregar(); });
+          }, Promise.resolve()).then(function () { if (naoAchou.length) alert('Importei, mas não achei para ligar:\n' + naoAchou.join('\n')); carregar(); }, function (e) { alert('Não foi possível importar: ' + P.traduzErro(e.message)); carregar(); });
         });
       }
       function linhaPasso(x, grupo, i, leitura) {
