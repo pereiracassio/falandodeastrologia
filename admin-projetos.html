@@ -84,8 +84,26 @@
       ]).then(function (res) {
         if (res[0].error || res[1].error) { limpar(); app.appendChild(topo(nomeAdmin)); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os projetos.' })); return; }
         projetos = res[0].data; passos = res[1].data;
+        if (arrumarNumeros()) return;
         desenhar();
       });
+    }
+
+    /* projeto concluído perde o número e os que vinham depois sobem um lugar (concluiu o 1: o 2 vira 1, o 3 vira 2...). Devolve true se mandou gravar (e recarrega depois) */
+    function arrumarNumeros() {
+      var concl = projetos.filter(function (p) { return concluidoO(p) && p.prioridade != null; });
+      if (!concl.length) return false;
+      var mudancas = concl.map(function (p) { return { id: p.id, prioridade: null }; });
+      projetos.forEach(function (x) {
+        if (concluidoO(x) || x.prioridade == null) return;
+        var sobe = concl.filter(function (c) { return c.prioridade < x.prioridade; }).length;
+        if (sobe) mudancas.push({ id: x.id, prioridade: x.prioridade - sobe });
+      });
+      Promise.all(mudancas.map(function (m) { return C.from('projetos').update({ prioridade: m.prioridade }).eq('id', m.id); })).then(function (rs) {
+        if (rs.some(function (r) { return r.error; })) { desenhar(); return; }
+        carregar();
+      });
+      return true;
     }
 
     /* azul no começo, ocre na metade, terracota no fim (mistura aos poucos) */
