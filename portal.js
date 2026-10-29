@@ -1015,7 +1015,7 @@
      No iPhone/iPad só funciona no app instalado pela tela inicial. */
   var API_PUSH = 'https://falandodeastrologia.vercel.app/api/push';
   /* o alarme no celular sai do próprio Supabase (função "avisos"): cadastro do aparelho direto no banco, sem Vercel */
-  var FN_AVISOS = 'https://wqkgsotfwkzjwaowenrb.supabase.co/functions/v1/avisos';
+  var FN_AVISOS = 'https://wqkgsotfwkzjwaowenrb.supabase.co/functions/v1/quick-service';
   function chavePublicaAvisos() {
     return fetch(FN_AVISOS + '?acao=chave').then(function (r) { return r.json(); }).then(function (d) { if (!d || !d.chave) throw new Error('servidor'); return d.chave; });
   }

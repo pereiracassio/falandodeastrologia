@@ -36,7 +36,7 @@ language plpgsql security definer set search_path = public, extensions as $$
 begin
   begin
     perform net.http_post(
-      url := 'https://wqkgsotfwkzjwaowenrb.supabase.co/functions/v1/avisos',
+      url := 'https://wqkgsotfwkzjwaowenrb.supabase.co/functions/v1/quick-service',
       headers := '{"Content-Type":"application/json"}'::jsonb,
       body := jsonb_build_object('id', new.id)
     );

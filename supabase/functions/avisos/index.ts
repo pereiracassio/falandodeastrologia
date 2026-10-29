@@ -1,4 +1,4 @@
-// Avisos no celular (Web Push), no próprio Supabase (Edge Function "avisos"), sem Vercel.
+// Avisos no celular (Web Push), no próprio Supabase (Edge Function (no Supabase ela ficou com o nome quick-service)), sem Vercel.
 // - GET  ?acao=chave : devolve a chave pública dos avisos (o aparelho precisa dela para se cadastrar; não é segredo).
 // - POST {id}        : o banco chama isto quando um aviso é gravado em avisos_recebidos; manda o aviso para os aparelhos de quem recebe.
 // Só reenvia se o aviso ainda não foi enviado (push_enviado_em vazio), então chamar duas vezes não repete. O resultado fica em avisos_recebidos.push_resultado.
