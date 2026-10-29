@@ -124,12 +124,17 @@
     function gravarCache(c) { try { localStorage.setItem(CACHE, JSON.stringify(c)); } catch (e) { /* sem armazenamento: só fica mais lento */ } }
     /* clientes e alunos que têm a data de nascimento no cadastro */
     function carregarAniversarios() {
-      var pega = function (tabela, tipo) { return C.from(tabela).select('nome,whatsapp,nascimento,email').not('nascimento', 'is', null).then(function (r) { return (r.data || []).map(function (x) { x.tipo = tipo; return x; }); }, function () { return []; }); };
-      return Promise.all([pega('clientes', 'cliente'), pega('alunos', 'aluno')]).then(function (r) { var vistos = {}; /* a mesma pessoa em clientes e em alunos conta uma vez só (pelo e-mail; sem e-mail, pelo nome e a data) */
+      var pega = function (tabela, tipo, tabCod, colCod) {
+        return Promise.all([
+          C.from(tabela).select('id,nome,whatsapp,nascimento,email').not('nascimento', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }),
+          C.from(tabCod).select(colCod + ',codigo').then(function (r) { return r.data || []; }, function () { return []; })
+        ]).then(function (r) { var cods = {}; r[1].forEach(function (c) { cods[c[colCod]] = c.codigo; }); return r[0].map(function (x) { x.tipo = tipo; x.codigo = cods[x.id] || ''; return x; }); });
+      };
+      return Promise.all([pega('clientes', 'cliente', 'cliente_codigos', 'cliente_id'), pega('alunos', 'aluno', 'aluno_codigos', 'aluno_id')]).then(function (r) { var vistos = {}; /* a mesma pessoa em clientes e em alunos conta uma vez só (pelo e-mail; sem e-mail, pelo nome e a data) */
         aniversarios = r[0].concat(r[1]).filter(function (x) {
           if (!/^\d{4}-\d{2}-\d{2}/.test(x.nascimento || '')) return false;
           var k = x.email ? String(x.email).toLowerCase() : String(x.nome).toLowerCase() + '|' + x.nascimento;
-          if (vistos[k]) { if (!vistos[k].whatsapp && x.whatsapp) vistos[k].whatsapp = x.whatsapp; return false; }
+          if (vistos[k]) { if (!vistos[k].whatsapp && x.whatsapp) vistos[k].whatsapp = x.whatsapp; if (!vistos[k].codigo && x.codigo) vistos[k].codigo = x.codigo; return false; }
           vistos[k] = x; return true;
         }); }, function () { aniversarios = []; });
     }
@@ -141,7 +146,7 @@
         for (var y = a0; y <= a1; y++) {
           var bi = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0, dd = (m === 2 && d === 29 && !bi) ? 28 : d, iso = y + '-' + p2(m) + '-' + p2(dd), ini = doIso(iso);
           if (ini < de || ini >= ate) continue;
-          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + p.nome, curto: p.nome.split(/\s+/)[0], ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#A03E25', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
+          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome, curto: (p.codigo ? p.codigo + ' · ' : '') + p.nome, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#A03E25', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
         }
       });
       return saida;
