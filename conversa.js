@@ -198,8 +198,8 @@
       var linha = el('div', { style: 'display:flex;gap:10px;align-items:flex-end;max-width:720px;margin:0 auto' }, [campo, enviar]);
       barra = el('div', { style: 'position:fixed;left:0;right:0;bottom:0;z-index:90;padding:8px 14px calc(8px + env(safe-area-inset-bottom));box-sizing:border-box;background:var(--papiro-fundo-simples);border-top:2px solid ' + AZUL }, [erro, linha]);
 
-      function medir() { document.body.style.setProperty('padding-bottom', barra.offsetHeight + 'px', 'important'); }   /* reserva o lugar da barra: nada fica escondido atrás dela */
-      barra.__restaurar = function () { document.body.style.removeProperty('padding-bottom'); };
+      function medir() { document.body.style.setProperty('padding-bottom', barra.offsetHeight + 'px', 'important'); document.documentElement.style.setProperty('--barra-conversa', barra.offsetHeight + 'px'); }   /* o Hermes do painel sobe junto, para não ficar em cima do Enviar */   /* reserva o lugar da barra: nada fica escondido atrás dela */
+      barra.__restaurar = function () { document.body.style.removeProperty('padding-bottom'); document.documentElement.style.removeProperty('--barra-conversa'); };
       function crescer() { campo.style.setProperty('height', 'auto', 'important'); campo.style.setProperty('height', Math.min(campo.scrollHeight + 2, window.innerHeight * 0.4) + 'px', 'important'); medir(); }
       campo.addEventListener('input', crescer);
       aoRedimensionar = medir; window.addEventListener('resize', medir);
