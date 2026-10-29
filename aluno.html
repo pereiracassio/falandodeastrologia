@@ -239,7 +239,7 @@
       { chave: 'caderno', nome: 'Atividades', vazio: 'Nenhuma atividade ainda.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
       { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' },
-      { chave: 'conversa', nome: 'Conversa' },   /* mensagens com o Cássio, dentro do app */
+      { chave: 'conversa', nome: 'Dúvidas' },   /* dúvidas para o Cássio e as respostas, dentro do app (a chave interna continua 'conversa') */
       { chave: 'curso', nome: 'Curso' }   /* só aparece para quem está matriculado no curso */
     ];
     var temCurso = null, abaAoVoltar = null;
@@ -443,7 +443,7 @@
         });
         conteudo.textContent = '';
         if (chave === 'trilha') { conteudo.appendChild(telaTrilha(aluno, lista, previa)); return; }
-        if (chave === 'conversa') { conteudo.appendChild(window.conversa.tela({ alunoId: aluno.id, souAdmin: false, previa: previa, aoLer: function () { botoes.conversa.textContent = 'Conversa'; } })); return; }
+        if (chave === 'conversa') { conteudo.appendChild(window.conversa.tela({ alunoId: aluno.id, souAdmin: false, previa: previa, aoLer: function () { botoes.conversa.textContent = 'Dúvidas'; } })); return; }
         if (chave === 'curso') { conteudo.appendChild(window.curso.cartao(temCurso, app, function () { abaAoVoltar = 'curso'; desenharPaginaDoAluno(userAtual, aluno, previa); })); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -476,7 +476,7 @@
         botoes[ab.chave] = b;
         barra.appendChild(b);
       });
-      if (!previa) window.conversa.naoLidas(aluno.id, false).then(function (n) { if (n && botoes.conversa && abaAtual !== 'conversa') botoes.conversa.textContent = 'Conversa (' + n + ')'; });
+      if (!previa) window.conversa.naoLidas(aluno.id, false).then(function (n) { if (n && botoes.conversa && abaAtual !== 'conversa') botoes.conversa.textContent = 'Dúvidas (' + n + ')'; });
       var deUmAviso = /[?&]atividade=([0-9a-f-]{36})/i.exec(location.search);
       var daUrl = (/[?&]aba=(\w+)/.exec(location.search) || [])[1];
       if (daUrl === 'mensalidade') { location.replace('cliente.html'); }   /* avisos antigos: a mensalidade agora fica no Seu espaço */   /* ?aba=materiais vem do aviso no celular */

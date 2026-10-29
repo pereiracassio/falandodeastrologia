@@ -181,13 +181,13 @@
           });
           cartao.appendChild(el('div', { style: 'height:8px' }));
         }
-        /* quem mandou mensagem e ainda não foi lido: tocar abre a conversa dele */
+        /* quem mandou dúvida e ainda não foi lido: tocar abre as dúvidas dele */
         if (totalMensagens) {
-          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 6px', text: totalMensagens === 1 ? '1 mensagem nova' : totalMensagens + ' mensagens novas' }));
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 6px', text: totalMensagens === 1 ? '1 dúvida nova' : totalMensagens + ' dúvidas novas' }));
           Object.keys(mensagensNovas).forEach(function (id) {
             var aluno = r.data.filter(function (a) { return a.id === id; })[0];
             if (!aluno) return;
-            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + (mensagensNovas[id] > 1 ? ' · ' + mensagensNovas[id] + ' mensagens' : '') });
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + (mensagensNovas[id] > 1 ? ' · ' + mensagensNovas[id] + ' dúvidas' : '') });
             l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, aba: 'conversa' }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
             cartao.appendChild(l);
           });
@@ -800,7 +800,7 @@
         { chave: 'atividades', nome: 'Atividades', el: el('div', { class: 'portal-cartao' }, [window.atividades.painelAdmin(aluno, atividadeAberta)]) },
         { chave: 'materiais', nome: 'Materiais', el: painelMateriais },
         { chave: 'gravacoes', nome: 'Gravações', el: painelGravacoes },
-        { chave: 'conversa', nome: 'Conversa', el: function () { return el('div', { class: 'portal-cartao' }, [window.conversa.tela({ alunoId: aluno.id, souAdmin: true, nomeAluno: String(aluno.nome || '').trim().split(/\s+/)[0], aoLer: function () { botoesAbas.conversa.textContent = 'Conversa'; } })]); } },
+        { chave: 'conversa', nome: 'Dúvidas', el: function () { return el('div', { class: 'portal-cartao' }, [window.conversa.tela({ alunoId: aluno.id, souAdmin: true, nomeAluno: String(aluno.nome || '').trim().split(/\s+/)[0], aoLer: function () { botoesAbas.conversa.textContent = 'Dúvidas'; } })]); } },
         { chave: 'dados', nome: 'Dados do aluno', el: formDados },
         { chave: 'pagamentos', nome: 'Pagamentos', el: painelPagamento }
       ];
@@ -824,7 +824,7 @@
       app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
       app.appendChild(conteudoAba);
       mostrarAba(botoesAbas[abaInicial] ? abaInicial : 'acompanhamento');
-      window.conversa.naoLidas(aluno.id, true).then(function (n) { if (n && abaInicial !== 'conversa') botoesAbas.conversa.textContent = 'Conversa (' + n + ')'; });
+      window.conversa.naoLidas(aluno.id, true).then(function (n) { if (n && abaInicial !== 'conversa') botoesAbas.conversa.textContent = 'Dúvidas (' + n + ')'; });
 
       var remover = P.botaoApagar('Remover este aluno do portal');
       remover.addEventListener('click', function () {
