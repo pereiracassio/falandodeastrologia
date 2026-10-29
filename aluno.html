@@ -83,7 +83,7 @@
       c.parentNode.replaceChild(t.firstChild, c);
       if (window.fdaEspaco) window.fdaEspaco.aplicar();
     }
-    function limpar() { restaurarNavDoSite(); if (window.fdaMenuAluno) window.fdaMenuAluno(null); app.textContent = ''; titulos(false); }
+    function limpar() { document.body.classList.remove('aba-duvidas'); restaurarNavDoSite(); if (window.fdaMenuAluno) window.fdaMenuAluno(null); app.textContent = ''; titulos(false); }
 
     function sair() { if (window.fdaEspaco) window.fdaEspaco.limpar(); P.client.auth.signOut().then(mostrarLogin); }
 
@@ -436,6 +436,7 @@
       var botoes = {};
       var abas = ABAS.filter(function (ab) { return (ab.chave !== 'curso' || temCurso); });
       function mostrar(chave) {
+        document.body.classList.toggle('aba-duvidas', chave === 'conversa');   /* na aba Dúvidas não aparece o ícone do WhatsApp do fim da página */
         abas.forEach(function (ab) {
           var ativa = ab.chave === chave;
           botoes[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
@@ -630,7 +631,8 @@
               var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
                 el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
               ]);
-              app.appendChild(el('div', { class: 'portal-whats' }, [whats]));
+              var estiloWhats = document.createElement('style'); estiloWhats.textContent = '.aba-duvidas .portal-whats-pagina{display:none!important}'; document.head.appendChild(estiloWhats);
+              app.appendChild(el('div', { class: 'portal-whats portal-whats-pagina' }, [whats]));
 
             });
           });
