@@ -23,6 +23,7 @@
       { label: "Agenda", href: "admin-agenda.html" },
       { label: "Aplicações", href: "admin-aplicacoes.html" },
       { label: "Alunos", href: "admin-alunos.html" },
+      { label: "Mensagens", href: "admin-mensagens.html" },
       { label: "Clientes", href: "admin-clientes.html" },
       { label: "Checkouts", href: "admin-checkouts.html" },
       { label: "Financeiro", href: "admin-financeiro.html" },
@@ -77,6 +78,8 @@
     ".cart-toggle{position:fixed;top:14px;right:14px;z-index:1001;width:42px;height:42px;border:0;background:none;display:flex;align-items:center;justify-content:center;color:#B5852F;text-decoration:none}" +
     ".cart-toggle:hover{color:#8f6a24}" +
     ".cart-toggle svg{width:30px;height:30px}" +
+    ".hermes-toggle{position:fixed;top:14px;right:64px;z-index:1001;width:42px;height:42px;border:0;background:none;display:flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;padding:0}" +
+    ".hermes-toggle img{width:28px;height:28px;display:block}" +
     ".cart-count{position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#A03E25;color:#fff;font:700 12px/19px sans-serif;text-align:center}" +
     ".sidemenu-toggle span,.sidemenu-toggle span::before,.sidemenu-toggle span::after{content:\"\";display:block;width:24px;height:3px;background:#B5852F;position:relative}" +
     ".sidemenu-toggle span::before{position:absolute;top:-8px}" +
@@ -165,6 +168,20 @@
 
   /* dentro da área do aluno (logado) o carrinho vira o sino dos avisos; fora dela, em qualquer outra página, continua carrinho.
      aluno.html chama window.fdaSinoAvisos({ n: não lidos, aoTocar: função }) a cada vez que a contagem muda. */
+  /* painel do administrador: o Hermes ao lado do sino abre a caixa de mensagens dos alunos; n = mensagens não lidas */
+  var hermes = null;
+  window.fdaHermesAdmin = function (cfg) {
+    if (!hermes) {
+      hermes = document.createElement("a");
+      hermes.className = "hermes-toggle"; hermes.href = "#"; hermes.setAttribute("aria-label", "Mensagens dos alunos"); hermes.title = "Mensagens dos alunos";
+      var img = document.createElement("img"); img.src = "/img/hermes-aviso.png"; img.alt = ""; hermes.appendChild(img);
+      document.body.appendChild(hermes);
+    }
+    var antigo = hermes.querySelector(".cart-count"); if (antigo) hermes.removeChild(antigo);
+    if (cfg && cfg.n > 0) { var n = document.createElement("span"); n.className = "cart-count"; n.textContent = cfg.n; hermes.appendChild(n); }
+    hermes.onclick = function (ev) { ev.preventDefault(); if (cfg && cfg.aoTocar) cfg.aoTocar(); };
+  };
+
   window.fdaSinoAvisos = function (cfg) {
     cart.href = "#";
     cart.setAttribute("aria-label", "Meus avisos");

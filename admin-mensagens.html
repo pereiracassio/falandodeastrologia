@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=3">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest-producao.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Produção">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Mensagens - Falando de Astrologia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="stylesheet" href="page.css?v=72">
+  <link rel="stylesheet" href="portal.css?v=22">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo cab-logo-menor"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/blog.html">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Mensagens</h1>
+    <div id="app"></div>
+  </div></div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="hora-planetaria.js"></script>
+  <script src="portal.js?v=121"></script>
+  <script src="menu.js?v=46" defer></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function voltar() { if (history.length > 1) history.back(); else location.href = 'admin-agenda.html'; }
+    function iniciar(user) {
+      limpar();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          app.appendChild(P.navAdmin('mensagens', user.email, sair));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        tela();
+      });
+    }
+    var BRASILIA = 'America/Sao_Paulo';
+    function quando(iso) {
+      try {
+        var d = new Date(iso), hoje = new Intl.DateTimeFormat('en-CA', { timeZone: BRASILIA }).format(new Date()), dia = new Intl.DateTimeFormat('en-CA', { timeZone: BRASILIA }).format(d);
+        if (dia === hoje) return d.toLocaleTimeString('pt-BR', { timeZone: BRASILIA, hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('pt-BR', { timeZone: BRASILIA, day: '2-digit', month: '2-digit' });
+      } catch (e) { return ''; }
+    }
+    /* uma linha por aluno que já trocou mensagem: a mais recente primeiro; o número em terracota = mensagens dele que você ainda não leu; tocar abre as mensagens dele */
+    function tela() {
+      limpar();
+      app.appendChild(P.navAdmin('mensagens', '', sair));
+      app.appendChild(P.botaoVoltar(voltar));
+      var cartao = el('div', { class: 'portal-cartao' });
+      app.appendChild(cartao);
+      app.appendChild(P.botaoVoltar(voltar));
+      var lista = el('div', {});
+      cartao.appendChild(lista);
+      var anterior = '';
+      function carregar() {
+        Promise.all([
+          C.from('aluno_mensagens').select('aluno_id,de,texto,criado_em,lida_em').order('criado_em', { ascending: false }).limit(1500),
+          C.from('alunos').select('id,nome')
+        ]).then(function (res) {
+          var rm = res[0], ra = res[1];
+          if (rm.error || ra.error) { if (!anterior) { lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as mensagens agora.' })); } return; }
+          var nomes = {}; (ra.data || []).forEach(function (a) { nomes[a.id] = a.nome; });
+          var conversas = {}, ordem = [];
+          (rm.data || []).forEach(function (m) {
+            var c = conversas[m.aluno_id];
+            if (!c) { c = conversas[m.aluno_id] = { id: m.aluno_id, ultima: m, novas: 0 }; ordem.push(c); }
+            if (String(m.criado_em) > String(c.ultima.criado_em)) c.ultima = m;
+            if (m.de === 'aluno' && !m.lida_em) c.novas++;
+          });
+          ordem.sort(function (x, y) { return String(x.ultima.criado_em) < String(y.ultima.criado_em) ? 1 : -1; });
+          var assinatura = ordem.map(function (c) { return c.id + c.ultima.criado_em + c.novas; }).join('|');
+          if (assinatura === anterior) return;
+          anterior = assinatura;
+          lista.textContent = '';
+          if (!ordem.length) { lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma mensagem ainda.' })); return; }
+          var total = 0;
+          ordem.forEach(function (c) {
+            total += c.novas;
+            var nome = nomes[c.id] || 'Aluno';
+            var previa = (c.ultima.de === 'cassio' ? 'Você: ' : '') + String(c.ultima.texto || '').replace(/\s+/g, ' ');
+            var abrir = function () { location.href = 'admin-alunos.html#aluno=' + encodeURIComponent(c.id) + '&aba=conversa'; };
+            var titulo = el('span', { class: 'portal-item-titulo', style: c.novas ? 'color:#A03E25' : '', text: nome + (c.novas ? ' (' : '') });
+            if (c.novas) { titulo.appendChild(el('span', { text: String(c.novas) })); titulo.appendChild(document.createTextNode(')')); }
+            var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', { style: 'min-width:0;flex:1' }, [
+              titulo,
+              el('span', { class: 'portal-item-data', text: quando(c.ultima.criado_em) }),
+              el('p', { style: 'margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (c.novas ? ';font-weight:700' : ''), text: previa })
+            ])])]);
+            linha.addEventListener('click', abrir);
+            linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+            lista.appendChild(linha);
+          });
+          if (window.fdaHermesAdmin) window.fdaHermesAdmin({ n: total, aoTocar: function () {} });
+        });
+      }
+      carregar();
+      setInterval(function () { if (document.visibilityState === 'visible') carregar(); }, 30000);
+      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') carregar(); });
+    }
+    C.auth.getSession().then(function (r) {
+      if (r.data && r.data.session) iniciar(r.data.session.user); else mostrarLogin();
+    });
+  })();
+  </script>
+</body>
+</html>

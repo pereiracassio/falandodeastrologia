@@ -514,6 +514,17 @@
     contar();
     setInterval(function () { if (document.visibilityState === 'visible') contar(); }, 60000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contar(); });
+    /* o Hermes ao lado do sino: abre a caixa de mensagens dos alunos; o número = mensagens de alunos ainda não lidas */
+    var pintarHermes = function (q) {
+      var cfg = { n: q, aoTocar: function () { location.href = 'admin-mensagens.html'; } };
+      if (window.fdaHermesAdmin) window.fdaHermesAdmin(cfg); else document.addEventListener('DOMContentLoaded', function () { if (window.fdaHermesAdmin) window.fdaHermesAdmin(cfg); });
+    };
+    var contarMensagens = function () {
+      client.from('aluno_mensagens').select('id', { count: 'exact', head: true }).eq('de', 'aluno').is('lida_em', null).then(function (r) { pintarHermes(r && !r.error && r.count ? r.count : 0); }, function () { pintarHermes(0); });
+    };
+    pintarHermes(0); contarMensagens();
+    setInterval(function () { if (document.visibilityState === 'visible') contarMensagens(); }, 30000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contarMensagens(); });
   }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
