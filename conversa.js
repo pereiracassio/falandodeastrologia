@@ -7,6 +7,44 @@
   var P = window.portal, el = P.el, C = P.client;
   var AZUL = '#1F5FA3', AZUL_ESCURO = '#1034A6', OCRE = '#B5852F', TERRACOTA = '#A03E25';
 
+  /* balão só de contorno, como no WhatsApp (único lugar do site com canto arredondado, pedido dele; por isso o !important contra a regra de canto reto): o canto de cima do lado de quem fala é reto e leva um bico desenhado (nada de preenchimento no papiro) */
+  function estilosDosBaloes() {
+    if (document.getElementById('conversa-css')) return;
+    var st = document.createElement('style'); st.id = 'conversa-css';
+    st.textContent =
+      '.balao{position:relative;max-width:82%;margin:0 0 10px;padding:8px 12px 5px;border:1.5px solid;box-sizing:border-box;border-radius:14px!important;background:transparent}' +
+      '.balao-eu{align-self:flex-end;border-color:' + OCRE + ';border-top-right-radius:0!important;margin-right:10px}' +
+      '.balao-outro{align-self:flex-start;border-color:' + AZUL_ESCURO + ';border-top-left-radius:0!important;margin-left:10px}' +
+      '.balao::before{content:"";position:absolute;top:-1.5px;width:10px;height:10px}' +
+      '.balao-eu::before{right:-10px;border-top:1.5px solid ' + OCRE + ';background:linear-gradient(to bottom right,transparent calc(50% - .75px),' + OCRE + ' calc(50% - .75px),' + OCRE + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
+      '.balao-outro::before{left:-10px;border-top:1.5px solid ' + AZUL_ESCURO + ';background:linear-gradient(to bottom left,transparent calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
+      '.balao p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;font-family:"AstroIcones","Architects Daughter",cursive}' +
+      '.balao-rodape{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;font:400 11px "Architects Daughter",cursive;color:rgba(22,35,63,.62)}' +
+      '.dia-conversa{align-self:center;margin:6px 0 12px;font:700 12px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;color:' + AZUL_ESCURO + '}';
+    document.head.appendChild(st);
+  }
+  var SVG = 'http://www.w3.org/2000/svg';
+  /* tracinhos de enviado (um, cinza) e lido (dois, azuis), desenhados à mão no SVG */
+  function tracinhos(lido) {
+    var svg = document.createElementNS(SVG, 'svg'); svg.setAttribute('width', lido ? '19' : '14'); svg.setAttribute('height', '10'); svg.setAttribute('viewBox', lido ? '0 0 19 10' : '0 0 14 10'); svg.setAttribute('aria-label', lido ? 'Lida' : 'Enviada');
+    [lido ? 'M1 5.5 L4.5 9 L12 1.5' : 'M1 5.5 L5 9 L13 1', 'M6.5 8.5 L7.8 9 L17.5 1.5'].slice(0, lido ? 2 : 1).forEach(function (d) {
+      var pth = document.createElementNS(SVG, 'path'); pth.setAttribute('d', d); pth.setAttribute('fill', 'none'); pth.setAttribute('stroke', lido ? AZUL_ESCURO : 'rgba(22,35,63,.55)');
+      pth.setAttribute('stroke-width', '1.6'); pth.setAttribute('stroke-linecap', 'round'); pth.setAttribute('stroke-linejoin', 'round'); svg.appendChild(pth);
+    });
+    return svg;
+  }
+  function hora(iso) {
+    try { return new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
+  }
+  function diaDe(iso) {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso)); } catch (e) { return String(iso || '').slice(0, 10); }
+  }
+  function rotuloDoDia(dia) {
+    var hoje = diaDe(new Date().toISOString()), ontem = diaDe(new Date(Date.now() - 86400000).toISOString());
+    if (dia === hoje) return 'hoje'; if (dia === ontem) return 'ontem';
+    return dia.slice(8, 10) + '/' + dia.slice(5, 7) + '/' + dia.slice(0, 4);
+  }
+
   function quando(iso) {
     try { return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ''); }
     catch (e) { return String(iso || '').slice(0, 10); }
@@ -17,21 +55,25 @@
   function tela(cfg) {
     var minha = cfg.souAdmin ? 'cassio' : 'aluno';
     var caixa = el('div', {});
+    estilosDosBaloes();
     var lista = el('div', { style: 'display:flex;flex-direction:column' });
     var mensagens = [], vistas = {}, canal = null, relogio = null, vigia = null, barra = null, aoRedimensionar = null;
 
     function bloco(m) {
       var eu = m.de === minha;
-      var nome = eu ? 'Você' : (cfg.souAdmin ? (cfg.nomeAluno || 'Aluno') : 'Cássio');
-      return el('div', { style: 'align-self:' + (eu ? 'flex-end' : 'flex-start') + ';max-width:86%;margin:0 0 14px;padding:2px 10px;' + (eu ? 'border-right:3px solid ' + OCRE : 'border-left:3px solid ' + AZUL_ESCURO) }, [
-        el('span', { class: 'impresso', style: 'display:block;font-size:12px;font-weight:700;color:' + (eu ? TERRACOTA : AZUL_ESCURO), text: nome + ' · ' + quando(m.criado_em) }),
-        el('p', { style: 'margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:\'AstroIcones\',\'Architects Daughter\',cursive', text: m.texto })
-      ]);
+      var rodape = el('div', { class: 'balao-rodape' }, [el('span', { text: hora(m.criado_em) })]);
+      if (eu) rodape.appendChild(tracinhos(!!m.lida_em));
+      return el('div', { class: 'balao ' + (eu ? 'balao-eu' : 'balao-outro') }, [el('p', { text: m.texto }), rodape]);
     }
     function desenhar() {
       lista.textContent = '';
       if (!mensagens.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma mensagem ainda.' }));
-      mensagens.forEach(function (m) { lista.appendChild(bloco(m)); });
+      var diaAnterior = '';
+      mensagens.forEach(function (m) {
+        var d = diaDe(m.criado_em);
+        if (d !== diaAnterior) { diaAnterior = d; lista.appendChild(el('span', { class: 'dia-conversa', text: rotuloDoDia(d) })); }
+        lista.appendChild(bloco(m));
+      });
     }
     function acrescentar(m) {
       if (!m || vistas[m.id]) return false;
@@ -52,7 +94,11 @@
       C.from('aluno_mensagens').select('id,de,texto,criado_em,lida_em').eq('aluno_id', cfg.alunoId).order('criado_em').limit(500).then(function (r) {
         if (r.error) { if (primeira) { lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a conversa agora.' })); } return; }
         var perto = noFim(), mudou = false;
-        (r.data || []).forEach(function (m) { if (acrescentar(m)) mudou = true; });
+        (r.data || []).forEach(function (m) {
+          if (acrescentar(m)) { mudou = true; return; }
+          var antiga = mensagens.filter(function (x) { return x.id === m.id; })[0];
+          if (antiga && !antiga.lida_em && m.lida_em) { antiga.lida_em = m.lida_em; mudou = true; }   /* o outro lado leu: os tracinhos ficam azuis */
+        });
         if (primeira || mudou) {
           desenhar();
           if (primeira) { setTimeout(irAoFim, 50); setTimeout(irAoFim, 400); } else if (perto) setTimeout(irAoFim, 0);
@@ -73,6 +119,9 @@
       try {
         canal = C.channel('conversa-' + cfg.alunoId).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'aluno_mensagens', filter: 'aluno_id=eq.' + cfg.alunoId }, function (p) {
           if (p && p.new) { var perto = noFim(); if (acrescentar(p.new)) { desenhar(); if (perto || p.new.de === minha) setTimeout(irAoFim, 0); marcarLidas(); } }
+        }).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'aluno_mensagens', filter: 'aluno_id=eq.' + cfg.alunoId }, function (p) {
+          var antiga = p && p.new ? mensagens.filter(function (x) { return x.id === p.new.id; })[0] : null;
+          if (antiga && !antiga.lida_em && p.new.lida_em) { antiga.lida_em = p.new.lida_em; desenhar(); }
         }).subscribe();
       } catch (e) { canal = null; /* sem tempo real: vale a conferência periódica */ }
       relogio = setInterval(function () { if (document.visibilityState === 'visible') carregar(false); }, 30000);
