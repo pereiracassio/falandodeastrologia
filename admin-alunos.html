@@ -181,13 +181,13 @@
           });
           cartao.appendChild(el('div', { style: 'height:8px' }));
         }
-        /* quem mandou dúvida e ainda não foi lido: tocar abre as dúvidas dele */
+        /* quem mandou mensagem e ainda não foi lido: tocar abre a aba Dúvidas dele */
         if (totalMensagens) {
-          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 6px', text: totalMensagens === 1 ? '1 dúvida nova' : totalMensagens + ' dúvidas novas' }));
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 6px', text: totalMensagens === 1 ? '1 mensagem nova' : totalMensagens + ' mensagens novas' }));
           Object.keys(mensagensNovas).forEach(function (id) {
             var aluno = r.data.filter(function (a) { return a.id === id; })[0];
             if (!aluno) return;
-            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + (mensagensNovas[id] > 1 ? ' · ' + mensagensNovas[id] + ' dúvidas' : '') });
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + (mensagensNovas[id] > 1 ? ' · ' + mensagensNovas[id] + ' mensagens' : '') });
             l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, aba: 'conversa' }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
             cartao.appendChild(l);
           });

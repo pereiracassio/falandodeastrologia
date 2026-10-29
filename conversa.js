@@ -1,6 +1,6 @@
-/* Dúvidas do aluno para o Cássio e as respostas (só texto). window.conversa.tela({ alunoId, souAdmin, nomeAluno, previa, aoLer }) devolve a tela pronta.
-   A dúvida nova aparece na hora (Realtime do Supabase) e, como reserva, a tela confere de 30 em 30 segundos enquanto está aberta.
-   Os avisos de dúvida nova são gravados pelo próprio banco (docs/conversa.sql). */
+/* Mensagens do aluno para o Cássio e as respostas (só texto), na aba Dúvidas. window.conversa.tela({ alunoId, souAdmin, nomeAluno, previa, aoLer }) devolve a tela pronta.
+   A mensagem nova aparece na hora (Realtime do Supabase) e, como reserva, a tela confere de 30 em 30 segundos enquanto está aberta.
+   Os avisos de mensagem nova são gravados pelo próprio banco (docs/conversa.sql). */
 (function () {
   var P = window.portal, el = P.el, C = P.client;
 
@@ -13,7 +13,7 @@
     var minha = cfg.souAdmin ? 'cassio' : 'aluno';
     var caixa = el('div', {});
     var lista = el('div', {});
-    var campo = el('textarea', { rows: '2', placeholder: 'Escreva a sua dúvida', 'aria-label': 'Dúvida' });
+    var campo = el('textarea', { rows: '2', placeholder: 'Escreva a sua mensagem', 'aria-label': 'Mensagem' });
     var enviar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar' });
     var msg = el('p', { class: 'portal-msg' });
     var mensagens = [], vistas = {}, canal = null, relogio = null;
@@ -28,7 +28,7 @@
     }
     function desenhar(irParaOFim) {
       lista.textContent = '';
-      if (!mensagens.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma dúvida ainda.' }));
+      if (!mensagens.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma mensagem ainda.' }));
       mensagens.forEach(function (m) { lista.appendChild(bloco(m)); });
       if (irParaOFim && mensagens.length > 3) setTimeout(function () { campo.scrollIntoView({ block: 'end' }); }, 0);
     }
@@ -50,7 +50,7 @@
     }
     function carregar(primeira) {
       C.from('aluno_mensagens').select('id,de,texto,criado_em,lida_em').eq('aluno_id', cfg.alunoId).order('criado_em').limit(500).then(function (r) {
-        if (r.error) { if (primeira) mensagens.length = 0; if (primeira) { lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as dúvidas agora.' })); } return; }
+        if (r.error) { if (primeira) mensagens.length = 0; if (primeira) { lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as mensagens agora.' })); } return; }
         var mudou = false;
         (r.data || []).forEach(function (m) { if (acrescentar(m)) mudou = true; });
         if (primeira || mudou) desenhar(primeira);

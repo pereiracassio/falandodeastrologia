@@ -1,4 +1,4 @@
--- Dúvidas do aluno para o Cássio (e as respostas), dentro do app — rodar UMA vez no Supabase: SQL Editor -> New query -> colar tudo -> Run.
+-- Mensagens do aluno para o Cássio (e as respostas), na aba Dúvidas do app — rodar UMA vez no Supabase: SQL Editor -> New query -> colar tudo -> Run.
 -- O aluno só vê a própria conversa; o administrador vê todas. Só texto. Os avisos (para o Cássio e para o aluno) são gravados pelo próprio banco.
 
 create table if not exists public.aluno_mensagens (
@@ -41,7 +41,7 @@ end $$;
 revoke all on function public.marcar_conversa_lida(uuid) from public;
 grant execute on function public.marcar_conversa_lida(uuid) to authenticated;
 
--- aviso de dúvida nova (para o Cássio) e de dúvida respondida (para o aluno)
+-- aviso de mensagem nova (para o Cássio) e de resposta (para o aluno)
 create or replace function public.trg_aviso_mensagem() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare alu record; primeiro text;
@@ -50,9 +50,9 @@ begin
   if alu.id is null then return new; end if;
   primeiro := coalesce(nullif(split_part(trim(coalesce(alu.nome, '')), ' ', 1), ''), 'aluno');
   if new.de = 'aluno' then
-    perform public.avisar_admins('Dúvida nova', primeiro || ' mandou uma dúvida: ' || left(new.texto, 100), '/admin-alunos.html#aluno=' || alu.id || '&aba=conversa');
+    perform public.avisar_admins('Mensagem nova', primeiro || ' mandou uma mensagem: ' || left(new.texto, 100), '/admin-alunos.html#aluno=' || alu.id || '&aba=conversa');
   else
-    perform public.criar_aviso(alu.email, 'Dúvida respondida', 'Oi, ' || primeiro || '! Respondi a sua dúvida: ' || left(new.texto, 100), '/aluno.html?aba=conversa', null);
+    perform public.criar_aviso(alu.email, 'Mensagem nova', 'Oi, ' || primeiro || '! Respondi a sua mensagem: ' || left(new.texto, 100), '/aluno.html?aba=conversa', null);
   end if;
   return new;
 end $$;
