@@ -372,7 +372,7 @@
         var m = meus(t), feitos = m.filter(function (x) { return pontos(x) >= 1; }), pend = m.filter(function (x) { return pontos(x) < 1; });
         var soma = m.reduce(function (a, x) { return a + pontos(x); }, 0);
         var pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
-        var cartao = el('div', { class: 'portal-cartao', style: 'border-top:0;border-bottom:2px solid #1F5FA3;padding-bottom:20px;margin-bottom:20px' }); /* a linha fica no FIM da trilha, depois do Apagar, para saber de qual trilha é cada botão */
+        var cartao = el('div', { class: 'portal-cartao', style: 'border-top:0!important;border-bottom:2px solid #1F5FA3!important;padding:0 0 20px!important;margin:0 0 20px!important' }); /* a linha fica no FIM da trilha, depois do Apagar, para saber de qual trilha é cada botão */
         /* sanfona: o cabeçalho (nome + barras) fica sempre à vista; ao tocar, abre/fecha os passos, com a barra ocre do lado esquerdo */
         var cabeca = el('div', { role: 'button', tabindex: '0', 'aria-expanded': 'false', style: 'cursor:pointer' }), c = el('div', { class: 'barra-ocre', style: 'margin-top:12px' }), sinalT = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif;color:#A03E25' });
         var renomear = mini('Renomear', function () { var n = (prompt('Assunto da trilha', t.nome) || '').trim(); if (n && n !== t.nome) P.client.from('aluno_trilhas').update({ nome: n }).eq('id', t.id).then(carregar); });
