@@ -145,9 +145,37 @@
     });
     return caixa;
   }
-  function enviarImagem(atividadeId, arquivo, caminhoAntigo) {
-    if (!/^image\/(png|jpeg)$/.test(arquivo.type)) return Promise.reject(new Error('Use uma imagem PNG ou JPEG.'));
-    if (arquivo.size > LIMITE_IMAGEM) return Promise.reject(new Error('A imagem é grande demais (máximo 8 MB).'));
+  /* imagem grande (a liberação inteira é comprida e pesa muito): reduz sozinha para JPEG antes de subir */
+  function prepararImagem(arq) {
+    if (arq.size <= 3 * 1024 * 1024) return Promise.resolve(arq);
+    return new Promise(function (ok, falha) {
+      var url = URL.createObjectURL(arq), img = new Image();
+      img.onload = function () {
+        var f = Math.min(1, 2000 / img.naturalWidth, Math.sqrt(12e6 / (img.naturalWidth * img.naturalHeight)));
+        var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * f); c.height = Math.round(img.naturalHeight * f);
+        var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        var tentar = function (q) { c.toBlob(function (b) {
+          if (!b) { falha(new Error('Não consegui reduzir a imagem. Tente uma imagem menor.')); return; }
+          if (b.size > LIMITE_IMAGEM && q > 0.5) { tentar(q - 0.2); return; }
+          ok(new File([b], 'mapa.jpg', { type: 'image/jpeg' }));
+        }, 'image/jpeg', q); };
+        tentar(0.88);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); falha(new Error('Não consegui abrir essa imagem.')); };
+      img.src = url;
+    });
+  }
+  function enviarImagem(atividadeId, arquivoOriginal, caminhoAntigo) {
+    if (!/^image\/(png|jpeg)$/.test(arquivoOriginal.type)) return Promise.reject(new Error('Use uma imagem PNG ou JPEG.'));
+    return prepararImagem(arquivoOriginal).then(function (arquivo) {
+      if (arquivo.size > LIMITE_IMAGEM) throw new Error('A imagem é grande demais (máximo 8 MB).');
+      return enviarImagemPronta(atividadeId, arquivo, caminhoAntigo);
+    });
+  }
+  /* mostra o motivo de verdade (a tradução genérica escondia, por exemplo, "imagem grande demais") */
+  var erroImagem = function (e) { var m = String((e && e.message) || ''); return /imagem|PNG|JPEG/i.test(m) && /[áãéíç]/.test(m) ? m : 'Não foi possível enviar a imagem: ' + m; };
+  function enviarImagemPronta(atividadeId, arquivo, caminhoAntigo) {
     var caminho = atividadeId + '/mapa-' + Date.now() + '.' + (arquivo.type === 'image/png' ? 'png' : 'jpg');
     return C.storage.from(BUCKET).upload(caminho, arquivo, { contentType: arquivo.type, upsert: false }).then(function (r) {
       if (r.error) throw r.error;
@@ -555,7 +583,6 @@
       var areaImagem = el('div', {}, [el('label', { text: 'Imagem do mapa (opcional, PNG ou JPEG)' }),
         botaoDeImagem('Escolher a imagem', function (arq) {
           if (!/^image\/(png|jpeg)$/.test(arq.type)) { P.mensagem(msg, 'Use uma imagem PNG ou JPEG.', 'erro'); return; }
-          if (arq.size > LIMITE_IMAGEM) { P.mensagem(msg, 'A imagem é grande demais (máximo 8 MB).', 'erro'); return; }
           imagemEscolhida = arq; P.mensagem(msg, ''); nomeImagem.textContent = 'Imagem escolhida: ' + arq.name;
         }), nomeImagem]);
 
@@ -797,14 +824,14 @@
           var acoesImg = el('div', { class: 'portal-acoes' }, [botaoDeImagem(a.imagem_caminho ? 'Trocar a imagem' : 'Anexar imagem', function (arq) {
             P.mensagem(msgImagem, 'Enviando a imagem...');
             enviarImagem(a.id, arq, a.imagem_caminho).then(function (caminho) { a.imagem_caminho = caminho; desenharImagem(); P.mensagem(msgImagem, 'Imagem salva.', 'ok'); })
-              .catch(function (e) { P.mensagem(msgImagem, P.traduzErro(e.message), 'erro'); });
+              .catch(function (e) { P.mensagem(msgImagem, erroImagem(e), 'erro'); });
           })]);
           if (a.imagem_caminho) {
             var tirarImg = P.botaoApagar('Tirar a imagem');
             tirarImg.addEventListener('click', function () {
               if (!confirm('Tirar a imagem desta atividade?')) return;
               removerImagem(a.id, a.imagem_caminho).then(function () { a.imagem_caminho = null; desenharImagem(); P.mensagem(msgImagem, 'Imagem removida.', 'ok'); })
-                .catch(function (e) { P.mensagem(msgImagem, P.traduzErro(e.message), 'erro'); });
+                .catch(function (e) { P.mensagem(msgImagem, erroImagem(e), 'erro'); });
             });
             acoesImg.appendChild(tirarImg);
           }
