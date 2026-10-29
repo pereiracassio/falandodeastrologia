@@ -512,6 +512,10 @@
       var nascInput = el('input', { type: 'date', id: 'alunoNasc' }); nascInput.value = String(aluno.nascimento || '').slice(0, 10);
       var whatsInput = el('input', { type: 'tel', id: 'alunoWhats', placeholder: 'Ex.: 11 91234-5678' });
       whatsInput.value = aluno.whatsapp || '';
+      /* o e-mail só salva ao sair do campo (digitando, e-mails pela metade chegariam a trocar o acesso) */
+      var emailInput = el('input', { type: 'email', id: 'alunoEmail', required: '' });
+      emailInput.value = aluno.email || '';
+      emailInput.addEventListener('input', function (ev) { ev.stopPropagation(); });
       var meet = el('input', { type: 'url', id: 'alunoMeet', placeholder: 'https://meet.google.com/...' });
       meet.value = aluno.meet_link || '';
       var salvarDados = el('button', { type: 'submit', class: 'portal-btn', text: 'Salvar dados' });
@@ -522,6 +526,7 @@
         el('h2', { text: 'Dados do aluno' }),
         el('label', { for: 'alunoCodigo', text: 'Código' }), codInput,
         el('label', { for: 'alunoNome', text: 'Nome' }), nomeInput,
+        el('label', { for: 'alunoEmail', text: 'E-mail' }), emailInput,
         el('label', { for: 'alunoWhats', text: 'WhatsApp' }), whatsInput,
         el('label', { for: 'alunoNasc', text: 'Aniversário' }), nascInput,
         el('label', { for: 'alunoMeet', text: 'Link do Meet' }), meet,
@@ -535,8 +540,26 @@
         var seguro = linkMeet ? P.linkSeguro(linkMeet) : null;
         if (!novoNome) { P.mensagem(msgDados, 'Escreva o nome.', 'erro'); return; }
         if (linkMeet && !seguro) { P.mensagem(msgDados, 'O link do Meet precisa começar com https://', 'erro'); return; }
+        var novoEmail = emailInput.value.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)) { P.mensagem(msgDados, 'Escreva um e-mail válido.', 'erro'); return; }
         salvarDados.disabled = true;
-        P.client.from('alunos').update({ nome: novoNome, nascimento: nascInput.value || null, whatsapp: whatsInput.value.trim() || null, meet_link: seguro }).eq('id', aluno.id).then(function (r1) {
+        var antigoEmail = String(aluno.email || '').toLowerCase();
+        /* e-mail novo: primeiro o login (servidor), depois a ficha e as matrículas do curso */
+        var trocaEmail = novoEmail === antigoEmail ? Promise.resolve() : P.client.auth.getSession().then(function (sessao) {
+          var jwt = sessao.data && sessao.data.session ? sessao.data.session.access_token : '';
+          return fetch('https://falandodeastrologia.vercel.app/api/trocar-email', { method: 'POST', headers: { Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: JSON.stringify({ antigo: antigoEmail, novo: novoEmail, nome: novoNome }) })
+            .then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { if (!resp.ok) throw new Error(d.detalhe || d.erro || 'erro'); }); });
+        });
+        trocaEmail.then(function () {
+          var campos = { nome: novoNome, nascimento: nascInput.value || null, whatsapp: whatsInput.value.trim() || null, meet_link: seguro };
+          if (novoEmail !== antigoEmail) campos.email = novoEmail;
+          return P.client.from('alunos').update(campos).eq('id', aluno.id);
+        }, function (e) { salvarDados.disabled = false; emailInput.value = aluno.email || ''; P.mensagem(msgDados, 'Não troquei o e-mail: ' + (e.message || 'erro'), 'erro'); return null; }).then(function (r1) {
+          if (!r1) return;
+          if (novoEmail !== antigoEmail && !r1.error) {
+            aluno.email = novoEmail;
+            P.client.from('curso_matriculas').update({ email: novoEmail }).ilike('email', antigoEmail).then(function () {});
+          }
           if (r1.error) { salvarDados.disabled = false; P.mensagem(msgDados, P.traduzErro(r1.error.message), 'erro'); return; }
           var pedido = valor
             ? P.client.from('aluno_codigos').upsert({ aluno_id: aluno.id, codigo: valor }, { onConflict: 'aluno_id' })
