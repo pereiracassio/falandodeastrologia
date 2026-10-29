@@ -1204,8 +1204,17 @@
         if (ativo) {
           var desligar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Desativar neste aparelho' });
           desligar.addEventListener('click', function () { desligar.disabled = true; desativarAvisos().then(desenhar, desenhar); });
+          /* teste feito só no aparelho (sem servidor): mostra se o aparelho consegue exibir um aviso */
+          var testar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Testar neste aparelho' });
+          testar.addEventListener('click', function () {
+            navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) {
+              if (!reg) throw new Error('sem registro');
+              return reg.showNotification('Teste de aviso', { body: 'Se você está vendo isto, o aparelho mostra os avisos.', icon: '/favicon.png', data: { url: '/' } });
+            }).then(function () { mensagem(msg, 'Teste enviado.', 'ok'); }, function (e) { mensagem(msg, 'O aparelho não mostrou o aviso: ' + (e && e.message ? e.message : 'erro'), 'erro'); });
+          });
           corpo.appendChild(el('p', { text: 'Avisos ativados neste aparelho.' }));
-          corpo.appendChild(el('div', { class: 'portal-acoes' }, [desligar]));
+          corpo.appendChild(el('div', { class: 'portal-acoes' }, [testar, desligar]));
+          corpo.appendChild(msg);
           return;
         }
         var ligar = el('button', { type: 'button', class: 'portal-btn', text: 'Ativar avisos neste aparelho' });
