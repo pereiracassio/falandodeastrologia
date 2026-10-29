@@ -66,11 +66,11 @@
   var hojeISO = function () { return new Date().toLocaleDateString('sv-SE'); }; /* AAAA-MM-DD no dia do aparelho */
   var diaDe = function (iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; };
   var COLUNAS_BASE = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga';
-  var COLUNAS = COLUNAS_BASE + ',imagem_caminho,somente_leitura';
+  var COLUNAS = COLUNAS_BASE + ',imagem_caminho,somente_leitura,rascunho';
   /* lista as atividades do aluno; se a coluna da imagem ainda não existe no banco, tenta de novo sem ela (nunca derruba a tela) */
   function atividadesDoAluno(alunoId, ordem) {
     var pedir = function (cols) { var q = C.from('atividades').select(cols).eq('aluno_id', alunoId); return ordem ? ordenar(q) : q; };
-    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho|somente_leitura/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
+    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho|somente_leitura|rascunho/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
   }
   var ordenar = function (q) { return q.order('data_atividade', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }); };
   var dataPostagem = function (a) { return a.data_atividade || diaDe(a.criado_em); };
@@ -467,9 +467,9 @@
         if (!r.data.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma atividade ainda.' }));
         r.data.forEach(function (a) {
           /* "Corrigir" só depois que o aluno enviou e enquanto falta corrigir (antiga: enquanto não tem nenhuma correção); senão "Abrir" */
-          var falta = a.enviada_em && !a.somente_leitura && (a.antiga ? !x.corrigidas[a.id] : !a.corrigida_em);
+          var falta = !a.rascunho && a.enviada_em && !a.somente_leitura && (a.antiga ? !x.corrigidas[a.id] : !a.corrigida_em);
           var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: falta ? 'Corrigir' : 'Abrir' });
-          var info = el('span', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
+          var info = el('span', { class: 'portal-item-data', text: a.rascunho ? 'Rascunho · o aluno ainda não vê' : linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
           corpo.appendChild(linhaClicavel(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
             el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }), info]), abrir
           ])]), function () { telaDaAtividade(a); }));
@@ -478,7 +478,7 @@
     }
 
     /* arquivo { "atividades": [ { "titulo", "tipo": "atividade"|"leitura", "descricao", "perguntas": [ { "tipo": "dissertativa"|"multipla", "enunciado", "opcoes": [...], "correta": 0 } ] } ] }
-       que o Claude monta com o Cássio; atividade de mesmo título que o aluno já tem é pulada. Não manda aviso: ele avisa pelo WhatsApp se quiser */
+       que o Claude monta com o Cássio; atividade de mesmo título que o aluno já tem é pulada. Entra como RASCUNHO (o aluno não vê); o aviso sai só quando ele toca em Enviar para o aluno */
     function importarArquivo(f, existentes) {
       f.text().then(function (txt) {
         var dados;
@@ -495,7 +495,7 @@
             var leit = item.tipo === 'leitura';
             var perguntas = leit ? [] : (item.perguntas || []).filter(function (q) { return q && String(q.enunciado || '').trim(); });
             if (!leit && !perguntas.length) { puladas++; return; }
-            var registro = { aluno_id: aluno.id, titulo: tit, descricao: item.descricao ? String(item.descricao).trim() : null, data_atividade: hojeISO(), antiga: leit };
+            var registro = { aluno_id: aluno.id, titulo: tit, descricao: item.descricao ? String(item.descricao).trim() : null, data_atividade: hojeISO(), antiga: leit, rascunho: true };
             if (leit) { registro.somente_leitura = true; registro.enviada_em = new Date().toISOString(); }
             return C.from('atividades').insert(registro).select('id').single().then(function (r) {
               if (r.error) throw r.error;
@@ -518,7 +518,7 @@
             });
           });
         }, Promise.resolve()).then(function () {
-          alert(feitas + ' atividade(s) importada(s)' + (puladas ? '; ' + puladas + ' pulada(s) (já existia ou estava sem perguntas).' : '.'));
+          alert(feitas + ' atividade(s) importada(s)' + (puladas ? '; ' + puladas + ' pulada(s) (já existia ou estava sem perguntas).' : '.') + '\nElas ficaram como rascunho: confira e toque em Enviar para o aluno.');
           lista();
         }, function (e) { alert('Não foi possível importar: ' + P.traduzErro(e.message)); lista(); });
       });
@@ -727,6 +727,23 @@
         area.textContent = '';
         area.appendChild(el('p', { class: 'portal-item-titulo', text: a.titulo }));
         area.appendChild(el('p', { class: 'portal-item-data', text: linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou (o que aparece abaixo é um rascunho)') }));
+
+        /* rascunho: o aluno não vê até o Cássio enviar; ao enviar, vale a data de hoje e o aviso sai */
+        if (a.rascunho) {
+          var msgEnviar = el('p', { class: 'portal-msg' });
+          var enviarAluno = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar para o aluno' });
+          enviarAluno.addEventListener('click', function () {
+            if (!confirm('Enviar esta atividade para ' + primeiroNome(aluno.nome) + '? Ela passa a aparecer para o aluno e ele recebe o aviso.')) return;
+            enviarAluno.disabled = true;
+            C.from('atividades').update({ rascunho: false, data_atividade: hojeISO() }).eq('id', a.id).then(function (r) {
+              if (r.error) { enviarAluno.disabled = false; P.mensagem(msgEnviar, P.traduzErro(r.error.message), 'erro'); return; }
+              a.rascunho = false; a.data_atividade = hojeISO();
+              if (!a.somente_leitura) P.avisos.avisar('nova', a.id);
+              avisarNovaAtividade(a.titulo);
+            });
+          });
+          area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Rascunho' }), el('p', { class: 'portal-vazio', style: 'margin-bottom:10px', text: 'O aluno ainda não vê esta atividade. Confira, mexa no que quiser e envie.' }), msgEnviar, enviarAluno]));
+        }
 
         /* datas da atividade (dá pra acertar à mão, principalmente nas antigas) */
         var dAt = el('input', { type: 'date' }); dAt.value = dataPostagem(a);
