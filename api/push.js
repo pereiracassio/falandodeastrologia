@@ -201,7 +201,7 @@ async function tratar(req, res) {
     const pessoa = aluno || await achar('cliente_codigos', 'cliente_id', 'clientes');
     if (!pessoa || !pessoa.email) { res.status(200).json({ ok: true, enviados: 0, motivo: 'pessoa não encontrada' }); return; }
     const oque = String(ent.produto || '').slice(0, 120);
-    const carga = { title: 'Pagamento recebido', body: 'Oi, ' + primeiroNome(pessoa.nome) + '! Recebi o seu pagamento' + (oque ? ': ' + oque : '') + '.', url: aluno ? URL_ALUNO + '?aba=mensalidade' : URL_CLIENTE };
+    const carga = { title: 'Pagamento recebido', body: 'Oi, ' + primeiroNome(pessoa.nome) + '! Recebi o seu pagamento' + (oque ? ': ' + oque : '') + '.', url: URL_CLIENTE };   /* a mensalidade fica na página Seu espaço */
     const r = await entregarAviso(String(pessoa.email).toLowerCase(), carga, aluno ? {} : { guardar_sempre: true });
     res.status(200).json({ ok: true, ...r }); return;
   }

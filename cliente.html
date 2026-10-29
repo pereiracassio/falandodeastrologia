@@ -42,6 +42,7 @@
   <script src="portal.js?v=119"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="leitor.js?v=8"></script>
+  <script src="mensalidade.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -216,6 +217,21 @@
       app.appendChild(P.cartaoAtendimento(verId || null, false));
     }
 
+    /* o que é só do aluno e fica aqui (e não na página dele): Mensalidade e Trocar senha */
+    function blocosDoAluno(user, aluno) {
+      app.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Mensalidade' }), window.mensalidade.tela(aluno, false)]));
+      var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trocar senha' });
+      trocar.addEventListener('click', function () { trocarSenha(user); });
+      app.appendChild(el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes' }, [trocar])]));
+    }
+    function trocarSenha(user) {
+      limpar();
+      var voltar = function () { mostrarPortal(user); };
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
+      P.montarNovaSenha(app, voltar, 'Trocar senha');
+      P.voltarNoFim(app, voltar);
+    }
+
     /* verId = o administrador vendo como o cliente vê (cliente.html?ver=ID); nada é salvo nem enviado */
     function mostrarPortal(user, verId) {
       limpar();
@@ -225,8 +241,11 @@
       sairBtn.addEventListener('click', sair);
       var busca = verId ? P.client.from('clientes').select('id,nome,email').eq('id', verId).maybeSingle()
                         : P.client.from('clientes').select('id,nome').eq('email', email).maybeSingle();
-      busca.then(function (r) {
-        var nome = r.data ? r.data.nome : (P.nomeDoGoogle(user) || email);
+      /* aluno também usa o Seu espaço: ficha de aluno (se houver) traz a Mensalidade, Trocar senha e o resto do que é administrativo */
+      var alunoBusca = verId ? Promise.resolve(null) : P.client.from('alunos').select('id,nome').eq('email', email).maybeSingle().then(function (ra) { return ra && !ra.error ? ra.data : null; }, function () { return null; });
+      Promise.all([busca, alunoBusca]).then(function (par) {
+        var r = par[0], aluno = par[1];
+        var nome = r.data ? r.data.nome : (aluno ? aluno.nome : (P.nomeDoGoogle(user) || email));
         if (verId) {
           var paraOPainel = function () { location.href = 'admin-clientes.html?cliente=' + encodeURIComponent(verId); };
           app.appendChild(el('div', { class: 'portal-topo' }, [el('span', { text: 'Você está vendo como ' + nome + ' vê (modo administrador)' }), el('div', {}, [P.botaoVoltar(paraOPainel)])]));
@@ -237,13 +256,12 @@
         app.appendChild(avisoDoApp());
         if (r.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' })); return; }
         if (!r.data) {
-          /* aluno sem serviço de cliente ainda: em vez do aviso de "nada disponível", o caminho para a página dele */
-          P.client.from('alunos').select('id').eq('email', email).maybeSingle().then(function (ra) {
-            if (ra && ra.data) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes' }, [el('a', { class: 'portal-btn portal-btn-sec', href: 'aluno.html', text: 'Alunos' })])])); return; }
-            app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
-          });
+          /* aluno sem serviço de cliente: vê só o que é dele; quem não é aluno nem cliente vê o aviso de "nada disponível" */
+          if (aluno) { blocosDoAluno(user, aluno); return; }
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
+        if (aluno) blocosDoAluno(user, aluno);
         if (!verId && window.fdaEspaco) window.fdaEspaco.marcar('cliente', true);   /* o botão Cássio da barra de cima vira Seu espaço nas outras páginas (quem já é aluno continua indo para a página de aluno) */
         ligarAvisos(user, verId);
         carregarAtendimento(verId);
