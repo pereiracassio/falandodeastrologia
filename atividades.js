@@ -436,7 +436,7 @@
         salvarTudo().then(function () { return C.rpc('enviar_atividade', { p_id: atividade.id }); }).then(function (r) {
           if (r && r.error) throw r.error;
           atividade.enviada_em = new Date().toISOString();
-          P.avisos.avisar('enviada', atividade.id); /* o Cássio recebe o aviso no celular (sem depender do WhatsApp) */
+          /* o aviso para o Cássio é gravado pelo próprio banco quando a atividade é enviada (docs/avisos-enviada-trilha.sql) */
           telaDaAtividadeAluno(app, atividade, aoVoltar, previa);
         }).catch(function (e) { enviar.disabled = false; salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
