@@ -297,7 +297,8 @@
       var voltar = function () { desenharPaginaDoAluno(user, aluno, previa); };
       app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
       var lista = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avisos' }),
-        telaAvisos(aluno, previa, function (a) { var m = /[?&]aba=(\w+)/.exec((a && a.url) || ''); if (m) abaAoVoltar = m[1]; voltar(); if (a && a.atividade_id) window.atividades.destacar(a.atividade_id); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); })]);
+        telaAvisos(aluno, previa, function (a) { var m = /[?&]aba=(\w+)/.exec((a && a.url) || ''); if (m && m[1] === 'conversa') { telaDuvidas(user, aluno, previa); return; }   /* aviso de mensagem: abre direto nas dúvidas */
+          if (m) abaAoVoltar = m[1]; voltar(); if (a && a.atividade_id) window.atividades.destacar(a.atividade_id); }, function () { naoLidos = Math.max(0, naoLidos - 1); pintarSino(); })]);
       app.appendChild(lista);
       app.appendChild(P.avisos.cartao('aluno'));
       P.voltarNoFim(app, voltar);
