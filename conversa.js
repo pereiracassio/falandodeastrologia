@@ -7,17 +7,14 @@
   var P = window.portal, el = P.el, C = P.client;
   var AZUL = '#1F5FA3', AZUL_ESCURO = '#1034A6', OCRE = '#B5852F', TERRACOTA = '#A03E25';
 
-  /* balão só de contorno, como no WhatsApp (único lugar do site com canto arredondado, pedido dele; por isso o !important contra a regra de canto reto): o canto de cima do lado de quem fala é reto e leva um bico desenhado (nada de preenchimento no papiro) */
+  /* balão só de contorno, bem redondinho, sem bico (licença poética dele: é o ÚNICO lugar do site com canto arredondado; por isso o !important contra a regra de canto reto) */
   function estilosDosBaloes() {
     if (document.getElementById('conversa-css')) return;
     var st = document.createElement('style'); st.id = 'conversa-css';
     st.textContent =
-      '.balao{position:relative;max-width:82%;margin:0 0 10px;padding:8px 12px 5px;border:1.5px solid;box-sizing:border-box;border-radius:14px!important;background:transparent}' +
-      '.balao-eu{align-self:flex-end;border-color:' + OCRE + ';border-top-right-radius:0!important;margin-right:10px}' +
-      '.balao-outro{align-self:flex-start;border-color:' + AZUL_ESCURO + ';border-top-left-radius:0!important;margin-left:10px}' +
-      '.balao::before{content:"";position:absolute;top:-1.5px;width:10px;height:10px}' +
-      '.balao-eu::before{right:-10px;border-top:1.5px solid ' + OCRE + ';background:linear-gradient(to bottom right,transparent calc(50% - .75px),' + OCRE + ' calc(50% - .75px),' + OCRE + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
-      '.balao-outro::before{left:-10px;border-top:1.5px solid ' + AZUL_ESCURO + ';background:linear-gradient(to bottom left,transparent calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
+      '.balao{position:relative;max-width:82%;margin:0 0 10px;padding:9px 14px 5px;border:1.5px solid;box-sizing:border-box;border-radius:20px!important;background:transparent}' +
+      '.balao-eu{align-self:flex-end;border-color:' + OCRE + ';margin-right:6px}' +
+      '.balao-outro{align-self:flex-start;border-color:' + AZUL_ESCURO + ';margin-left:6px}' +
       '.balao p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;font-family:"AstroIcones","Architects Daughter",cursive}' +
       '.balao-rodape{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;font:400 11px "Architects Daughter",cursive;color:rgba(22,35,63,.62)}' +
       '.dia-conversa{align-self:center;margin:6px 0 12px;font:700 12px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;color:' + AZUL_ESCURO + '}';
