@@ -51,7 +51,7 @@
   function trocarCassioPorSeuEspaco() {
     var tipo = ""; try { tipo = localStorage.getItem(CHAVE_ESPACO) || ""; } catch (e) { /* sem armazenamento */ }
     if (tipo !== "aluno" && tipo !== "cliente") return;
-    var destino = tipo === "aluno" ? "aluno.html" : "cliente.html";
+    var destino = "cliente.html"; /* aluno também é cliente: os dois vão para a página Seu espaço */
     var a = document.querySelector('.cab-nav a[href="sobre.html"]');
     if (!a) return;
     a.textContent = "Seu espaço"; a.setAttribute("href", destino);

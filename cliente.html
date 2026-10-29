@@ -237,7 +237,11 @@
         app.appendChild(avisoDoApp());
         if (r.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' })); return; }
         if (!r.data) {
-          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
+          /* aluno sem serviço de cliente ainda: em vez do aviso de "nada disponível", o caminho para a página dele */
+          P.client.from('alunos').select('id').eq('email', email).maybeSingle().then(function (ra) {
+            if (ra && ra.data) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes' }, [el('a', { class: 'portal-btn portal-btn-sec', href: 'aluno.html', text: 'Alunos' })])])); return; }
+            app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
+          });
           return;
         }
         if (!verId && window.fdaEspaco) window.fdaEspaco.marcar('cliente', true);   /* o botão Cássio da barra de cima vira Seu espaço nas outras páginas (quem já é aluno continua indo para a página de aluno) */
@@ -283,6 +287,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=44" defer></script>
+  <script src="menu.js?v=45" defer></script>
 </body>
 </html>
