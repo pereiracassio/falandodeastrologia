@@ -721,7 +721,7 @@
           return imagemEscolhida ? enviarImagem(idNova, imagemEscolhida, null).then(function () { return null; }, function () { return 'imagem'; }) : null;
         }).then(function (falhou) {
           if (falhou === 'imagem') { alert('A atividade foi salva, mas a imagem não subiu. Abra a atividade e anexe a imagem de novo.'); lista(); return; }
-          if (!antiga) P.avisos.avisar('nova', idNova); /* o aluno recebe o aviso no celular; o servidor ignora material de data passada */
+          /* o aviso de atividade nova é gravado pelo próprio banco (docs/avisos-banco.sql), sem servidor */
           if (antiga || leitura) lista(); else avisarNovaAtividade(titulo.value.trim());
         }).catch(function (e) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(e.message), 'erro'); });
       });
@@ -765,7 +765,6 @@
             C.from('atividades').update({ rascunho: false, data_atividade: hojeISO() }).eq('id', a.id).then(function (r) {
               if (r.error) { enviarAluno.disabled = false; P.mensagem(msgEnviar, P.traduzErro(r.error.message), 'erro'); return; }
               a.rascunho = false; a.data_atividade = hojeISO();
-              if (!a.somente_leitura) P.avisos.avisar('nova', a.id);
               avisarNovaAtividade(a.titulo);
             });
           });
@@ -1020,7 +1019,7 @@
               if (r2.error) throw r2.error;
               a.corrigida_em = quando; dCorr.value = quando;
             });
-            return datas.then(function () { if (devoAvisar) P.avisos.avisar('corrigida', a.id); });
+            return datas; /* o aviso de correção é gravado pelo próprio banco (docs/avisos-banco.sql) */
           });
         }
         var avisoCorrecao = el('div', { style: 'margin:10px 0' });
