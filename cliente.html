@@ -108,7 +108,7 @@
     /* guarda cada toque em "Baixar" (só o administrador enxerga); no modo "ver como o cliente" nada é guardado */
     function registrarBaixa(entregaId, tipo, verId) {
       if (verId) return;
-      P.avisos.baixou(entregaId, tipo); /* o Cássio recebe o aviso no celular */
+      /* o aviso para o Cássio é gravado pelo próprio banco quando a baixa é registrada (docs/avisos-cliente-e-compras.sql) */
       try { P.client.from('entrega_baixas').insert({ entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {}); } catch (e) { /* o link abre do mesmo jeito */ }
     }
 
