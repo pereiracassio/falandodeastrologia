@@ -458,7 +458,11 @@
         corpo.textContent = '';
         var nova = el('button', { type: 'button', class: 'portal-btn', text: 'Nova atividade' });
         nova.addEventListener('click', function () { construtor(); });
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [nova])); /* no topo: com muitas atividades, não precisa descer a lista toda */
+        var arquivo = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
+        var importar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar atividades' });
+        importar.addEventListener('click', function () { arquivo.click(); });
+        arquivo.addEventListener('change', function () { var f = arquivo.files && arquivo.files[0]; arquivo.value = ''; if (f) importarArquivo(f, r.data || []); });
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [nova, importar, arquivo])); /* no topo: com muitas atividades, não precisa descer a lista toda */
         if (r.error) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as atividades.' })); return; }
         if (!r.data.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma atividade ainda.' }));
         r.data.forEach(function (a) {
@@ -470,6 +474,53 @@
             el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }), info]), abrir
           ])]), function () { telaDaAtividade(a); }));
         });
+      });
+    }
+
+    /* arquivo { "atividades": [ { "titulo", "tipo": "atividade"|"leitura", "descricao", "perguntas": [ { "tipo": "dissertativa"|"multipla", "enunciado", "opcoes": [...], "correta": 0 } ] } ] }
+       que o Claude monta com o Cássio; atividade de mesmo título que o aluno já tem é pulada. Não manda aviso: ele avisa pelo WhatsApp se quiser */
+    function importarArquivo(f, existentes) {
+      f.text().then(function (txt) {
+        var dados;
+        try { dados = JSON.parse(txt); } catch (e) { alert('Esse arquivo não é válido.'); return; }
+        var itens = (dados && dados.atividades) || [];
+        if (!itens.length) { alert('Não achei atividades nesse arquivo.'); return; }
+        var titulos = existentes.map(function (a) { return String(a.titulo || '').trim().toLowerCase(); });
+        var feitas = 0, puladas = 0;
+        itens.reduce(function (cadeia, item) {
+          return cadeia.then(function () {
+            var tit = String(item.titulo || '').trim();
+            if (!tit || titulos.indexOf(tit.toLowerCase()) >= 0) { puladas++; return; }
+            titulos.push(tit.toLowerCase());
+            var leit = item.tipo === 'leitura';
+            var perguntas = leit ? [] : (item.perguntas || []).filter(function (q) { return q && String(q.enunciado || '').trim(); });
+            if (!leit && !perguntas.length) { puladas++; return; }
+            var registro = { aluno_id: aluno.id, titulo: tit, descricao: item.descricao ? String(item.descricao).trim() : null, data_atividade: hojeISO(), antiga: leit };
+            if (leit) { registro.somente_leitura = true; registro.enviada_em = new Date().toISOString(); }
+            return C.from('atividades').insert(registro).select('id').single().then(function (r) {
+              if (r.error) throw r.error;
+              feitas++;
+              if (leit) return;
+              var linhas = perguntas.map(function (q, i) {
+                var op = q.tipo === 'multipla' ? (q.opcoes || []).map(function (x) { return String(x).trim(); }).filter(Boolean) : null;
+                return { atividade_id: r.data.id, ordem: i, tipo: op && op.length >= 2 ? 'multipla' : 'dissertativa', enunciado: String(q.enunciado).trim(), opcoes: op && op.length >= 2 ? op : null };
+              });
+              return C.from('atividade_perguntas').insert(linhas).select('id,ordem').then(function (rp) {
+                if (rp.error) throw rp.error;
+                var gab = [];
+                rp.data.forEach(function (p) {
+                  var q = perguntas[p.ordem];
+                  if (linhas[p.ordem].tipo === 'multipla' && q.correta != null && q.correta !== '' && Number(q.correta) >= 0 && Number(q.correta) < linhas[p.ordem].opcoes.length) gab.push({ pergunta_id: p.id, correta: Number(q.correta) });
+                });
+                if (!gab.length) return;
+                return C.from('atividade_gabarito').insert(gab).then(function (rg) { if (rg.error) throw rg.error; });
+              });
+            });
+          });
+        }, Promise.resolve()).then(function () {
+          alert(feitas + ' atividade(s) importada(s)' + (puladas ? '; ' + puladas + ' pulada(s) (já existia ou estava sem perguntas).' : '.'));
+          lista();
+        }, function (e) { alert('Não foi possível importar: ' + P.traduzErro(e.message)); lista(); });
       });
     }
 
