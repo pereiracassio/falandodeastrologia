@@ -94,11 +94,9 @@ const aparelhosDe = (email) => supa('/rest/v1/push_inscricoes?select=endpoint,p2
 async function entregarAviso(email, carga, extras = {}) {
   let erroGuardar = null;
   await supa('/rest/v1/avisos_recebidos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ email, titulo: carga.title, corpo: carga.body, url: carga.url, ...extras }) }).catch((e) => { erroGuardar = String(e.message || e); console.error('avisos_recebidos:', erroGuardar); });
-  const naoLidos = ((await supa('/rest/v1/avisos_recebidos?select=id&lido=eq.false&email=eq.' + encodeURIComponent(email)).catch(() => [])) || []).length;
+  /* o alarme no celular não sai mais daqui: ao gravar o aviso, o próprio banco chama a função "avisos" do Supabase (docs/avisos-celular.sql) */
   const lista = (await aparelhosDe(email)) || [];
-  const vazio = { enviados: 0, removidos: 0, falhas: 0, erroGuardar, aparelhos: lista.length };
-  if (!lista.length) return vazio;
-  return { ...vazio, ...(await enviar(lista, { ...carga, contagem: naoLidos })) };
+  return { enviados: 0, removidos: 0, falhas: 0, erroGuardar, aparelhos: lista.length };
 }
 const somar = (a, b) => ({ enviados: a.enviados + b.enviados, removidos: a.removidos + b.removidos, falhas: a.falhas + b.falhas, erroEnvio: a.erroEnvio || b.erroEnvio || null, aparelhos: (a.aparelhos || 0) + (b.aparelhos || 0), erroGuardar: a.erroGuardar || b.erroGuardar || null });
 const URL_CLIENTE = '/cliente.html?aviso=1', URL_ADMIN_CLIENTES = '/admin-clientes.html';

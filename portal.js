@@ -1014,6 +1014,17 @@
      Quem manda é o servidor (api/push.js); aqui o aparelho só pede permissão, se cadastra e conta que algo aconteceu.
      No iPhone/iPad só funciona no app instalado pela tela inicial. */
   var API_PUSH = 'https://falandodeastrologia.vercel.app/api/push';
+  /* o alarme no celular sai do próprio Supabase (função "avisos"): cadastro do aparelho direto no banco, sem Vercel */
+  var FN_AVISOS = 'https://wqkgsotfwkzjwaowenrb.supabase.co/functions/v1/avisos';
+  function chavePublicaAvisos() {
+    return fetch(FN_AVISOS + '?acao=chave').then(function (r) { return r.json(); }).then(function (d) { if (!d || !d.chave) throw new Error('servidor'); return d.chave; });
+  }
+  var mesmaChave = function (sub, chave) {
+    var atual = sub && sub.options && sub.options.applicationServerKey; if (!atual) return false;
+    var a = new Uint8Array(atual), b = chaveEmBytes(chave); if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  };
   var suportaAvisos = function () { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; };
   var ehIOS = function () { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); };
   var appInstalado = function () { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; };
@@ -1032,7 +1043,11 @@
   var registrarAvisos = function () { return navigator.serviceWorker.register('/sw.js').then(function () { return navigator.serviceWorker.ready; }); };
   function jaAtivado() {
     if (!suportaAvisos() || Notification.permission !== 'granted') return Promise.resolve(false);
-    return navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) { return !!sub; }, function () { return false; });
+    /* o aparelho só conta como ativado se foi cadastrado com a chave de avisos de hoje (a de antes não funciona mais) */
+    return navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+      if (!sub) return false;
+      return chavePublicaAvisos().then(function (chave) { return mesmaChave(sub, chave); });
+    }).then(function (ok) { return !!ok; }, function () { return false; });
   }
   function ativarAvisos() {
     /* o pedido de permissão tem de sair direto do toque (regra do iPhone) */
@@ -1041,22 +1056,24 @@
       return registrarAvisos();
     }).then(function (reg) {
       return reg.pushManager.getSubscription().then(function (sub) {
-        if (sub) return sub;
-        /* a chave pública dos avisos vem do servidor (ele mesmo a criou) */
-        return fetch(API_PUSH + '?acao=chave', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
-          if (!d || !d.chave) throw new Error('servidor');
-          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveEmBytes(d.chave) });
+        /* a chave pública dos avisos vem do Supabase (a função cria na primeira vez); cadastro feito com outra chave é refeito */
+        return chavePublicaAvisos().then(function (chave) {
+          if (sub && mesmaChave(sub, chave)) return sub;
+          return (sub ? sub.unsubscribe() : Promise.resolve()).then(function () {
+            return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveEmBytes(chave) });
+          });
         });
       });
     }).then(function (sub) {
-      return chamarPush('inscrever', { subscription: sub.toJSON(), aparelho: navigator.userAgent.slice(0, 160) }).then(function (r) { if (!r.ok) throw new Error('servidor'); });
+      var j = sub.toJSON();
+      return client.rpc('registrar_aparelho', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_aparelho: navigator.userAgent.slice(0, 160) }).then(function (r) { if (r.error) throw new Error('servidor'); });
     });
   }
   function desativarAvisos() {
     return navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
       if (!sub) return;
       var endpoint = sub.endpoint;
-      return chamarPush('desinscrever', { endpoint: endpoint }).catch(function () {}).then(function () { return sub.unsubscribe(); });
+      return client.rpc('remover_aparelho', { p_endpoint: endpoint }).then(function () {}, function () {}).then(function () { return sub.unsubscribe(); });
     });
   }
   /* conta ao servidor que algo aconteceu (evento: 'enviada', 'nova' ou 'corrigida'); se falhar, ninguém precisa saber: o resto continua funcionando */
@@ -1104,7 +1121,7 @@
         texto.value = '';
         var d = r.dados || {};
         if (d.erroGuardar) { mensagem(msg, 'Não consegui guardar o aviso na lista dele: ' + d.erroGuardar, 'erro'); return; }
-        mensagem(msg, d.enviados ? 'Aviso enviado para ' + d.enviados + ' aparelho(s): ' + t : d.falhas ? 'O celular dele recusou o aviso: ' + (d.erroEnvio || d.falhas + ' falha(s)') + '.' : 'Aviso guardado na lista dele. O celular dele ainda não está com os avisos ativados.', d.enviados ? 'ok' : 'erro');
+        mensagem(msg, d.aparelhos ? 'Aviso enviado: ' + t : 'Aviso guardado na lista dele. O celular dele ainda não está com os avisos ativados.', d.aparelhos ? 'ok' : 'erro');
       }, function () { mensagem(msg, 'Não foi possível enviar agora.', 'erro'); });
     }
     /* "Avisar quanto falta": na hora do toque, busca o horário do próximo compromisso na agenda e conta quanto falta; assim o aviso nunca sai com o tempo errado */
