@@ -281,6 +281,35 @@
         var ordem = trilhas.reduce(function (m, t) { return Math.max(m, t.ordem || 0); }, 0) + 1;
         P.client.from('aluno_trilhas').insert({ aluno_id: aluno.id, nome: nome, ordem: ordem }).then(function (r) { if (r.error) alert('Não foi possível criar.'); else carregar(); });
       }
+      /* arquivo { "trilhas": [ { "nome", "passos": [ { "titulo", "tipo": "comum"|"material"|"atividade"|"gravacao", "feito" } ] } ] }: trilha de mesmo nome só ganha os passos que faltam */
+      function importarTrilhas(f) {
+        f.text().then(function (txt) {
+          var dados;
+          try { dados = JSON.parse(txt); } catch (e) { alert('Esse arquivo não é válido.'); return; }
+          var lista = (dados && dados.trilhas) || [];
+          if (!lista.length) { alert('Não achei trilhas nesse arquivo.'); return; }
+          var ordemT = trilhas.reduce(function (m, t) { return Math.max(m, t.ordem || 0); }, 0);
+          var tipos = ['comum', 'material', 'atividade', 'gravacao'];
+          lista.reduce(function (cadeia, item) {
+            return cadeia.then(function () {
+              var nome = String(item.nome || '').trim(); if (!nome) return;
+              var existente = trilhas.filter(function (t) { return t.nome.toLowerCase() === nome.toLowerCase(); })[0];
+              var pronto = existente ? Promise.resolve(existente.id) : P.client.from('aluno_trilhas').insert({ aluno_id: aluno.id, nome: nome, ordem: ++ordemT }).select('id').then(function (r) { if (r.error) throw r.error; return r.data[0].id; });
+              return pronto.then(function (id) {
+                var jaTem = passos.filter(function (x) { return x.trilha_id === id; });
+                var ordem = jaTem.reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0);
+                var titulos = jaTem.map(function (x) { return x.titulo.toLowerCase(); });
+                var novos = (item.passos || []).filter(function (x) { return x && String(x.titulo || '').trim() && titulos.indexOf(String(x.titulo).trim().toLowerCase()) < 0; }).map(function (x) {
+                  var feito = !!x.feito && (!x.tipo || x.tipo === 'comum');
+                  return { trilha_id: id, titulo: String(x.titulo).trim(), tipo: tipos.indexOf(x.tipo) >= 0 ? x.tipo : 'comum', feito: feito, feito_em: feito ? new Date().toISOString() : null, ordem: ++ordem };
+                });
+                if (!novos.length) return;
+                return P.client.from('aluno_trilha_passos').insert(novos).then(function (r) { if (r.error) throw r.error; });
+              });
+            });
+          }, Promise.resolve()).then(carregar, function (e) { alert('Não foi possível importar: ' + P.traduzErro(e.message)); carregar(); });
+        });
+      }
       function linhaPasso(x, grupo, i, leitura) {
         var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade' || x.tipo === 'gravacao';
         var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito' });
@@ -374,7 +403,11 @@
         raiz.textContent = '';
         var novo = el('button', { type: 'button', class: 'portal-btn', text: 'Nova trilha' });
         novo.addEventListener('click', novaTrilha);
-        raiz.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]));
+        var arquivoTrilhas = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
+        var importarT = el('button', { type: 'button', class: 'portal-btn', text: 'Importar trilhas' });
+        importarT.addEventListener('click', function () { arquivoTrilhas.click(); });
+        arquivoTrilhas.addEventListener('change', function () { var f = arquivoTrilhas.files && arquivoTrilhas.files[0]; arquivoTrilhas.value = ''; if (f) importarTrilhas(f); });
+        raiz.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo, importarT, arquivoTrilhas]));
         var ativas = trilhas.filter(function (t) { return !completa(t); }), concl = trilhas.filter(completa);
         if (!trilhas.length) raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma trilha ainda.' }));
         ativas.forEach(function (t) { raiz.appendChild(cartaoDaTrilha(t)); });
