@@ -6,6 +6,53 @@
   var SUPABASE_KEY = 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt';
 
   var client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  /* ---------- janelas do site: no lugar do confirm() e do alert() do navegador (a caixa branca de fora do site) ----------
+     confirm(): o código antigo espera a resposta na mesma hora ("if (!confirm(...)) return;"), o que uma janela nossa não consegue dar.
+     Então, dentro de um toque, a primeira chamada mostra a janela e responde "não" (a ação para); se a pessoa confirma, o mesmo toque é refeito
+     e essa segunda chamada responde "sim". Fora de um toque (não há o que refazer), vale a caixa do navegador. */
+  (function () {
+    var confirmNativo = window.confirm, liberada = null;
+    function estilos() {
+      if (document.getElementById('janela-site-css')) return;
+      var st = document.createElement('style'); st.id = 'janela-site-css';
+      st.textContent = '.janela-fundo{position:fixed;inset:0;z-index:100000;background:rgba(22,35,63,.55);display:flex;align-items:center;justify-content:center;padding:20px}' +
+        '.janela-caixa{position:relative;width:100%;max-width:440px;background:var(--papiro-fundo-simples);padding:var(--moldura-pv) var(--moldura-ph);box-sizing:border-box;text-align:center;border-radius:0}' +
+        '.janela-texto{margin:0 0 18px;font:400 17px/1.5 "Architects Daughter",cursive;color:#16233F;white-space:pre-line;overflow-wrap:anywhere;hyphens:none}' +
+        '.janela-acoes{display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap}' +
+        '.janela-acoes button{font:700 14px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;border-radius:0;cursor:pointer;white-space:nowrap;min-height:0}' +
+        '.janela-ok{background:#A03E25;color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:#7d2f1a}' +
+        '.janela-nao{background:transparent;color:#1034A6;border:0;padding:10px 6px}.janela-nao:hover{color:#16233F}';
+      document.head.appendChild(st);
+    }
+    function abrir(texto, comCancelar, aoFechar) {
+      estilos();
+      var fundo = document.createElement('div'); fundo.className = 'janela-fundo'; fundo.setAttribute('role', 'dialog'); fundo.setAttribute('aria-modal', 'true');
+      var caixa = document.createElement('div'); caixa.className = 'janela-caixa papiro-moldura';
+      var p = document.createElement('p'); p.className = 'janela-texto'; p.textContent = texto;
+      var acoes = document.createElement('div'); acoes.className = 'janela-acoes';
+      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'janela-ok'; ok.textContent = comCancelar ? 'Confirmar' : 'OK';
+      var nao = null;
+      if (comCancelar) { nao = document.createElement('button'); nao.type = 'button'; nao.className = 'janela-nao'; nao.textContent = 'Cancelar'; acoes.appendChild(nao); }
+      acoes.appendChild(ok); caixa.appendChild(p); caixa.appendChild(acoes); fundo.appendChild(caixa); document.body.appendChild(fundo);
+      function fechar(resposta) { document.removeEventListener('keydown', tecla, true); if (fundo.parentNode) fundo.parentNode.removeChild(fundo); aoFechar(resposta); }
+      function tecla(ev) { if (ev.key === 'Escape') { ev.preventDefault(); fechar(false); } }
+      document.addEventListener('keydown', tecla, true);
+      ok.addEventListener('click', function () { fechar(true); });
+      if (nao) nao.addEventListener('click', function () { fechar(false); });
+      fundo.addEventListener('click', function (ev) { if (ev.target === fundo && comCancelar) fechar(false); });
+      setTimeout(function () { (nao || ok).focus(); }, 0);
+    }
+    window.confirm = function (texto) {
+      var t = String(texto);
+      if (liberada === t) { liberada = null; return true; }
+      var ev = window.event, alvo = ev && ev.type === 'click' ? (ev.currentTarget || ev.target) : null;
+      if (!alvo || !document.body || !document.body.contains(alvo) || !alvo.click) return confirmNativo.call(window, texto);
+      abrir(t, true, function (sim) { if (!sim) return; liberada = t; try { alvo.click(); } finally { liberada = null; } });
+      return false;
+    };
+    window.alert = function (texto) { if (!document.body) return; abrir(String(texto), false, function () {}); };
+  })();
   /* sinal "sou o administrador" para o menu lateral (menu.js) mudar de lista; sai junto com o login */
   function marcarAdmin(sim) { try { if (sim) localStorage.setItem('fda_admin', '1'); else localStorage.removeItem('fda_admin'); } catch (e) { /* sem armazenamento */ } }
   client.auth.getSession().then(function (r) {
