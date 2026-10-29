@@ -83,7 +83,7 @@
       c.parentNode.replaceChild(t.firstChild, c);
       if (window.fdaEspaco) window.fdaEspaco.aplicar();
     }
-    function limpar() { document.body.classList.remove('aba-duvidas'); restaurarNavDoSite(); if (window.fdaMenuAluno) window.fdaMenuAluno(null); app.textContent = ''; titulos(false); }
+    function limpar() { restaurarNavDoSite(); if (window.fdaMenuAluno) window.fdaMenuAluno(null); app.textContent = ''; titulos(false); }
 
     function sair() { if (window.fdaEspaco) window.fdaEspaco.limpar(); P.client.auth.signOut().then(mostrarLogin); }
 
@@ -239,7 +239,6 @@
       { chave: 'caderno', nome: 'Atividades', vazio: 'Nenhuma atividade ainda.' },
       { chave: 'gravacoes', nome: 'Gravações', vazio: 'Nenhuma gravação ainda.' },
       { chave: 'materiais', nome: 'Materiais', vazio: 'Nenhum material ainda.' },
-      { chave: 'conversa', nome: 'Dúvidas' },   /* dúvidas para o Cássio e as respostas, dentro do app (a chave interna continua 'conversa') */
       { chave: 'curso', nome: 'Curso' }   /* só aparece para quem está matriculado no curso */
     ];
     var temCurso = null, abaAoVoltar = null;
@@ -276,6 +275,23 @@
       else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
     }
     /* tela própria dos avisos (aberta pelo sino): lembrete da mensalidade, avisos recebidos e o botão de ativar no celular */
+    /* as dúvidas (mensagens com o Cássio + os avisos): tela própria, aberta pelo "Tire suas dúvidas" do fim da página */
+    function telaDuvidas(user, aluno, previa) {
+      limpar();
+      var voltar = function () { desenharPaginaDoAluno(user, aluno, previa); };
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));   /* embaixo fica o campo de escrever (fixo): o Voltar é só em cima */
+      app.appendChild(el('div', { class: 'portal-cartao' }, [window.conversa.tela({
+        alunoId: aluno.id, souAdmin: false, previa: previa,
+        aoTocarAviso: function (a) {   /* o aviso leva ao que é: atividade, material, gravação, trilha... */
+          var u = (a && a.url) || '';
+          if (/^\/?cliente\.html/.test(u)) { location.href = u.replace(/^\/?/, '/'); return; }
+          var m = /[?&]aba=(\w+)/.exec(u); abaAoVoltar = m ? m[1] : 'caderno';
+          desenharPaginaDoAluno(user, aluno, previa);
+          if (a && a.atividade_id) window.atividades.destacar(a.atividade_id);
+        }
+      })]));
+      window.scrollTo(0, 0);
+    }
     function telaDeAvisos(user, aluno, previa) {
       limpar();
       var voltar = function () { desenharPaginaDoAluno(user, aluno, previa); };
@@ -436,7 +452,6 @@
       var botoes = {};
       var abas = ABAS.filter(function (ab) { return (ab.chave !== 'curso' || temCurso); });
       function mostrar(chave) {
-        document.body.classList.toggle('aba-duvidas', chave === 'conversa');   /* na aba Dúvidas não aparece o ícone do WhatsApp do fim da página */
         abas.forEach(function (ab) {
           var ativa = ab.chave === chave;
           botoes[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
@@ -444,20 +459,6 @@
         });
         conteudo.textContent = '';
         if (chave === 'trilha') { conteudo.appendChild(telaTrilha(aluno, lista, previa)); return; }
-        if (chave === 'conversa') {
-          conteudo.appendChild(window.conversa.tela({
-            alunoId: aluno.id, souAdmin: false, previa: previa,
-            rotulo: function (n) { botoes.conversa.textContent = n ? 'Dúvidas (' + n + ')' : 'Dúvidas'; },   /* mensagens e avisos ainda não lidos */
-            aoTocarAviso: function (a) {   /* o aviso leva ao que é: atividade, material, gravação, trilha... */
-              var u = (a && a.url) || '';
-              if (/^\/?cliente\.html/.test(u)) { location.href = u.replace(/^\/?/, '/'); return; }
-              var m = /[?&]aba=(\w+)/.exec(u); abaAoVoltar = m ? m[1] : 'caderno';
-              desenharPaginaDoAluno(userAtual, aluno, previa);
-              if (a && a.atividade_id) window.atividades.destacar(a.atividade_id);
-            }
-          }));
-          return;
-        }
         if (chave === 'curso') { conteudo.appendChild(window.curso.cartao(temCurso, app, function () { abaAoVoltar = 'curso'; desenharPaginaDoAluno(userAtual, aluno, previa); })); return; }
         var itens = lista.filter(function (i) { return i.bloco === chave; });
         var aba = ABAS.filter(function (ab) { return ab.chave === chave; })[0];
@@ -490,7 +491,6 @@
         botoes[ab.chave] = b;
         barra.appendChild(b);
       });
-      if (!previa) window.conversa.naoLidas(aluno.id, false).then(function (n) { if (n && botoes.conversa && abaAtual !== 'conversa') botoes.conversa.textContent = 'Dúvidas (' + n + ')'; });
       var deUmAviso = /[?&]atividade=([0-9a-f-]{36})/i.exec(location.search);
       var daUrl = (/[?&]aba=(\w+)/.exec(location.search) || [])[1];
       if (daUrl === 'mensalidade') { location.replace('cliente.html'); }   /* avisos antigos: a mensalidade agora fica no Seu espaço */   /* ?aba=materiais vem do aviso no celular */
@@ -627,13 +627,16 @@
               abasDaTela(lista, atividadesEl, function (fn) { avisar = fn; }, aluno, previa, caixaCaderno).forEach(function (e) { app.appendChild(e); });
               /* veio do aviso no celular sem uma atividade específica: abre a tela de Avisos */
               if (abrirAvisosNaEntrada) { abrirAvisosNaEntrada = false; irParaAvisos(); }
-              // só o ícone do WhatsApp (o mesmo da home), no fim da página, em qualquer aba
-              var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20aluno%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
-                el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
+              // no fim da página, em qualquer aba: o Hermes e, em seguida, "Tire suas dúvidas" (ocre); leva às mensagens com o Cássio
+              var texto = el('span', { text: 'Tire suas dúvidas' });
+              var duvidas = el('a', { href: '#', 'aria-label': 'Tire suas dúvidas', style: 'display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#B5852F;font:700 17px Cinzel,serif;text-transform:lowercase;letter-spacing:.03em' }, [
+                el('img', { src: 'img/hermes-aviso.png', alt: '', width: '34', height: '34' }), texto
               ]);
-              var estiloWhats = document.createElement('style'); estiloWhats.textContent = '.aba-duvidas .portal-whats-pagina{display:none!important}'; document.head.appendChild(estiloWhats);
-              app.appendChild(el('div', { class: 'portal-whats portal-whats-pagina' }, [whats]));
-
+              duvidas.addEventListener('click', function (ev) { ev.preventDefault(); telaDuvidas(userAtual, aluno, previa); });
+              app.appendChild(el('div', { class: 'portal-whats', style: 'text-align:center;margin:26px 0 10px' }, [duvidas]));
+              if (!previa) window.conversa.naoLidas(aluno.id, false).then(function (n) { if (n) texto.textContent = 'Tire suas dúvidas (' + n + ')'; });
+              /* aviso de mensagem no celular (?aba=conversa) abre direto nas dúvidas */
+              if (/[?&]aba=conversa/.test(location.search) && !previa) telaDuvidas(userAtual, aluno, previa);
             });
           });
     }
