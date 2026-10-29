@@ -73,7 +73,15 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ajustarTitulos(); });
     window.addEventListener('resize', ajustarTitulos);
 
-    function limpar() { app.textContent = ''; titulos(false); }
+    /* as abas do aluno logado ocupam o lugar dos botões do site no cabeçalho (ver abasDaTela); ao limpar a tela, os botões do site voltam */
+    var navDoSite = (document.querySelector('.cab-nav') || {}).outerHTML || '';
+    function restaurarNavDoSite() {
+      var c = document.querySelector('.cab-aluno');
+      if (!c || !navDoSite) return;
+      var t = document.createElement('div'); t.innerHTML = navDoSite;
+      c.parentNode.replaceChild(t.firstChild, c);
+    }
+    function limpar() { restaurarNavDoSite(); if (window.fdaMenuAluno) window.fdaMenuAluno(null); app.textContent = ''; titulos(false); }
 
     function sair() { P.client.auth.signOut().then(mostrarLogin); }
 
@@ -501,10 +509,17 @@
         if (qtd) botoes[ab.chave].textContent = ab.nome + ' (' + (itensAba + qtd) + ')';
         if (qtd && vazioP && vazioP.parentNode) vazioP.parentNode.removeChild(vazioP);
       });
+      /* as abas ficam no cabeçalho: se uma tela de dentro (uma atividade, por exemplo) está aberta, tocar numa aba refaz a página naquela aba */
+      function irParaAba(chave) {
+        abaAtual = chave;
+        if (!document.body.contains(conteudo)) { abaAoVoltar = chave; desenharPaginaDoAluno(userAtual, aluno, previa); return; }
+        mostrar(chave);
+        window.scrollTo(0, 0);
+      }
       abas.forEach(function (ab) {
         var qtd = lista.filter(function (i) { return i.bloco === ab.chave; }).length;
         var b = el('button', { type: 'button', role: 'tab', text: ab.nome + (qtd ? ' (' + qtd + ')' : '') });
-        b.addEventListener('click', function () { abaAtual = ab.chave; mostrar(ab.chave); });
+        b.addEventListener('click', function () { irParaAba(ab.chave); });
         botoes[ab.chave] = b;
         barra.appendChild(b);
       });
@@ -528,6 +543,19 @@
       rotuloAvisos();
       /* cinco abas, mas cada uma com o tamanho de sempre (um terço): as outras ficam para o lado, é só correr a barra */
       var rola = el('div', { class: 'portal-abas-rola' }, [barra]);
+      /* o aluno logado: as abas sobem para o cabeçalho, no lugar dos 4 botões do site (como a barra do painel do administrador); na prévia do administrador ficam onde estavam */
+      var lugar = previa ? null : document.querySelector('.cab-nav');
+      if (lugar && lugar.parentNode) {
+        var novo = el('div', { class: 'cab-admin cab-aluno' });
+        lugar.parentNode.replaceChild(novo, lugar);
+        novo.appendChild(el('div', { class: 'portal-topo portal-topo-painel' }, [P.comSetas(rola)]));
+        /* o menu lateral também traz as abas (tocar leva à aba), mais Ver o site, Trocar senha e Sair */
+        if (window.fdaMenuAluno) {
+          window.fdaMenuAluno(abas.map(function (ab) { return { label: ab.nome, aoTocar: function () { irParaAba(ab.chave); } }; })
+            .concat([{ label: 'Ver o site', href: 'index.html', sep: true }, { label: 'Trocar senha', aoTocar: function () { trocarSenha(userAtual); } }, { label: 'Sair', aoTocar: sair }]));
+        }
+        return [conteudo];
+      }
       return [P.comSetas(rola), conteudo];
     }
 
@@ -662,6 +690,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=42" defer></script>
+  <script src="menu.js?v=43" defer></script>
 </body>
 </html>

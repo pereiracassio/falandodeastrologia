@@ -103,17 +103,25 @@
 
   var currentPage = window.location.pathname.split("/").pop() || "index.html";
 
-  links.forEach(function (link) {
-    var a = document.createElement("a");
-    a.href = /^https?:/.test(link.href) ? link.href : "/" + link.href; /* com a barra no começo, vale também dentro de /blog/ e /assunto/ */
-    a.textContent = link.label;
-    if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
-    if (link.sep) { a.classList.add("is-sep"); if (nav.lastChild) nav.lastChild.classList.add("sem-linha"); } /* onde entra a linha ocre, a linha fina de cima sai */
-    if (link.href === currentPage) a.classList.add("is-current");
-    nav.appendChild(a);
-  });
+  /* desenha a lista do menu; item com aoTocar faz aquilo em vez de ir a outra página (as abas do aluno) */
+  function montarNav(lista) {
+    nav.textContent = "";
+    lista.forEach(function (link) {
+      var a = document.createElement("a");
+      a.href = link.aoTocar ? "#" : (/^https?:/.test(link.href) ? link.href : "/" + link.href); /* com a barra no começo, vale também dentro de /blog/ e /assunto/ */
+      a.textContent = link.label;
+      if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
+      if (link.sep) { a.classList.add("is-sep"); if (nav.lastChild) nav.lastChild.classList.add("sem-linha"); } /* onde entra a linha ocre, a linha fina de cima sai */
+      if (link.atual || (!link.aoTocar && link.href === currentPage)) a.classList.add("is-current");
+      if (link.aoTocar) a.addEventListener("click", function (ev) { ev.preventDefault(); closeMenu(); link.aoTocar(); });
+      nav.appendChild(a);
+    });
+    if (nav.lastChild) nav.lastChild.classList.add("sem-linha");
+  }
+  montarNav(links);
+  /* aluno logado (aluno.html): o menu traz as abas dele; sem lista, volta o menu do site */
+  window.fdaMenuAluno = function (lista) { montarNav(lista && lista.length ? lista : links); };
 
-  if (nav.lastChild) nav.lastChild.classList.add("sem-linha");
   panel.appendChild(closeBtn);
   panel.appendChild(nav);
 
