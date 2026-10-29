@@ -664,7 +664,7 @@
             pedido.then(function (r) {
               salvar.disabled = false;
               if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
-              if (!item && r.data && r.data[0]) P.avisos.item(r.data[0].id); /* o aluno recebe o aviso no celular */
+              /* o aviso de material/gravação novos é gravado pelo próprio banco (docs/avisos-itens.sql) */
               areaForm.textContent = ''; carregar(); /* salvou: o cadastro se fecha e a lista atualiza */
             });
           });
