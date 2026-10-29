@@ -46,7 +46,7 @@
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
     function limpar() { app.textContent = ''; }
-    function sair() { P.client.auth.signOut().then(mostrarLogin); }
+    function sair() { if (window.fdaEspaco) window.fdaEspaco.limpar(); P.client.auth.signOut().then(mostrarLogin); }
 
     /* O que o Astro Hellenic mostra depois do pagamento, embutido aqui. A volta do pagamento traz os dados na URL (u, servico, sa, agenda, nome, whatsapp, email, pedido);
        a página de dentro avisa a altura dela por postMessage. Sem esses dados na URL, o cartão nem aparece.
@@ -93,6 +93,7 @@
     }
 
     function mostrarLogin() {
+      if (window.fdaEspaco) window.fdaEspaco.limpar();
       limpar();
       var form = cartaoFormulario(); if (form) app.appendChild(form);
       var entrar = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
@@ -239,6 +240,7 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
+        if (!verId && window.fdaEspaco) window.fdaEspaco.marcar('cliente', true);   /* o botão Cássio da barra de cima vira Seu espaço nas outras páginas (quem já é aluno continua indo para a página de aluno) */
         ligarAvisos(user, verId);
         carregarAtendimento(verId);
         app.appendChild(el('div', { class: 'portal-cartao' }, [
@@ -281,6 +283,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=43" defer></script>
+  <script src="menu.js?v=44" defer></script>
 </body>
 </html>

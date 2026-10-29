@@ -41,6 +41,25 @@
     links.splice(links.length - 1, 0, { label: "Configurações", href: "admin-site.html" });
   }
 
+  /* aluno ou cliente logado (sinal guardado por aluno.html/cliente.html ao entrar/sair; é só conveniência de tela, não é segurança): o botão "Cássio" da barra de cima vira "Seu espaço" */
+  var CHAVE_ESPACO = "fda_espaco";
+  window.fdaEspaco = {
+    marcar: function (tipo, soSeVazio) { try { if (soSeVazio && localStorage.getItem(CHAVE_ESPACO)) return; localStorage.setItem(CHAVE_ESPACO, tipo); } catch (e) { /* sem armazenamento */ } },
+    limpar: function () { try { localStorage.removeItem(CHAVE_ESPACO); } catch (e) { /* sem armazenamento */ } }
+  };
+  window.fdaEspaco.aplicar = function () { trocarCassioPorSeuEspaco(); };
+  function trocarCassioPorSeuEspaco() {
+    var tipo = ""; try { tipo = localStorage.getItem(CHAVE_ESPACO) || ""; } catch (e) { /* sem armazenamento */ }
+    if (tipo !== "aluno" && tipo !== "cliente") return;
+    var destino = tipo === "aluno" ? "aluno.html" : "cliente.html";
+    var a = document.querySelector('.cab-nav a[href="sobre.html"]');
+    if (!a) return;
+    a.textContent = "Seu espaço"; a.setAttribute("href", destino);
+    var aqui = window.location.pathname.split("/").pop() || "index.html";
+    a.classList.toggle("atual", aqui === destino);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", trocarCassioPorSeuEspaco); else trocarCassioPorSeuEspaco();
+
   // quantos serviços tem no carrinho (guardado no navegador, ver carrinho.js; esvazia 30 min depois de ir pro pagamento)
   function contarCarrinho() {
     try {

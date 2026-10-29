@@ -74,16 +74,17 @@
     window.addEventListener('resize', ajustarTitulos);
 
     /* as abas do aluno logado ocupam o lugar dos botões do site no cabeçalho (ver abasDaTela); ao limpar a tela, os botões do site voltam */
-    var navDoSite = (document.querySelector('.cab-nav') || {}).outerHTML || '';
+    var navDoSite = ((document.querySelector('.cab-nav') || {}).outerHTML || '').replace(/<a href="(aluno|cliente)\.html"[^>]*>Seu espaço<\/a>/, '<a href="sobre.html">Cássio</a>');   /* sempre a versão do site, com Cássio */
     function restaurarNavDoSite() {
       var c = document.querySelector('.cab-aluno');
       if (!c || !navDoSite) return;
       var t = document.createElement('div'); t.innerHTML = navDoSite;
       c.parentNode.replaceChild(t.firstChild, c);
+      if (window.fdaEspaco) window.fdaEspaco.aplicar();
     }
     function limpar() { restaurarNavDoSite(); if (window.fdaMenuAluno) window.fdaMenuAluno(null); app.textContent = ''; titulos(false); }
 
-    function sair() { P.client.auth.signOut().then(mostrarLogin); }
+    function sair() { if (window.fdaEspaco) window.fdaEspaco.limpar(); P.client.auth.signOut().then(mostrarLogin); }
 
     var avisoSenha = false;
 
@@ -137,6 +138,7 @@
 
     function mostrarLogin() {
       limpar();
+      if (window.fdaEspaco) window.fdaEspaco.limpar();
       var google = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar com o Google' });
       google.addEventListener('click', function () { P.entrarComGoogle('/aluno.html'); });
       abasVazias();
@@ -581,6 +583,7 @@
           });
           return;
         }
+        if (window.fdaEspaco) window.fdaEspaco.marcar('aluno');   /* o botão Cássio da barra de cima vira Seu espaço nas outras páginas */
         desenharPaginaDoAluno(user, r.data, false);
       });
     }
@@ -690,6 +693,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=43" defer></script>
+  <script src="menu.js?v=44" defer></script>
 </body>
 </html>
