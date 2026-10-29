@@ -416,8 +416,11 @@
         ativas.forEach(function (t) {
           var m = meus(t), soma = m.reduce(function (a, x) { return a + pontos(x); }, 0), pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
           var pend = m.filter(function (x) { return pontos(x) < 1; }), feitos = m.filter(function (x) { return pontos(x) >= 1; });
-          var c = el('div', { style: 'margin-bottom:26px' });
-          c.appendChild(el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }));
+          /* sanfona: nome e barras sempre à vista; ao tocar, abrem/fecham os passos (barra ocre do lado) */
+          var cartao = el('div', { style: 'margin-bottom:22px;padding-bottom:20px;border-bottom:2px solid #1F5FA3' });
+          var c = el('div', { role: 'button', tabindex: '0', 'aria-expanded': 'false', style: 'cursor:pointer' }), corpo = el('div', { class: 'barra-ocre', style: 'margin-top:12px' });
+          var sinalT = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif;color:#A03E25' });
+          c.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), sinalT]));
           c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:#1F5FA3;width:' + pct + '%' })]));
           c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' }));
           c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: 'Início: ' + P.dataBR(t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE')) + (t.data_fim ? ' · Previsto: ' + P.dataBR(t.data_fim) : '') }));
@@ -427,13 +430,19 @@
             c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
             c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') }));
           }
-          raiz.appendChild(c);
+          cartao.appendChild(c); cartao.appendChild(corpo); raiz.appendChild(cartao);
+          var abertas = window.__trilhasAbertasAluno = window.__trilhasAbertasAluno || [];
+          function pintarT() { var ab = abertas.indexOf(t.id) >= 0; corpo.style.display = ab ? '' : 'none'; sinalT.textContent = ab ? '−' : '+'; c.setAttribute('aria-expanded', ab ? 'true' : 'false'); }
+          function alternarT() { var i = abertas.indexOf(t.id); if (i >= 0) abertas.splice(i, 1); else abertas.push(t.id); pintarT(); }
+          c.addEventListener('click', alternarT);
+          c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); alternarT(); } });
+          pintarT();
           [['Próximo passo', pend.slice(0, 1), true], ['Depois', pend.slice(1), false], ['Feitos', feitos, false]].forEach(function (g) {
             if (!g[1].length) return;
-            c.appendChild(rotulo(g[0]));
+            corpo.appendChild(rotulo(g[0]));
             var caixa = el('div', { style: 'border-bottom:1px solid #1F5FA3' + (g[2] ? ';border-top:2px solid #1F5FA3' : '') });
             g[1].forEach(function (x, i) { var l = linha(x); if (g[2] && i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
-            c.appendChild(caixa);
+            corpo.appendChild(caixa);
           });
         });
         if (concl.length) {
