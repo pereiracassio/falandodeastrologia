@@ -31,17 +31,30 @@ create policy mensagens_escrever on public.aluno_mensagens for insert to authent
 -- marcar como lidas: o aluno marca as mensagens do Cássio; o Cássio marca as do aluno
 create or replace function public.marcar_conversa_lida(p_aluno uuid) returns void
 language plpgsql security definer set search_path = public as $$
+declare mail text := lower(coalesce(auth.jwt() ->> 'email', ''));
 begin
   if public.sou_admin() then
     update public.aluno_mensagens set lida_em = now() where aluno_id = p_aluno and de = 'aluno' and lida_em is null;
+    update public.avisos_recebidos set lido = true where lido = false and lower(email) = mail and url like '%aba=conversa%' and url like '%aluno=' || p_aluno::text || '%';
   elsif public.aluno_e_meu(p_aluno) then
     update public.aluno_mensagens set lida_em = now() where aluno_id = p_aluno and de = 'cassio' and lida_em is null;
+    update public.avisos_recebidos set lido = true where lido = false and lower(email) = mail and url like '%aba=conversa%';
   end if;
 end $$;
 revoke all on function public.marcar_conversa_lida(uuid) from public;
 grant execute on function public.marcar_conversa_lida(uuid) to authenticated;
 
--- aviso de mensagem nova (para o Cássio) e de resposta (para o aluno)
+-- aviso de mensagem: o corpo é SÓ a mensagem (nada de "Oi, fulano, respondi..."); o título é quem mandou (o nome do aluno para o Cássio; Cássio para o aluno)
+create or replace function public.criar_aviso_conversa_admins(p_titulo text, p_corpo text, p_url text) returns void
+language plpgsql security definer set search_path = public as $$
+declare adm record;
+begin
+  for adm in select email from public.admins where coalesce(email, '') <> '' loop
+    perform public.criar_aviso(adm.email, p_titulo, p_corpo, p_url, null);
+  end loop;
+end $$;
+revoke all on function public.criar_aviso_conversa_admins(text, text, text) from public;
+
 create or replace function public.trg_aviso_mensagem() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare alu record; primeiro text;
@@ -50,9 +63,9 @@ begin
   if alu.id is null then return new; end if;
   primeiro := coalesce(nullif(split_part(trim(coalesce(alu.nome, '')), ' ', 1), ''), 'aluno');
   if new.de = 'aluno' then
-    perform public.avisar_admins('Mensagem nova', primeiro || ' mandou uma mensagem: ' || left(new.texto, 100), '/admin-alunos.html#aluno=' || alu.id || '&aba=conversa');
+    perform public.criar_aviso_conversa_admins(primeiro, left(new.texto, 140), '/admin-alunos.html#aluno=' || alu.id || '&aba=conversa');
   else
-    perform public.criar_aviso(alu.email, 'Mensagem nova', 'Oi, ' || primeiro || '! Respondi a sua mensagem: ' || left(new.texto, 100), '/aluno.html?aba=conversa', null);
+    perform public.criar_aviso(alu.email, 'Cássio', left(new.texto, 140), '/aluno.html?aba=conversa', null);
   end if;
   return new;
 end $$;

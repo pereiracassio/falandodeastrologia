@@ -2,7 +2,10 @@
    Funciona como o WhatsApp: as mensagens ficam em ordem, a mais nova embaixo (as suas à direita, as do outro à esquerda); o campo e o botão Enviar ficam
    FIXOS embaixo da tela, com o Enviar do lado direito (alcança com o polegar); abre já na última mensagem e, depois de enviar, o teclado continua aberto.
    A mensagem nova do outro lado aparece na hora (Realtime do Supabase) e, como reserva, a tela confere de 30 em 30 segundos enquanto está aberta.
-   Os avisos de mensagem nova são gravados pelo próprio banco (docs/conversa.sql). */
+   Os avisos de mensagem nova são gravados pelo próprio banco (docs/conversa.sql).
+   Do lado do ALUNO a mesma tela também traz os avisos do sistema (atividade corrigida, material, gravação, trilha...): o NÃO LIDO fica fixo no topo, com o
+   Hermes pequeno, até o aluno tocar (aí marca como lido e leva ao que é); depois de lido ele vira um cartãozinho no meio da conversa, no lugar da data dele.
+   Aviso de mensagem (url com aba=conversa) não aparece como cartão: a mensagem já está ali. */
 (function () {
   var P = window.portal, el = P.el, C = P.client;
   var AZUL = '#1F5FA3', AZUL_ESCURO = '#1034A6', OCRE = '#B5852F', TERRACOTA = '#A03E25';
@@ -20,6 +23,10 @@
       '.balao-outro::before{left:-10px;border-top:1.5px solid ' + AZUL_ESCURO + ';background:linear-gradient(to bottom left,transparent calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
       '.balao p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;font-family:"AstroIcones","Architects Daughter",cursive}' +
       '.balao-rodape{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;font:400 11px "Architects Daughter",cursive;color:rgba(22,35,63,.62)}' +
+      '.aviso-card{align-self:center;display:flex;align-items:center;gap:8px;max-width:90%;margin:0 0 10px;padding:6px 10px;border:1px solid ' + AZUL + ';border-radius:0;background:transparent;cursor:pointer;font:400 14px/1.35 "Architects Daughter",cursive;color:#16233F}' +
+      '.aviso-card img{width:22px;height:22px;flex:0 0 auto}.aviso-card small{flex:0 0 auto;font-size:11px;color:rgba(22,35,63,.62)}' +
+      '.aviso-fixo{position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:85;width:min(92vw,560px);box-sizing:border-box;background:var(--papiro-fundo-simples);border:1.5px solid ' + AZUL_ESCURO + ';border-radius:0;padding:4px 10px;max-height:50vh;overflow-y:auto}' +
+      '.aviso-fixo .aviso-card{max-width:100%;margin:6px 0;border:0;padding:4px 0;align-self:stretch}.aviso-fixo .mais{font:700 12px "Cinzel",serif;text-transform:lowercase;color:' + AZUL_ESCURO + ';cursor:pointer;padding:0 0 6px}' +
       '.dia-conversa{align-self:center;margin:6px 0 12px;font:700 12px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;color:' + AZUL_ESCURO + '}';
     document.head.appendChild(st);
   }
@@ -58,6 +65,7 @@
     estilosDosBaloes();
     var lista = el('div', { style: 'display:flex;flex-direction:column' });
     var mensagens = [], vistas = {}, canal = null, relogio = null, vigia = null, barra = null, aoRedimensionar = null;
+    var avisos = [], fixo = null, fixoAberto = false, comAvisos = !cfg.souAdmin && !cfg.previa;
 
     function bloco(m) {
       var eu = m.de === minha;
@@ -65,14 +73,46 @@
       if (eu) rodape.appendChild(tracinhos(!!m.lida_em));
       return el('div', { class: 'balao ' + (eu ? 'balao-eu' : 'balao-outro') }, [el('p', { text: m.texto }), rodape]);
     }
+    function cartaoDeAviso(a, noFixo) {
+      var c = el('div', { class: 'aviso-card', role: 'button', tabindex: '0', title: a.titulo || '' }, [el('img', { src: 'img/hermes-aviso.png', alt: '', width: '22', height: '22' }), el('span', { text: a.corpo || a.titulo || '' })]);
+      if (!noFixo) c.appendChild(el('small', { text: hora(a.criado_em) }));
+      var abrir = function () { tocarAviso(a); };
+      c.addEventListener('click', abrir);
+      c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+      return c;
+    }
+    function tocarAviso(a) {
+      if (!a.lido) { a.lido = true; C.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(function () {}, function () {}); }
+      desenharFixo(); desenhar(); if (cfg.rotulo) cfg.rotulo(naoLidasAgora());
+      if (cfg.aoTocarAviso) cfg.aoTocarAviso(a);
+    }
+    function naoLidasAgora() {
+      return mensagens.filter(function (m) { return m.de !== minha && !m.lida_em; }).length + avisos.filter(function (a) { return !a.lido; }).length;
+    }
+    /* o aviso que ainda não foi tocado fica fixo no topo, abaixo do menu e do sino */
+    function desenharFixo() {
+      var pendentes = avisos.filter(function (a) { return !a.lido; });
+      if (!pendentes.length) { if (fixo && fixo.parentNode) fixo.parentNode.removeChild(fixo); fixo = null; fixoAberto = false; return; }
+      if (!fixo) { fixo = el('div', { class: 'aviso-fixo' }); document.body.appendChild(fixo); }
+      fixo.textContent = '';
+      (fixoAberto ? pendentes : pendentes.slice(0, 1)).forEach(function (a) { fixo.appendChild(cartaoDeAviso(a, true)); });
+      if (pendentes.length > 1) {
+        var mais = el('div', { class: 'mais', role: 'button', tabindex: '0', text: fixoAberto ? 'fechar' : '+' + (pendentes.length - 1) + (pendentes.length - 1 === 1 ? ' aviso' : ' avisos') });
+        mais.addEventListener('click', function () { fixoAberto = !fixoAberto; desenharFixo(); });
+        fixo.appendChild(mais);
+      }
+    }
     function desenhar() {
       lista.textContent = '';
-      if (!mensagens.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma mensagem ainda.' }));
+      if (!mensagens.length && !avisos.some(function (a) { return a.lido; })) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma mensagem ainda.' }));
       var diaAnterior = '';
-      mensagens.forEach(function (m) {
-        var d = diaDe(m.criado_em);
+      var itens = mensagens.map(function (m) { return { quando: m.criado_em, m: m }; })
+        .concat(avisos.filter(function (a) { return a.lido; }).map(function (a) { return { quando: a.criado_em, a: a }; }))
+        .sort(function (x, y) { return String(x.quando) < String(y.quando) ? -1 : 1; });
+      itens.forEach(function (it) {
+        var d = diaDe(it.quando);
         if (d !== diaAnterior) { diaAnterior = d; lista.appendChild(el('span', { class: 'dia-conversa', text: rotuloDoDia(d) })); }
-        lista.appendChild(bloco(m));
+        lista.appendChild(it.m ? bloco(it.m) : cartaoDeAviso(it.a, false));
       });
     }
     function acrescentar(m) {
@@ -88,9 +128,24 @@
         if (r && r.error) return;
         mensagens.forEach(function (m) { if (m.de !== minha) m.lida_em = m.lida_em || new Date().toISOString(); });
         if (cfg.aoLer) cfg.aoLer();
+        if (cfg.rotulo) cfg.rotulo(naoLidasAgora());
       }, function () {});
     }
+    function carregarAvisos(depois) {
+      if (!comAvisos) { depois(); return; }
+      C.from('avisos_recebidos').select('id,titulo,corpo,url,atividade_id,lido,criado_em').order('criado_em', { ascending: false }).limit(40).then(function (r) {
+        if (!r.error) {
+          var novos = (r.data || []).filter(function (a) { return !/aba=conversa/.test(a.url || ''); });
+          var assinatura = function (l) { return l.map(function (a) { return a.id + (a.lido ? 1 : 0); }).join(','); };
+          if (assinatura(novos) !== assinatura(avisos)) { avisos = novos; desenharFixo(); }
+        }
+        depois();
+      }, function () { depois(); });
+    }
     function carregar(primeira) {
+      carregarAvisos(function () { carregarMensagens(primeira); });
+    }
+    function carregarMensagens(primeira) {
       C.from('aluno_mensagens').select('id,de,texto,criado_em,lida_em').eq('aluno_id', cfg.alunoId).order('criado_em').limit(500).then(function (r) {
         if (r.error) { if (primeira) { lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a conversa agora.' })); } return; }
         var perto = noFim(), mudou = false;
@@ -99,17 +154,20 @@
           var antiga = mensagens.filter(function (x) { return x.id === m.id; })[0];
           if (antiga && !antiga.lida_em && m.lida_em) { antiga.lida_em = m.lida_em; mudou = true; }   /* o outro lado leu: os tracinhos ficam azuis */
         });
-        if (primeira || mudou) {
+        if (primeira || mudou || comAvisos) {
           desenhar();
-          if (primeira) { setTimeout(irAoFim, 50); setTimeout(irAoFim, 400); } else if (perto) setTimeout(irAoFim, 0);
+          if (primeira) { setTimeout(irAoFim, 50); setTimeout(irAoFim, 400); } else if (perto && mudou) setTimeout(irAoFim, 0);
         }
         marcarLidas();
+        if (cfg.rotulo) cfg.rotulo(naoLidasAgora());
       }, function () {});
     }
     function parar() {
       if (relogio) { clearInterval(relogio); relogio = null; }
       if (vigia) { clearInterval(vigia); vigia = null; }
       if (canal) { try { C.removeChannel(canal); } catch (e) { /* já saiu */ } canal = null; }
+      if (fixo && fixo.parentNode) fixo.parentNode.removeChild(fixo);
+      fixo = null;
       if (barra && barra.__restaurar) barra.__restaurar();
       if (barra && barra.parentNode) barra.parentNode.removeChild(barra);
       if (aoRedimensionar) { window.removeEventListener('resize', aoRedimensionar); aoRedimensionar = null; }
@@ -187,8 +245,13 @@
 
   /* quantas mensagens do outro lado ainda não foram lidas (para o número ao lado do nome da aba) */
   function naoLidas(alunoId, souAdmin) {
-    return C.from('aluno_mensagens').select('id', { count: 'exact', head: true }).eq('aluno_id', alunoId).eq('de', souAdmin ? 'aluno' : 'cassio').is('lida_em', null)
+    var msgs = C.from('aluno_mensagens').select('id', { count: 'exact', head: true }).eq('aluno_id', alunoId).eq('de', souAdmin ? 'aluno' : 'cassio').is('lida_em', null)
       .then(function (r) { return r && !r.error && typeof r.count === 'number' ? r.count : 0; }, function () { return 0; });
+    if (souAdmin) return msgs;
+    /* do lado do aluno entram também os avisos do sistema ainda não tocados (os de mensagem não contam: já são as mensagens) */
+    var avs = C.from('avisos_recebidos').select('id,url').eq('lido', false).limit(100)
+      .then(function (r) { return r && !r.error ? (r.data || []).filter(function (a) { return !/aba=conversa/.test(a.url || ''); }).length : 0; }, function () { return 0; });
+    return Promise.all([msgs, avs]).then(function (n) { return n[0] + n[1]; });
   }
 
   window.conversa = { tela: tela, naoLidas: naoLidas };
