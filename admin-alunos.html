@@ -39,6 +39,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=120"></script>
+  <script src="conversa.js?v=1"></script>
   <script src="atividades.js?v=37"></script>
   <script>
   (function () {
@@ -149,7 +150,9 @@
         P.client.from('aluno_codigos').select('aluno_id,codigo'),
         /* atividades que o aluno já enviou e que ainda esperam a sua correção */
         P.client.from('atividades').select('id,aluno_id,titulo,enviada_em').not('enviada_em', 'is', null).is('corrigida_em', null).eq('antiga', false),
-        P.client.from('aluno_pagamentos').select('aluno_id,ultimo_pagamento,proximo_pagamento')
+        P.client.from('aluno_pagamentos').select('aluno_id,ultimo_pagamento,proximo_pagamento'),
+        /* mensagens dos alunos que ainda não foram lidas */
+        P.client.from('aluno_mensagens').select('aluno_id').eq('de', 'aluno').is('lida_em', null)
       ]).then(function (res) {
         var r = res[0], rc = res[1];
         var paraCorrigir = {}, totalParaCorrigir = 0, esperando = ((res[2] && res[2].data) || []).slice().sort(function (a, b) { return String(a.enviada_em) < String(b.enviada_em) ? -1 : 1; });
@@ -157,6 +160,8 @@
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
         var pagamentos = {};
         ((res[3] && res[3].data) || []).forEach(function (x) { pagamentos[x.aluno_id] = x; });
+        var mensagensNovas = {}, totalMensagens = 0;
+        ((res[4] && res[4].data) || []).forEach(function (x) { mensagensNovas[x.aluno_id] = (mensagensNovas[x.aluno_id] || 0) + 1; totalMensagens++; });
         var codigos = {};
         (rc.data || []).forEach(function (c) { codigos[c.aluno_id] = c.codigo; });
         r.data.forEach(function (a) { a.codigo = codigos[a.id] || ''; });
@@ -172,6 +177,18 @@
             if (!aluno) return;
             var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + ' · ' + (x.titulo || 'atividade') });
             l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, atividade: x.id }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
+            cartao.appendChild(l);
+          });
+          cartao.appendChild(el('div', { style: 'height:8px' }));
+        }
+        /* quem mandou mensagem e ainda não foi lido: tocar abre a conversa dele */
+        if (totalMensagens) {
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'font-weight:700;font-size:15px;margin:0 0 6px', text: totalMensagens === 1 ? '1 mensagem nova' : totalMensagens + ' mensagens novas' }));
+          Object.keys(mensagensNovas).forEach(function (id) {
+            var aluno = r.data.filter(function (a) { return a.id === id; })[0];
+            if (!aluno) return;
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + (mensagensNovas[id] > 1 ? ' · ' + mensagensNovas[id] + ' mensagens' : '') });
+            l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, aba: 'conversa' }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
             cartao.appendChild(l);
           });
           cartao.appendChild(el('div', { style: 'height:8px' }));
@@ -783,6 +800,7 @@
         { chave: 'atividades', nome: 'Atividades', el: el('div', { class: 'portal-cartao' }, [window.atividades.painelAdmin(aluno, atividadeAberta)]) },
         { chave: 'materiais', nome: 'Materiais', el: painelMateriais },
         { chave: 'gravacoes', nome: 'Gravações', el: painelGravacoes },
+        { chave: 'conversa', nome: 'Conversa', el: function () { return el('div', { class: 'portal-cartao' }, [window.conversa.tela({ alunoId: aluno.id, souAdmin: true, nomeAluno: String(aluno.nome || '').trim().split(/\s+/)[0], aoLer: function () { botoesAbas.conversa.textContent = 'Conversa'; } })]); } },
         { chave: 'dados', nome: 'Dados do aluno', el: formDados },
         { chave: 'pagamentos', nome: 'Pagamentos', el: painelPagamento }
       ];
@@ -794,7 +812,8 @@
           botoesAbas[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
         });
         conteudoAba.textContent = '';
-        conteudoAba.appendChild(ABAS_ADMIN.filter(function (ab) { return ab.chave === chave; })[0].el);
+        var daAba = ABAS_ADMIN.filter(function (ab) { return ab.chave === chave; })[0].el;
+        conteudoAba.appendChild(typeof daAba === 'function' ? daAba() : daAba);   /* a conversa só é montada quando a aba abre */
         P.estado.mesclar({ aba: chave });
       }
       ABAS_ADMIN.forEach(function (ab) {
@@ -805,6 +824,7 @@
       app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
       app.appendChild(conteudoAba);
       mostrarAba(botoesAbas[abaInicial] ? abaInicial : 'acompanhamento');
+      window.conversa.naoLidas(aluno.id, true).then(function (n) { if (n && abaInicial !== 'conversa') botoesAbas.conversa.textContent = 'Conversa (' + n + ')'; });
 
       var remover = P.botaoApagar('Remover este aluno do portal');
       remover.addEventListener('click', function () {
