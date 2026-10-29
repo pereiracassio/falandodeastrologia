@@ -11,7 +11,7 @@ self.addEventListener('push', function (event) {
   event.waitUntil(self.registration.showNotification(d.title || 'Falando de Astrologia', {
     body: d.body || '',
     icon: '/favicon.png',
-    badge: '/favicon.png',
+    badge: '/img/aviso-icone.png',   /* o ícone pequeno do aviso no Android precisa ser branco sobre transparente, senão vira um quadrado cinza */
     data: { url: d.url || '/' }
   }));
 });
