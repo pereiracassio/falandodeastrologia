@@ -634,7 +634,13 @@
               ]);
               duvidas.addEventListener('click', function (ev) { ev.preventDefault(); telaDuvidas(userAtual, aluno, previa); });
               app.appendChild(el('div', { class: 'portal-whats', style: 'text-align:center;margin:26px 0 10px' }, [duvidas]));
-              if (!previa) window.conversa.naoLidas(aluno.id, false).then(function (n) { if (n) texto.textContent = 'Tire suas dúvidas (' + n + ')'; });
+              if (!previa) window.conversa.naoLidas(aluno.id, false).then(function (n) {
+                if (!n) return;
+                /* os parênteses ficam ocres, como o texto; só o número é terracota */
+                texto.textContent = 'Tire suas dúvidas (';
+                texto.appendChild(el('span', { style: 'color:#A03E25', text: String(n) }));
+                texto.appendChild(document.createTextNode(')'));
+              });
               /* aviso de mensagem no celular (?aba=conversa) abre direto nas dúvidas */
               if (/[?&]aba=conversa/.test(location.search) && !previa) telaDuvidas(userAtual, aluno, previa);
             });
