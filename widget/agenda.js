@@ -2,12 +2,13 @@
    Lê os compromissos do app Calendário do próprio aparelho (onde a conta do Google já está), sem login e sem servidor.
    Cada compromisso leva o planeta da hora em que começa (ocre de dia, azul de noite); de dia todo leva o planeta do dia (terracota).
    LUGAR das horas planetárias: LAT/LON. NAO_MOSTRAR: agendas do Calendário que não entram (pedaço do nome basta). */
-const VERSAO = 'agenda 4';
+const VERSAO = 'agenda 5';
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658;
 const NAO_MOSTRAR = ['profec', 'meus per', 'feriado', 'holiday', 'aniversário', 'birthday', 'siri', 'sugestões'];
 const TINTA = '#16233F', AZUL = '#1034A6', TERRACOTA = '#A03E25';
 const COR_HORA_DIA = 'ocre';
+const DIAS_A_FRENTE = 8; /* olha até 7 dias à frente (hoje + 7): se hoje já acabou, mostra os próximos compromissos */
 const MOSTRAR_PREVIA = false; /* true = ao tocar no play dentro do Scriptable, mostra o widget na tela para testar */
 const PLANETA_ARQ = { 'Sol': 'sol', 'Lua': 'lua', 'Mercúrio': 'mercurio', 'Vênus': 'venus', 'Marte': 'marte', 'Júpiter': 'jupiter', 'Saturno': 'saturno' };
 const REGENTE_DO_DIA = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno'];
@@ -88,7 +89,7 @@ const familia = config.widgetFamily || 'medium';
 const w = new ListWidget();
 try {
   const agora = new Date(), inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-  const fimAmanha = new Date(inicioHoje.getTime() + 2 * 86400000);
+  const fimAmanha = new Date(inicioHoje.getTime() + DIAS_A_FRENTE * 86400000);
   let evs = await CalendarEvent.between(inicioHoje, fimAmanha);
   /* esconder agendas sem mexer no código: escreva os nomes no campo "Parameter" do widget, separados por vírgula (basta um pedaço do nome) */
   const doParametro = String(args.widgetParameter || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
@@ -96,7 +97,7 @@ try {
   if (!config.runsInWidget) { /* tocar no play dentro do Scriptable mostra as agendas do Calendário e quais estão escondidas (para achar o nome certo) */
     const contagem = {}; evs.forEach(e => { const n = (e.calendar && e.calendar.title) || '(sem nome)'; contagem[n] = (contagem[n] || 0) + 1; });
     const tabela = new UITable(); tabela.showSeparators = true;
-    const cab = new UITableRow(); cab.isHeader = true; cab.addText('Agendas com compromissos hoje e amanhã', VERSAO); tabela.addRow(cab);
+    const cab = new UITableRow(); cab.isHeader = true; cab.addText('Agendas com compromissos nos próximos dias', VERSAO); tabela.addRow(cab);
     Object.keys(contagem).sort().forEach(n => { const r = new UITableRow(); r.addText((ruim(n) ? 'ESCONDIDA · ' : '') + n, contagem[n] + (contagem[n] === 1 ? ' compromisso' : ' compromissos')); tabela.addRow(r); });
     if (!Object.keys(contagem).length) { const r = new UITableRow(); r.addText('Nenhum compromisso encontrado'); tabela.addRow(r); }
     await tabela.present(false); Script.complete(); return;
@@ -107,12 +108,13 @@ try {
 
   const porDia = {}; /* de dia todo: no máximo 2 por dia, para não tomar o lugar dos compromissos com horário */
   evs = evs.filter(e => { if (!e.isAllDay) return true; const k = e.startDate.getFullYear() + '-' + e.startDate.getMonth() + '-' + e.startDate.getDate(); porDia[k] = (porDia[k] || 0) + 1; return porDia[k] <= 2; });
-  const rotuloDia = d => mesmoDia(d, agora) ? 'Hoje' : mesmoDia(d, new Date(agora.getTime() + 86400000)) ? 'Amanhã' : '';
+  const SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const rotuloDia = d => mesmoDia(d, agora) ? 'Hoje' : mesmoDia(d, new Date(agora.getTime() + 86400000)) ? 'Amanhã' : SEM[d.getDay()] + ', ' + d.getDate() + ' de ' + MES[d.getMonth()];
   const linhaEvento = async (pai, e, tam) => {
     const l = pai.addStack(); l.centerAlignContent();
     const barra = l.addStack(); barra.size = new Size(3, tam + 8); barra.backgroundColor = (e.calendar && e.calendar.color) || new Color(TERRACOTA); l.addSpacer(6);
     const ic = await iconeDe(e); if (ic) { const im = l.addImage(ic); im.imageSize = new Size(tam + 6, tam + 6); l.addSpacer(6); }
-    linhaTexto(l, e.isAllDay ? 'o dia todo' : hhmm(e.startDate), tam - 1, AZUL, false); l.addSpacer(8);
+    linhaTexto(l, (familia === 'small' && !mesmoDia(e.startDate, agora) ? SEM[e.startDate.getDay()] + ' ' : '') + (e.isAllDay ? 'o dia todo' : hhmm(e.startDate)), tam - 1, AZUL, false); l.addSpacer(8);
     linhaTexto(l, e.title || '(sem título)', tam, TINTA); l.addSpacer(); pai.addSpacer(4);
   };
 
@@ -132,11 +134,8 @@ try {
   } else {
     w.backgroundImage = await imagem('papiro-' + (familia === 'small' ? 'pequeno' : familia === 'large' ? 'grande' : familia === 'extraLarge' ? 'enorme' : 'medio') + '.png');
     w.setPadding(familia === 'small' ? 16 : 18, 20, 12, 20);
-    const maximo = familia === 'small' ? 2 : familia === 'medium' ? 3 : familia === 'large' ? 6 : 9, tam = familia === 'small' ? 11 : familia === 'medium' ? 13 : 14;
+    const maximo = familia === 'small' ? 2 : familia === 'medium' ? 3 : familia === 'large' ? 10 : 9, tam = familia === 'small' ? 11 : familia === 'medium' ? 13 : 14;
     let alvo = w;
-    if (familia === 'large') { /* o quadrado grande: o cabeçalho das horas em cima e os compromissos embaixo, sem espaço vazio */
-      await cabecalhoHoras(w, 290); w.addSpacer(10);
-    }
     if (familia === 'extraLarge') { /* iPad, o grandão: cabeçalho das horas à esquerda e os compromissos à direita */
       const dois = w.addStack(); dois.centerAlignContent(); const esq = dois.addStack(); esq.layoutVertically(); dois.addSpacer(28);
       alvo = dois.addStack(); alvo.layoutVertically(); await cabecalhoHoras(esq);
@@ -147,7 +146,7 @@ try {
     for (const e of evs) {
       if (n >= maximo) break;
       const r = rotuloDia(e.startDate);
-      if (r && r !== dia && familia !== 'small') { dia = r; linhaTexto(alvo, r, tam, TERRACOTA); alvo.addSpacer(2); }
+      if (r !== dia && familia !== 'small') { dia = r; linhaTexto(alvo, r, tam, TERRACOTA); alvo.addSpacer(2); }
       await linhaEvento(alvo, e, tam); n++;
     }
   }
