@@ -114,12 +114,18 @@
     }
     function pctDe(lista) { return lista.length ? Math.floor(lista.filter(function (x) { return x.feito; }).length * 100 / lista.length) : 0; }
 
-    /* na ordem do número da bolinha (prioridade); sem número, depois deles, na ordem de sempre */
+    /* na ordem do número da bolinha (prioridade); sem número, depois deles, do mais concluído para o menos concluído (empate: ordem de sempre) */
     function porNumero(lista) {
       var n = function (p) { return p.prioridade == null ? Infinity : p.prioridade; };
-      return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) { var x = n(a.p), y = n(b.p); return x === y ? a.i - b.i : (x < y ? -1 : 1); }).map(function (o) { return o.p; });
+      var pct = function (p) { return pctDe(passos.filter(function (x) { return x.projeto_id === p.id; })); };
+      return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) {
+        var x = n(a.p), y = n(b.p);
+        if (x !== y) return x < y ? -1 : 1;
+        if (x === Infinity && pct(a.p) !== pct(b.p)) return pct(b.p) - pct(a.p);
+        return a.i - b.i;
+      }).map(function (o) { return o.p; });
     }
-    /* põe o número no projeto; se já havia outro com esse número, ele e os seguintes descem um lugar (o 3 vira 4, o 4 vira 5...) */
+
     function definirNumero(p, texto, ativos) {
       var n = texto === '' ? null : parseInt(texto, 10);
       if (n !== null && (isNaN(n) || n < 0 || n > 99)) { desenhar(); return; }
