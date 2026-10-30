@@ -51,7 +51,7 @@
     var nomeAdmin = '', aniversarios = [], calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    var VISOES = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista']];
+    var VISOES = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To Do']];
     var visao = 'semana', ancora = '', areaForm = null, atualizar = function () {};
 
     function limpar() { app.textContent = ''; }
@@ -380,7 +380,7 @@
     function montar(corpo) {
       var ent = P.estado.ler();
       ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
-      if (['dia', 'semana', 'mes', 'ano', 'lista'].indexOf(ent.v) >= 0) visao = ent.v;
+      if (['dia', 'semana', 'mes', 'ano', 'lista', 'todo'].indexOf(ent.v) >= 0) visao = ent.v;
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
       var novo = el('button', { type: 'button', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
@@ -391,7 +391,7 @@
         b.addEventListener('click', function () { visao = v[0]; mudou(); });
         botoes[v[0]] = b; abas.appendChild(b);
       });
-      var passo = function (n) { ancora = visao === 'dia' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
+      var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
       var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo' });
       var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' });
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
@@ -407,7 +407,9 @@
       function mudou() {
         VISOES.forEach(function (v) { botoes[v[0]].className = 'portal-aba' + (v[0] === visao ? ' ativa' : ''); botoes[v[0]].setAttribute('aria-selected', v[0] === visao ? 'true' : 'false'); });
         P.estado.gravar({ v: visao, d: ancora });
-        titulo.textContent = tituloPeriodo();
+        titulo.textContent = visao === 'todo' ? 'Para fazer' : tituloPeriodo();
+        [ant, prox, hoje].forEach(function (b) { b.style.visibility = visao === 'todo' ? 'hidden' : ''; });
+        if (visao === 'todo') { var minha = ++pedido; mostrarEncaixe(); vistaTodo(vista, function () { return minha === pedido; }); return; }
         var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
         var desenha = function (evs0) {
           var evs = evs0.concat(aniversariosEntre(iv[0], iv[1])); evs.falhas = evs0.falhas; var rolou = window.scrollY;
@@ -547,6 +549,96 @@
         caixa.appendChild(bloco1);
       }
       vista.appendChild(caixa);
+    }
+
+    /* ---------- To Do: tudo que tem data, na ordem em que acontece ---------- */
+    var TODO_DIAS_ATRAS = 14, TODO_DIAS_FRENTE = 60;
+    function valorSite(chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); }
+    /* a hora de Júpiter do dia isoD mais perto de alvoMin (minutos desde a meia-noite); manha = só as que começam antes do meio-dia, se houver */
+    function horaJupiter(iso, alvoMin, manha) {
+      var js = segmentosDoDia(iso).filter(function (s) { return s.planeta === 'Júpiter'; }).map(function (s) { return { ini: s.ini, mi: (s.ini - doIso(iso)) / 60000 }; });
+      if (manha) { var m = js.filter(function (j) { return j.mi < 720; }); if (m.length) js = m; }
+      if (!js.length) return doIso(iso, p2(Math.floor(alvoMin / 60)) + ':' + p2(alvoMin % 60));
+      js.sort(function (a, b) { return Math.abs(a.mi - alvoMin) - Math.abs(b.mi - alvoMin); });
+      return js[0].ini;
+    }
+    function itensDaProducao() {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,no_ar'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok')]).then(function (r) {
+        var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
+        var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=cortes' : ''); };
+        videos.forEach(function (v) {
+          var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
+          var nome = (v.numero ? 'Vídeo ' + v.numero + ', ' : 'Vídeo, ') + (v.titulo || 'sem título');
+          saida.push({ quando: horaJupiter(d, 16 * 60, false), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', url: link(v), cor: '#1034A6' });
+        });
+        cortes.forEach(function (c) {
+          var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
+          var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero || ''), sub: 'postar: ' + falta + ' · Júpiter', url: link(v, true), cor: '#1034A6' });
+        });
+        return saida;
+      }, function () { return []; });
+    }
+    function itensDeProjetosEEstudos() {
+      return Promise.all([C.from('projetos').select('id,nome,data_fim').not('data_fim', 'is', null), C.from('projeto_passos').select('projeto_id,feito'), C.from('estudos').select('id,nome,data_fim,encerrado').not('data_fim', 'is', null)]).then(function (r) {
+        var passos = r[1].data || [], saida = [];
+        (r[0].data || []).forEach(function (p) {
+          var meus = passos.filter(function (x) { return x.projeto_id === p.id; }), feitos = meus.filter(function (x) { return x.feito; }).length;
+          if (meus.length && feitos === meus.length) return;
+          saida.push({ quando: doIso(p.data_fim), diaTodo: true, titulo: p.nome, sub: 'projeto · ' + feitos + '/' + meus.length + ' passos', url: 'admin-projetos.html', cor: '#A03E25' });
+        });
+        (r[2].data || []).forEach(function (e) {
+          if (e.encerrado) return;
+          saida.push({ quando: doIso(e.data_fim), diaTodo: true, titulo: e.nome, sub: 'estudo · data final', url: 'admin-estudos.html', cor: '#A03E25' });
+        });
+        return saida;
+      }, function () { return []; });
+    }
+    function vistaTodo(vista, vivo) {
+      vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+      var agora = Date.now(), de = meiaNoiteDe(agora) - TODO_DIAS_ATRAS * DIA, ate = meiaNoiteDe(agora) + (TODO_DIAS_FRENTE + 1) * DIA;
+      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), itensDeProjetosEEstudos()]).then(function (r) {
+        if (!vivo()) return;
+        var feitos = r[1] || {}, falhas = r[0].falhas || [], itens = [];
+        r[0].concat(aniversariosEntre(de, ate)).forEach(function (e) {
+          if (/holiday|addressbook#contacts/.test(e.calId || '')) return; /* feriados não entram; aniversários vêm da lista de clientes e alunos */
+          itens.push({ quando: e.ini, diaTodo: e.diaTodo, titulo: e.titulo, sub: e.aniversario ? 'aniversário · mandar a mensagem' : e.calNome, chave: (e.aniversario ? 'a|' : 'g|' + (e.calId || '') + '|') + e.id + '|' + e.ini, evento: e, cor: e.aniversario ? '#A03E25' : preenche(e) });
+        });
+        itens = itens.concat(r[2], r[3]).filter(function (x) { return !x.chave || !feitos[x.chave]; });
+        itens.sort(function (a, b) { return a.quando - b.quando; });
+        vista.textContent = '';
+        if (falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + falhas.join(', ') + '.' }));
+        if (!itens.length) { vista.appendChild(el('p', { class: 'portal-vazio', text: 'Nada para fazer.' })); return; }
+        var hoje = isoDia(agora), diaAtual = '', bloco1 = null;
+        itens.forEach(function (x) {
+          var iso = isoDia(x.quando), grupo = iso < hoje ? 'Atrasados' : iso;
+          if (grupo !== diaAtual) {
+            diaAtual = grupo; bloco1 = el('div', { style: 'margin:0 0 14px' });
+            bloco1.appendChild(el('div', { text: grupo === 'Atrasados' ? 'Atrasados' : rotuloDia(iso), style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:' + linhaFina }));
+            vista.appendChild(bloco1);
+          }
+          var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:' + linhaFina });
+          var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
+          var quando = el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'flex:none;min-width:70px;font-size:13px;color:#1034A6' });
+          var texto = el('span', { style: 'flex:1;min-width:0;cursor:pointer' }, [el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), el('span', { text: x.sub || '', style: 'display:block;font-size:12px;opacity:.7' })]);
+          var aberto = el('div', { class: 'barra-ocre' });
+          texto.addEventListener('click', function () { if (x.url) { location.href = x.url; return; } if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
+          linha.appendChild(barra); linha.appendChild(quando); linha.appendChild(texto);
+          if (x.chave) { /* compromisso e aniversário saem da lista quando ele marca; o resto sai sozinho quando é resolvido na própria tela */
+            var cx = el('button', { type: 'button', role: 'checkbox', 'aria-checked': 'false', 'aria-label': 'Marcar como feito', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+            cx.addEventListener('click', function () {
+              cx.textContent = '✓'; cx.disabled = true;
+              valorSite('todo_feitos').then(function (atual) {
+                atual = atual || {}; atual[x.chave] = Date.now();
+                Object.keys(atual).forEach(function (k) { if (Date.now() - atual[k] > 90 * DIA) delete atual[k]; });
+                return C.from('site_config').upsert({ chave: 'todo_feitos', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' });
+              }).then(function (g) { if (g.error) throw g.error; linha.remove(); aberto.remove(); }, function () { cx.textContent = ''; cx.disabled = false; alert('Não foi possível salvar.'); });
+            });
+            linha.appendChild(cx);
+          }
+          bloco1.appendChild(linha); bloco1.appendChild(aberto);
+        });
+      }, function (e) { if (vivo()) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); } });
     }
     /* Mês */
     function vistaMes(vista, evs) {
