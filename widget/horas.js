@@ -58,6 +58,35 @@ function linhaTexto(pai, t, tam, cor, centro) {
   if (centro) x.centerAlignText(); return x;
 }
 
+/* ---- próximos compromissos (lidos do app Calendário; as agendas escondidas são as mesmas do widget Agenda) ---- */
+const NAO_MOSTRAR = ['profec', 'meus per', 'feriado', 'holiday', 'aniversário', 'birthday', 'siri', 'sugestões'];
+const REGENTE_DO_DIA = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno'];
+const SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+async function postit(img) { /* o planeta sobre uma pecinha clara de papiro, como na Agenda do site */
+  const dc = new DrawContext(); dc.size = new Size(120, 120); dc.opaque = false; dc.respectScreenScale = false;
+  dc.setFillColor(new Color('#F3E3B8')); dc.fillRect(new Rect(0, 0, 120, 120)); dc.drawImageInRect(img, new Rect(16, 16, 88, 88)); return dc.getImage();
+}
+async function proximosCompromissos(pai, quantos) {
+  let evs = [];
+  try { const hoje = new Date(); const ini = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()); evs = await CalendarEvent.between(ini, new Date(ini.getTime() + 8 * 86400000)); } catch (e) { return; }
+  const agora = new Date(), parametro = String(args.widgetParameter || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  const ruim = t => /^\s*\d{3,}\b/.test(String(t || '')) || NAO_MOSTRAR.concat(parametro).some(n => String(t || '').toLowerCase().indexOf(n) >= 0);
+  evs = evs.filter(e => !ruim(e.calendar && e.calendar.title) && !e.isAllDay && e.endDate > agora).sort((a, b) => a.startDate - b.startDate).slice(0, quantos);
+  if (!evs.length) { linhaTexto(pai, 'Nada marcado nos próximos dias', 13, TINTA, true); return; }
+  const mesmo = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  for (const e of evs) {
+    const l = pai.addStack(); l.centerAlignContent();
+    const barra = l.addStack(); barra.size = new Size(3, 34); barra.backgroundColor = (e.calendar && e.calendar.color) || new Color(TERRACOTA); l.addSpacer(8);
+    const hs2 = HP.horasEntre(e.startDate.getTime(), e.startDate.getTime() + 1, LAT, LON), hh = hs2[0];
+    if (hh) { const im = l.addImage(await postit(await imagem(PLANETA_ARQ[hh.planeta] + '-' + (hh.noite ? 'azul' : COR_HORA_DIA) + '.png'))); im.imageSize = new Size(28, 28); l.addSpacer(8); }
+    const col = l.addStack(); col.layoutVertically();
+    const dia = mesmo(e.startDate, agora) ? 'hoje' : mesmo(e.startDate, new Date(agora.getTime() + 86400000)) ? 'amanhã' : SEM[e.startDate.getDay()] + ', ' + e.startDate.getDate() + ' de ' + MES[e.startDate.getMonth()];
+    linhaTexto(col, dia + ' · ' + p2(e.startDate.getHours()) + ':' + p2(e.startDate.getMinutes()), 11, '#1034A6');
+    linhaTexto(col, e.title || '(sem título)', 14, TINTA);
+    l.addSpacer(); pai.addSpacer(6);
+  }
+}
+
 const familia = config.widgetFamily || 'medium';
 const w = new ListWidget();
 /* sem w.url de propósito: quem manda no toque é o que você escolheu ao colocar o widget (Run Script, Open URL...) */
@@ -126,7 +155,10 @@ try {
     }
   };
   const nascerPor = () => 'Nascer do sol ' + hhmm(hs[0].ini) + ' · Pôr do sol ' + hhmm(hs[12].ini);
-  if (familia === 'large') { w.addSpacer(8); linhaTexto(w, nascerPor(), 12, TINTA, true); w.addSpacer(8); await proximas(w, 6, 14); }
+  if (familia === 'large') { /* o quadrado grande: nascer e pôr do sol e os próximos compromissos da agenda (do Calendário do aparelho), de qualquer dia */
+    w.addSpacer(8); linhaTexto(w, nascerPor(), 12, TINTA, true); w.addSpacer(10);
+    await proximosCompromissos(w, 3);
+  }
   if (enorme) { pai.addSpacer(8); linhaTexto(pai, nascerPor(), 12, TINTA, true); await proximas(colDir, 8, 15); }
   w.refreshAfterDate = new Date(Math.min(h.fim, agora + 10 * 60000));
   }
