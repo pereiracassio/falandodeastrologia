@@ -2,7 +2,7 @@
    Lê os compromissos do app Calendário do próprio aparelho (onde a conta do Google já está), sem login e sem servidor.
    Cada compromisso leva o planeta da hora em que começa (ocre de dia, azul de noite); de dia todo leva o planeta do dia (terracota).
    LUGAR das horas planetárias: LAT/LON. NAO_MOSTRAR: agendas do Calendário que não entram (pedaço do nome basta). */
-const VERSAO = 'agenda 3';
+const VERSAO = 'agenda 4';
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658;
 const NAO_MOSTRAR = ['profec', 'meus per', 'feriado', 'holiday', 'aniversário', 'birthday', 'siri', 'sugestões'];
@@ -64,7 +64,8 @@ function barra(ini, fim, agora, unidade) { /* "62% [barra] 12/23 horas" como ima
   dc.setStrokeColor(cor); dc.setLineWidth(3); dc.strokeRect(new Rect(104, 13, 322, 20)); dc.setFillColor(cor); dc.fillRect(new Rect(107, 16, 316 * f, 14));
   dc.setTextAlignedRight(); dc.drawTextInRect(numPt(passou) + '/' + numPt(total) + ' ' + unidade, new Rect(434, 5, 286, 44)); return dc.getImage();
 }
-async function cabecalhoHoras(pai) { /* planeta do dia (terracota) e da hora (ocre de dia, azul de noite), as duas barras e a hora de agora */
+async function cabecalhoHoras(pai, larg) {
+  larg = larg || 250; /* planeta do dia (terracota) e da hora (ocre de dia, azul de noite), as duas barras e a hora de agora */
   const agoraMs = Date.now(), hs = diaPlanetario(agoraMs), i = hs.findIndex(h => agoraMs >= h.ini && agoraMs < h.fim), h = hs[i];
   if (hs.length < 24 || !h) return;
   const hh = ms => { const d = new Date(ms + HP.FUSO); return p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()); };
@@ -77,8 +78,8 @@ async function cabecalhoHoras(pai) { /* planeta do dia (terracota) e da hora (oc
   const rh = ch.addImage(await imagem('rot-hora.png')); rh.imageSize = new Size(28, 9); rh.centerAlignImage(); ch.addSpacer(2);
   const ihora = ch.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-' + (h.noite ? 'azul' : COR_HORA_DIA) + '.png')); ihora.imageSize = new Size(38, 38); ihora.centerAlignImage();
   linha.addSpacer(); pai.addSpacer(4);
-  const bd = pai.addImage(barra(hs[0].ini, hs[23].fim, agoraMs, 'horas')); bd.imageSize = new Size(250, 250 * 44 / 720); pai.addSpacer(2);
-  const bh = pai.addImage(barra(h.ini, h.fim, agoraMs, 'minutos')); bh.imageSize = new Size(250, 250 * 44 / 720); pai.addSpacer(4);
+  const bd = pai.addImage(barra(hs[0].ini, hs[23].fim, agoraMs, 'horas')); bd.imageSize = new Size(larg, larg * 44 / 720); pai.addSpacer(2);
+  const bh = pai.addImage(barra(h.ini, h.fim, agoraMs, 'minutos')); bh.imageSize = new Size(larg, larg * 44 / 720); pai.addSpacer(4);
   linhaTexto(pai, (i % 12 + 1) + 'ª hora · ' + hh(h.ini) + ' às ' + hh(h.fim), 12, TINTA); pai.addSpacer(6);
   linhaTexto(pai, 'Nascer do sol ' + hh(hs[0].ini) + ' · Pôr do sol ' + hh(hs[12].ini), 12, TINTA);
 }
@@ -91,7 +92,7 @@ try {
   let evs = await CalendarEvent.between(inicioHoje, fimAmanha);
   /* esconder agendas sem mexer no código: escreva os nomes no campo "Parameter" do widget, separados por vírgula (basta um pedaço do nome) */
   const doParametro = String(args.widgetParameter || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
-  const ruim = t => NAO_MOSTRAR.concat(doParametro).some(n => String(t || '').toLowerCase().indexOf(n) >= 0);
+  const ruim = t => /^\s*\d{3,}\b/.test(String(t || '')) || NAO_MOSTRAR.concat(doParametro).some(n => String(t || '').toLowerCase().indexOf(n) >= 0); /* agenda que começa com número (código de cliente, ex.: "0048 - Leandro") também fica de fora */
   if (!config.runsInWidget) { /* tocar no play dentro do Scriptable mostra as agendas do Calendário e quais estão escondidas (para achar o nome certo) */
     const contagem = {}; evs.forEach(e => { const n = (e.calendar && e.calendar.title) || '(sem nome)'; contagem[n] = (contagem[n] || 0) + 1; });
     const tabela = new UITable(); tabela.showSeparators = true;
@@ -131,8 +132,11 @@ try {
   } else {
     w.backgroundImage = await imagem('papiro-' + (familia === 'small' ? 'pequeno' : familia === 'large' ? 'grande' : familia === 'extraLarge' ? 'enorme' : 'medio') + '.png');
     w.setPadding(familia === 'small' ? 16 : 18, 20, 12, 20);
-    const maximo = familia === 'small' ? 2 : familia === 'medium' ? 3 : familia === 'large' ? 8 : 9, tam = familia === 'small' ? 11 : familia === 'medium' ? 13 : 14;
+    const maximo = familia === 'small' ? 2 : familia === 'medium' ? 3 : familia === 'large' ? 6 : 9, tam = familia === 'small' ? 11 : familia === 'medium' ? 13 : 14;
     let alvo = w;
+    if (familia === 'large') { /* o quadrado grande: o cabeçalho das horas em cima e os compromissos embaixo, sem espaço vazio */
+      await cabecalhoHoras(w, 290); w.addSpacer(10);
+    }
     if (familia === 'extraLarge') { /* iPad, o grandão: cabeçalho das horas à esquerda e os compromissos à direita */
       const dois = w.addStack(); dois.centerAlignContent(); const esq = dois.addStack(); esq.layoutVertically(); dois.addSpacer(28);
       alvo = dois.addStack(); alvo.layoutVertically(); await cabecalhoHoras(esq);
