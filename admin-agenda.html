@@ -534,8 +534,8 @@
           var top = yDe(segs, x.i, H), alt = Math.max(16, yDe(segs, x.f, H) - top - 1);
           var b = el('div', { style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid #16233F;background:' + preenche(x.e) + ';padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:' + textoSobre(preenche(x.e)) + ';cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
           var tt = el('div', { style: 'font-weight:700' }); if (x.e.meet) tt.appendChild(marcaMeet(unico ? 16 : 12)); tt.appendChild(document.createTextNode(x.e.titulo)); b.appendChild(tt);
-          var pl = planetaDoEvento(x.e, unico ? 16 : 11, true);
-          if (pl && unico) { pl.style.position = 'absolute'; pl.style.right = '2px'; pl.style.top = '2px'; tt.style.paddingRight = '24px'; b.appendChild(pl); }
+          var tam = unico ? Math.max(14, Math.min(34, alt - 8)) : 11, pl = planetaDoEvento(x.e, tam, true); /* no Dia o ícone acompanha a altura do evento (até 34px) */
+          if (pl && unico) { pl.style.position = 'absolute'; pl.style.right = '2px'; pl.style.top = '2px'; tt.style.paddingRight = (tam + 12) + 'px'; b.appendChild(pl); }
           else if (pl) { /* Semana: como no Mês, o título numa linha e o planeta no fim dela */
             var corpoT = tt.cloneNode(true); b.removeChild(tt);
             tt = el('div', { style: 'display:flex;align-items:center;gap:2px;font-weight:700' });
