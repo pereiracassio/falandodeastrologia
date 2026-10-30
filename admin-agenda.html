@@ -463,13 +463,17 @@
       for (var k = 0; k < segs.length; k++) if (ms >= segs[k].ini && ms < segs[k].fim) return segs[k];
       return null;
     }
-    function planetaDoInstante(ms, px, comFundo) { /* comFundo: peça clarinha atrás, para ler em cima da cor de qualquer agenda */
-      var s = horaDoInstante(ms); if (!s) return null;
-      var ic = iconePlaneta(s.planeta, px, s.noite ? '#1F5FA3' : '#B5852F');
-      if (!comFundo) return ic;
-      return el('span', { style: 'display:inline-flex;flex:none;align-items:center;justify-content:center;background:#F3E3B8;padding:1px 2px;line-height:1' }, [ic]);
+    function comPecaClara(ic, comFundo) { /* peça clarinha atrás, para ler em cima da cor de qualquer agenda */
+      return comFundo ? el('span', { style: 'display:inline-flex;flex:none;align-items:center;justify-content:center;background:#F3E3B8;padding:1px 2px;line-height:1' }, [ic]) : ic;
     }
-    function planetaDoEvento(e, px, comFundo) { return e.diaTodo || e.aniversario ? null : planetaDoInstante(e.ini, px, comFundo); }
+    function planetaDoInstante(ms, px, comFundo) {
+      var s = horaDoInstante(ms); if (!s) return null;
+      return comPecaClara(iconePlaneta(s.planeta, px, s.noite ? '#1F5FA3' : '#B5852F'), comFundo);
+    }
+    var REGENTE_DO_DIA = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno']; /* domingo a sábado */
+    function planetaDoDia(ms, px, comFundo) { return comPecaClara(iconePlaneta(REGENTE_DO_DIA[diaSem(isoDia(ms))], px, '#A03E25'), comFundo); } /* o planeta do DIA é terracota */
+    /* evento com hora = planeta da hora em que começa; evento de dia todo = planeta do dia */
+    function planetaDoEvento(e, px, comFundo) { return e.diaTodo ? planetaDoDia(e.ini, px, comFundo) : planetaDoInstante(e.ini, px, comFundo); }
     function yDe(segs, t, H) { /* onde, na coluna, fica um instante: dentro da linha da hora planetária em que ele cai */
       for (var k = 0; k < segs.length; k++) if (t < segs[k].fim) return k * H + Math.max(0, (t - segs[k].ini)) / (segs[k].fim - segs[k].ini) * H;
       return segs.length * H;
@@ -497,7 +501,9 @@
         isos.forEach(function (iso) {
           var c = el('div', { style: 'padding:2px;min-width:0' });
           doDia(iso, evs).filter(function (e) { return e.diaTodo; }).forEach(function (e) {
-            var t = bloco(e.curto || e.titulo, 'font-size:10px;line-height:1.3;border:1px solid #16233F;background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;color:' + textoSobre(preenche(e)));
+            var t = el('div', { style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.3;border:1px solid #16233F;background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;cursor:pointer;color:' + textoSobre(preenche(e)) });
+            t.appendChild(el('span', { text: e.curto || e.titulo, style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' }));
+            var plD = planetaDoEvento(e, 10, true); if (plD) t.appendChild(plD);
             t.addEventListener('click', function () { abrirEvento(e); }); c.appendChild(t);
           });
           linhaTodo.appendChild(c);
@@ -727,7 +733,7 @@
           }
           var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:' + linhaFina });
           var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
-          var plT = !x.diaTodo && isFinite(x.quando) ? planetaDoInstante(x.quando, 16, false) : null;
+          var plT = !x.semData && isFinite(x.quando) ? (x.diaTodo ? planetaDoDia(x.quando, 16, false) : planetaDoInstante(x.quando, 16, false)) : null;
           var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:#1034A6' }), plT]);
           var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: 'display:block;font-size:12px;opacity:.7' }) : null]);
           var aberto = el('div', { class: 'barra-ocre' });
