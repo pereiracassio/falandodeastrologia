@@ -267,6 +267,10 @@ O ícone do iPhone abre na página onde foi salvo (não há como abrir direto em
 
 **O painel do administrador NÃO tem mais nenhum desvio automático para a "última tela".** O mecanismo antigo (`fda_ultima_pagina` + relógio `fda_ultimo_uso` + redirecionamento no `<head>` de `admin-agenda.html`/`admin-producao.html` e em `restaurarUltimaTela` do `portal.js`) ficava jogando o app para Estudos (a tela guardada estava velha): reproduzido em Playwright, qualquer tela do painel recarregada depois de uns minutos fora ia parar na última guardada. Foi consertado três vezes e voltava; **a solução foi tirar o desvio**. Agora: voltar ao app = a página fica como estava (nada navega); abrir do zero (logou, ou fechou e abriu o app) = `start_url` do `manifest-producao.json` = **Agenda**. **Nunca recolocar redirecionamento para "última tela" no painel**, nem "só quando abrir do zero": ele não gosta nem de voltar à Agenda toda hora. `restaurarUltimaTela` só continua para `aluno.html` e `cliente.html` (alunos e clientes, não o painel dele). Se um dia o ícone da tela de início abrir noutra página, o ícone foi salvo estando nela: apagar e adicionar de novo estando na Agenda.
 
+## Cores dos planetas nas horas planetárias (30/10/2026) — regra dele, vale na Agenda inteira e nos widgets
+
+**O planeta de uma HORA é OCRE (`#B5852F`) nas horas do dia e AZUL (`#1F5FA3`) nas da noite** (dia combina com amarelo, noite com azul). **O planeta do DIA (o regente do dia, ex.: Vênus) é sempre TERRACOTA (`#A03E25`).** Vale no cabeçalho, na aba Horas, nas réguas do Dia e da Semana e no encaixe da Agenda, e nos widgets (a tela de bloqueio é branca, sem cor). Peça nova com planeta de hora/dia segue isto.
+
 ## Widgets da tela de início do iPhone (28/10/2026) — o de Horas planetárias está feito (30/10); os outros são planejamento
 
 O astrólogo quer widgets na tela de início do iPhone/iPad **com a cara do site** (papiro, moldura, Cinzel, ícones dos planetas). Ele está só estudando e **sem tempo agora**: não começar nada até ele dizer "vamos fazer o widget". Atualizar esta seção a cada etapa (marcar [x]).
