@@ -12,7 +12,7 @@
      Então, dentro de um toque, a primeira chamada mostra a janela e responde "não" (a ação para); se a pessoa confirma, o mesmo toque é refeito
      e essa segunda chamada responde "sim". Fora de um toque (não há o que refazer), vale a caixa do navegador. */
   (function () {
-    var confirmNativo = window.confirm, liberada = null;
+    var confirmNativo = window.confirm, promptNativo = window.prompt, liberada = null, liberadoPrompt = null;
     function estilos() {
       if (document.getElementById('janela-site-css')) return;
       var st = document.createElement('style'); st.id = 'janela-site-css';
@@ -22,26 +22,30 @@
         '.janela-acoes{display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap}' +
         '.janela-acoes button{font:700 14px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;border-radius:0;cursor:pointer;white-space:nowrap;min-height:0}' +
         '.janela-ok{background:#A03E25;color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:#7d2f1a}' +
-        '.janela-nao{background:transparent;color:#1034A6;border:0;padding:10px 6px}.janela-nao:hover{color:#16233F}';
+        '.janela-nao{background:transparent;color:#1034A6;border:0;padding:10px 6px}.janela-nao:hover{color:#16233F}' +
+        '.janela-campo{display:block;width:100%;box-sizing:border-box;margin:0 0 18px;padding:9px 10px;border:1px solid #1F5FA3!important;border-radius:0!important;background:transparent!important;color:#16233F;font:400 17px "Architects Daughter",cursive;min-height:0;outline:none;box-shadow:none}.janela-campo:focus{outline:none;border-width:2px!important;padding:8px 9px}';
       document.head.appendChild(st);
     }
-    function abrir(texto, comCancelar, aoFechar) {
+    function abrir(texto, comCancelar, aoFechar, campoInicial) {
       estilos();
       var fundo = document.createElement('div'); fundo.className = 'janela-fundo'; fundo.setAttribute('role', 'dialog'); fundo.setAttribute('aria-modal', 'true');
       var caixa = document.createElement('div'); caixa.className = 'janela-caixa papiro-moldura';
       var p = document.createElement('p'); p.className = 'janela-texto'; p.textContent = texto;
+      var campo = null;
+      if (campoInicial !== undefined) { campo = document.createElement('input'); campo.type = 'text'; campo.className = 'janela-campo'; campo.value = campoInicial; }
       var acoes = document.createElement('div'); acoes.className = 'janela-acoes';
       var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'janela-ok'; ok.textContent = comCancelar ? 'Confirmar' : 'OK';
       var nao = null;
       if (comCancelar) { nao = document.createElement('button'); nao.type = 'button'; nao.className = 'janela-nao'; nao.textContent = 'Cancelar'; acoes.appendChild(nao); }
-      acoes.appendChild(ok); caixa.appendChild(p); caixa.appendChild(acoes); fundo.appendChild(caixa); document.body.appendChild(fundo);
-      function fechar(resposta) { document.removeEventListener('keydown', tecla, true); if (fundo.parentNode) fundo.parentNode.removeChild(fundo); aoFechar(resposta); }
+      acoes.appendChild(ok); caixa.appendChild(p); if (campo) caixa.appendChild(campo); caixa.appendChild(acoes); fundo.appendChild(caixa); document.body.appendChild(fundo);
+      function fechar(resposta) { document.removeEventListener('keydown', tecla, true); if (fundo.parentNode) fundo.parentNode.removeChild(fundo); aoFechar(campo && resposta === false ? null : resposta); }
       function tecla(ev) { if (ev.key === 'Escape') { ev.preventDefault(); fechar(false); } }
       document.addEventListener('keydown', tecla, true);
-      ok.addEventListener('click', function () { fechar(true); });
+      ok.addEventListener('click', function () { fechar(campo ? campo.value : true); });
+      if (campo) campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); fechar(campo.value); } });
       if (nao) nao.addEventListener('click', function () { fechar(false); });
       fundo.addEventListener('click', function (ev) { if (ev.target === fundo && comCancelar) fechar(false); });
-      setTimeout(function () { (nao || ok).focus(); }, 0);
+      setTimeout(function () { (campo || nao || ok).focus(); }, 0);
     }
     window.confirm = function (texto) {
       var t = String(texto);
@@ -50,6 +54,15 @@
       if (!alvo || !document.body || !document.body.contains(alvo) || !alvo.click) return confirmNativo.call(window, texto);
       abrir(t, true, function (sim) { if (!sim) return; liberada = t; try { alvo.click(); } finally { liberada = null; } });
       return false;
+    };
+    /* prompt(): mesma ideia do confirm; a primeira chamada mostra a janela com o campo e responde "nada" (a ação para); ao confirmar, o toque é refeito e a segunda chamada devolve o que foi escrito */
+    window.prompt = function (texto, padrao) {
+      var t = String(texto);
+      if (liberadoPrompt && liberadoPrompt.t === t) { var v = liberadoPrompt.v; liberadoPrompt = null; return v; }
+      var ev = window.event, alvo = ev && ev.type === 'click' ? (ev.currentTarget || ev.target) : null;
+      if (!alvo || !document.body || !document.body.contains(alvo) || !alvo.click) return promptNativo.call(window, texto, padrao);
+      abrir(t, true, function (valor) { if (valor === null || valor === undefined) return; liberadoPrompt = { t: t, v: String(valor) }; try { alvo.click(); } finally { liberadoPrompt = null; } }, padrao == null ? '' : String(padrao));
+      return null;
     };
     window.alert = function (texto) { if (!document.body) return; abrir(String(texto), false, function () {}); };
   })();
