@@ -68,9 +68,9 @@ try {
     const SIMBOLO = { 'Sol': '☉', 'Lua': '☽', 'Mercúrio': '☿', 'Vênus': '♀', 'Marte': '♂', 'Júpiter': '♃', 'Saturno': '♄' };
     const f = Math.max(0, Math.min(1, (agora - h.ini) / (h.fim - h.ini))), BRANCO = new Color('#FFFFFF');
     if (familia === 'accessoryInline') {
-      /* em linha só cabe uma imagem e texto: o planeta da hora (os mesmos ícones do site) e o resto escrito, sem os símbolos de fonte do iPhone */
+      /* em linha só cabe uma imagem e texto: só o planeta da hora (os mesmos ícones do site) e até quando */
       const ic = w.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-branco.png')); ic.imageSize = new Size(16, 16);
-      w.addText('até ' + hhmm(h.fim) + ' · dia de ' + dia.planeta);
+      w.addText('até ' + hhmm(h.fim));
     } else if (familia === 'accessoryCircular') { /* o planeta da hora dentro de um anel que vai enchendo até a hora acabar */
       const dc = new DrawContext(); dc.size = new Size(240, 240); dc.opaque = false; dc.respectScreenScale = false;
       const anel = (frac, cor) => { const n = Math.max(2, Math.ceil(120 * frac)), cam = new Path();
