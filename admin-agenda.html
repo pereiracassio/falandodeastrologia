@@ -597,7 +597,7 @@
     /* o que a tarefa pode ligar: série, vídeo, corte, projeto ou estudo (tocar na tarefa abre lá) */
     function opcoesDeLigacao() {
       var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
-      return Promise.all([pega('prod_series', 'id,nome'), pega('prod_videos', 'id,serie_id,numero,titulo'), pega('prod_cortes', 'id,video_id,ordem,titulo'), pega('projetos', 'id,nome'), pega('estudos', 'id,nome,encerrado'), pega('alunos', 'id,nome'), pega('clientes', 'id,nome')]).then(function (r) {
+      return Promise.all([pega('prod_series', 'id,nome'), pega('prod_videos', 'id,serie_id,numero,titulo'), pega('prod_cortes', 'id,video_id,ordem,titulo'), pega('projetos', 'id,nome'), pega('estudos', 'id,nome,encerrado'), pega('alunos', 'id,nome'), pega('clientes', 'id,nome'), pega('aluno_codigos', 'aluno_id,codigo'), pega('cliente_codigos', 'cliente_id,codigo')]).then(function (r) {
         var o = [], base = function (v) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos'); };
         var add = function (rotulo, url) { o.push({ valor: rotulo, rotulo: rotulo, busca: rotulo.toLowerCase(), url: url }); };
         r[0].forEach(function (x) { add('Série: ' + x.nome, 'admin-producao.html#aba=series&serie=' + encodeURIComponent(x.id)); });
@@ -605,11 +605,15 @@
         r[2].forEach(function (c) { var v = r[1].filter(function (x) { return x.id === c.video_id; })[0]; if (v) add((c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero ? v.numero + ', ' : '') + (v.titulo || ''), base(v) + '&video=' + encodeURIComponent(v.id) + '&vt=cortes'); });
         r[3].forEach(function (x) { add('Projeto: ' + x.nome, 'admin-projetos.html'); });
         r[4].filter(function (x) { return !x.encerrado; }).forEach(function (x) { add('Estudo: ' + x.nome, 'admin-estudos.html'); });
+        var codDe = function (lista, col, id) { var c = lista.filter(function (x) { return x[col] === id; })[0]; return c && c.codigo ? c.codigo + ' · ' : ''; }; /* dá para achar pelo código: 0157 */
         r[5].forEach(function (a) {
-          var u = 'admin-alunos.html#aluno=' + encodeURIComponent(a.id) + '&aba=';
-          add('Aluno: ' + a.nome, u + 'acompanhamento'); add('Trilha do aluno ' + a.nome, u + 'acompanhamento'); add('Atividade do aluno ' + a.nome, u + 'atividades'); add('Material do aluno ' + a.nome, u + 'materiais');
+          var u = 'admin-alunos.html#aluno=' + encodeURIComponent(a.id) + '&aba=', n = codDe(r[7], 'aluno_id', a.id) + a.nome;
+          add('Aluno: ' + n, u + 'acompanhamento'); add('Trilha do aluno ' + n, u + 'acompanhamento'); add('Atividade do aluno ' + n, u + 'atividades'); add('Material do aluno ' + n, u + 'materiais'); add('Gravação do aluno ' + n, u + 'gravacoes');
         });
-        r[6].forEach(function (c) { add('Cliente: ' + c.nome, 'admin-clientes.html#cliente=' + encodeURIComponent(c.id) + '&aba=servicos'); });
+        r[6].forEach(function (c) {
+          var u = 'admin-clientes.html#cliente=' + encodeURIComponent(c.id) + '&aba=servicos', n = codDe(r[8], 'cliente_id', c.id) + c.nome;
+          add('Cliente: ' + n, u); add('Gravação do cliente ' + n, u); add('Material complementar do cliente ' + n, u); add('Atendimento do cliente ' + n, u);
+        });
         return o;
       });
     }
