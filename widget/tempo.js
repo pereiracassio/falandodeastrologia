@@ -2,7 +2,7 @@
    Canto de cima à esquerda: o planeta da hora (grande) com a barra da hora, e o planeta do dia (pequeno) com a barra do dia.
    O resto é o tempo de hoje (Open-Meteo, sem chave nem login): agora, próximas horas e detalhes. Ícones do tempo no traço do site.
    LUGAR: LAT/LON/CIDADE abaixo. */
-const VERSAO = 'tempo 2';
+const VERSAO = 'tempo 3';
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658, CIDADE = 'Jacareí';
 const TINTA = '#16233F', AZUL = '#1034A6', TERRACOTA = '#A03E25';
@@ -39,13 +39,14 @@ function diaPlanetario(ms) {
   if (!hs.length || ms < hs[0].ini) { d = new Date(ms - 86400000 + HP.FUSO); hs = HP.horasDoDia(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), LAT, LON); }
   return hs;
 }
-function barra(ini, fim, agora, unidade, largPt, comTexto) { /* "62% [barra] 12/23 horas" como imagem (4x para ficar nítida) */
+function barra(ini, fim, agora, unidade, largPt) { /* "62% [barra] 12/23 horas" como imagem (4x para ficar nítida): porcentagem antes, o tanto depois */
   const f = Math.max(0, Math.min(1, (agora - ini) / (fim - ini))), cor = new Color(corTempo(f)), pct = agora >= fim ? 100 : Math.floor(f * 100);
   const total = unidade === 'horas' ? Math.round((fim - ini) / 3600000 * 2) / 2 : Math.round((fim - ini) / 60000 * 2) / 2, passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
-  const W = largPt * 4, H = 60, dc = new DrawContext(); dc.size = new Size(W, H); dc.opaque = false; dc.respectScreenScale = false;
-  const x0 = comTexto ? 130 : 0, x1 = W;
-  if (comTexto) { dc.setFont(new Font('Baskerville-Bold', 40)); dc.setTextColor(cor); dc.setTextAlignedLeft(); dc.drawTextInRect(pct + '%', new Rect(0, 6, 125, H)); }
-  dc.setStrokeColor(cor); dc.setLineWidth(4); dc.strokeRect(new Rect(x0 + 2, 18, x1 - x0 - 4, 24)); dc.setFillColor(cor); dc.fillRect(new Rect(x0 + 6, 22, (x1 - x0 - 12) * f, 16));
+  const W = largPt * 4, H = 56, dc = new DrawContext(); dc.size = new Size(W, H); dc.opaque = false; dc.respectScreenScale = false;
+  const larguraTexto = unidade === 'horas' ? 215 : 275, x0 = 92, x1 = W - larguraTexto - 8;
+  dc.setFont(new Font('Baskerville-Bold', 31)); dc.setTextColor(cor); dc.setTextAlignedLeft(); dc.drawTextInRect(pct + '%', new Rect(0, 8, x0 - 4, H));
+  dc.setStrokeColor(cor); dc.setLineWidth(4); dc.strokeRect(new Rect(x0 + 2, 16, x1 - x0 - 4, 24)); dc.setFillColor(cor); dc.fillRect(new Rect(x0 + 6, 20, (x1 - x0 - 12) * f, 16));
+  dc.setTextAlignedRight(); dc.drawTextInRect(numPt(passou) + '/' + numPt(total) + ' ' + unidade, new Rect(W - larguraTexto, 8, larguraTexto, H));
   return dc.getImage();
 }
 function linhaTexto(pai, t, tam, cor, centro, negrito) {
@@ -77,19 +78,19 @@ try {
 
   /* linha de cima: à esquerda o quarto das horas, à direita o tempo de agora */
   const topo = w.addStack(); topo.topAlignContent();
-  const LARG = 150; /* largura do quarto das horas */
+  const LARG = 160; /* largura do quarto das horas */
   const esq = topo.addStack(); esq.layoutVertically(); esq.size = new Size(LARG, 0);
   const diaLinha = esq.addStack(); diaLinha.centerAlignContent(); /* planeta do dia, pequeno e discreto, no alto, com a barra do dia */
   const ipd = diaLinha.addImage(await imagem(PLANETA_ARQ[hs[0].planeta] + '-terracota.png')); ipd.imageSize = new Size(17, 17); diaLinha.addSpacer(7);
-  const bd = diaLinha.addImage(barra(hs[0].ini, hs[23].fim, agoraMs, 'horas', LARG - 24, false)); bd.imageSize = new Size(LARG - 24, 15);
+  const bd = diaLinha.addImage(barra(hs[0].ini, hs[23].fim, agoraMs, 'horas', LARG - 24)); bd.imageSize = new Size(LARG - 24, 14);
   esq.addSpacer(10);
   const horaLinha = esq.addStack(); horaLinha.centerAlignContent(); horaLinha.addSpacer(); /* planeta da hora, grande e no meio do quarto */
   const TAM = grande ? 78 : 60;
   const iph = horaLinha.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-' + (h.noite ? 'azul' : COR_HORA_DIA) + '.png')); iph.imageSize = new Size(TAM, TAM); horaLinha.addSpacer();
   esq.addSpacer(8);
-  const bh = esq.addImage(barra(h.ini, h.fim, agoraMs, 'minutos', LARG, true)); bh.imageSize = new Size(LARG, LARG * 60 / (LARG * 4)); /* a barra da hora ocupa a largura toda do quarto */
+  const bh = esq.addImage(barra(h.ini, h.fim, agoraMs, 'minutos', LARG)); bh.imageSize = new Size(LARG, 14); /* a barra da hora ocupa a largura toda do quarto */
   esq.addSpacer(3);
-  const txH = esq.addStack(); txH.addSpacer(); linhaTexto(txH, (i % 12 + 1) + 'ª hora · ' + hh(h.ini) + ' às ' + hh(h.fim), 11, TINTA); txH.addSpacer();
+  const txH = esq.addStack(); txH.addSpacer(); linhaTexto(txH, (i % 12 + 1) + 'ª hora · ' + hh(h.ini) + ' às ' + hh(h.fim), 12.5, TINTA); txH.addSpacer();
 
   topo.addSpacer();
   const dir = topo.addStack(); dir.layoutVertically();
