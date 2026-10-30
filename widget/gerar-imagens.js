@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const base = process.argv[2] || 'http://localhost:8765';
 const PLANETAS = [['sol', 0], ['lua', 1], ['mercurio', 2], ['venus', 3], ['marte', 4], ['jupiter', 5], ['saturno', 6]];
 const CORES = { azul: '#1F5FA3', terracota: '#A03E25', branco: '#FFFFFF', ocre: '#B5852F' }; /* o branco é da tela de bloqueio */
-const FUNDOS = { pequeno: [474, 474], medio: [1014, 474], grande: [1014, 1062] }; /* tamanho dos widgets no iPhone (158 e 338 pt) a 3x */
+const FUNDOS = { pequeno: [474, 474], medio: [1014, 474], grande: [1014, 1062], enorme: [2028, 948] }; /* tamanho dos widgets no iPhone (158 e 338 pt) a 3x */
 (async () => {
   const nav = await chromium.launch(), pg = await nav.newPage({ deviceScaleFactor: 1 });
   await pg.goto(base + '/papiro.css'); /* só para ter a origem; as páginas abaixo carregam o CSS por link */
@@ -17,7 +17,7 @@ const FUNDOS = { pequeno: [474, 474], medio: [1014, 474], grande: [1014, 1062] }
   }
   for (const [t, [w, h]] of Object.entries(FUNDOS)) {
     await pg.setViewportSize({ width: w, height: h });
-    await pg.setContent(`<link rel=stylesheet href="${base}/papiro.css"><style>:root{--moldura-m:.26}body{margin:0}#f{position:relative;width:${w}px;height:${h}px;background:var(--papiro-fundo)}</style><div id=f class=papiro-moldura></div>`);
+    await pg.setContent(`<link rel=stylesheet href="${base}/papiro.css"><style>:root{--moldura-m:.45}body{margin:0}#f{position:relative;width:${w}px;height:${h}px;background:var(--papiro-fundo)}</style><div id=f class=papiro-moldura></div>`);
     await pg.waitForTimeout(600);
     await pg.screenshot({ path: `img/widget/papiro-${t}.png` });
   }

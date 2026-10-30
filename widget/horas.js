@@ -15,10 +15,11 @@ async function texto(nome) { /* com cópia no aparelho: sem internet, usa a últ
   try { const s = await new Request(SITE + '/' + nome).loadString(); fm.writeString(caminho, s); return s; }
   catch (e) { if (fm.fileExists(caminho)) return fm.readString(caminho); throw e; }
 }
+const V_IMAGENS = '2'; /* mudou alguma imagem em img/widget? some 1 aqui e o aparelho baixa de novo */
 async function imagem(nome) {
-  const caminho = fm.joinPath(dir, nome);
+  const caminho = fm.joinPath(dir, V_IMAGENS + '-' + nome);
   if (fm.fileExists(caminho)) return Image.fromFile(caminho);
-  const img = await new Request(SITE + '/img/widget/' + nome).loadImage(); fm.writeImage(caminho, img); return img;
+  const img = await new Request(SITE + '/img/widget/' + nome + '?v=' + V_IMAGENS).loadImage(); fm.writeImage(caminho, img); return img;
 }
 
 const modulo = { exports: {} };
@@ -91,11 +92,14 @@ try {
     }
     w.refreshAfterDate = new Date(Math.min(h.fim, agora + 10 * 60000));
   } else {
-  w.backgroundImage = await imagem('papiro-' + (familia === 'small' ? 'pequeno' : familia === 'large' ? 'grande' : 'medio') + '.png');
+  w.backgroundImage = await imagem('papiro-' + (familia === 'small' ? 'pequeno' : familia === 'large' ? 'grande' : familia === 'extraLarge' ? 'enorme' : 'medio') + '.png');
   w.setPadding(familia === 'small' ? 12 : 14, 18, 10, 18);
-  const pequeno = familia === 'small', tamDia = pequeno ? 40 : 46, tamHora = pequeno ? 28 : 32, larg = pequeno ? 134 : 300;
+  const pequeno = familia === 'small', enorme = familia === 'extraLarge', tamDia = pequeno ? 40 : enorme ? 56 : 46, tamHora = pequeno ? 28 : enorme ? 38 : 32, larg = pequeno ? 134 : enorme ? 250 : 300;
+  /* iPad, extraLarge: duas colunas (a de sempre à esquerda e as próximas horas à direita) */
+  let pai = w, colDir = null;
+  if (enorme) { const dois = w.addStack(); dois.centerAlignContent(); pai = dois.addStack(); pai.layoutVertically(); dois.addSpacer(28); colDir = dois.addStack(); colDir.layoutVertically(); }
 
-  const linha = w.addStack(); linha.centerAlignContent(); linha.addSpacer();
+  const linha = pai.addStack(); linha.centerAlignContent(); linha.addSpacer();
   const colDia = linha.addStack(); colDia.layoutVertically(); colDia.centerAlignContent();
   const rd = colDia.addImage(await imagem('rot-dia.png')); rd.imageSize = new Size(22, 9); rd.centerAlignImage(); colDia.addSpacer(2);
   const idia = colDia.addImage(await imagem(PLANETA_ARQ[dia.planeta] + '-terracota.png')); idia.imageSize = new Size(tamDia, tamDia); idia.centerAlignImage();
@@ -104,21 +108,23 @@ try {
   const rh = colHora.addImage(await imagem('rot-hora.png')); rh.imageSize = new Size(28, 9); rh.centerAlignImage(); colHora.addSpacer(2);
   const ihora = colHora.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-' + (h.noite ? 'azul' : COR_HORA_DIA) + '.png')); ihora.imageSize = new Size(tamHora, tamHora); ihora.centerAlignImage();
   linha.addSpacer();
-  w.addSpacer(pequeno ? 6 : 4);
+  pai.addSpacer(pequeno ? 6 : 4);
 
-  if (!pequeno) { const bd = w.addImage(barra(hs[0].ini, hs[23].fim, agora, 'horas')); bd.imageSize = new Size(larg, larg * 44 / 720); bd.centerAlignImage(); w.addSpacer(2); }
-  const bh = w.addImage(barra(h.ini, h.fim, agora, 'minutos')); bh.imageSize = new Size(larg, larg * 44 / 720); bh.centerAlignImage();
-  w.addSpacer(3);
-  linhaTexto(w, (i % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), pequeno ? 11 : 12, TINTA, true);
+  if (!pequeno) { const bd = pai.addImage(barra(hs[0].ini, hs[23].fim, agora, 'horas')); bd.imageSize = new Size(larg, larg * 44 / 720); bd.centerAlignImage(); pai.addSpacer(2); }
+  const bh = pai.addImage(barra(h.ini, h.fim, agora, 'minutos')); bh.imageSize = new Size(larg, larg * 44 / 720); bh.centerAlignImage();
+  pai.addSpacer(3);
+  linhaTexto(pai, (i % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), pequeno ? 11 : 12, TINTA, true);
 
-  if (familia === 'large') { /* as próximas horas */
-    w.addSpacer(8); linhaTexto(w, 'Nascer do sol ' + hhmm(hs[0].ini) + ' · Pôr do sol ' + hhmm(hs[12].ini), 12, TINTA, true); w.addSpacer(8);
-    for (let k = i + 1; k < Math.min(hs.length, i + 7); k++) {
-      const l = w.addStack(); l.centerAlignContent(); l.addSpacer();
-      const ic = l.addImage(await imagem(PLANETA_ARQ[hs[k].planeta] + '-' + (hs[k].noite ? 'azul' : COR_HORA_DIA) + '.png')); ic.imageSize = new Size(24, 24); l.addSpacer(12);
-      linhaTexto(l, (k % 12 + 1) + 'ª · ' + hhmm(hs[k].ini) + ' às ' + hhmm(hs[k].fim), 14); l.addSpacer(); w.addSpacer(4);
+  const proximas = async (alvo, quantas, tam) => { /* as próximas horas: ícone (ocre de dia, azul de noite) e "1ª · 18:15 às 19:11" */
+    for (let k = i + 1; k < Math.min(hs.length, i + 1 + quantas); k++) {
+      const l = alvo.addStack(); l.centerAlignContent(); l.addSpacer();
+      const ic = l.addImage(await imagem(PLANETA_ARQ[hs[k].planeta] + '-' + (hs[k].noite ? 'azul' : COR_HORA_DIA) + '.png')); ic.imageSize = new Size(tam + 10, tam + 10); l.addSpacer(12);
+      linhaTexto(l, (k % 12 + 1) + 'ª · ' + hhmm(hs[k].ini) + ' às ' + hhmm(hs[k].fim), tam); l.addSpacer(); alvo.addSpacer(4);
     }
-  }
+  };
+  const nascerPor = () => 'Nascer do sol ' + hhmm(hs[0].ini) + ' · Pôr do sol ' + hhmm(hs[12].ini);
+  if (familia === 'large') { w.addSpacer(8); linhaTexto(w, nascerPor(), 12, TINTA, true); w.addSpacer(8); await proximas(w, 6, 14); }
+  if (enorme) { pai.addSpacer(8); linhaTexto(pai, nascerPor(), 12, TINTA, true); await proximas(colDir, 8, 15); }
   w.refreshAfterDate = new Date(Math.min(h.fim, agora + 10 * 60000));
   }
 } catch (e) {
