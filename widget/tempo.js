@@ -2,7 +2,7 @@
    Canto de cima à esquerda: o planeta da hora (grande) com a barra da hora, e o planeta do dia (pequeno) com a barra do dia.
    O resto é o tempo de hoje (Open-Meteo, sem chave nem login): agora, próximas horas e detalhes. Ícones do tempo no traço do site.
    LUGAR: LAT/LON/CIDADE abaixo. */
-const VERSAO = 'tempo 4';
+const VERSAO = 'tempo 5';
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658, CIDADE = 'Jacareí';
 const TINTA = '#16233F', AZUL = '#1034A6', TERRACOTA = '#A03E25';
@@ -90,6 +90,8 @@ try {
   const nHora = esq.addStack(); nHora.addSpacer(); linhaTexto(nHora, (i % 12 + 1) + 'ª hora', 11.5, TINTA, false, false); nHora.addSpacer(); /* só o número da hora, discreto, embaixo do planeta */
   esq.addSpacer(6);
   const bh = esq.addImage(barra(h.ini, h.fim, agoraMs, 'minutos', LARG)); bh.imageSize = new Size(LARG, 14); /* a barra da hora ocupa a largura toda do quarto */
+  esq.addSpacer(3);
+  const txH = esq.addStack(); txH.addSpacer(); linhaTexto(txH, hh(h.ini) + ' às ' + hh(h.fim), 12.5, TINTA); txH.addSpacer(); /* a hora em que começa e a hora em que termina */
 
   topo.addSpacer();
   const dir = topo.addStack(); dir.layoutVertically();
