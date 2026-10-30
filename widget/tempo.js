@@ -2,7 +2,7 @@
    Canto de cima à esquerda: o planeta da hora (grande) com a barra da hora, e o planeta do dia (pequeno) com a barra do dia.
    O resto é o tempo de hoje (Open-Meteo, sem chave nem login): agora, próximas horas e detalhes. Ícones do tempo no traço do site.
    LUGAR: LAT/LON/CIDADE abaixo. */
-const VERSAO = 'tempo 1';
+const VERSAO = 'tempo 2';
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658, CIDADE = 'Jacareí';
 const TINTA = '#16233F', AZUL = '#1034A6', TERRACOTA = '#A03E25';
@@ -43,10 +43,9 @@ function barra(ini, fim, agora, unidade, largPt, comTexto) { /* "62% [barra] 12/
   const f = Math.max(0, Math.min(1, (agora - ini) / (fim - ini))), cor = new Color(corTempo(f)), pct = agora >= fim ? 100 : Math.floor(f * 100);
   const total = unidade === 'horas' ? Math.round((fim - ini) / 3600000 * 2) / 2 : Math.round((fim - ini) / 60000 * 2) / 2, passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
   const W = largPt * 4, H = 60, dc = new DrawContext(); dc.size = new Size(W, H); dc.opaque = false; dc.respectScreenScale = false;
-  const x0 = comTexto ? 120 : 0, x1 = comTexto ? W - 250 : W;
-  if (comTexto) { dc.setFont(new Font('Baskerville-Bold', 36)); dc.setTextColor(cor); dc.setTextAlignedLeft(); dc.drawTextInRect(pct + '%', new Rect(0, 8, 115, H)); }
+  const x0 = comTexto ? 130 : 0, x1 = W;
+  if (comTexto) { dc.setFont(new Font('Baskerville-Bold', 40)); dc.setTextColor(cor); dc.setTextAlignedLeft(); dc.drawTextInRect(pct + '%', new Rect(0, 6, 125, H)); }
   dc.setStrokeColor(cor); dc.setLineWidth(4); dc.strokeRect(new Rect(x0 + 2, 18, x1 - x0 - 4, 24)); dc.setFillColor(cor); dc.fillRect(new Rect(x0 + 6, 22, (x1 - x0 - 12) * f, 16));
-  if (comTexto) { dc.setFont(new Font('Baskerville-Bold', 36)); dc.setTextAlignedRight(); dc.drawTextInRect(numPt(passou) + '/' + numPt(total) + ' ' + unidade, new Rect(x1 + 8, 8, W - x1 - 8, H)); }
   return dc.getImage();
 }
 function linhaTexto(pai, t, tam, cor, centro, negrito) {
@@ -73,54 +72,58 @@ try {
   if (hs.length < 24 || !h) throw new Error('sem horas');
   const t = await tempoDe(), atual = t.current;
   w.backgroundImage = await imagem('papiro-' + (familia === 'small' ? 'pequeno' : familia === 'large' ? 'grande' : familia === 'extraLarge' ? 'enorme' : 'medio') + '.png');
-  w.setPadding(20, 20, 12, 20);
+  w.setPadding(22, 32, 14, 30);
   const grande = familia === 'large' || familia === 'extraLarge';
 
   /* linha de cima: à esquerda o quarto das horas, à direita o tempo de agora */
   const topo = w.addStack(); topo.topAlignContent();
-  const esq = topo.addStack(); esq.layoutVertically(); esq.size = new Size(grande ? 142 : 130, 0);
-  const diaLinha = esq.addStack(); diaLinha.centerAlignContent(); /* planeta do dia, pequeno e discreto, com a barra do dia */
-  const ipd = diaLinha.addImage(await imagem(PLANETA_ARQ[hs[0].planeta] + '-terracota.png')); ipd.imageSize = new Size(16, 16); diaLinha.addSpacer(6);
-  const bd = diaLinha.addImage(barra(hs[0].ini, hs[23].fim, agoraMs, 'horas', 112, false)); bd.imageSize = new Size(112, 15);
-  esq.addSpacer(4);
-  const horaLinha = esq.addStack(); horaLinha.centerAlignContent(); horaLinha.addSpacer(); /* planeta da hora, grande */
-  const iph = horaLinha.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-' + (h.noite ? 'azul' : COR_HORA_DIA) + '.png')); iph.imageSize = new Size(grande ? 64 : 54, grande ? 64 : 54); horaLinha.addSpacer();
-  esq.addSpacer(4);
-  const bh = esq.addImage(barra(h.ini, h.fim, agoraMs, 'minutos', 142, true)); bh.imageSize = new Size(142, 142 * 60 / 568); /* 568 = 142*4 */
-  esq.addSpacer(2);
-  linhaTexto(esq, (i % 12 + 1) + 'ª hora · ' + hh(h.ini) + ' às ' + hh(h.fim), 10.5, TINTA, true);
+  const LARG = 150; /* largura do quarto das horas */
+  const esq = topo.addStack(); esq.layoutVertically(); esq.size = new Size(LARG, 0);
+  const diaLinha = esq.addStack(); diaLinha.centerAlignContent(); /* planeta do dia, pequeno e discreto, no alto, com a barra do dia */
+  const ipd = diaLinha.addImage(await imagem(PLANETA_ARQ[hs[0].planeta] + '-terracota.png')); ipd.imageSize = new Size(17, 17); diaLinha.addSpacer(7);
+  const bd = diaLinha.addImage(barra(hs[0].ini, hs[23].fim, agoraMs, 'horas', LARG - 24, false)); bd.imageSize = new Size(LARG - 24, 15);
+  esq.addSpacer(10);
+  const horaLinha = esq.addStack(); horaLinha.centerAlignContent(); horaLinha.addSpacer(); /* planeta da hora, grande e no meio do quarto */
+  const TAM = grande ? 78 : 60;
+  const iph = horaLinha.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-' + (h.noite ? 'azul' : COR_HORA_DIA) + '.png')); iph.imageSize = new Size(TAM, TAM); horaLinha.addSpacer();
+  esq.addSpacer(8);
+  const bh = esq.addImage(barra(h.ini, h.fim, agoraMs, 'minutos', LARG, true)); bh.imageSize = new Size(LARG, LARG * 60 / (LARG * 4)); /* a barra da hora ocupa a largura toda do quarto */
+  esq.addSpacer(3);
+  const txH = esq.addStack(); txH.addSpacer(); linhaTexto(txH, (i % 12 + 1) + 'ª hora · ' + hh(h.ini) + ' às ' + hh(h.fim), 11, TINTA); txH.addSpacer();
 
   topo.addSpacer();
   const dir = topo.addStack(); dir.layoutVertically();
   linhaTexto(dir, CIDADE, 11, TINTA, false, false);
-  linhaTexto(dir, Math.round(atual.temperature_2m) + '°', 44, TERRACOTA);
+  linhaTexto(dir, Math.round(atual.temperature_2m) + '°', 48, TERRACOTA);
   const cond = dir.addStack(); cond.centerAlignContent();
-  const ic = cond.addImage(await imagem('tempo-' + ICONE_TEMPO(atual.weather_code, atual.is_day === 1) + '.png')); ic.imageSize = new Size(30, 30); cond.addSpacer(6);
+  const ic = cond.addImage(await imagem('tempo-' + ICONE_TEMPO(atual.weather_code, atual.is_day === 1) + '.png')); ic.imageSize = new Size(32, 32); cond.addSpacer(6);
   linhaTexto(cond, DESCRICAO(atual.weather_code), 12, TINTA);
   dir.addSpacer(2);
   linhaTexto(dir, 'Máx ' + Math.round(t.daily.temperature_2m_max[0]) + '° · Mín ' + Math.round(t.daily.temperature_2m_min[0]) + '°', 11, TINTA, false, false);
 
   /* próximas 6 horas */
-  w.addSpacer(10);
+  w.addSpacer(); 
   const agoraIso = new Date(agoraMs + HP.FUSO).toISOString().slice(0, 13); /* "AAAA-MM-DDTHH" no horário de Brasília */
   let k0 = t.hourly.time.findIndex(x => x.slice(0, 13) >= agoraIso); if (k0 < 0) k0 = 0;
   const horas = w.addStack(); horas.centerAlignContent();
   const nHoras = grande ? 6 : 4;
   for (let n = 0; n < nHoras; n++) {
     const k = k0 + n + 1; if (k >= t.hourly.time.length) break;
-    const col = horas.addStack(); col.layoutVertically(); col.centerAlignContent(); col.size = new Size(grande ? 48 : 60, 0);
-    const lab = linhaTexto(col, t.hourly.time[k].slice(11, 13) + 'h', 11, AZUL, true);
-    col.addSpacer(2);
-    const im = col.addImage(await imagem('tempo-' + ICONE_TEMPO(t.hourly.weather_code[k], t.hourly.is_day[k] === 1) + '.png')); im.imageSize = new Size(24, 24); im.centerAlignImage();
-    col.addSpacer(2);
-    linhaTexto(col, Math.round(t.hourly.temperature_2m[k]) + '°', 13, TINTA, true);
-    const chuva = t.hourly.precipitation_probability[k]; linhaTexto(col, chuva > 0 ? chuva + '%' : ' ', 10, AZUL, true, false);
+    const col = horas.addStack(); col.layoutVertically(); col.centerAlignContent(); col.size = new Size(grande ? 46 : 60, 0);
+    const meio = (fn) => { const r = col.addStack(); r.addSpacer(); fn(r); r.addSpacer(); }; /* cada item centralizado na coluna */
+    meio(r => linhaTexto(r, t.hourly.time[k].slice(11, 13) + 'h', 12, AZUL));
+    col.addSpacer(3);
+    const im2 = await imagem('tempo-' + ICONE_TEMPO(t.hourly.weather_code[k], t.hourly.is_day[k] === 1) + '.png');
+    meio(r => { const im = r.addImage(im2); im.imageSize = new Size(26, 26); });
+    col.addSpacer(3);
+    meio(r => linhaTexto(r, Math.round(t.hourly.temperature_2m[k]) + '°', 14, TINTA));
+    const chuva = t.hourly.precipitation_probability[k]; meio(r => linhaTexto(r, chuva > 0 ? chuva + '%' : ' ', 10.5, AZUL, false, false));
     if (n < nHoras - 1) horas.addSpacer();
   }
 
   /* aviso de chuva forte e detalhes de hoje */
   if (grande) {
-    w.addSpacer(8);
+    w.addSpacer();
     const forte = t.hourly.precipitation.slice(k0, k0 + 7).some(x => x >= 4) || atual.weather_code === 65 || atual.weather_code === 82;
     if (forte) { linhaTexto(w, 'Chuva forte nas próximas horas', 12, TERRACOTA, true); w.addSpacer(4); }
     linhaTexto(w, 'Sensação ' + Math.round(atual.apparent_temperature) + '° · Chuva ' + (t.daily.precipitation_probability_max[0] || 0) + '% · Umidade ' + Math.round(atual.relative_humidity_2m) + '%', 11.5, TINTA, true, false);
