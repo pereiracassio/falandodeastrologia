@@ -407,7 +407,7 @@
       function mudou() {
         VISOES.forEach(function (v) { botoes[v[0]].className = 'portal-aba' + (v[0] === visao ? ' ativa' : ''); botoes[v[0]].setAttribute('aria-selected', v[0] === visao ? 'true' : 'false'); });
         P.estado.gravar({ v: visao, d: ancora });
-        titulo.textContent = visao === 'todo' ? 'Para fazer' : tituloPeriodo();
+        titulo.textContent = visao === 'todo' ? '' : tituloPeriodo();
         [ant, prox, hoje].forEach(function (b) { b.style.visibility = visao === 'todo' ? 'hidden' : ''; });
         if (visao === 'todo') { var minha = ++pedido; mostrarEncaixe(); vistaTodo(vista, function () { return minha === pedido; }); return; }
         var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
