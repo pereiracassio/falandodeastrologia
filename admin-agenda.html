@@ -51,7 +51,7 @@
     var nomeAdmin = '', aniversarios = [], calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    var VISOES = [['todo', 'To Do'], ['lista', 'Lista'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
+    var VISOES = [['horas', 'Horas'], ['todo', 'To Do'], ['lista', 'Lista'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
     var visao = 'semana', ancora = '', areaForm = null, atualizar = function () {};
 
     function limpar() { app.textContent = ''; }
@@ -247,6 +247,7 @@
     }
     function curto(iso) { var a = iso.split('-'); return (+a[2]) + ' de ' + MES_CURTO[+a[1] - 1]; }
     function tituloPeriodo() {
+      if (visao === 'horas') return rotuloDia(ancora);
       var a = ancora.split('-');
       if (visao === 'dia') return rotuloDia(ancora);
       if (visao === 'semana') { var ini = somaDias(ancora, -diaSem(ancora)), fim = somaDias(ini, 6); return curto(ini) + ' a ' + curto(fim) + ' de ' + fim.slice(0, 4); }
@@ -380,7 +381,7 @@
     function montar(corpo) {
       var ent = P.estado.ler();
       ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
-      if (['dia', 'semana', 'mes', 'ano', 'lista', 'todo'].indexOf(ent.v) >= 0) visao = ent.v;
+      if (['horas', 'dia', 'semana', 'mes', 'ano', 'lista', 'todo'].indexOf(ent.v) >= 0) visao = ent.v;
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
       var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
@@ -391,17 +392,16 @@
         b.addEventListener('click', function () { visao = v[0]; mudou(); });
         botoes[v[0]] = b; abas.appendChild(b);
       });
-      var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
+      var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' || visao === 'horas' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
       var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo' });
       var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' });
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
       hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
       var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje, novo]);
-      corpo.appendChild(areaForm); corpo.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas]))); /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */ corpo.appendChild(nav); corpo.appendChild(vista);
+      corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas]))); /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */ corpo.appendChild(nav); corpo.appendChild(vista);
       /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
       var encaixePronto = false;
-      function mostrarEncaixe() { if (!encaixePronto) { encaixePronto = true; encaixe.appendChild(painelEncaixe()); } }
-      corpo.appendChild(encaixe);
+      function mostrarEncaixe() { /* o encaixe agora abre ao tocar numa hora da aba Horas */ }
 
       var pedido = 0;
       function mudou() {
@@ -409,6 +409,7 @@
         P.estado.gravar({ v: visao, d: ancora });
         titulo.textContent = visao === 'todo' ? '' : tituloPeriodo();
         [ant, prox, hoje].forEach(function (b) { b.style.visibility = visao === 'todo' ? 'hidden' : ''; });
+        if (visao === 'horas') { ++pedido; vista.textContent = ''; vistaHoras(vista); return; }
         if (visao === 'todo') { var minha = ++pedido; mostrarEncaixe(); vistaTodo(vista, function () { return minha === pedido; }); return; }
         var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
         var desenha = function (evs0) {
@@ -1034,21 +1035,93 @@
       destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
     }
 
+
+    /* ---------- cabeçalho (sempre no topo) e aba Horas ---------- */
+    function corTempo(f) { /* azul no começo, ocre no meio, terracota no fim: a mesma dos prazos do site */
+      var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, t = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
+      return 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')';
+    }
+    function numPt(n) { return String(n).replace('.', ','); }
+    /* as 24 horas do dia planetário que contém o instante dado (o dia vai de um nascer do sol ao outro) */
+    function diaPlanetarioDe(ms) {
+      var d = loc(ms), hs = HP.horasDoDia(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), LAT, LON);
+      if (!hs.length || ms < hs[0].ini) { var o = loc(ms - DIA); hs = HP.horasDoDia(o.getUTCFullYear(), o.getUTCMonth() + 1, o.getUTCDate(), LAT, LON); }
+      return hs;
+    }
+    function barraDe(ini, fim, agora, unidade, fino) { /* "62% [barra] 12/23 dias": porcentagem antes, o tanto depois */
+      var f = Math.max(0, Math.min(1, (agora - ini) / (fim - ini))), cor = corTempo(f), pct = agora >= fim ? 100 : Math.floor(f * 100);
+      var total = unidade === 'horas' ? Math.round((fim - ini) / 3600000 * 2) / 2 : Math.round((fim - ini) / 60000 * 2) / 2;
+      var passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
+      if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade);
+      return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px;color:' + cor }, [el('span', { text: pct + '%', style: 'flex:none;min-width:34px;font-weight:700' }),
+        el('div', { style: 'flex:1;height:4px;border:1px solid ' + cor }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + cor })]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, style: 'flex:none;white-space:nowrap' })]);
+    }
+    function cabecalhoHoras() {
+      var caixa = el('div', { style: 'margin:0 0 14px' });
+      function pintar() {
+        if (!document.body.contains(caixa) && caixa.firstChild) { clearInterval(window.__cabHoras); return; }
+        var agora = Date.now(), hs = diaPlanetarioDe(agora); if (hs.length < 24) return;
+        var h = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0], dia = hs[0], nascer = hs[0].ini, por = hs[12].ini, proximo = hs[23].fim;
+        caixa.textContent = '';
+        caixa.appendChild(el('div', { text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:13px;margin:0 0 6px' }));
+        caixa.appendChild(barraDe(nascer, proximo, agora, 'horas', false));
+        var rot = function (t) { return el('div', { text: t, style: 'font-family:var(--fonte-titulo);font-size:12px;margin-bottom:4px' }); };
+        caixa.appendChild(el('div', { style: 'display:flex;justify-content:center;align-items:flex-end;gap:36px;margin:8px 0 4px;text-align:center' }, [
+          el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, 84, '#1F5FA3')]),
+          h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, 44, '#A03E25')]) : null]));
+        if (h) {
+          caixa.appendChild(barraDe(h.ini, h.fim, agora, 'minutos', false));
+          caixa.appendChild(el('div', { text: (hs.indexOf(h) % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), style: 'text-align:center;font-size:13px;margin-top:4px' }));
+        }
+      }
+      clearInterval(window.__cabHoras);
+      preparar().then(function () { pintar(); window.__cabHoras = setInterval(function () { if (document.visibilityState === 'visible') pintar(); }, 30000); }, function () { /* o erro aparece nas outras partes da tela */ });
+      return caixa;
+    }
+    var SVG_SOL = '<svg viewBox="0 0 64 64" width="16" height="16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><circle cx="32" cy="32" r="10"/><path d="M32 8v8M32 48v8M8 32h8M48 32h8M15 15l6 6M43 43l6 6M49 15l-6 6M21 43l-6 6"/></svg>';
+    var SVG_LUA = '<svg viewBox="0 0 64 64" width="16" height="16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M44 10a24 24 0 1 0 10 34A20 20 0 0 1 44 10z"/></svg>';
+    function vistaHoras(vista) {
+      preparar().then(function () {
+        var a = ancora.split('-'), hs = HP.horasDoDia(+a[0], +a[1], +a[2], LAT, LON), agora = Date.now(), box = el('div');
+        if (hs.length < 24) { vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível calcular as horas deste dia neste lugar.' })); return; }
+        var cab = function (t, estilo) { return el('span', { text: t, style: 'font-family:var(--fonte-titulo);font-size:12px;color:#1034A6;' + (estilo || '') }); };
+        box.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:' + linhaFina }, [cab('', 'flex:none;width:30px'), cab('', 'flex:none;width:24px'), cab('Regente', 'flex:none;width:56px'), cab('Início', 'flex:1;text-align:center'), cab('Término', 'flex:1;text-align:center')]));
+        hs.forEach(function (h, i) {
+          var atual = agora >= h.ini && agora < h.fim, cor = atual ? '#A03E25' : '#16233F';
+          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? '#1F5FA3' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
+          var linha = el('div', { style: 'padding:6px 0 8px;border-bottom:' + linhaFina + ';cursor:pointer;' + (atual ? 'border-left:3px solid #A03E25;padding-left:6px;' : '') }, [
+            el('div', { style: 'display:flex;align-items:center;gap:10px;color:' + cor }, [
+              el('span', { text: (i % 12 + 1) + 'ª', style: 'flex:none;width:30px;font-weight:700' }), per,
+              el('span', { style: 'flex:none;width:56px' }, [iconePlaneta(h.planeta, 26, atual ? '#A03E25' : '#1F5FA3')]),
+              el('span', { text: hhmm(h.ini), style: 'flex:1;text-align:center;font-weight:700' }), el('span', { text: hhmm(h.fim), style: 'flex:1;text-align:center;font-weight:700' })]),
+            el('div', { style: 'margin-top:4px' }, [barraDe(h.ini, h.fim, agora, 'minutos', true)])]);
+          linha.addEventListener('click', function () { /* tocar na hora do planeta abre o encaixe, já com o planeta e o horário dela */
+            var ini = new Date(h.ini + HP.FUSO), fm = new Date(Math.min(h.fim, doIso(ancora) + DIA) + HP.FUSO), fimMin = fm.getUTCHours() * 60 + fm.getUTCMinutes() + 60;
+            var pre = { planeta: h.planeta, dia: ancora, dow: [diaSem(ancora)], hDe: hhmm(Math.max(h.ini, doIso(ancora))), hAte: fimMin >= 1440 ? '23:59' : p2(Math.floor(fimMin / 60)) + ':' + p2(fimMin % 60) };
+            abrirFolha().appendChild(painelEncaixe(pre));
+          });
+          box.appendChild(linha);
+        });
+        vista.textContent = ''; vista.appendChild(box);
+      }, function (e) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); });
+    }
+
     /* ---------- encaixar uma tarefa pela hora planetária ---------- */
-    function painelEncaixe() {
+    function painelEncaixe(pre) {
+      pre = pre || {};
       /* campo comum onde se escreve o que quiser, com a lista de sugestões embaixo (a mesma peça do Financeiro: P.combo) */
       var o = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Escreva ou escolha na lista' });
       var planeta = el('select'); HP.CALDEIA.forEach(function (n) { planeta.appendChild(el('option', { value: n, text: n })); });
-      planeta.value = 'Mercúrio';
+      planeta.value = pre.planeta || 'Mercúrio';
       var doPreset = function (txt) { var t = TAREFAS.filter(function (x) { return x[0].toLowerCase() === String(txt).trim().toLowerCase(); })[0]; if (t) planeta.value = t[1]; };
       o.addEventListener('input', function () { doPreset(o.value); });
       var caixaTarefa = P.combo(o, function () { return TAREFAS.map(function (t) { return { valor: t[0], rotulo: t[0], busca: t[0].toLowerCase() }; }); }, function (i) { o.value = i.valor; doPreset(i.valor); }, true);
       var dur = el('select'); [30, 45, 60, 90, 120, 180].forEach(function (m) { dur.appendChild(el('option', { value: String(m), text: duracaoTxt(m) })); }); dur.value = '60';
       var folga = el('select'); [[0, 'Nenhuma'], [15, '15 minutos'], [30, '30 minutos'], [45, '45 minutos'], [60, '1 hora']].forEach(function (x) { folga.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); folga.value = '30';
       var hoje = isoDia(Date.now());
-      var de = el('input', { type: 'date', value: hoje }), ate = el('input', { type: 'date', value: somaDias(hoje, 6) });
+      var de = el('input', { type: 'date', value: pre.dia || hoje }), ate = el('input', { type: 'date', value: somaDias(pre.dia || hoje, 6) });
       /* dias da semana: ele marca quais */
-      var dow = [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
+      var dow = pre.dow || [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
       ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
         var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
         var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
@@ -1056,7 +1129,7 @@
         b.addEventListener('click', function () { var i = dow.indexOf(k); if (i >= 0) dow.splice(i, 1); else dow.push(k); pinta(); });
         blocoDias.appendChild(b);
       });
-      var hDe = el('input', { type: 'time', value: '06:00' }), hAte = el('input', { type: 'time', value: '22:00' });
+      var hDe = el('input', { type: 'time', value: pre.hDe || '06:00' }), hAte = el('input', { type: 'time', value: pre.hAte || '22:00' });
       var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Ver horários' });
       var res = el('div');
       botao.addEventListener('click', function () { sugerir(res, { tarefa: o.value.trim(), planeta: planeta.value, minutos: +dur.value, de: de.value, ate: ate.value, dow: dow.slice(), hDe: hDe.value, hAte: hAte.value, folga: +folga.value }); });
