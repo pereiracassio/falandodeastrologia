@@ -4,7 +4,7 @@
    LUGAR das horas planetárias: LAT/LON. NAO_MOSTRAR: agendas do Calendário que não entram (pedaço do nome basta). */
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658;
-const NAO_MOSTRAR = ['feriado', 'holiday', 'aniversário', 'birthday', 'siri', 'sugestões'];
+const NAO_MOSTRAR = ['profec', 'feriado', 'holiday', 'aniversário', 'birthday', 'siri', 'sugestões'];
 const TINTA = '#16233F', AZUL = '#1034A6', TERRACOTA = '#A03E25';
 const COR_HORA_DIA = 'ocre';
 const MOSTRAR_PREVIA = false; /* true = ao tocar no play dentro do Scriptable, mostra o widget na tela para testar */
