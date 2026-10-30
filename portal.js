@@ -1053,6 +1053,24 @@
     input.setAttribute('aria-label', legenda);
     return el('div', { class: 'data-coluna' }, [input, el('div', { class: 'data-legenda' }, pe)]);
   }
+  /* barras de progresso e de tempo, SEMPRE neste desenho: "62% [barra] 12/23 dias" (o tanto de passos ou de dias no fim da linha) */
+  function barraLinha(pct, cor, fim) {
+    return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [
+      el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
+      el('div', { style: 'flex:1;height:14px;border:1px solid #1F5FA3' }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || '#1F5FA3') })]),
+      el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
+    ]);
+  }
+  /* o tempo de um prazo: dias que já passaram sobre o total de dias (datas AAAA-MM-DD); a cor vai de azul a ocre e terracota */
+  function tempoDias(inicio, fimData) {
+    if (!inicio || !fimData) return null;
+    var fim = new Date(fimData + 'T23:59:59'), ini = new Date(inicio + 'T00:00:00'), agora = new Date();
+    var f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
+    var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, t = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
+    var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
+    return { pct: Math.floor(f * 100), cor: 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')', texto: passou + '/' + total + ' dias' };
+  }
+  function barraTempoDias(inicio, fimData) { var t = tempoDias(inicio, fimData); return t ? barraLinha(t.pct, t.cor, t.texto) : null; }
   function linhaDatas(colunas) { return el('div', { class: 'data-linha' }, colunas); }
   function apagarNoFim(app, botao) { /* no fim da tela, centralizado e bem afastado */
     app.appendChild(el('div', { style: 'margin:56px 0 8px;text-align:center' }, [botao]));
@@ -1341,6 +1359,6 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
   };
 })();

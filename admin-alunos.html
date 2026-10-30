@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=122"></script>
+  <script src="portal.js?v=123"></script>
   <script src="conversa.js?v=7"></script>
   <script src="atividades.js?v=37"></script>
   <script>
@@ -395,15 +395,9 @@
         var renomear = mini('Renomear', function () { var n = (prompt('Assunto da trilha', t.nome) || '').trim(); if (n && n !== t.nome) P.client.from('aluno_trilhas').update({ nome: n }).eq('id', t.id).then(carregar); });
         cabeca.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), sinalT]));
         c.appendChild(el('div', { style: 'margin-bottom:6px' }, [renomear]));
-        cabeca.appendChild(barra(pct));
-        cabeca.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (m.length ? ' · ' + feitos.length + ' de ' + m.length + ' passos' : '') }));
-        /* prazo opcional: com data final aparece a barra do tempo (muda de cor); sem data, só a barra azul de cima */
-        if (t.data_fim) {
-          var fim = new Date(t.data_fim + 'T23:59:59'), ini = new Date(inicioDe(t) + 'T00:00:00'), agora = new Date();
-          var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
-          cabeca.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
-          cabeca.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') + ' (até ' + P.dataBR(t.data_fim) + ')' }));
-        }
+        cabeca.appendChild(P.barraLinha(pct, null, feitos.length + '/' + m.length));
+        /* prazo opcional: com data final aparece a barra do tempo logo embaixo, no mesmo desenho */
+        if (t.data_fim) cabeca.appendChild(P.barraTempoDias(inicioDe(t), t.data_fim));
         c.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio', true), campoDataTrilha('Data final prevista (opcional)', t, 'data_fim')]));
         if (pend.length) { c.appendChild(rotulo('Próximo passo')); listaDePassos(c, pend.slice(0, 1), false, true); }
         if (pend.length > 1) {

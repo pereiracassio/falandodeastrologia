@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=122"></script>
+  <script src="portal.js?v=123"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=2"></script>
   <script src="menu.js?v=50" defer></script>
@@ -234,15 +234,10 @@
         var daSemana = aulas.filter(function (a) { return dia(a) >= segunda && dia(a) <= domingo; });
         if (daSemana.length) {
           var nFeitas = daSemana.filter(concluida).length, pct = Math.round(nFeitas * 100 / daSemana.length);
-          cartao.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:10px 0 6px' }, [el('div', { style: 'height:100%;width:' + pct + '%;background:#1F5FA3' })]));
-          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: 'Semana de ' + diaCurto(daSemana[0].data) + ' a ' + diaCurto(daSemana[daSemana.length - 1].data) + ' · ' + nFeitas + ' de ' + daSemana.length + ' aulas concluídas (' + pct + '%)' }));
+          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px;margin:10px 0 0', text: 'Semana de ' + diaCurto(daSemana[0].data) + ' a ' + diaCurto(daSemana[daSemana.length - 1].data) }));
+          cartao.appendChild(P.barraLinha(pct, null, nFeitas + '/' + daSemana.length));
         }
-        if (est.data_fim) {
-          var fim = new Date(est.data_fim + 'T23:59:59'), ini = new Date(est.data_inicio + 'T00:00:00'), agora = new Date();
-          var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, pt = Math.floor(fr * 100), dias = Math.ceil((fim - agora) / 86400000);
-          cartao.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:14px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + pt + '%;background:' + corDoTempo(fr) })]));
-          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pt + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo encerrado') + ' (até ' + P.dataBR(est.data_fim) + ')' }));
-        }
+        if (est.data_fim) cartao.appendChild(P.barraTempoDias(est.data_inicio, est.data_fim));
         /* início e data final (opcional): grava sozinho a cada mudança, sem redesenhar; a tela só se atualiza quando o campo perde o foco (redesenhar no meio fechava o calendário) */
         if (!encerrado) {
           var campoData = function (rotulo, coluna, id, opcional) {

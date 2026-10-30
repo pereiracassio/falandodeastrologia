@@ -41,7 +41,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=122"></script>
+  <script src="portal.js?v=123"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="leitor.js?v=8"></script>
   <script src="curso.js?v=1"></script>
@@ -399,15 +399,10 @@
           var c = el('div', { role: 'button', tabindex: '0', 'aria-expanded': 'false', style: 'cursor:pointer' }), corpo = el('div', { class: 'barra-ocre', style: 'margin-top:12px' });
           var sinalT = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif;color:#A03E25' });
           c.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), sinalT]));
-          c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:#1F5FA3;width:' + pct + '%' })]));
-          c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' }));
+          c.appendChild(P.barraLinha(pct, null, feitos.length + '/' + m.length));
+          var iniT = t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE');
+          if (t.data_fim) c.appendChild(P.barraTempoDias(iniT, t.data_fim));
           c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: 'Início: ' + P.dataBR(t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE')) + (t.data_fim ? ' · Previsto: ' + P.dataBR(t.data_fim) : '') }));
-          if (t.data_fim) {
-            var fim = new Date(t.data_fim + 'T23:59:59'), ini = new Date((t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date();
-            var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
-            c.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
-            c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') }));
-          }
           cartao.appendChild(c); cartao.appendChild(corpo); raiz.appendChild(cartao);
           var abertas = window.__trilhasAbertasAluno = window.__trilhasAbertasAluno || [];
           function pintarT() { var ab = abertas.indexOf(t.id) >= 0; corpo.style.display = ab ? '' : 'none'; sinalT.textContent = ab ? '−' : '+'; c.setAttribute('aria-expanded', ab ? 'true' : 'false'); }
