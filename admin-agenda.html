@@ -920,6 +920,7 @@
       var qual = el('select');
       calendarios.filter(function (c) { return c.accessRole === 'owner' || c.accessRole === 'writer'; }).forEach(function (c) { qual.appendChild(el('option', { value: c.id, text: c.summaryOverride || c.summary || c.id })); });
       var principal = calendarios.filter(function (c) { return c.primary; })[0]; if (principal) qual.value = principal.id;
+      if (e && [].some.call(qual.options, function (o) { return o.value === e.calId; })) qual.value = e.calId; /* editando: começa na agenda em que o compromisso está */
       /* compromisso que faz parte de uma série: vale só para este ou para todos */
       var escopoSel = el('select'); [['este', 'Só este compromisso'], ['todos', 'Todos da série']].forEach(function (o) { escopoSel.appendChild(el('option', { value: o[0], text: o[1] })); });
       function aplicarEscopo() {
@@ -989,21 +990,46 @@
         var idAlvo = todos ? e.recorrenteId : (e ? e.id : null);
         var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(idAlvo) + '?' + params.join('&'), opc('PATCH'))
           : gapi('/calendars/' + encodeURIComponent(qual.value || 'primary') + '/events?' + params.join('&'), opc('POST'));
+        if (e && qual.value && qual.value !== e.calId) { /* trocou de agenda: salva e depois move o compromisso (ou a série toda) para a outra agenda */
+          cham = cham.then(function () { return gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(idAlvo) + '/move?destination=' + encodeURIComponent(qual.value), { method: 'POST' }); });
+        }
         cham.then(function () { if (!e) avisarMarcacao(t, corpo); destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
       });
       var filhos = [el('h2', { text: e ? 'Editar compromisso' : pre.serie ? pre.serie.length + ' compromissos' : 'Novo compromisso' })];
       if (serie) filhos = filhos.concat(campo('Esta mudança vale para', escopoSel));
       filhos = filhos.concat(campo('Nome', titulo), [blocoData, todo.el, blocoHora, blocoAte, blocoRepet], campo('Mostrar como', ocupado), campo('Local', local), [meet.el], campo('Convidados', convidados), [lemb.el], campo('Cor', cores), campo('Visibilidade', visib), campo('Anotações', descricao));
-      if (!e && qual.options.length > 1) filhos = filhos.concat(campo('Agenda', qual));
+      if (qual.options.length > 1) filhos = filhos.concat(campo('Agenda', qual));
       filhos = filhos.concat([el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
       if (e) {
-        var ap = P.botaoApagar('Apagar');
+        var ap = P.botaoApagar('Apagar'), caixaAp = el('div', { style: 'margin:28px 0 4px;text-align:center' }, [ap]);
+        var erroAp = function (er) { P.mensagem(msg, 'Não foi possível apagar (' + er.message + ').', 'erro'); };
+        var feito = function () { destino.textContent = ''; atualizar(); };
+        var url = function (id) { return '/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(id); };
+        /* "este e os seguintes": a série passa a terminar na véspera deste compromisso (se for o primeiro, apaga a série inteira) */
+        function apagarSeguintes() {
+          return gapi(url(e.recorrenteId)).then(function (m) {
+            var ini0 = m.start.dateTime ? Date.parse(m.start.dateTime) : doIso(m.start.date);
+            if (e.ini <= ini0) return gapi(url(e.recorrenteId), { method: 'DELETE' });
+            var ate = e.diaTodo ? somaDias(isoDia(e.ini), -1).replace(/-/g, '') : new Date(e.ini - 1000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+            var regras = (m.recurrence || []).map(function (r) { return /^RRULE:/i.test(r) ? r.replace(/;(COUNT|UNTIL)=[^;]*/gi, '') + ';UNTIL=' + ate : r; });
+            return gapi(url(e.recorrenteId), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrence: regras }) });
+          });
+        }
+        function apagarComo(modo) {
+          var frase = modo === 'todos' ? 'Apagar TODA a série "' + e.titulo + '"?' : modo === 'seguintes' ? 'Apagar "' + e.titulo + '" e todos os seguintes?' : 'Apagar só este "' + e.titulo + '"?';
+          if (!confirm(frase + ' Não dá para desfazer.')) return;
+          var pedido = modo === 'seguintes' ? apagarSeguintes() : gapi(url(modo === 'todos' ? e.recorrenteId : e.id), { method: 'DELETE' });
+          pedido.then(feito, erroAp);
+        }
         ap.addEventListener('click', function () {
-          var todosAp = serie && escopo === 'todos';
-          if (!confirm(todosAp ? 'Apagar TODA a série "' + e.titulo + '"? Não dá para desfazer.' : 'Apagar "' + e.titulo + '"? Não dá para desfazer.')) return;
-          gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(todosAp ? e.recorrenteId : e.id), { method: 'DELETE' }).then(function () { destino.textContent = ''; atualizar(); }, function (er) { P.mensagem(msg, 'Não foi possível apagar (' + er.message + ').', 'erro'); });
+          if (!serie) { apagarComo('este'); return; }
+          caixaAp.textContent = '';
+          [['Só este', 'este'], ['Este e os seguintes', 'seguintes'], ['Todos da série', 'todos']].forEach(function (o) {
+            var b = P.botaoApagar(o[0]); b.style.display = 'block'; b.style.margin = '10px auto';
+            b.addEventListener('click', function () { apagarComo(o[1]); }); caixaAp.appendChild(b);
+          });
         });
-        filhos.push(el('div', { style: 'margin:28px 0 4px;text-align:center' }, [ap]));
+        filhos.push(caixaAp);
       }
       destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
     }
