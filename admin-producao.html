@@ -57,12 +57,10 @@
     .prod-chip{background:transparent;border:1px solid #1F5FA3;border-radius:0;color:#1034A6;padding:6px 10px;font-size:12px;cursor:pointer;line-height:1.2}
     .prod-chip.on{border:3px solid #1F5FA3;padding:4px 8px;color:#A03E25;font-weight:700}
     .prod-chip:hover{color:#A03E25}
-    .prod-seg{display:flex;border:1px solid #1F5FA3;margin:0 0 6px}
-    .prod-seg .prod-chip{flex:1 1 0;min-width:0;border:0;border-left:1px solid #1F5FA3;padding:8px 2px;font-size:10px;text-align:center;overflow-wrap:anywhere;hyphens:none}
-    .prod-seg .prod-chip:first-child{border-left:0}
-    .prod-seg .prod-chip.on{background:#1F5FA3;color:#F3E3B8;font-weight:400;border:0;border-left:1px solid #1F5FA3;padding:8px 2px}
-    .prod-seg .prod-chip.on:first-child{border-left:0}
-    .prod-seg .prod-chip:hover{color:#A03E25}
+    /* as etapas do vídeo: os mesmos botões de antes, no mesmo tamanho e no mesmo lugar, só que colados numa barra; marcado = preenchido de azul com o nome vazado */
+    .prod-seg{display:flex;flex-wrap:wrap;gap:0;padding:0 0 1px 1px}
+    .prod-seg .prod-chip{margin:0 0 -1px -1px;position:relative}
+    .prod-seg .prod-chip.on{background:#1F5FA3;color:#F3E3B8;border:1px solid #1F5FA3;padding:6px 10px}
     .prod-seg .prod-chip.on:hover{color:#F3E3B8}
     .prod-fila{display:grid;gap:0 14px}
     .prod-fila :is(input,select){height:46px}
