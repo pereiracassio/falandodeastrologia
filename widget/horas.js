@@ -4,6 +4,7 @@
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658;
 const COR_HORA_DIA = 'ocre'; /* cor do planeta da hora nas horas do DIA; nas da noite é azul. O planeta do dia (ex.: Vênus) é sempre terracota */
+const MOSTRAR_PREVIA = false; /* true = ao tocar no play dentro do Scriptable, mostra o widget na tela para testar */
 const AZUL = '#1F5FA3', TERRACOTA = '#A03E25', TINTA = '#16233F';
 const PLANETA_ARQ = { 'Sol': 'sol', 'Lua': 'lua', 'Mercúrio': 'mercurio', 'Vênus': 'venus', 'Marte': 'marte', 'Júpiter': 'jupiter', 'Saturno': 'saturno' };
 
@@ -59,7 +60,7 @@ function linhaTexto(pai, t, tam, cor, centro) {
 
 const familia = config.widgetFamily || 'medium';
 const w = new ListWidget();
-w.url = SITE + '/admin-agenda.html#v=horas';
+/* sem w.url de propósito: quem manda no toque é o que você escolheu ao colocar o widget (Run Script, Open URL...) */
 try {
   const agora = Date.now(), hs = diaPlanetario(agora), i = hs.findIndex(h => agora >= h.ini && agora < h.fim), h = hs[i];
   if (hs.length < 24 || !h) throw new Error('sem horas');
@@ -135,5 +136,5 @@ try {
   linhaTexto(w, 'Sem conexão agora. Tente de novo em alguns minutos.', 11, TINTA, true);
   w.refreshAfterDate = new Date(Date.now() + 5 * 60000);
 }
-if (config.runsInWidget) Script.setWidget(w); else if (familia === 'small') await w.presentSmall(); else if (familia === 'large') await w.presentLarge(); else await w.presentMedium();
+if (config.runsInWidget) Script.setWidget(w); else if (!MOSTRAR_PREVIA) { /* tocar com "Run Script" só roda e termina, sem abrir tela */ } else if (familia === 'small') await w.presentSmall(); else if (familia === 'large') await w.presentLarge(); else await w.presentMedium();
 Script.complete();
