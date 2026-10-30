@@ -453,14 +453,10 @@
     /* vídeo público: termina no dia em que fica público; só para membros: no dia em que fica disponível para os membros */
     function fimDoVideo(v) { return (rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar || null; }
     function cortePostado(c) { return !!(c.shorts && c.instagram && c.tiktok); }
+    /* a barra do tempo é a mesma em todo lugar: "62% [barra] 12/23 dias" (a barra fica sempre, mesmo com o item pronto) */
     function barraTempo(criado, fimISO, pronto) {
-      if (!fimISO || !criado) return null; /* a barra fica sempre, mesmo com o item pronto */
-      var fim = new Date(String(fimISO).slice(0, 10) + 'T23:59:59'), ini = new Date(criado), agora = new Date();
-      var f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
-      return el('div', { style: 'margin:4px 0 6px' }, [
-        el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + Math.floor(f * 100) + '%;background:' + corDoTempo(f) })]),
-        el('span', { class: 'prod-info', style: 'display:block', text: Math.floor(f * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') })
-      ]);
+      var t = tempoProx(criado, fimISO);
+      return t ? barraProx(t.pct, t.cor, t.texto) : null;
     }
     function escolhaAcesso(atual, aoEscolher) {
       var valor = atual === 'membros' ? 'membros' : 'publico', botoes = [];
@@ -738,9 +734,9 @@
               el('span', { class: 'prod-data', text: comDia(v.data_postar) }),
               el('span', { class: 'prod-info', text: ' · ' + rotuloAcesso(v) + (v.data_publico && rotuloAcesso(v) === 'público' ? ' (público em ' + comDia(v.data_publico) + ')' : '') + ' · ' + nc + (nc === 1 ? ' corte' : ' cortes') })
             ]),
+            chipsDaEtapa(v),
             barraTempo(v.criado_em, fimDoVideo(v), v.no_ar)
-          ]),
-          chipsDaEtapa(v)
+          ])
         ]);
         linha.addEventListener('click', function (e) { if (!/^(BUTTON|A)$/.test(e.target.tagName)) irPara('series', serieAberta, v.id); });
         vc.appendChild(linha);
