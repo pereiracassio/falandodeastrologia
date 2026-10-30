@@ -142,17 +142,16 @@
     function concluidoO(p) { var m = passos.filter(function (x) { return x.projeto_id === p.id; }); return m.length > 0 && m.every(function (x) { return x.feito; }); }
 
     /* projeto concluído (todos os passos feitos) sai das abas e vai para "Concluídos"; "Reabrir" desmarca o último passo feito e ele volta para as abas */
-    function desenhar() {
-      var ativos = porNumero(projetos.filter(function (p) { return !concluidoO(p); })), concl = porNumero(projetos.filter(concluidoO));
-      if (aberto !== 'concluidos' && !ativos.some(function (p) { return p.id === aberto; })) aberto = concl.some(function (p) { return p.id === aberto; }) ? 'concluidos' : (ativos.length ? ativos[0].id : 'concluidos');
-      if (verConcluido && !concl.some(function (p) { return p.id === verConcluido; })) verConcluido = null;
-      var velha = app.querySelector('.portal-abas-rola'), rolagemBarra = velha ? velha.scrollLeft : null; /* a barra fica onde estava */
-      limpar();
-      app.appendChild(topo(nomeAdmin));
-      if (aberto === 'concluidos' && verConcluido) { telaConcluido(concl.filter(function (p) { return p.id === verConcluido; })[0]); return; }
-      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
-      ativos.forEach(function (p) {
-        /* a bolinha com o número (ou vazia) fica na própria aba, antes do nome */
+    /* uma linha da lista: bolinha e nome; embaixo "14% [barra] 1/7" e, se tem prazo, "50% [barra] 12 dias" */
+    function linhaDeBarra(pct, cor, fim) {
+      var barra = el('div', { class: 'proj-barra', style: 'flex:1;margin:0' }, [el('i', { style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
+      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, style: 'flex:none;min-width:64px;text-align:right' })]);
+    }
+    function linhaDoProjeto(p, ativos) {
+      var m = passos.filter(function (x) { return x.projeto_id === p.id; }), feitos = m.filter(function (x) { return x.feito; }).length;
+      var cabeca = el('div', { style: 'display:flex;align-items:center;gap:10px' });
+      if (ativos) {
+        /* a bolinha com o número (ou vazia) fica antes do nome */
         var bolinha = el('input', { type: 'text', inputmode: 'numeric', maxlength: '2', 'aria-label': 'Número do projeto ' + p.nome });
         bolinha.value = p.prioridade == null ? '' : String(p.prioridade);
         bolinha.style.cssText = 'flex:none;width:26px;height:26px;box-sizing:border-box;padding:0;margin:0;border:1.5px solid #1F5FA3;border-radius:50%;background:transparent;text-align:center;font:700 13px Arial,sans-serif;color:#16233F;min-height:0';
@@ -160,33 +159,50 @@
         bolinha.addEventListener('keydown', function (ev) { ev.stopPropagation(); if (ev.key === 'Enter') bolinha.blur(); });
         bolinha.addEventListener('input', function () { bolinha.value = bolinha.value.replace(/\D/g, ''); });
         bolinha.addEventListener('change', function () { definirNumero(p, bolinha.value.trim(), ativos); });
-        var b = el('div', { role: 'tab', tabindex: '0' }, [bolinha, el('span', { text: p.nome })]);
-        b.className = 'portal-aba' + (p.id === aberto ? ' ativa' : '');
-        b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.justifyContent = 'center'; b.style.gap = '8px';
-        var abrirAba = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); };
-        b.addEventListener('click', abrirAba);
-        b.addEventListener('keydown', function (ev) { if (ev.target === b && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirAba(); } });
-        barraAbas.appendChild(b);
-      });
-      var novo = el('button', { type: 'button', role: 'tab', text: '+ Novo projeto' });
-      novo.className = 'portal-aba';
-      novo.addEventListener('click', novoProjeto);
-      barraAbas.appendChild(novo);
-      var abaConcl = el('button', { type: 'button', role: 'tab', text: 'Concluídos' + (concl.length ? ' (' + concl.length + ')' : '') });
-      abaConcl.className = 'portal-aba' + (aberto === 'concluidos' ? ' ativa' : '');
-      abaConcl.addEventListener('click', function () { aberto = 'concluidos'; P.estado.gravar({ projeto: aberto }); desenhar(); });
-      barraAbas.appendChild(abaConcl);
-      var rola = el('div', { class: 'portal-abas-rola' }, [barraAbas]);
-      app.appendChild(P.comSetas(rola));
-      var conteudo = el('div', { class: 'portal-cartao' });
-      app.appendChild(conteudo);
-      var ativaAba = barraAbas.querySelector('.ativa');
-      if (rolagemBarra != null) rola.scrollLeft = rolagemBarra;
-      /* só leva o projeto aberto para a frente se ele não estiver à vista (primeira vez, ou projeto recém-criado) */
-      if (ativaAba && (rolagemBarra == null || ativaAba.offsetLeft < rola.scrollLeft || ativaAba.offsetLeft + ativaAba.offsetWidth > rola.scrollLeft + rola.clientWidth)) rola.scrollLeft = Math.max(0, ativaAba.offsetLeft - (rola.clientWidth - ativaAba.offsetWidth) / 2);
-      var proj = aberto === 'concluidos' ? null : ativos.filter(function (p) { return p.id === aberto; })[0];
+        cabeca.appendChild(bolinha);
+      }
+      cabeca.appendChild(el('span', { class: 'portal-item-titulo', text: p.nome }));
+      var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [cabeca, linhaDeBarra(pctDe(m), null, feitos + '/' + m.length)]);
+      if (p.data_fim) {
+        var fim = new Date(p.data_fim + 'T23:59:59'), ini = new Date((p.data_inicio || new Date(p.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date();
+        var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
+        linha.appendChild(linhaDeBarra(Math.floor(fr * 100), corDoTempo(fr), dias > 1 ? dias + ' dias' : dias === 1 ? '1 dia' : dias === 0 ? 'hoje' : 'encerrado'));
+      }
+      var abrir = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); window.scrollTo(0, 0); };
+      linha.addEventListener('click', abrir);
+      linha.addEventListener('keydown', function (ev) { if (ev.target === linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(); } });
+      return linha;
+    }
+
+    /* aberto: null = a lista dos projetos; 'concluidos' = a lista dos concluídos; um id = aquele projeto */
+    function desenhar() {
+      var ativos = porNumero(projetos.filter(function (p) { return !concluidoO(p); })), concl = porNumero(projetos.filter(concluidoO));
+      if (aberto && aberto !== 'concluidos' && !ativos.some(function (p) { return p.id === aberto; })) aberto = concl.some(function (p) { return p.id === aberto; }) ? 'concluidos' : null;
+      if (verConcluido && !concl.some(function (p) { return p.id === verConcluido; })) verConcluido = null;
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      if (aberto === 'concluidos' && verConcluido) { telaConcluido(concl.filter(function (p) { return p.id === verConcluido; })[0]); return; }
+      var voltarLista = function () { aberto = null; P.estado.gravar({ projeto: null }); desenhar(); window.scrollTo(0, 0); };
+      var proj = aberto && aberto !== 'concluidos' ? ativos.filter(function (p) { return p.id === aberto; })[0] : null;
+      if (proj) {
+        app.appendChild(el('div', { class: 'portal-topo' }, [P.botaoVoltar(voltarLista)]));
+        var cartao = el('div', { class: 'portal-cartao' });
+        app.appendChild(cartao);
+        mostrarProjeto(cartao, proj, false);
+        var apagar = P.botaoApagar('Apagar este projeto');
+        apagar.addEventListener('click', function () {
+          if (!confirm('Apagar o projeto "' + proj.nome + '" e todos os passos dele? Não dá para desfazer.')) return;
+          C.from('projetos').delete().eq('id', proj.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; carregar(); } });
+        });
+        P.voltarNoFim(app, voltarLista);
+        P.apagarNoFim(app, apagar);
+        return;
+      }
       if (aberto === 'concluidos') {
-        if (!concl.length) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto concluído ainda.' }));
+        app.appendChild(el('div', { class: 'portal-topo' }, [P.botaoVoltar(voltarLista)]));
+        var cc = el('div', { class: 'portal-cartao' });
+        app.appendChild(cc);
+        if (!concl.length) cc.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto concluído ainda.' }));
         concl.forEach(function (p) {
           var m = passos.filter(function (x) { return x.projeto_id === p.id; });
           var ultima = m.reduce(function (a, x) { return x.feito_em && x.feito_em > a ? x.feito_em : a; }, '');
@@ -196,21 +212,29 @@
             el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + (ultima ? ' · concluído em ' + P.dataBR(ultima.slice(0, 10)) : '') })])])]);
           linha.addEventListener('click', abrir);
           linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
-          conteudo.appendChild(linha);
+          cc.appendChild(linha);
         });
-      } else if (!proj) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' })); else mostrarProjeto(conteudo, proj, false);
+        P.voltarNoFim(app, voltarLista);
+        return;
+      }
+      var novo = el('button', { type: 'button', class: 'portal-btn', text: '+ Novo projeto' });
+      novo.addEventListener('click', novoProjeto);
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [novo]));
+      var lista = el('div', { class: 'portal-cartao' });
+      app.appendChild(lista);
+      if (!ativos.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' }));
+      ativos.forEach(function (p) { lista.appendChild(linhaDoProjeto(p, ativos)); });
       var arquivo = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
       var importar = el('button', { type: 'button', class: 'portal-btn', text: 'Importar projetos' });
       importar.addEventListener('click', function () { arquivo.click(); });
       arquivo.addEventListener('change', function () { var f = arquivo.files && arquivo.files[0]; arquivo.value = ''; if (f) importarArquivo(f); });
-      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [importar, arquivo]));
-      if (!proj) return;
-      var apagar = P.botaoApagar('Apagar este projeto');
-      apagar.addEventListener('click', function () {
-        if (!confirm('Apagar o projeto "' + proj.nome + '" e todos os passos dele? Não dá para desfazer.')) return;
-        C.from('projetos').delete().eq('id', proj.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; carregar(); } });
-      });
-      P.apagarNoFim(app, apagar);
+      var botoes = [importar, arquivo];
+      if (concl.length) {
+        var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Concluídos (' + concl.length + ')' });
+        vc.addEventListener('click', function () { aberto = 'concluidos'; P.estado.gravar({ projeto: aberto }); desenhar(); window.scrollTo(0, 0); });
+        botoes.unshift(vc);
+      }
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, botoes));
     }
 
     /* arquivo { "projetos": [ { "nome", "passos": [ { "titulo", "nota", "feito" } ] } ] }: projeto que já existe (mesmo nome) só ganha os passos que faltam, sem mexer nos que já estão */
