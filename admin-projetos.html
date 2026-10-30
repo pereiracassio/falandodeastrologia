@@ -49,8 +49,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=123"></script>
-  <script src="menu.js?v=49" defer></script>
+  <script src="portal.js?v=124"></script>
+  <script src="menu.js?v=51" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -80,7 +80,7 @@
     function carregar() {
       Promise.all([
         C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio').order('ordem').order('criado_em'),
-        C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem').order('ordem').order('criado_em')
+        C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em')
       ]).then(function (res) {
         if (res[0].error || res[1].error) { limpar(); app.appendChild(topo(nomeAdmin)); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os projetos.' })); return; }
         projetos = res[0].data; passos = res[1].data;
@@ -114,12 +114,18 @@
     }
     function pctDe(lista) { return lista.length ? Math.floor(lista.filter(function (x) { return x.feito; }).length * 100 / lista.length) : 0; }
 
-    /* na ordem do número da bolinha (prioridade); sem número, depois deles, na ordem de sempre */
+    /* na ordem do número da bolinha (prioridade); sem número, depois deles, do mais concluído para o menos concluído (empate: ordem de sempre) */
     function porNumero(lista) {
       var n = function (p) { return p.prioridade == null ? Infinity : p.prioridade; };
-      return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) { var x = n(a.p), y = n(b.p); return x === y ? a.i - b.i : (x < y ? -1 : 1); }).map(function (o) { return o.p; });
+      var pct = function (p) { return pctDe(passos.filter(function (x) { return x.projeto_id === p.id; })); };
+      return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) {
+        var x = n(a.p), y = n(b.p);
+        if (x !== y) return x < y ? -1 : 1;
+        if (x === Infinity && pct(a.p) !== pct(b.p)) return pct(b.p) - pct(a.p);
+        return a.i - b.i;
+      }).map(function (o) { return o.p; });
     }
-    /* põe o número no projeto; se já havia outro com esse número, ele e os seguintes descem um lugar (o 3 vira 4, o 4 vira 5...) */
+
     function definirNumero(p, texto, ativos) {
       var n = texto === '' ? null : parseInt(texto, 10);
       if (n !== null && (isNaN(n) || n < 0 || n > 99)) { desenhar(); return; }
@@ -142,17 +148,24 @@
     function concluidoO(p) { var m = passos.filter(function (x) { return x.projeto_id === p.id; }); return m.length > 0 && m.every(function (x) { return x.feito; }); }
 
     /* projeto concluído (todos os passos feitos) sai das abas e vai para "Concluídos"; "Reabrir" desmarca o último passo feito e ele volta para as abas */
-    function desenhar() {
-      var ativos = porNumero(projetos.filter(function (p) { return !concluidoO(p); })), concl = porNumero(projetos.filter(concluidoO));
-      if (aberto !== 'concluidos' && !ativos.some(function (p) { return p.id === aberto; })) aberto = concl.some(function (p) { return p.id === aberto; }) ? 'concluidos' : (ativos.length ? ativos[0].id : 'concluidos');
-      if (verConcluido && !concl.some(function (p) { return p.id === verConcluido; })) verConcluido = null;
-      var velha = app.querySelector('.portal-abas-rola'), rolagemBarra = velha ? velha.scrollLeft : null; /* a barra fica onde estava */
-      limpar();
-      app.appendChild(topo(nomeAdmin));
-      if (aberto === 'concluidos' && verConcluido) { telaConcluido(concl.filter(function (p) { return p.id === verConcluido; })[0]); return; }
-      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
-      ativos.forEach(function (p) {
-        /* a bolinha com o número (ou vazia) fica na própria aba, antes do nome */
+    /* uma linha da lista: bolinha e nome; embaixo "14% [barra] 1/7" e, se tem prazo, "50% [barra] 12 dias" */
+    function linhaDeBarra(pct, cor, fim) {
+      var barra = el('div', { class: 'proj-barra', style: 'flex:1;margin:0' }, [el('i', { style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
+      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })]);
+    }
+    /* o tempo do prazo: dias que já passaram sobre o total de dias, com a barra azul, ocre no meio e terracota no fim */
+    function tempoDoProjeto(p) {
+      if (!p.data_fim) return null;
+      var fim = new Date(p.data_fim + 'T23:59:59'), ini = new Date((p.data_inicio || new Date(p.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date();
+      var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
+      var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
+      return { pct: Math.floor(fr * 100), cor: corDoTempo(fr), texto: passou + '/' + total + ' dias' };
+    }
+    function linhaDoProjeto(p, ativos) {
+      var m = passos.filter(function (x) { return x.projeto_id === p.id; }), feitos = m.filter(function (x) { return x.feito; }).length;
+      var cabeca = el('div', { style: 'display:flex;align-items:center;gap:10px' });
+      if (ativos) {
+        /* a bolinha com o número (ou vazia) fica antes do nome */
         var bolinha = el('input', { type: 'text', inputmode: 'numeric', maxlength: '2', 'aria-label': 'Número do projeto ' + p.nome });
         bolinha.value = p.prioridade == null ? '' : String(p.prioridade);
         bolinha.style.cssText = 'flex:none;width:26px;height:26px;box-sizing:border-box;padding:0;margin:0;border:1.5px solid #1F5FA3;border-radius:50%;background:transparent;text-align:center;font:700 13px Arial,sans-serif;color:#16233F;min-height:0';
@@ -160,33 +173,47 @@
         bolinha.addEventListener('keydown', function (ev) { ev.stopPropagation(); if (ev.key === 'Enter') bolinha.blur(); });
         bolinha.addEventListener('input', function () { bolinha.value = bolinha.value.replace(/\D/g, ''); });
         bolinha.addEventListener('change', function () { definirNumero(p, bolinha.value.trim(), ativos); });
-        var b = el('div', { role: 'tab', tabindex: '0' }, [bolinha, el('span', { text: p.nome })]);
-        b.className = 'portal-aba' + (p.id === aberto ? ' ativa' : '');
-        b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.justifyContent = 'center'; b.style.gap = '8px';
-        var abrirAba = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); };
-        b.addEventListener('click', abrirAba);
-        b.addEventListener('keydown', function (ev) { if (ev.target === b && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirAba(); } });
-        barraAbas.appendChild(b);
-      });
-      var novo = el('button', { type: 'button', role: 'tab', text: '+ Novo projeto' });
-      novo.className = 'portal-aba';
-      novo.addEventListener('click', novoProjeto);
-      barraAbas.appendChild(novo);
-      var abaConcl = el('button', { type: 'button', role: 'tab', text: 'Concluídos' + (concl.length ? ' (' + concl.length + ')' : '') });
-      abaConcl.className = 'portal-aba' + (aberto === 'concluidos' ? ' ativa' : '');
-      abaConcl.addEventListener('click', function () { aberto = 'concluidos'; P.estado.gravar({ projeto: aberto }); desenhar(); });
-      barraAbas.appendChild(abaConcl);
-      var rola = el('div', { class: 'portal-abas-rola' }, [barraAbas]);
-      app.appendChild(P.comSetas(rola));
-      var conteudo = el('div', { class: 'portal-cartao' });
-      app.appendChild(conteudo);
-      var ativaAba = barraAbas.querySelector('.ativa');
-      if (rolagemBarra != null) rola.scrollLeft = rolagemBarra;
-      /* só leva o projeto aberto para a frente se ele não estiver à vista (primeira vez, ou projeto recém-criado) */
-      if (ativaAba && (rolagemBarra == null || ativaAba.offsetLeft < rola.scrollLeft || ativaAba.offsetLeft + ativaAba.offsetWidth > rola.scrollLeft + rola.clientWidth)) rola.scrollLeft = Math.max(0, ativaAba.offsetLeft - (rola.clientWidth - ativaAba.offsetWidth) / 2);
-      var proj = aberto === 'concluidos' ? null : ativos.filter(function (p) { return p.id === aberto; })[0];
+        cabeca.appendChild(bolinha);
+      }
+      cabeca.appendChild(el('span', { class: 'portal-item-titulo', text: p.nome }));
+      var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [cabeca, linhaDeBarra(pctDe(m), null, feitos + '/' + m.length)]);
+      var tempo = tempoDoProjeto(p);
+      if (tempo) linha.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
+      var abrir = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); window.scrollTo(0, 0); };
+      linha.addEventListener('click', abrir);
+      linha.addEventListener('keydown', function (ev) { if (ev.target === linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(); } });
+      return linha;
+    }
+
+    /* aberto: null = a lista dos projetos; 'concluidos' = a lista dos concluídos; um id = aquele projeto */
+    function desenhar() {
+      var ativos = porNumero(projetos.filter(function (p) { return !concluidoO(p); })), concl = porNumero(projetos.filter(concluidoO));
+      if (aberto && aberto !== 'concluidos' && !ativos.some(function (p) { return p.id === aberto; })) aberto = concl.some(function (p) { return p.id === aberto; }) ? 'concluidos' : null;
+      if (verConcluido && !concl.some(function (p) { return p.id === verConcluido; })) verConcluido = null;
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      if (aberto === 'concluidos' && verConcluido) { telaConcluido(concl.filter(function (p) { return p.id === verConcluido; })[0]); return; }
+      var voltarLista = function () { aberto = null; P.estado.gravar({ projeto: null }); desenhar(); window.scrollTo(0, 0); };
+      var proj = aberto && aberto !== 'concluidos' ? ativos.filter(function (p) { return p.id === aberto; })[0] : null;
+      if (proj) {
+        app.appendChild(el('div', { class: 'portal-topo' }, [P.botaoVoltar(voltarLista)]));
+        var cartao = el('div', { class: 'portal-cartao' });
+        app.appendChild(cartao);
+        mostrarProjeto(cartao, proj, false);
+        var apagar = P.botaoApagar('Apagar este projeto');
+        apagar.addEventListener('click', function () {
+          if (!confirm('Apagar o projeto "' + proj.nome + '" e todos os passos dele? Não dá para desfazer.')) return;
+          C.from('projetos').delete().eq('id', proj.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; carregar(); } });
+        });
+        P.voltarNoFim(app, voltarLista);
+        P.apagarNoFim(app, apagar);
+        return;
+      }
       if (aberto === 'concluidos') {
-        if (!concl.length) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto concluído ainda.' }));
+        app.appendChild(el('div', { class: 'portal-topo' }, [P.botaoVoltar(voltarLista)]));
+        var cc = el('div', { class: 'portal-cartao' });
+        app.appendChild(cc);
+        if (!concl.length) cc.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto concluído ainda.' }));
         concl.forEach(function (p) {
           var m = passos.filter(function (x) { return x.projeto_id === p.id; });
           var ultima = m.reduce(function (a, x) { return x.feito_em && x.feito_em > a ? x.feito_em : a; }, '');
@@ -196,21 +223,29 @@
             el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + (ultima ? ' · concluído em ' + P.dataBR(ultima.slice(0, 10)) : '') })])])]);
           linha.addEventListener('click', abrir);
           linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
-          conteudo.appendChild(linha);
+          cc.appendChild(linha);
         });
-      } else if (!proj) conteudo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' })); else mostrarProjeto(conteudo, proj, false);
+        P.voltarNoFim(app, voltarLista);
+        return;
+      }
+      var novo = el('button', { type: 'button', class: 'portal-btn', text: '+ Novo projeto' });
+      novo.addEventListener('click', novoProjeto);
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [novo]));
+      var lista = el('div', { class: 'portal-cartao' });
+      app.appendChild(lista);
+      if (!ativos.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' }));
+      ativos.forEach(function (p) { lista.appendChild(linhaDoProjeto(p, ativos)); });
       var arquivo = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
       var importar = el('button', { type: 'button', class: 'portal-btn', text: 'Importar projetos' });
       importar.addEventListener('click', function () { arquivo.click(); });
       arquivo.addEventListener('change', function () { var f = arquivo.files && arquivo.files[0]; arquivo.value = ''; if (f) importarArquivo(f); });
-      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [importar, arquivo]));
-      if (!proj) return;
-      var apagar = P.botaoApagar('Apagar este projeto');
-      apagar.addEventListener('click', function () {
-        if (!confirm('Apagar o projeto "' + proj.nome + '" e todos os passos dele? Não dá para desfazer.')) return;
-        C.from('projetos').delete().eq('id', proj.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; carregar(); } });
-      });
-      P.apagarNoFim(app, apagar);
+      var botoes = [importar, arquivo];
+      if (concl.length) {
+        var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Concluídos (' + concl.length + ')' });
+        vc.addEventListener('click', function () { aberto = 'concluidos'; P.estado.gravar({ projeto: aberto }); desenhar(); window.scrollTo(0, 0); });
+        botoes.unshift(vc);
+      }
+      app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, botoes));
     }
 
     /* arquivo { "projetos": [ { "nome", "passos": [ { "titulo", "nota", "feito" } ] } ] }: projeto que já existe (mesmo nome) só ganha os passos que faltam, sem mexer nos que já estão */
@@ -283,16 +318,10 @@
         C.from('projetos').update({ nome: n }).eq('id', proj.id).then(function (r) { if (r.error) alert('Não foi possível salvar.'); else carregar(); });
       });
       conteudo.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: proj.nome, style: 'margin:0' }), renomear]));
-      conteudo.appendChild(el('div', { class: 'proj-barra' }, [el('i', { style: 'width:' + pct + '%' })]));
-      conteudo.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (meus.length ? ' · ' + feitos + ' de ' + meus.length + ' passos' : '') + (meus.length && feitos === meus.length ? ' · Projeto concluído' : '') }));
+      conteudo.appendChild(linhaDeBarra(pct, null, feitos + '/' + meus.length));
       /* prazo opcional: a segunda barra é o tempo que já passou, do dia em que o projeto foi criado até a data final; azul, ocre no meio e terracota no fim */
-      if (proj.data_fim) {
-        var fim = new Date(proj.data_fim + 'T23:59:59'), ini = new Date((proj.data_inicio || new Date(proj.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date();
-        var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, pt = Math.floor(fr * 100);
-        var dias = Math.ceil((fim - agora) / 86400000);
-        conteudo.appendChild(el('div', { class: 'proj-barra', style: 'margin-top:14px' }, [el('i', { style: 'width:' + pt + '%;background:' + corDoTempo(fr) })]));
-        conteudo.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pt + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo encerrado') + ' (até ' + P.dataBR(proj.data_fim) + ')' }));
-      }
+      var tempo = tempoDoProjeto(proj);
+      if (tempo) conteudo.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
       if (!leitura) {
         /* data de início: começa no dia em que o projeto foi criado e dá para corrigir para o dia certo; a barra de tempo conta a partir dela */
         var dataIni = el('input', { type: 'date', id: 'projIni', style: 'width:auto' }); dataIni.value = proj.data_inicio || new Date(proj.criado_em).toLocaleDateString('sv-SE');
@@ -325,6 +354,7 @@
           C.from('projeto_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
         var textos = [el('span', { class: 'proj-titulo', text: x.titulo })];
+        if (x.data) textos.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) }));
         if (x.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: x.nota }));
         var acoes = el('div', { class: 'proj-acoes' });
         var sobe = el('button', { type: 'button', class: 'proj-mini', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'proj-mini', text: '↓', 'aria-label': 'Descer' });
@@ -370,16 +400,17 @@
         var msg = el('p', { class: 'portal-msg' });
         var titulo = el('input', { type: 'text', id: 'pTitulo', required: '' });
         var nota = el('textarea', { id: 'pNota', rows: '2', placeholder: 'Anotação (opcional)' });
-        if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; }
+        var dataPasso = el('input', { type: 'date' });
+        if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; dataPasso.value = item.data || ''; }
         var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Adicionar passo' });
         var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
         cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
-        var form = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pTitulo', text: 'Passo' }), titulo, nota, msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
+        var form = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pTitulo', text: 'Passo' }), titulo, nota, P.linhaDatas([P.colunaData(dataPasso, 'Até quando (opcional)')]), msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
         form.addEventListener('submit', function (ev) {
           ev.preventDefault();
           var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
           salvar.disabled = true;
-          var campos = { titulo: t, nota: nota.value.trim() || null };
+          var campos = { titulo: t, nota: nota.value.trim() || null, data: dataPasso.value || null };
           var ordem = meus.reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0) + 1;
           var pedido = item ? C.from('projeto_passos').update(campos).eq('id', item.id) : C.from('projeto_passos').insert(Object.assign({ projeto_id: proj.id, ordem: ordem }, campos));
           pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else carregar(); });

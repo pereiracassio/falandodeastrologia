@@ -38,7 +38,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=123"></script>
+  <script src="portal.js?v=124"></script>
   <script src="conversa.js?v=7"></script>
   <script src="atividades.js?v=37"></script>
   <script>
@@ -239,7 +239,7 @@
       function carregar() {
         Promise.all([
           P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
-          P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em').order('ordem').order('criado_em'),
+          P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data').order('ordem').order('criado_em'),
           P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em')
         ]).then(function (rs) {
           raiz.textContent = '';
@@ -347,6 +347,12 @@
         if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
         if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
         if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (at.antiga || at.somente_leitura ? 'já feita' : !at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
+        if (leitura) { if (x.data) texto.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) })); }
+        else { /* data de conclusão do passo: grava sozinha; o aluno também vê, e o passo entra no To Do da Agenda */
+          var dataP = el('input', { type: 'date' }); dataP.value = x.data || '';
+          dataP.addEventListener('change', function () { P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else x.data = dataP.value || null; }); });
+          texto.push(P.colunaData(dataP, 'Até quando (opcional)'));
+        }
         if (!leitura) {
           var acoes = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:6px' });
           var troca = function (com) { Promise.all([P.client.from('aluno_trilha_passos').update({ ordem: com.ordem }).eq('id', x.id), P.client.from('aluno_trilha_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar); };
@@ -395,15 +401,9 @@
         var renomear = mini('Renomear', function () { var n = (prompt('Assunto da trilha', t.nome) || '').trim(); if (n && n !== t.nome) P.client.from('aluno_trilhas').update({ nome: n }).eq('id', t.id).then(carregar); });
         cabeca.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), sinalT]));
         c.appendChild(el('div', { style: 'margin-bottom:6px' }, [renomear]));
-        cabeca.appendChild(barra(pct));
-        cabeca.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (m.length ? ' · ' + feitos.length + ' de ' + m.length + ' passos' : '') }));
-        /* prazo opcional: com data final aparece a barra do tempo (muda de cor); sem data, só a barra azul de cima */
-        if (t.data_fim) {
-          var fim = new Date(t.data_fim + 'T23:59:59'), ini = new Date(inicioDe(t) + 'T00:00:00'), agora = new Date();
-          var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, dias = Math.ceil((fim - agora) / 86400000);
-          cabeca.appendChild(el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:12px 0 6px' }, [el('i', { style: 'display:block;height:100%;width:' + Math.floor(fr * 100) + '%;background:' + corDoTempo(fr) })]));
-          cabeca.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: Math.floor(fr * 100) + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo vencido') + ' (até ' + P.dataBR(t.data_fim) + ')' }));
-        }
+        cabeca.appendChild(P.barraLinha(pct, null, feitos.length + '/' + m.length));
+        /* prazo opcional: com data final aparece a barra do tempo logo embaixo, no mesmo desenho */
+        if (t.data_fim) cabeca.appendChild(P.barraTempoDias(inicioDe(t), t.data_fim));
         c.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio', true), campoDataTrilha('Data final prevista (opcional)', t, 'data_fim')]));
         if (pend.length) { c.appendChild(rotulo('Próximo passo')); listaDePassos(c, pend.slice(0, 1), false, true); }
         if (pend.length > 1) {
@@ -844,6 +844,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=49" defer></script>
+  <script src="menu.js?v=51" defer></script>
 </body>
 </html>
