@@ -74,6 +74,8 @@
     .prod-cal .dia b{display:block;font-size:12px;color:#16233F}
     .prod-cal .vid{display:block;color:#A03E25;font-weight:700;line-height:1.15;margin-top:2px}
     .prod-cal .cor{display:block;color:#1034A6;line-height:1.15;margin-top:2px}
+    .prox-barra{height:14px;border:1px solid #1F5FA3}
+    .prox-barra i{display:block;height:100%;background:#1F5FA3}
     .prod-barra{height:8px;border:1px solid #1F5FA3;margin:6px 0 2px}
     .prod-barra i{display:block;height:100%;background:#1F5FA3}
     .prod-acoes-topo{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
@@ -339,7 +341,7 @@
     var serieDe = function (v) { return v.serie_id ? achar(series, v.serie_id) : null; };
     var nomeVideo = function (v) { var s = serieDe(v); return (s ? s.nome + ' · ' : '') + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
     var cortesDe = function (vid) { return cortes.filter(function (c) { return c.video_id === vid; }); };
-    var cortePendente = function (c) { return !(c.instagram && c.tiktok && c.shorts); };
+    var cortePendente = function (c) { return !(c.instagram && c.tiktok); };
 
     /* grava um campo ou vários e atualiza a cópia em memória */
     function gravar(tabela, lista, obj, campos) {
@@ -493,7 +495,7 @@
       limpar();
       app.appendChild(topo(nomeAdmin));
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
-      [['hoje', 'Hoje'], ['series', 'Séries'], ['calendario', 'Calendário']].forEach(function (d) {
+      [['hoje', 'Próximos'], ['series', 'Séries'], ['calendario', 'Calendário']].forEach(function (d) {
         var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] ? ' ativa' : ''), text: d[1] });
         b.addEventListener('click', function () { irPara(d[0]); });
         barra.appendChild(b);
@@ -528,45 +530,57 @@
       });
       return linha;
     }
+    /* PRÓXIMOS: o que ainda não terminou, numa lista só. Vídeo sai quando está no YouTube; corte sai quando está no Instagram e no TikTok.
+       Por data (a mais perto primeiro); sem data, depois, do mais pronto para o menos pronto. Tocar na linha abre o lugar certo. */
+    function barraProx(pct, cor, fim) {
+      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [
+        el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
+        el('div', { class: 'prox-barra', style: 'flex:1' }, [el('i', { style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]),
+        el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
+      ]);
+    }
+    function tempoProx(criado, fimISO) {
+      if (!fimISO || !criado) return null;
+      var fim = new Date(String(fimISO).slice(0, 10) + 'T23:59:59'), ini = new Date(String(criado).slice(0, 10) + 'T00:00:00'), agora = new Date();
+      var f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
+      var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
+      return { pct: Math.floor(f * 100), cor: corDoTempo(f), texto: passou + '/' + total + ' dias' };
+    }
     function telaHoje(area) {
-      var h = hoje(), cartao = el('div', { class: 'portal-cartao' });
+      var cartao = el('div', { class: 'portal-cartao' });
       area.appendChild(cartao);
-
-      var atrasados = cortes.filter(function (c) { return c.data && c.data < h && cortePendente(c); }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
-      var doDia = cortes.filter(function (c) { return c.data === h && cortePendente(c); });
-      cartao.appendChild(el('h2', { text: 'Hoje, ' + comDia(h) }));
-      if (!doDia.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte marcado para hoje.' }));
-      doDia.forEach(function (c) { cartao.appendChild(linhaCorte(c, false)); });
-      if (atrasados.length) {
-        cartao.appendChild(el('hr', { class: 'prod-divisa' }));
-        cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Ficaram para trás' }));
-        atrasados.forEach(function (c) { cartao.appendChild(linhaCorte(c, true)); });
-      }
-
-      /* vídeos grandes que ainda não foram ao ar, com data até daqui a 14 dias (ou já passada) */
-      var limite = somarDias(h, 14);
-      var proxVideos = videos.filter(function (v) { return !v.no_ar && v.data_postar && v.data_postar <= limite; }).sort(function (a, b) { return a.data_postar < b.data_postar ? -1 : 1; });
-      cartao.appendChild(el('hr', { class: 'prod-divisa' }));
-      cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Vídeos grandes que estão chegando' }));
-      if (!proxVideos.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum vídeo marcado para as próximas duas semanas.' }));
-      proxVideos.forEach(function (v) {
-        var falta = ETAPAS.slice(0, 5).filter(function (e) { return !v[e[0]]; })[0];
-        var linha = el('div', { class: 'prod-linha' }, [
-          el('div', {}, [
-            el('span', { class: 'prod-titulo', text: nomeVideo(v) }),
-            el('span', { class: 'prod-sub', text: comDia(v.data_postar) + ' · ' + rotuloAcesso(v) + (v.data_publico && rotuloAcesso(v) === 'público' ? ' (público em ' + comDia(v.data_publico) + ')' : '') + (v.data_postar < h ? ' · atrasado' : '') + (falta ? ' · falta: ' + falta[1].toLowerCase() : '') })
-          ])
+      var itens = [];
+      videos.forEach(function (v) {
+        if (v.no_ar) return;
+        var feitas = ETAPAS.filter(function (e) { return v[e[0]]; }).length, fim = fimDoVideo(v);
+        if (!feitas && !fim) return; /* vídeo ainda vazio, só reservado na série */
+        itens.push({ data: fim, pct: Math.floor(feitas * 100 / ETAPAS.length), rotulo: feitas + '/' + ETAPAS.length, nome: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: (serieDe(v) ? serieDe(v).nome : 'Vídeo solto'), tempo: tempoProx(v.criado_em, fim),
+          abrir: function () { irPara('series', v.serie_id || 'soltos', v.id); } });
+      });
+      cortes.forEach(function (c) {
+        if (!cortePendente(c)) return;
+        var v = achar(videos, c.video_id), feitas = ETAPAS_CORTE.filter(function (e) { return c[e[0]]; }).length;
+        if (!v || !(v.no_ar || c.data || feitas)) return;
+        itens.push({ data: c.data, pct: Math.floor(feitas * 100 / ETAPAS_CORTE.length), rotulo: feitas + '/' + ETAPAS_CORTE.length, nome: c.titulo || 'Corte sem título', sub: 'corte · ' + nomeVideo(v), tempo: tempoProx(c.criado_em, c.data),
+          abrir: function () { corteAberto = c.id; abaVideo = 'corte'; abaVideoDe = v.id; irPara('series', v.serie_id || 'soltos', v.id); } });
+      });
+      itens.sort(function (x, y) {
+        if (x.data && y.data) return x.data < y.data ? -1 : x.data > y.data ? 1 : 0;
+        if (x.data || y.data) return x.data ? -1 : 1;
+        return y.pct - x.pct;
+      });
+      if (!itens.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nada em andamento.' }));
+      itens.forEach(function (it) {
+        var linha = el('div', { class: 'prod-linha', role: 'button', tabindex: '0', style: 'display:block;cursor:pointer' }, [
+          el('span', { class: 'prod-titulo', text: it.nome }),
+          el('span', { class: 'prod-sub', text: it.sub }),
+          barraProx(it.pct, null, it.rotulo)
         ]);
-        linha.appendChild(botao('Abrir', function () { irPara('series', v.serie_id || 'soltos', v.id); }));
+        if (it.tempo) linha.appendChild(barraProx(it.tempo.pct, it.tempo.cor, it.tempo.texto));
+        linha.addEventListener('click', it.abrir);
+        linha.addEventListener('keydown', function (e) { if (e.target === linha && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); it.abrir(); } });
         cartao.appendChild(linha);
       });
-
-      /* cortes dos próximos 7 dias */
-      var proxCortes = cortes.filter(function (c) { return c.data && c.data > h && c.data <= somarDias(h, 7) && cortePendente(c); }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
-      cartao.appendChild(el('hr', { class: 'prod-divisa' }));
-      cartao.appendChild(el('p', { class: 'prod-grupo', text: 'Cortes dos próximos 7 dias' }));
-      if (!proxCortes.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte marcado.' }));
-      proxCortes.forEach(function (c) { cartao.appendChild(linhaCorte(c, true)); });
 
       /* fila do blog: já foi ao ar e ainda não virou postagem */
       var fila = videos.filter(function (v) { return v.no_ar && !v.blog_ok; });
