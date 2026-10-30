@@ -2,6 +2,7 @@
    Lê os compromissos do app Calendário do próprio aparelho (onde a conta do Google já está), sem login e sem servidor.
    Cada compromisso leva o planeta da hora em que começa (ocre de dia, azul de noite); de dia todo leva o planeta do dia (terracota).
    LUGAR das horas planetárias: LAT/LON. NAO_MOSTRAR: agendas do Calendário que não entram (pedaço do nome basta). */
+const VERSAO = 'agenda 3';
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658;
 const NAO_MOSTRAR = ['profec', 'meus per', 'feriado', 'holiday', 'aniversário', 'birthday', 'siri', 'sugestões'];
@@ -91,6 +92,14 @@ try {
   /* esconder agendas sem mexer no código: escreva os nomes no campo "Parameter" do widget, separados por vírgula (basta um pedaço do nome) */
   const doParametro = String(args.widgetParameter || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
   const ruim = t => NAO_MOSTRAR.concat(doParametro).some(n => String(t || '').toLowerCase().indexOf(n) >= 0);
+  if (!config.runsInWidget) { /* tocar no play dentro do Scriptable mostra as agendas do Calendário e quais estão escondidas (para achar o nome certo) */
+    const contagem = {}; evs.forEach(e => { const n = (e.calendar && e.calendar.title) || '(sem nome)'; contagem[n] = (contagem[n] || 0) + 1; });
+    const tabela = new UITable(); tabela.showSeparators = true;
+    const cab = new UITableRow(); cab.isHeader = true; cab.addText('Agendas com compromissos hoje e amanhã', VERSAO); tabela.addRow(cab);
+    Object.keys(contagem).sort().forEach(n => { const r = new UITableRow(); r.addText((ruim(n) ? 'ESCONDIDA · ' : '') + n, contagem[n] + (contagem[n] === 1 ? ' compromisso' : ' compromissos')); tabela.addRow(r); });
+    if (!Object.keys(contagem).length) { const r = new UITableRow(); r.addText('Nenhum compromisso encontrado'); tabela.addRow(r); }
+    await tabela.present(false); Script.complete(); return;
+  }
   evs = evs.filter(e => !ruim(e.calendar && e.calendar.title) && (e.isAllDay || e.endDate > agora) && !(e.isAllDay && e.endDate <= agora));
   /* de dia todo primeiro dentro de cada dia, depois por horário */
   evs.sort((a, b) => { const da = new Date(a.startDate.getFullYear(), a.startDate.getMonth(), a.startDate.getDate()).getTime(), db = new Date(b.startDate.getFullYear(), b.startDate.getMonth(), b.startDate.getDate()).getTime(); return da - db || (b.isAllDay ? 1 : 0) - (a.isAllDay ? 1 : 0) || a.startDate - b.startDate; });
