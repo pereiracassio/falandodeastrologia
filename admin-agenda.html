@@ -601,7 +601,7 @@
         if (!vivo()) return;
         var feitos = r[1] || {}, falhas = r[0].falhas || [], itens = [];
         r[0].concat(aniversariosEntre(de, ate)).forEach(function (e) {
-          if (/holiday|addressbook#contacts/.test(e.calId || '')) return; /* feriados não entram; aniversários vêm da lista de clientes e alunos */
+          if (/holiday|addressbook#contacts/.test(e.calId || '')) return; if (!e.aniversario && e.fim <= agora) return; /* compromisso que já terminou sai sozinho; só o que ele precisa resolver fica atrasado */ /* feriados não entram; aniversários vêm da lista de clientes e alunos */
           itens.push({ quando: e.ini, diaTodo: e.diaTodo, titulo: e.titulo, sub: e.aniversario ? 'aniversário · mandar a mensagem' : e.calNome, chave: (e.aniversario ? 'a|' : 'g|' + (e.calId || '') + '|') + e.id + '|' + e.ini, evento: e, cor: e.aniversario ? '#A03E25' : preenche(e) });
         });
         itens = itens.concat(r[2], r[3]).filter(function (x) { return !x.chave || !feitos[x.chave]; });
