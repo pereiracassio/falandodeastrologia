@@ -341,7 +341,7 @@
       };
       Promise.all([
         P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
-        P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em').order('ordem').order('criado_em'),
+        P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data').order('ordem').order('criado_em'),
         P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga').eq('aluno_id', aluno.id)
       ]).then(function (rs) {
         raiz.textContent = '';
@@ -362,6 +362,7 @@
         function linha(x) {
           var feito = pontos(x) >= 1, it = itemDe(x), at = ativDe(x);
           var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
+          if (x.data && !feito) texto.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) }));
           var cb = el('input', { type: 'checkbox', class: 'caixinha', disabled: '' }); cb.checked = feito;
           if (x.tipo === 'material') {
             if (!it) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));

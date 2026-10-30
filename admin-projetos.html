@@ -80,7 +80,7 @@
     function carregar() {
       Promise.all([
         C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio').order('ordem').order('criado_em'),
-        C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem').order('ordem').order('criado_em')
+        C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em')
       ]).then(function (res) {
         if (res[0].error || res[1].error) { limpar(); app.appendChild(topo(nomeAdmin)); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os projetos.' })); return; }
         projetos = res[0].data; passos = res[1].data;
@@ -354,6 +354,7 @@
           C.from('projeto_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
         var textos = [el('span', { class: 'proj-titulo', text: x.titulo })];
+        if (x.data) textos.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) }));
         if (x.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: x.nota }));
         var acoes = el('div', { class: 'proj-acoes' });
         var sobe = el('button', { type: 'button', class: 'proj-mini', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'proj-mini', text: '↓', 'aria-label': 'Descer' });
@@ -399,16 +400,17 @@
         var msg = el('p', { class: 'portal-msg' });
         var titulo = el('input', { type: 'text', id: 'pTitulo', required: '' });
         var nota = el('textarea', { id: 'pNota', rows: '2', placeholder: 'Anotação (opcional)' });
-        if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; }
+        var dataPasso = el('input', { type: 'date' });
+        if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; dataPasso.value = item.data || ''; }
         var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Adicionar passo' });
         var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
         cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
-        var form = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pTitulo', text: 'Passo' }), titulo, nota, msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
+        var form = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pTitulo', text: 'Passo' }), titulo, nota, P.linhaDatas([P.colunaData(dataPasso, 'Até quando (opcional)')]), msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
         form.addEventListener('submit', function (ev) {
           ev.preventDefault();
           var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
           salvar.disabled = true;
-          var campos = { titulo: t, nota: nota.value.trim() || null };
+          var campos = { titulo: t, nota: nota.value.trim() || null, data: dataPasso.value || null };
           var ordem = meus.reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0) + 1;
           var pedido = item ? C.from('projeto_passos').update(campos).eq('id', item.id) : C.from('projeto_passos').insert(Object.assign({ projeto_id: proj.id, ordem: ordem }, campos));
           pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else carregar(); });
