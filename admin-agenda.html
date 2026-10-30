@@ -447,9 +447,11 @@
 
     /* ícone do planeta: a fonte AstroIcones do site (a mesma do blog e das atividades; Sol U+E000, Lua, Mercúrio, Vênus, Marte, Júpiter, Saturno em seguida) */
     var ORDEM_ICONES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno'];
+    /* o page.css pinta de terracota qualquer texto com style "color:#1F5FA3" dentro da página (regra das páginas de serviço): por isso o azul vai em rgb(), que a regra não pega */
+    function corAzul(c) { return String(c).toUpperCase() === '#1F5FA3' ? 'rgb(31,95,163)' : c; }
     function iconePlaneta(nome, px, cor) {
       return el('span', { text: String.fromCharCode(0xE000 + ORDEM_ICONES.indexOf(nome)), title: nome, 'aria-label': nome,
-        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + (cor || '#1F5FA3') + ';vertical-align:middle;flex:none' });
+        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + corAzul(cor || '#1F5FA3') + ';vertical-align:middle;flex:none' });
     }
     /* as horas planetárias de um dia civil, cortadas na meia-noite: cada uma vira uma linha da grade */
     function segmentosDoDia(iso) {
@@ -1121,7 +1123,7 @@
         box.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:' + linhaFina }, [cab('', 'flex:none;width:30px'), cab('', 'flex:none;width:24px'), cab('Regente', 'flex:none;width:56px'), cab('Início', 'flex:1;text-align:center'), cab('Término', 'flex:1;text-align:center')]));
         hs.forEach(function (h, i) {
           var atual = agora >= h.ini && agora < h.fim, cor = atual ? '#A03E25' : '#16233F';
-          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? '#1F5FA3' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
+          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? 'rgb(31,95,163)' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
           var linha = el('div', { style: 'padding:6px 0 8px;border-bottom:' + linhaFina + ';cursor:pointer;' + (atual ? 'border-left:3px solid #A03E25;padding-left:6px;' : '') }, [
             el('div', { style: 'display:flex;align-items:center;gap:10px;color:' + cor }, [
               el('span', { text: (i % 12 + 1) + 'ª', style: 'flex:none;width:30px;font-weight:700' }), per,

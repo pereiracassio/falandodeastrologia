@@ -271,6 +271,8 @@ O ícone do iPhone abre na página onde foi salvo (não há como abrir direto em
 
 **O planeta de uma HORA é OCRE (`#B5852F`) nas horas do dia e AZUL (`#1F5FA3`) nas da noite** (dia combina com amarelo, noite com azul). **O planeta do DIA (o regente do dia, ex.: Vênus) é sempre TERRACOTA (`#A03E25`).** Vale no cabeçalho, na aba Horas, nas réguas do Dia e da Semana e no encaixe da Agenda, e nos widgets (a tela de bloqueio é branca, sem cor). Peça nova com planeta de hora/dia segue isto.
 
+**Armadilha do `page.css` (30/10/2026):** a regra `.pagina-servico .folha-pagina :is(...)[style*="color:#1F5FA3"]{color:terracota!important}` (linha ~65) pinta de TERRACOTA qualquer texto com `style="color:#1F5FA3"` em página com `pagina-servico` (como `admin-agenda.html`). Foi por isso que os planetas das horas da noite saíam vermelhos em vez de azuis. **Em peça nova com azul no `style` inline, usar `rgb(31,95,163)`, nunca `#1F5FA3`** (a Agenda tem `corAzul()` para isso). Cor que vem de classe CSS não é afetada.
+
 ## Widgets da tela de início do iPhone (28/10/2026) — o de Horas planetárias está feito (30/10); os outros são planejamento
 
 O astrólogo quer widgets na tela de início do iPhone/iPad **com a cara do site** (papiro, moldura, Cinzel, ícones dos planetas). Ele está só estudando e **sem tempo agora**: não começar nada até ele dizer "vamos fazer o widget". Atualizar esta seção a cada etapa (marcar [x]).
