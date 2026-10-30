@@ -356,3 +356,13 @@ Ele atende cliente e não tem tempo de voltar ao Supabase toda hora. **Junte TOD
 - A visão do aluno é IGUAL à do administrador (passos feitos/total, não só "concluído").
 - **Única exceção:** as etapas de cada VÍDEO na Produção (roteiro pronto, gravado, edição grossa...) são uma barra de passos adaptada, dividida em pedaços com o nome de cada etapa dentro (`.prod-seg`): tocar preenche o pedaço de azul e o nome fica vazado (claro); sem marcar, o nome é terracota. Em cima dela, a barra de tempo no padrão acima.
 - Painel dos Projetos: sem número na bolinha, os projetos se ordenam do mais concluído para o menos concluído; com número, vale o número.
+
+## Campo de data (`<input type="date">`) no iPad/iPhone: SEMPRE com cuidado (30/10/2026) — vale para TODA tela e peça nova, aqui e no Astro Hellenic
+
+Toda vez que um campo de data entra num lugar, o mesmo problema volta e o astrólogo tem que reclamar ("fica selecionando sem eu ter escolhido"). Antes de entregar qualquer campo de data (vale também para `P.colunaData`):
+- **Nunca agir direto no `change`.** O seletor de data do iOS dispara `change` com a data de HOJE no instante em que abre, antes de a pessoa escolher nada. Se o `change` já redesenha a tela, busca ou grava, o seletor fecha sozinho com "hoje". Guardar o valor sem redesenhar e só agir quando a pessoa confirmar: botão (Ir, Salvar data...) ou `blur` depois que o seletor fecha. É o mesmo motivo de os Projetos terem o botão **Salvar data** e de `P.salvarSozinho` não redesenhar.
+- **Campo vazio com `appearance: none` SOME no iPad:** sempre `min-height: 36px; min-width: 160px`.
+- **O toque tem que ser no próprio campo.** Ícone de calendário ao lado é enfeite (`showPicker()` não é confiável no iOS); nunca ser a única forma de abrir.
+- **Redesenhar a tela com o seletor aberto fecha o seletor.** Não mexer no DOM do campo enquanto a pessoa escolhe.
+- O Playwright daqui NÃO reproduz o seletor do iPad: não dizer que "testei" um campo de data; o teste real é no iPad dele.
+- Caso concreto: busca por data da Liberação Zodiacal no Astro Hellenic (três rodadas até ficar com tamanho mínimo + botão **Ir**).
