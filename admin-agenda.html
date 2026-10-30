@@ -594,6 +594,20 @@
         return saida;
       }, function () { return []; });
     }
+    /* o que a tarefa pode ligar: série, vídeo, corte, projeto ou estudo (tocar na tarefa abre lá) */
+    function opcoesDeLigacao() {
+      var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega('prod_series', 'id,nome'), pega('prod_videos', 'id,serie_id,numero,titulo'), pega('prod_cortes', 'id,video_id,ordem,titulo'), pega('projetos', 'id,nome'), pega('estudos', 'id,nome,encerrado')]).then(function (r) {
+        var o = [], base = function (v) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos'); };
+        var add = function (rotulo, url) { o.push({ valor: rotulo, rotulo: rotulo, busca: rotulo.toLowerCase(), url: url }); };
+        r[0].forEach(function (x) { add('Série: ' + x.nome, 'admin-producao.html#aba=series&serie=' + encodeURIComponent(x.id)); });
+        r[1].forEach(function (v) { add('Vídeo ' + (v.numero ? v.numero + ', ' : '') + (v.titulo || 'sem título'), base(v) + '&video=' + encodeURIComponent(v.id)); });
+        r[2].forEach(function (c) { var v = r[1].filter(function (x) { return x.id === c.video_id; })[0]; if (v) add((c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero ? v.numero + ', ' : '') + (v.titulo || ''), base(v) + '&video=' + encodeURIComponent(v.id) + '&vt=cortes'); });
+        r[3].forEach(function (x) { add('Projeto: ' + x.nome, 'admin-projetos.html'); });
+        r[4].filter(function (x) { return !x.encerrado; }).forEach(function (x) { add('Estudo: ' + x.nome, 'admin-estudos.html'); });
+        return o;
+      });
+    }
     function vistaTodo(vista, vivo) {
       vista.textContent = '';
       var agora = Date.now(), de = meiaNoiteDe(agora) - TODO_DIAS_ATRAS * DIA, ate = meiaNoiteDe(agora) + (TODO_DIAS_FRENTE + 1) * DIA;
@@ -602,16 +616,21 @@
       var nova = el('input', { type: 'text', placeholder: 'O que fazer', 'aria-label': 'O que fazer', style: 'width:100%;box-sizing:border-box' });
       var dia = el('input', { type: 'date' }), hora = el('input', { type: 'time' });
       var botaoAdd = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), msg = el('p', { class: 'portal-msg' });
-      var form = el('div', { style: 'margin:0 0 16px' }, [nova, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
+      var opcoes = [], ligacao = null, ligar = el('input', { type: 'text', placeholder: 'Ligar a um vídeo, corte, série, projeto... (opcional)', 'aria-label': 'Ligar a', style: 'width:100%;box-sizing:border-box;margin-top:8px' });
+      var escolhido = el('div', { style: 'display:none;margin:6px 0;font-size:14px' }), tirarLig = P.botaoApagar('Tirar a ligação');
+      var caixaLigar = P.combo(ligar, function () { return opcoes; }, function (i) { ligacao = i; ligar.value = ''; escolhido.textContent = ''; escolhido.appendChild(document.createTextNode('Ligada a: ' + i.rotulo + ' ')); escolhido.appendChild(tirarLig); escolhido.style.display = ''; }, false);
+      tirarLig.addEventListener('click', function () { ligacao = null; escolhido.style.display = 'none'; });
+      opcoesDeLigacao().then(function (o) { opcoes = o; });
+      var form = el('div', { style: 'margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
       var lista = el('div'); vista.appendChild(form); vista.appendChild(lista);
       lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       function adicionar() {
         var t = nova.value.trim(); if (!t) { nova.focus(); return; }
         botaoAdd.disabled = true;
-        C.from('todo_tarefas').insert({ titulo: t, data: dia.value || null, hora: dia.value && hora.value ? hora.value : null }).select('*').single().then(function (r) {
+        C.from('todo_tarefas').insert({ titulo: t, data: dia.value || null, hora: dia.value && hora.value ? hora.value : null, url: ligacao ? ligacao.url : null, url_rotulo: ligacao ? ligacao.rotulo : null }).select('*').single().then(function (r) {
           botaoAdd.disabled = false;
           if (r.error) { P.mensagem(msg, 'Não foi possível salvar.', 'erro'); return; }
-          dados.tarefas.push(r.data); nova.value = ''; dia.value = ''; hora.value = ''; P.mensagem(msg, '', 'ok'); desenhar(); nova.focus();
+          dados.tarefas.push(r.data); nova.value = ''; dia.value = ''; hora.value = ''; ligacao = null; escolhido.style.display = 'none'; P.mensagem(msg, '', 'ok'); desenhar(); nova.focus();
         }, function () { botaoAdd.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); });
       }
       botaoAdd.addEventListener('click', adicionar);
@@ -639,7 +658,7 @@
         lista.textContent = '';
         var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
         dados.tarefas.forEach(function (t) {
-          itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: '', cor: '#B5852F', semData: !t.data });
+          itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data });
         });
         itens.sort(function (a, b) { return a.quando === b.quando ? 0 : a.quando < b.quando ? -1 : 1; });
         if (dados.falhas.length) lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + dados.falhas.join(', ') + '.' }));
