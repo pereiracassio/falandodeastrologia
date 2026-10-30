@@ -3,6 +3,7 @@
    LUGAR: latitude e longitude do lugar das horas (padrão Jacareí); troque aqui se mudar. */
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658;
+const COR_HORA_DIA = 'terracota'; /* cor do planeta da hora nas horas do DIA: 'terracota' ou 'ocre'; nas da noite é sempre azul */
 const AZUL = '#1F5FA3', TERRACOTA = '#A03E25', TINTA = '#16233F';
 const PLANETA_ARQ = { 'Sol': 'sol', 'Lua': 'lua', 'Mercúrio': 'mercurio', 'Vênus': 'venus', 'Marte': 'marte', 'Júpiter': 'jupiter', 'Saturno': 'saturno' };
 
@@ -101,7 +102,7 @@ try {
   linha.addSpacer(pequeno ? 22 : 34);
   const colHora = linha.addStack(); colHora.layoutVertically(); colHora.centerAlignContent();
   const rh = colHora.addImage(await imagem('rot-hora.png')); rh.imageSize = new Size(28, 9); rh.centerAlignImage(); colHora.addSpacer(2);
-  const ihora = colHora.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-terracota.png')); ihora.imageSize = new Size(tamHora, tamHora); ihora.centerAlignImage();
+  const ihora = colHora.addImage(await imagem(PLANETA_ARQ[h.planeta] + '-' + (h.noite ? 'azul' : COR_HORA_DIA) + '.png')); ihora.imageSize = new Size(tamHora, tamHora); ihora.centerAlignImage();
   linha.addSpacer();
   w.addSpacer(pequeno ? 6 : 4);
 
