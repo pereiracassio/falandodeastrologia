@@ -153,6 +153,14 @@
       var barra = el('div', { class: 'proj-barra', style: 'flex:1;margin:0' }, [el('i', { style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
       return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })]);
     }
+    /* o tempo do prazo: dias que já passaram sobre o total de dias, com a barra azul, ocre no meio e terracota no fim */
+    function tempoDoProjeto(p) {
+      if (!p.data_fim) return null;
+      var fim = new Date(p.data_fim + 'T23:59:59'), ini = new Date((p.data_inicio || new Date(p.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date();
+      var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
+      var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
+      return { pct: Math.floor(fr * 100), cor: corDoTempo(fr), texto: passou + '/' + total + ' dias' };
+    }
     function linhaDoProjeto(p, ativos) {
       var m = passos.filter(function (x) { return x.projeto_id === p.id; }), feitos = m.filter(function (x) { return x.feito; }).length;
       var cabeca = el('div', { style: 'display:flex;align-items:center;gap:10px' });
@@ -169,12 +177,8 @@
       }
       cabeca.appendChild(el('span', { class: 'portal-item-titulo', text: p.nome }));
       var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [cabeca, linhaDeBarra(pctDe(m), null, feitos + '/' + m.length)]);
-      if (p.data_fim) {
-        var fim = new Date(p.data_fim + 'T23:59:59'), ini = new Date((p.data_inicio || new Date(p.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date();
-        var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
-        var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.min(total, Math.floor((agora - ini) / 86400000) + 1);
-        linha.appendChild(linhaDeBarra(Math.floor(fr * 100), corDoTempo(fr), Math.max(0, passou) + '/' + total + ' dias'));
-      }
+      var tempo = tempoDoProjeto(p);
+      if (tempo) linha.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
       var abrir = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); window.scrollTo(0, 0); };
       linha.addEventListener('click', abrir);
       linha.addEventListener('keydown', function (ev) { if (ev.target === linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(); } });
@@ -314,16 +318,10 @@
         C.from('projetos').update({ nome: n }).eq('id', proj.id).then(function (r) { if (r.error) alert('Não foi possível salvar.'); else carregar(); });
       });
       conteudo.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: proj.nome, style: 'margin:0' }), renomear]));
-      conteudo.appendChild(el('div', { class: 'proj-barra' }, [el('i', { style: 'width:' + pct + '%' })]));
-      conteudo.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pct + '% concluído' + (meus.length ? ' · ' + feitos + ' de ' + meus.length + ' passos' : '') + (meus.length && feitos === meus.length ? ' · Projeto concluído' : '') }));
+      conteudo.appendChild(linhaDeBarra(pct, null, feitos + '/' + meus.length));
       /* prazo opcional: a segunda barra é o tempo que já passou, do dia em que o projeto foi criado até a data final; azul, ocre no meio e terracota no fim */
-      if (proj.data_fim) {
-        var fim = new Date(proj.data_fim + 'T23:59:59'), ini = new Date((proj.data_inicio || new Date(proj.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date();
-        var fr = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1, pt = Math.floor(fr * 100);
-        var dias = Math.ceil((fim - agora) / 86400000);
-        conteudo.appendChild(el('div', { class: 'proj-barra', style: 'margin-top:14px' }, [el('i', { style: 'width:' + pt + '%;background:' + corDoTempo(fr) })]));
-        conteudo.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: pt + '% do tempo · ' + (dias > 1 ? 'faltam ' + dias + ' dias' : dias === 1 ? 'falta 1 dia' : dias === 0 ? 'o prazo termina hoje' : 'prazo encerrado') + ' (até ' + P.dataBR(proj.data_fim) + ')' }));
-      }
+      var tempo = tempoDoProjeto(proj);
+      if (tempo) conteudo.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
       if (!leitura) {
         /* data de início: começa no dia em que o projeto foi criado e dá para corrigir para o dia certo; a barra de tempo conta a partir dela */
         var dataIni = el('input', { type: 'date', id: 'projIni', style: 'width:auto' }); dataIni.value = proj.data_inicio || new Date(proj.criado_em).toLocaleDateString('sv-SE');
