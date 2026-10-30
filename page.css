@@ -62,8 +62,6 @@ body>header a:first-child{color:#f6e7b4!important}
 /* Páginas de serviço: o que era azul vira terracota; preto/cinza vira azul-noite;
    campos de fundo mais claro viram só uma linha azul (papiro não tem "cor mais clara") */
 .pagina-servico{--terracota:#A03E25;--azul:#1F5FA3;--azul-noite:#16233F}
-.pagina-servico .folha-pagina :is(h1,h2,h3,div,span,p,strong)[style*="color: #1F5FA3"],
-.pagina-servico .folha-pagina :is(h1,h2,h3,div,span,p,strong)[style*="color:#1F5FA3"]{color:var(--terracota)!important}
 .pagina-servico .folha-pagina [style*="border-bottom: 2px solid"]{border-bottom-color:var(--terracota)!important}
 .pagina-servico .folha-pagina p[style*="B5852F"]{color:var(--terracota)!important}
 .pagina-servico .folha-pagina,
