@@ -3,7 +3,7 @@
    LUGAR: latitude e longitude do lugar das horas (padrão Jacareí); troque aqui se mudar. */
 const SITE = 'https://falandodeastrologia.com.br';
 const LAT = -23.3053, LON = -45.9658;
-const COR_HORA_DIA = 'terracota'; /* cor do planeta da hora nas horas do DIA: 'terracota' ou 'ocre'; nas da noite é sempre azul */
+const COR_HORA_DIA = 'ocre'; /* cor do planeta da hora nas horas do DIA; nas da noite é azul. O planeta do dia (ex.: Vênus) é sempre terracota */
 const AZUL = '#1F5FA3', TERRACOTA = '#A03E25', TINTA = '#16233F';
 const PLANETA_ARQ = { 'Sol': 'sol', 'Lua': 'lua', 'Mercúrio': 'mercurio', 'Vênus': 'venus', 'Marte': 'marte', 'Júpiter': 'jupiter', 'Saturno': 'saturno' };
 
@@ -98,7 +98,7 @@ try {
   const linha = w.addStack(); linha.centerAlignContent(); linha.addSpacer();
   const colDia = linha.addStack(); colDia.layoutVertically(); colDia.centerAlignContent();
   const rd = colDia.addImage(await imagem('rot-dia.png')); rd.imageSize = new Size(22, 9); rd.centerAlignImage(); colDia.addSpacer(2);
-  const idia = colDia.addImage(await imagem(PLANETA_ARQ[dia.planeta] + '-azul.png')); idia.imageSize = new Size(tamDia, tamDia); idia.centerAlignImage();
+  const idia = colDia.addImage(await imagem(PLANETA_ARQ[dia.planeta] + '-terracota.png')); idia.imageSize = new Size(tamDia, tamDia); idia.centerAlignImage();
   linha.addSpacer(pequeno ? 22 : 34);
   const colHora = linha.addStack(); colHora.layoutVertically(); colHora.centerAlignContent();
   const rh = colHora.addImage(await imagem('rot-hora.png')); rh.imageSize = new Size(28, 9); rh.centerAlignImage(); colHora.addSpacer(2);
@@ -115,7 +115,7 @@ try {
     w.addSpacer(8); linhaTexto(w, 'Nascer do sol ' + hhmm(hs[0].ini) + ' · Pôr do sol ' + hhmm(hs[12].ini), 12, TINTA, true); w.addSpacer(8);
     for (let k = i + 1; k < Math.min(hs.length, i + 7); k++) {
       const l = w.addStack(); l.centerAlignContent(); l.addSpacer();
-      const ic = l.addImage(await imagem(PLANETA_ARQ[hs[k].planeta] + '-azul.png')); ic.imageSize = new Size(24, 24); l.addSpacer(12);
+      const ic = l.addImage(await imagem(PLANETA_ARQ[hs[k].planeta] + '-' + (hs[k].noite ? 'azul' : COR_HORA_DIA) + '.png')); ic.imageSize = new Size(24, 24); l.addSpacer(12);
       linhaTexto(l, (k % 12 + 1) + 'ª · ' + hhmm(hs[k].ini) + ' às ' + hhmm(hs[k].fim), 14); l.addSpacer(); w.addSpacer(4);
     }
   }
