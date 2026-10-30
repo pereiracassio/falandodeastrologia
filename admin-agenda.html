@@ -383,8 +383,8 @@
       if (['dia', 'semana', 'mes', 'ano', 'lista', 'todo'].indexOf(ent.v) >= 0) visao = ent.v;
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
-      var novo = el('button', { type: 'button', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
-      novo.addEventListener('click', function () { formulario(abrirFolha(), null, { dia: visao === 'dia' ? ancora : undefined }); });
+      var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
+      novo.addEventListener('click', function () { if (visao === 'todo') { if (alternarFormTodo) alternarFormTodo(); return; } formulario(abrirFolha(), null, { dia: visao === 'dia' ? ancora : undefined }); });
       var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:14px' }), botoes = {};
       VISOES.forEach(function (v) {
         var b = el('button', { type: 'button', class: 'portal-aba', text: v[1] });
@@ -552,7 +552,7 @@
     }
 
     /* ---------- To Do: tudo que tem data, na ordem em que acontece ---------- */
-    var TODO_DIAS_ATRAS = 14, TODO_DIAS_FRENTE = 60;
+    var alternarFormTodo = null, TODO_DIAS_ATRAS = 14, TODO_DIAS_FRENTE = 60;
     function valorSite(chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); }
     /* a hora de Júpiter do dia isoD mais perto de alvoMin (minutos desde a meia-noite); manha = só as que começam antes do meio-dia, se houver */
     function horaJupiter(iso, alvoMin, manha) {
@@ -623,15 +623,16 @@
       var dados = { fora: [], tarefas: [], feitos: {}, falhas: [] };
       /* tarefas dele: escreve, põe dia e hora se quiser, e marca quando concluir */
       var nova = el('input', { type: 'text', placeholder: 'O que fazer', 'aria-label': 'O que fazer', style: 'width:100%;box-sizing:border-box' });
-      var dia = el('input', { type: 'date' }), hora = el('input', { type: 'time' });
+      var dia = el('input', { type: 'date', style: 'height:44px;box-sizing:border-box;min-width:150px' }), hora = el('input', { type: 'time', style: 'height:44px;box-sizing:border-box;min-width:110px' });
       var botaoAdd = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), msg = el('p', { class: 'portal-msg' });
-      var opcoes = [], ligacao = null, ligar = el('input', { type: 'text', placeholder: 'Ligar a um vídeo, corte, série, projeto... (opcional)', 'aria-label': 'Ligar a', style: 'width:100%;box-sizing:border-box;margin-top:8px' });
+      var opcoes = [], ligacao = null, ligar = el('input', { type: 'text', placeholder: 'Ligar a (opcional)', 'aria-label': 'Ligar a', style: 'width:100%;box-sizing:border-box;margin-top:8px' });
       var escolhido = el('div', { style: 'display:none;margin:6px 0;font-size:14px' }), tirarLig = P.botaoApagar('Tirar a ligação');
       var caixaLigar = P.combo(ligar, function () { return opcoes; }, function (i) { ligacao = i; ligar.value = ''; escolhido.textContent = ''; escolhido.appendChild(document.createTextNode('Ligada a: ' + i.rotulo + ' ')); escolhido.appendChild(tirarLig); escolhido.style.display = ''; }, false);
       tirarLig.addEventListener('click', function () { ligacao = null; escolhido.style.display = 'none'; });
       opcoesDeLigacao().then(function (o) { opcoes = o; });
-      var form = el('div', { style: 'margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
+      var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
       var lista = el('div'); vista.appendChild(form); vista.appendChild(lista);
+      alternarFormTodo = function () { var abre = form.style.display === 'none'; form.style.display = abre ? '' : 'none'; if (abre) nova.focus(); };
       lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       function adicionar() {
         var t = nova.value.trim(); if (!t) { nova.focus(); return; }
@@ -639,7 +640,7 @@
         C.from('todo_tarefas').insert({ titulo: t, data: dia.value || null, hora: dia.value && hora.value ? hora.value : null, url: ligacao ? ligacao.url : null, url_rotulo: ligacao ? ligacao.rotulo : null }).select('*').single().then(function (r) {
           botaoAdd.disabled = false;
           if (r.error) { P.mensagem(msg, 'Não foi possível salvar.', 'erro'); return; }
-          dados.tarefas.push(r.data); nova.value = ''; dia.value = ''; hora.value = ''; ligacao = null; escolhido.style.display = 'none'; P.mensagem(msg, '', 'ok'); desenhar(); nova.focus();
+          dados.tarefas.push(r.data); nova.value = ''; dia.value = ''; hora.value = ''; ligacao = null; escolhido.style.display = 'none'; P.mensagem(msg, '', 'ok'); form.style.display = 'none'; desenhar();
         }, function () { botaoAdd.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); });
       }
       botaoAdd.addEventListener('click', adicionar);
@@ -682,11 +683,11 @@
           }
           var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:' + linhaFina });
           var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
-          var quando = el('span', { text: x.semData ? '' : (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'flex:none;min-width:' + (x.semData ? '0' : '70px') + ';font-size:13px;color:#1034A6' });
-          var texto = el('span', { style: 'flex:1;min-width:0;cursor:pointer' }, [el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: 'display:block;font-size:12px;opacity:.7' }) : null]);
+          var quando = x.semData ? null : el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'display:block;font-size:13px;color:#1034A6;margin-bottom:2px' });
+          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: 'display:block;font-size:12px;opacity:.7' }) : null]);
           var aberto = el('div', { class: 'barra-ocre' });
           texto.addEventListener('click', function () { if (x.url) { location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
-          linha.appendChild(barra); linha.appendChild(quando); linha.appendChild(texto);
+          linha.appendChild(barra); linha.appendChild(texto);
           if (x.tarefa) {
             var ap = P.botaoApagar('Apagar');
             ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (g) { if (g.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenhar(); }); });
