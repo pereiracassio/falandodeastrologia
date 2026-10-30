@@ -88,11 +88,15 @@ try {
   const agora = new Date(), inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   const fimAmanha = new Date(inicioHoje.getTime() + 2 * 86400000);
   let evs = await CalendarEvent.between(inicioHoje, fimAmanha);
-  const ruim = t => NAO_MOSTRAR.some(n => String(t || '').toLowerCase().indexOf(n) >= 0);
+  /* esconder agendas sem mexer no código: escreva os nomes no campo "Parameter" do widget, separados por vírgula (basta um pedaço do nome) */
+  const doParametro = String(args.widgetParameter || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  const ruim = t => NAO_MOSTRAR.concat(doParametro).some(n => String(t || '').toLowerCase().indexOf(n) >= 0);
   evs = evs.filter(e => !ruim(e.calendar && e.calendar.title) && (e.isAllDay || e.endDate > agora) && !(e.isAllDay && e.endDate <= agora));
   /* de dia todo primeiro dentro de cada dia, depois por horário */
   evs.sort((a, b) => { const da = new Date(a.startDate.getFullYear(), a.startDate.getMonth(), a.startDate.getDate()).getTime(), db = new Date(b.startDate.getFullYear(), b.startDate.getMonth(), b.startDate.getDate()).getTime(); return da - db || (b.isAllDay ? 1 : 0) - (a.isAllDay ? 1 : 0) || a.startDate - b.startDate; });
 
+  const porDia = {}; /* de dia todo: no máximo 2 por dia, para não tomar o lugar dos compromissos com horário */
+  evs = evs.filter(e => { if (!e.isAllDay) return true; const k = e.startDate.getFullYear() + '-' + e.startDate.getMonth() + '-' + e.startDate.getDate(); porDia[k] = (porDia[k] || 0) + 1; return porDia[k] <= 2; });
   const rotuloDia = d => mesmoDia(d, agora) ? 'Hoje' : mesmoDia(d, new Date(agora.getTime() + 86400000)) ? 'Amanhã' : '';
   const linhaEvento = async (pai, e, tam) => {
     const l = pai.addStack(); l.centerAlignContent();
