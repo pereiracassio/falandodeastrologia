@@ -730,8 +730,6 @@
       lista.forEach(function (v) {
         var nc = cortesDe(v.id).length;
         var miniatura = v.capa_url ? el('img', { class: 'prod-mini', src: v.capa_url, alt: '' }) : null;
-        var link = P.linkSeguro(v.link_youtube);
-        var assistir = link ? el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Ver no YouTube' }) : null;
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [
           miniatura,
           el('div', { style: 'flex:1;min-width:200px' }, [
@@ -742,11 +740,8 @@
             ]),
             barraTempo(v.criado_em, fimDoVideo(v), v.no_ar)
           ]),
-          chipsDaEtapa(v),
-          assistir
+          chipsDaEtapa(v)
         ]);
-        var abrir = botao('Abrir', function () { irPara('series', serieAberta, v.id); });
-        linha.appendChild(abrir);
         linha.addEventListener('click', function (e) { if (!/^(BUTTON|A)$/.test(e.target.tagName)) irPara('series', serieAberta, v.id); });
         vc.appendChild(linha);
       });
