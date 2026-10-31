@@ -406,7 +406,10 @@
         var presa = h1.getBoundingClientRect().top <= topo + 0.5, f = folha.getBoundingClientRect();
         fundo.style.display = presa ? 'block' : 'none';
         if (!presa) return;
-        fundo.style.left = f.left + 'px'; fundo.style.width = f.width + 'px'; fundo.style.height = (topoBarra + barra.offsetHeight) + 'px';
+        /* na semana, os dias (Dom 15, Seg 16...) também ficam presos embaixo da barra */
+        var cs = document.querySelector('.cab-semana'), baseCs = topoBarra + barra.offsetHeight, alturaPresa = baseCs;
+        if (cs) { cs.style.top = baseCs + 'px'; if (cs.getBoundingClientRect().top <= baseCs + 0.5) alturaPresa = baseCs + cs.offsetHeight; }
+        fundo.style.left = f.left + 'px'; fundo.style.width = f.width + 'px'; fundo.style.height = alturaPresa + 'px';
         /* o papiro da folha de cima = o papiro da folha de baixo, no mesmo lugar da tela */
         miolo.style.setProperty('--bw', folha.clientWidth + 'px'); miolo.style.setProperty('--bh', folha.clientHeight + 'px');
         miolo.style.setProperty('--bx', (f.left + folha.clientLeft - f.left) + 'px'); miolo.style.setProperty('--by', (f.top + folha.clientTop) + 'px');
@@ -526,7 +529,7 @@
       var todos = isos.map(segmentosDoDia), linhasMax = Math.max.apply(null, todos.map(function (s) { return s.length; }));
       var altura = linhasMax * H, modelo = (unico ? '78px ' : '') + 'repeat(' + isos.length + ', minmax(0, 1fr))';
       var caixa = el('div');
-      var cab = el('div', { style: 'display:grid;grid-template-columns:' + modelo }); if (unico) cab.appendChild(el('div'));
+      var cab = el('div', { style: 'display:grid;grid-template-columns:' + modelo + (unico ? '' : ';position:sticky;z-index:900;padding-bottom:4px') }); if (!unico) cab.className = 'cab-semana'; if (unico) cab.appendChild(el('div'));
       isos.forEach(function (iso) {
         var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:6px 0;font-family:var(--fonte-mao);color:#16233F;text-align:center' });
         b.appendChild(el('div', { text: SEM_CURTO[diaSem(iso)], style: 'font-size:11px' }));
@@ -537,6 +540,7 @@
         cab.appendChild(b);
       });
       caixa.appendChild(cab);
+      if (!unico) setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 0); /* a parte presa se refaz com o cabeçalho dos dias */
       if (evs.some(function (e) { return e.diaTodo; })) {
         var linhaTodo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina }); if (unico) linhaTodo.appendChild(el('div'));
         isos.forEach(function (iso) {
