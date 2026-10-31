@@ -430,7 +430,7 @@
       var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:0' }), botoes = {};
       VISOES.forEach(function (v) {
         var b = el('button', { type: 'button', class: 'portal-aba', text: v[1] });
-        b.addEventListener('click', function () { visao = v[0]; mudou(); });
+        b.addEventListener('click', function () { visao = v[0]; mudou(); window.scrollTo(0, 0); /* a aba nova abre no topo, não na altura da anterior */ });
         botoes[v[0]] = b; abas.appendChild(b);
       });
       var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' || visao === 'horas' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
