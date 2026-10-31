@@ -340,10 +340,10 @@
 
     /* 2) Divisão por área no mês: pizza com a porcentagem de cada área (e a legenda com o valor) */
     function graficoDivisao() {
-      var caixa = el('div', {}, [subtitulo('Divisão por área em ' + MESES[mes.mes] + ' de ' + mes.ano)]);
+      var caixa = el('div', {}, [subtitulo('Divisão por área · ' + rotuloEscopo())]);
       var tot = {}, soma = 0;
-      entradas.forEach(function (e) { var k = chaveArea(e); tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0); });
-      if (!(soma > 0)) { caixa.appendChild(vazio('Nenhuma entrada neste mês.')); return caixa; }
+      entradasDoEscopo().forEach(function (e) { var k = chaveArea(e); tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0); });
+      if (!(soma > 0)) { caixa.appendChild(vazio('Nenhuma entrada neste período.')); return caixa; }
       var ks = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
       var W = larguraGraf(), R = Math.min(W / 2 - 4, 130), cx = W / 2, cy = R + 4, H = cy + R + 4;
       var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 'Divisão por área em pizza' });
@@ -434,14 +434,17 @@
     function montarGraficos() {
       var raiz = el('div', { class: 'fin-graficos' });
       function desenhar() {
+        /* mudar o período não pode levar a tela para o topo: guarda a altura e a rolagem e devolve no mesmo lugar */
+        var yRolagem = window.pageYOffset, alturaAntes = raiz.offsetHeight;
+        if (alturaAntes) raiz.style.minHeight = alturaAntes + 'px';
         raiz.textContent = '';
-        /* período dos rankings: o mês aberto, o ano dele ou tudo */
+        /* período dos gráficos (a pizza, os rankings...) */: o mês aberto, o ano dele ou tudo */
         var botoes = [['mes', 'Mês'], ['ano', 'Ano'], ['tudo', 'Tudo']].map(function (o) {
           var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec' + (escopoGraf === o[0] ? ' fin-escopo-atual' : ''), text: o[1], 'aria-pressed': escopoGraf === o[0] ? 'true' : 'false' });
           b.addEventListener('click', function () { escopoGraf = o[0]; desenhar(); });
           return b;
         });
-        raiz.appendChild(el('p', { class: 'fin-escopo-rotulo fin-fixo', text: 'Período dos rankings' }));
+        raiz.appendChild(el('p', { class: 'fin-escopo-rotulo fin-fixo', text: 'Período dos gráficos' }));
         raiz.appendChild(el('div', { class: 'portal-acoes' }, botoes));
         raiz.appendChild(graficoDivisao());
         raiz.appendChild(graficoMeses());
@@ -449,6 +452,7 @@
         raiz.appendChild(graficoRanking('Clientes que mais geraram entrada', 'cliente_nome', 'Sem cliente', '#A03E25'));
         raiz.appendChild(graficoRanking('Forma de pagamento', 'forma_pagamento', 'Não informada', '#B5852F'));
         raiz.appendChild(graficoAcumulado());
+        if (alturaAntes) { window.scrollTo(0, yRolagem); requestAnimationFrame(function () { raiz.style.minHeight = ''; window.scrollTo(0, yRolagem); }); }
       }
       desenhar();
       return raiz;
