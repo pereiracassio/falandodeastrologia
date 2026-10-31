@@ -1061,11 +1061,37 @@
   /* Datas (início, data final...): UMA linha só (quebra no celular se não couber); cada caixa de data leva o nome PEQUENININHO embaixo
      (e, se tiver, o "Tirar a data" ao lado do nome), igual ao "Tirar a data". Nunca o nome ao lado da caixa. */
   function colunaData(input, legenda, extra) {
-    var pe = [el('span', { class: 'data-legenda-nome', text: legenda })];
-    if (extra) pe.push(extra);
     input.setAttribute('aria-label', legenda);
-    return el('div', { class: 'data-coluna' }, [input, el('div', { class: 'data-legenda' }, pe)]);
+    /* o nome em cima, em preto, como nos outros campos; o que acompanha ("Tirar a data") embaixo */
+    return el('div', { class: 'data-coluna' }, [el('span', { class: 'data-legenda-nome', text: legenda }), input, extra ? el('div', { class: 'data-legenda' }, [extra]) : null]);
   }
+  /* PADRÃO DE DATA EM TODO O SITE: o campo é só "dd / mm / aaaa" com um traço embaixo de cada parte, como data de caderno (vazio mostra dd / mm / aaaa apagado).
+     O campo de verdade (o do navegador) fica por cima, invisível e do mesmo tamanho: o toque vai nele, então o seletor do iPhone/iPad abre normalmente e nada muda para
+     quem lê/grava o valor (.value, change, input). Todo input de data da página vira assim sozinho, mesmo os criados depois. */
+  function dataCaderno(inp) {
+    if (inp.classList.contains('data-caderno-input') || !inp.parentNode) return inp;
+    inp.classList.add('data-caderno-input');
+    var dd = el('i', { class: 'dc-d' }), mm = el('i', { class: 'dc-m' }), aa = el('i', { class: 'dc-a' });
+    var texto = el('span', { class: 'data-caderno-texto', 'aria-hidden': 'true' }, [dd, el('b', { text: '/' }), mm, el('b', { text: '/' }), aa]);
+    var env = el('span', { class: 'data-caderno' });
+    function pinta() {
+      var v = String(inp.value || '').split('-'), ok = v.length === 3;
+      [[dd, ok ? v[2] : 'dd'], [mm, ok ? v[1] : 'mm'], [aa, ok ? v[0] : 'aaaa']].forEach(function (p) { p[0].textContent = p[1]; p[0].classList.toggle('vazio', !ok); });
+    }
+    inp.parentNode.insertBefore(env, inp); env.appendChild(texto); env.appendChild(inp);
+    var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value'); /* quando o código troca o .value, o desenho acompanha */
+    Object.defineProperty(inp, 'value', { configurable: true, get: function () { return desc.get.call(this); }, set: function (x) { desc.set.call(this, x); pinta(); } });
+    inp.addEventListener('input', pinta); inp.addEventListener('change', pinta);
+    new MutationObserver(function () { env.style.display = inp.style.display === 'none' ? 'none' : ''; }).observe(inp, { attributes: true, attributeFilter: ['style'] });
+    pinta();
+    return inp;
+  }
+  function todasDatas(raiz) { [].forEach.call((raiz.querySelectorAll ? raiz.querySelectorAll('input[type=date]:not(.data-caderno-input)') : []), dataCaderno); }
+  function ligarDatas() {
+    todasDatas(document);
+    new MutationObserver(function (muds) { muds.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) { if (n.tagName === 'INPUT' && n.type === 'date') dataCaderno(n); else todasDatas(n); } }); }); }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.body) ligarDatas(); else document.addEventListener('DOMContentLoaded', ligarDatas);
   /* barras de progresso e de tempo, SEMPRE neste desenho: "62% [barra] 12/23 dias" (o tanto de passos ou de dias no fim da linha) */
   function barraLinha(pct, cor, fim) {
     return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [

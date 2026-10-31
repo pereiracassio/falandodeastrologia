@@ -82,3 +82,14 @@ textarea.escrita-livre:focus{outline:none}
 .data-legenda{display:flex;align-items:center;flex-wrap:wrap;gap:0 10px;min-height:22px}
 .data-legenda-nome{font-size:12px;line-height:1.3;color:#16233F;opacity:.6;font-family:var(--fonte-mao,inherit);text-transform:none;letter-spacing:0;font-weight:400;padding:2px 0}
 .data-legenda .portal-apagar{padding:2px 0!important}
+
+/* data de caderno: dd / mm / aaaa com um traço embaixo de cada parte (o campo do navegador fica por cima, invisível; ver dataCaderno em portal.js) */
+.data-caderno{position:relative;display:inline-block;min-height:36px;margin:0 0 6px;vertical-align:top;cursor:pointer}
+.data-caderno-texto{display:inline-flex;align-items:baseline;gap:5px;font-family:var(--fonte-mao,inherit);font-size:17px;color:#16233F;line-height:36px;pointer-events:none;text-transform:none;letter-spacing:0}
+.data-caderno-texto i{font-style:normal;text-align:center;border-bottom:1.5px solid #16233F;padding:0 3px;line-height:1.25}
+.data-caderno-texto .dc-d,.data-caderno-texto .dc-m{min-width:2.4ch}.data-caderno-texto .dc-a{min-width:4.6ch}
+.data-caderno-texto i.vazio{color:rgba(22,35,63,.4);border-bottom-color:rgba(22,35,63,.4)}
+.data-caderno-texto b{font-weight:400}
+.data-caderno:focus-within .data-caderno-texto i{border-bottom-color:#A03E25}
+.data-caderno input.data-caderno-input,.portal .data-caderno input.data-caderno-input{position:absolute!important;left:0;top:0;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;opacity:0;font-size:16px!important;background:transparent!important;-webkit-appearance:none;appearance:none;cursor:pointer}
+.data-legenda-nome{font-size:16px!important;opacity:1!important;color:#16233F!important;padding:0 0 4px!important}
