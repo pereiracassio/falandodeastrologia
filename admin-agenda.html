@@ -659,18 +659,24 @@
       return js[0].ini;
     }
     function itensDaProducao() {
-      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,no_ar'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok')]).then(function (r) {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,no_ar,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
         var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=cortes' : ''); };
+        /* as mesmas duas barras da Produção: etapas feitas e o tempo até a data */
+        var ETV = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina', 'seo_ok', 'no_ar', 'cortes_feitos', 'blog_ok'], ETC = ['corte_ok', 'legenda_ok', 'seo_ok', 'shorts', 'instagram', 'tiktok'];
+        var barras = function (item, lista, etapas, criado, fim) {
+          var feitas = etapas.filter(function (k) { return item[k]; }).length, tempo = criado ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null;
+          return [P.barraLinha(Math.floor(feitas * 100 / etapas.length), null, feitas + '/' + etapas.length), tempo].filter(Boolean);
+        };
         videos.forEach(function (v) {
           var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
           var nome = (v.numero ? 'Vídeo ' + v.numero + ', ' : 'Vídeo, ') + (v.titulo || 'sem título');
-          saida.push({ quando: horaJupiter(d, 16 * 60, false), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', url: link(v), cor: '#1034A6' });
+          saida.push({ quando: horaJupiter(d, 16 * 60, false), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, videos, ETV, v.criado_em, d) });
         });
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
           var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
-          saida.push({ quando: horaJupiter(c.data, 9 * 60, true), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero || ''), sub: 'postar: ' + falta + ' · Júpiter', url: link(v, true), cor: '#1034A6' });
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero || ''), sub: 'postar: ' + falta + ' · Júpiter', url: link(v, true), cor: '#1034A6', barras: barras(c, cortes, ETC, c.criado_em, c.data) });
         });
         return saida;
       }, function () { return []; });
@@ -802,10 +808,12 @@
           var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
           var plT = !x.semData && isFinite(x.quando) ? (x.diaTodo ? planetaDoDia(x.quando, 28, false) : planetaDoInstante(x.quando, 28, false)) : null;
           var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:#1034A6' })]);
-          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: 'display:block;font-size:12px;opacity:.7' }) : null]);
+          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.barras || []));
           var aberto = el('div', { class: 'barra-ocre' });
           texto.addEventListener('click', function () { if (x.url) { location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
-          linha.appendChild(barra); linha.appendChild(texto);
+          linha.appendChild(barra);
+          if (x.capa) linha.appendChild(el('img', { src: x.capa, alt: '', style: 'width:96px;height:54px;object-fit:cover;border:1px solid #1F5FA3;flex:none' })); /* a capinha do vídeo, se tiver */
+          linha.appendChild(texto);
           if (plT) linha.appendChild(plT); /* no canto direito, grande, como no Dia */
           if (x.tarefa) {
             var ap = P.botaoApagar('Apagar');
