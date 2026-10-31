@@ -663,7 +663,6 @@
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
         var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
         /* as mesmas duas barras da Produção: etapas feitas e o tempo até a data */
-        var ETV = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina', 'seo_ok', 'no_ar', 'cortes_feitos', 'blog_ok'], ETC = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
         /* a mesma barra de passos da Produção (um pedaço por etapa, o feito em azul com o nome vazado), só para ver, e a barra de tempo embaixo */
         var ETV = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
         var ETC = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
