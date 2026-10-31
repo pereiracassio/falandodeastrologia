@@ -26,8 +26,13 @@
     /* overflow-x:hidden do home.css faz o body virar "caixa de rolagem" e o sticky não gruda; clip corta igual, sem isso */
     html,body{overflow-x:clip;overflow-y:visible}
     .barra-agenda h2{font-size:12px!important;line-height:1.2!important;margin:0!important}
-    .barra-agenda{position:sticky;top:0;z-index:900;margin:0 calc(-1*var(--moldura-ph));padding:calc(130px*var(--moldura-m) - 8px) var(--moldura-ph) 4px;
+    /* o título Agenda e a barra de visões prendem no topo quando o título chega na altura do menu e do sino; a agenda corre por baixo */
+    h1.portal-titulo{position:sticky;z-index:901}
+    .barra-agenda{position:sticky;z-index:900;margin:0 calc(-1*var(--moldura-ph));padding:4px var(--moldura-ph)}
+    h1.portal-titulo::before,.barra-agenda::before{content:"";position:absolute;z-index:-1;left:calc(-1*var(--moldura-ph));right:calc(-1*var(--moldura-ph));bottom:0;top:0;display:none;
       background:color-mix(in srgb,var(--papiro-topo,#ecdcae) 80%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+    h1.portal-titulo.presa::before{display:block;top:calc(-1*var(--topo-h1,0px))}
+    .barra-agenda.presa::before{display:block;left:0;right:0}
   </style>
 </head>
 <body>
@@ -386,6 +391,22 @@
     function bloco(texto, estilo) { var d = el('div', { text: texto }); d.style.cssText = estilo; return d; }
 
     /* ---------- tela com as quatro visões ---------- */
+    /* título (altura do menu e do sino) + barra de visões presos no topo; sem sticky puro porque a posição depende de onde o menu está */
+    function prenderTitulo(corpo) {
+      var h1 = document.querySelector('h1.portal-titulo'), barra = corpo.querySelector('.barra-agenda');
+      if (!h1 || !barra) return;
+      function medir() {
+        var t = document.querySelector('.sidemenu-toggle'), r = t ? t.getBoundingClientRect() : null, alt = h1.offsetHeight;
+        var topo = r && r.height ? Math.max(0, r.top + r.height / 2 - alt / 2) : 0;
+        h1.style.top = topo + 'px'; h1.style.setProperty('--topo-h1', topo + 'px'); barra.style.top = (topo + alt) + 'px';
+        h1.classList.toggle('presa', h1.getBoundingClientRect().top <= topo + 0.5);
+        barra.classList.toggle('presa', barra.getBoundingClientRect().top <= topo + alt + 0.5);
+      }
+      var espera = false;
+      function rolou() { if (espera) return; espera = true; requestAnimationFrame(function () { espera = false; medir(); }); }
+      window.addEventListener('scroll', rolou, { passive: true }); window.addEventListener('resize', medir);
+      medir(); setTimeout(medir, 600); setTimeout(medir, 2000); /* o menu entra depois da página */
+    }
     function montar(corpo) {
       var ent = P.estado.ler();
       ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
@@ -406,7 +427,7 @@
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
       hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
       var nav = el('div', { style: 'display:flex;align-items:center;gap:4px;margin:6px 0 6px' }, [ant, titulo, prox, hoje, novo]);
-      corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */, nav])); corpo.appendChild(vista);
+      corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */, nav])); corpo.appendChild(vista); prenderTitulo(corpo);
       /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
       var encaixePronto = false;
       function mostrarEncaixe() { /* o encaixe agora abre ao tocar numa hora da aba Horas */ }
