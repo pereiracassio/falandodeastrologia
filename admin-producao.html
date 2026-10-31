@@ -578,7 +578,7 @@
       if (!itens.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nada em andamento.' }));
       itens.forEach(function (it) {
         var linha = el('div', { class: 'prod-linha', role: 'button', tabindex: '0', style: 'display:block;cursor:pointer' }, [
-          el('span', { class: 'prod-titulo', text: it.nome }),
+          el('span', { class: 'prod-titulo' }, [document.createTextNode(it.nome), el('span', { class: 'prod-data', text: ' · ' + comDia(it.data) })]), /* a data prevista de ir ao ar, logo depois do título */
           el('span', { class: 'prod-sub', text: it.sub }),
           barraProx(it.pct, null, it.rotulo)
         ]);
