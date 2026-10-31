@@ -21,6 +21,14 @@
   <link rel="stylesheet" href="portal.css?v=22">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=18">
+  <style>
+    /* como no Google Agenda: as visões e a navegação ficam presas no topo e a agenda corre por baixo */
+    /* overflow-x:hidden do home.css faz o body virar "caixa de rolagem" e o sticky não gruda; clip corta igual, sem isso */
+    html,body{overflow-x:clip;overflow-y:visible}
+    .barra-agenda h2{font-size:12px!important;line-height:1.2!important;margin:0!important}
+    .barra-agenda{position:sticky;top:0;z-index:900;margin:0 calc(-1*var(--moldura-ph));padding:calc(130px*var(--moldura-m) - 8px) var(--moldura-ph) 4px;
+      background:color-mix(in srgb,var(--papiro-topo,#ecdcae) 80%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  </style>
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -250,7 +258,7 @@
       if (visao === 'horas') return rotuloDia(ancora);
       var a = ancora.split('-');
       if (visao === 'dia') return rotuloDia(ancora);
-      if (visao === 'semana') { var ini = somaDias(ancora, -diaSem(ancora)), fim = somaDias(ini, 6); return curto(ini) + ' a ' + curto(fim) + ' de ' + fim.slice(0, 4); }
+      if (visao === 'semana') { var ini = somaDias(ancora, -diaSem(ancora)), fim = somaDias(ini, 6); return curto(ini) + ' a ' + curto(fim) + (fim.slice(0, 4) === isoDia(Date.now()).slice(0, 4) ? '' : ' de ' + fim.slice(0, 4)); }
       if (visao === 'mes') return MESES[+a[1] - 1] + ' de ' + a[0];
       if (visao === 'lista') return curto(ancora) + ' a ' + curto(somaDias(ancora, 30));
       return a[0];
@@ -300,7 +308,7 @@
       acoes.push(fechar);
       var topo = el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:10px' }, [el('h2', { text: e.titulo, style: 'margin:0;flex:1;color:#A03E25' })]);
       if (e.editavel) {
-        var lapis = el('button', { type: 'button', title: 'Editar', 'aria-label': 'Editar', text: '✎', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#1034A6;font-size:28px;line-height:1;cursor:pointer' });
+        var lapis = el('button', { type: 'button', title: 'Editar', 'aria-label': 'Editar', text: '✎', style: 'flex:none;width:34px;height:34px;padding:0;background:transparent;border:0;border-radius:0;color:#1034A6;font-size:28px;line-height:1;cursor:pointer' });
         lapis.addEventListener('click', function () { formulario(destino, e, {}); });
         topo.appendChild(lapis);
       }
@@ -383,22 +391,22 @@
       ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
       if (['horas', 'dia', 'semana', 'mes', 'ano', 'lista', 'todo'].indexOf(ent.v) >= 0) visao = ent.v;
       areaForm = el('div');
-      var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;font-size:16px' }), encaixe = el('div');
+      var vista = el('div'), titulo = el('h2', { style: 'margin:0;text-align:center;flex:1;min-width:0;font-size:12.5px;line-height:1.15' }), encaixe = el('div');
       var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
       novo.addEventListener('click', function () { if (visao === 'todo') { if (alternarFormTodo) alternarFormTodo(); return; } formulario(abrirFolha(), null, { dia: visao === 'dia' ? ancora : undefined }); });
-      var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:14px' }), botoes = {};
+      var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:0' }), botoes = {};
       VISOES.forEach(function (v) {
         var b = el('button', { type: 'button', class: 'portal-aba', text: v[1] });
         b.addEventListener('click', function () { visao = v[0]; mudou(); });
         botoes[v[0]] = b; abas.appendChild(b);
       });
       var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' || visao === 'horas' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
-      var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo' });
+      var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior', style: 'font-size:24px;padding:0 6px;line-height:1' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo', style: 'font-size:24px;padding:0 6px;line-height:1' });
       var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' });
       ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
       hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
-      var nav = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:6px 0 12px' }, [ant, titulo, prox, hoje, novo]);
-      corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas]))); /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */ corpo.appendChild(nav); corpo.appendChild(vista);
+      var nav = el('div', { style: 'display:flex;align-items:center;gap:4px;margin:6px 0 6px' }, [ant, titulo, prox, hoje, novo]);
+      corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */, nav])); corpo.appendChild(vista);
       /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
       var encaixePronto = false;
       function mostrarEncaixe() { /* o encaixe agora abre ao tocar numa hora da aba Horas */ }
