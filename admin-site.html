@@ -36,7 +36,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=126"></script>
+  <script src="portal.js?v=127"></script>
   <script src="menu.js?v=51" defer></script>
   <script>
   (function () {
@@ -286,8 +286,8 @@
       Object.keys(site).filter(function (k) { return !/teste/i.test(k); }).forEach(function (k) {
         if (!tem[site[k].titulo.toLowerCase()]) lista.push({ nome: site[k].titulo, valor: site[k].centavos / 100, area_id: astro ? astro.id : null });
       });
-      /* a mentoria não passa pelo carrinho, mas é lançada sempre: nome e valor (R$ 335,00 por mês) sempre iguais, sem digitar */
-      if (!tem['acompanhamento prático de astrologia']) { var mentoria = areas.filter(function (a) { return /mentoria/i.test(a.nome); })[0] || astro; lista.push({ nome: 'Acompanhamento Prático de Astrologia', valor: 335, area_id: mentoria ? mentoria.id : null }); }
+      /* a mentoria é um serviço da área Astrologia; não passa pelo carrinho, mas é lançada sempre: nome e valor (R$ 335,00 por mês) sempre iguais, sem digitar */
+      if (!tem['acompanhamento prático de astrologia']) { lista.push({ nome: 'Acompanhamento Prático de Astrologia', valor: 335, area_id: astro ? astro.id : null }); }
       return lista;
     }
     function carregarFin() {
