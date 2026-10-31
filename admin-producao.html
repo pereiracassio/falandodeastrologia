@@ -1100,7 +1100,15 @@
         var tx = el('textarea', { rows: '4', placeholder: 'Texto do corte (descrição, legenda)' }); tx.value = c.texto || '';
         var tg = el('textarea', { rows: '3', placeholder: 'tag1, tag2, tag3' }); tg.value = c.tags || '';
         var tempoC = null;
-        function agendarCorte() { clearTimeout(tempoC); tempoC = setTimeout(function () { gravar('prod_cortes', cortes, c, { texto: tx.value, tags: tg.value.trim() || null }); }, 1000); }
+        function agendarCorte() {
+          clearTimeout(tempoC);
+          tempoC = setTimeout(function () {
+            var campos = { texto: tx.value, tags: tg.value.trim() || null };
+            /* texto do corte e tags do YouTube Shorts preenchidos: o SEO do corte se marca sozinho (e, como sempre, marca Corte e Legenda junto) */
+            if (!c.seo_ok && tx.value.trim() && tg.value.trim()) { campos.seo_ok = true; (ANTES_NO_CORTE.seo_ok || []).forEach(function (k) { if (!c[k]) campos[k] = true; }); Object.keys(campos).forEach(function (k) { c[k] = campos[k]; }); pintarCorte(c); }
+            gravar('prod_cortes', cortes, c, campos);
+          }, 1000);
+        }
         tx.addEventListener('input', agendarCorte); tg.addEventListener('input', agendarCorte);
         var jupC = el('div', { style: 'margin:6px 0 4px;color:#1034A6;font-size:16px;line-height:1.5' });
         var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
