@@ -829,6 +829,13 @@
       blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
       cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
       cartao.appendChild(blocoPublico);
+      /* datas limite opcionais das duas etapas que sobram depois que o vídeo vai ao YouTube; sem data, o vídeo fica no fim do To Do, sem data */
+      var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
+      var dataBlog = el('input', { type: 'date' }); dataBlog.value = v.data_blog || '';
+      var tirarCortes = P.botaoApagar('Tirar a data'), tirarBlog = P.botaoApagar('Tirar a data');
+      tirarCortes.addEventListener('click', function () { dataCortes.value = ''; dataCortes.dispatchEvent(new Event('change')); });
+      tirarBlog.addEventListener('click', function () { dataBlog.value = ''; dataBlog.dispatchEvent(new Event('change')); });
+      cartao.appendChild(P.linhaDatas([P.colunaData(dataCortes, 'Data limite dos cortes (opcional)', tirarCortes), P.colunaData(dataBlog, 'Data limite do blog (opcional)', tirarBlog)]));
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
@@ -986,7 +993,7 @@
       var tempoSalvar = null;
       function salvarSozinho() {
         var lk = link.value.trim(), okLink = !lk || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk);
-        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, data_cortes: dataCortes.value || null, data_blog: dataBlog.value || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
         if (titulo.value.trim()) c.titulo = titulo.value.trim(); /* título é obrigatório no banco: vazio não apaga o que já estava */
         if (okLink) c.link_youtube = lk || null;
         if (usaBlocos) c.roteiro_blocos = rb;
@@ -1001,7 +1008,7 @@
           marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
         }
       });
-      [titulo, capaTexto, link, numero, data, dataPublico, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+      [titulo, capaTexto, link, numero, data, dataPublico, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
         c.addEventListener('change', agendarSalvar);
         c.addEventListener('input', marcarSeoSePronto);

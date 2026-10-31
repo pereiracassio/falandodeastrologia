@@ -659,16 +659,22 @@
       return js[0].ini;
     }
     function itensDaProducao() {
-      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,no_ar,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
         var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=cortes' : ''); };
         /* as mesmas duas barras da Produção: etapas feitas e o tempo até a data */
         var ETV = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina', 'seo_ok', 'no_ar', 'cortes_feitos', 'blog_ok'], ETC = ['corte_ok', 'legenda_ok', 'seo_ok', 'shorts', 'instagram', 'tiktok'];
         var barras = function (item, lista, etapas, criado, fim) {
-          var feitas = etapas.filter(function (k) { return item[k]; }).length, tempo = criado ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null;
+          var feitas = etapas.filter(function (k) { return item[k]; }).length, tempo = criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null;
           return [P.barraLinha(Math.floor(feitas * 100 / etapas.length), null, feitas + '/' + etapas.length), tempo].filter(Boolean);
         };
         videos.forEach(function (v) {
+          /* já no YouTube, mas ainda falta fazer os cortes e depois colocar no blog: fica na lista, sem data enquanto ele não puser a data limite */
+          if (v.no_ar && !(v.cortes_feitos && v.blog_ok)) {
+            var faltaCortes = !v.cortes_feitos, dl = (faltaCortes ? v.data_cortes : v.data_blog) || '';
+            saida.push({ quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? 'Vídeo ' + v.numero + ', ' : 'Vídeo, ') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, videos, ETV, v.criado_em, dl) });
+            return;
+          }
           var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
           var nome = (v.numero ? 'Vídeo ' + v.numero + ', ' : 'Vídeo, ') + (v.titulo || 'sem título');
           saida.push({ quando: horaJupiter(d, 16 * 60, false), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, videos, ETV, v.criado_em, d) });
