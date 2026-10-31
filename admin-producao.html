@@ -827,19 +827,25 @@
       function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
       data.addEventListener('change', atualizarJupiter);
       var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
-      /* todas as datas são campos como os outros: o nome em cima, e as que andam juntas na mesma linha */
-      var blocoPublico = campo('Fica público em', dataPublico);
-      blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
-      cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
-      cartao.appendChild(fila([1, 1], [campo('Disponível para membros', data), blocoPublico]));
-      cartao.appendChild(jupV);
-      /* datas limite opcionais das duas etapas que sobram depois que o vídeo vai ao YouTube; sem data, o vídeo fica no fim do To Do, sem data */
       var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
       var dataBlog = el('input', { type: 'date' }); dataBlog.value = v.data_blog || '';
+      [data, dataPublico, dataCortes, dataBlog].forEach(function (c) { c.style.cssText = 'width:160px;min-width:160px;margin:0 0 6px'; });
+      var blocoPublico = campo('Fica público em', dataPublico);
+      blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
       var tirarCortes = P.botaoApagar('Tirar a data'), tirarBlog = P.botaoApagar('Tirar a data');
       tirarCortes.addEventListener('click', function () { dataCortes.value = ''; dataCortes.dispatchEvent(new Event('change')); });
       tirarBlog.addEventListener('click', function () { dataBlog.value = ''; dataBlog.dispatchEvent(new Event('change')); });
-      cartao.appendChild(fila([1, 1], [campo('Data limite dos cortes (opcional)', el('div', {}, [dataCortes, tirarCortes])), campo('Data limite do blog (opcional)', el('div', {}, [dataBlog, tirarBlog]))]));
+      /* tudo na MESMA linha: público/membros, disponível para membros, fica público em e as duas datas limite (opcionais; sem data o vídeo fica no fim do To Do).
+         No celular quebra em duas: as três primeiras em cima, as datas limite embaixo. O horário de Júpiter vem depois. */
+      var linhaGrupo = function (filhos) { return el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 16px;align-items:flex-start' }, filhos); };
+      cartao.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 28px;align-items:flex-start;margin:0 0 6px' }, [
+        linhaGrupo([
+          campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })),
+          campo('Disponível para membros', data), blocoPublico
+        ]),
+        linhaGrupo([campo('Data limite dos cortes', el('div', {}, [dataCortes, tirarCortes])), campo('Data limite do blog', el('div', {}, [dataBlog, tirarBlog]))])
+      ]));
+      cartao.appendChild(jupV);
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
