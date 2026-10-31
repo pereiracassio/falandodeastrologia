@@ -414,7 +414,7 @@
       var caixa = el('div', {}, [subtitulo(titulo + ' · ' + rotuloEscopo())]);
       var tot = {}, soma = 0;
       /* serviços: o nome antigo (cadastrado no serviço, em Configurações) conta no nome atual; maiúscula e minúscula não diferenciam */
-      var nomeAtual = {}, primeiroVisto = {};
+      var nomeAtual = {}, primeiroVisto = {}, porAreaDe = {};
       if (campo === 'produto') servicosCad.forEach(function (sv) {
         nomeAtual[String(sv.nome).trim().toLowerCase()] = sv.nome;
         String(sv.outros_nomes || '').split('\n').forEach(function (a) { a = a.trim().toLowerCase(); if (a) nomeAtual[a] = sv.nome; });
@@ -423,10 +423,17 @@
         var k = String(e[campo] || '').trim() || semNome;
         if (campo === 'produto' && k !== semNome) { var baixo = k.toLowerCase(); k = nomeAtual[baixo] || primeiroVisto[baixo] || (primeiroVisto[baixo] = k); }
         tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0);
+        var ka = chaveArea(e); (porAreaDe[k] = porAreaDe[k] || {})[ka] = (porAreaDe[k][ka] || 0) + Number(e.valor || 0);
       });
+      /* serviço: a barra leva a cor da área dele (a área onde ele mais rendeu), como no gráfico de áreas */
+      function corDoServico(k) {
+        var m = porAreaDe[k]; if (!m) return cor;
+        var melhor = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; })[0];
+        return melhor === '_sem' ? COR_CINZA : corDaArea(melhor);
+      }
       var ks = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
       if (!ks.length) { caixa.appendChild(vazio('Nenhuma entrada neste período.')); return caixa; }
-      var linhas = ks.slice(0, 8).map(function (k) { return { nome: k, v: tot[k] }; });
+      var linhas = ks.slice(0, 8).map(function (k) { return { nome: k, v: tot[k], cor: campo === 'produto' ? corDoServico(k) : cor }; });
       if (ks.length > 8) linhas.push({ nome: 'Outros (' + (ks.length - 8) + ')', v: ks.slice(8).reduce(function (s, k) { return s + tot[k]; }, 0) });
       var W = larguraGraf(), alt = 46, H = linhas.length * alt + 4, max = linhas[0].v;
       linhas.forEach(function (l) { if (l.v > max && l.nome.indexOf('Outros') !== 0) max = l.v; });
@@ -435,10 +442,15 @@
       linhas.forEach(function (l, i) {
         var y = 2 + i * alt, w = Math.max(2, areaBarra * l.v / Math.max(max, l.v));
         svg.appendChild(sv('text', { x: 0, y: y + 14, class: 'fin-rotulo-graf' }, l.nome));
-        svg.appendChild(sv('rect', { x: 0, y: y + 20, width: w, height: 16, fill: l.nome.indexOf('Outros') === 0 ? COR_CINZA : cor }));
+        svg.appendChild(sv('rect', { x: 0, y: y + 20, width: w, height: 16, fill: l.nome.indexOf('Outros') === 0 ? COR_CINZA : l.cor }));
         svg.appendChild(sv('text', { x: w + 6, y: y + 33, class: 'fin-valor-graf fin-valor-lado' }, moeda(l.v) + ' · ' + Math.round(l.v / soma * 100) + '%'));
       });
       caixa.appendChild(svg);
+      if (campo === 'produto') { /* quais áreas as cores representam */
+        var usadas = {}; linhas.forEach(function (l) { if (l.cor) usadas[l.cor] = true; });
+        var chaves = areas.map(function (a) { return a.id; }).concat(['_sem']).filter(function (k) { return usadas[k === '_sem' ? COR_CINZA : corDaArea(k)]; });
+        if (chaves.length) caixa.appendChild(legenda(chaves.map(function (k) { return { nome: nomeDaArea(k), cor: k === '_sem' ? COR_CINZA : corDaArea(k) }; })));
+      }
       return caixa;
     }
 
