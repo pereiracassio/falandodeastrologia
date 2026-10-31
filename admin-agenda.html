@@ -436,8 +436,8 @@
       var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' || visao === 'horas' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
       var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior', style: 'font-size:24px;padding:0 6px;line-height:1' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo', style: 'font-size:24px;padding:0 6px;line-height:1' });
       var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' });
-      ant.addEventListener('click', function () { passo(-1); }); prox.addEventListener('click', function () { passo(1); });
-      hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); });
+      ant.addEventListener('click', function () { passo(-1); window.scrollTo(0, 0); }); prox.addEventListener('click', function () { passo(1); window.scrollTo(0, 0); });
+      hoje.addEventListener('click', function () { ancora = isoDia(Date.now()); mudou(); window.scrollTo(0, 0); });
       var nav = el('div', { style: 'display:flex;align-items:center;gap:4px;margin:6px 0 6px' }, [ant, titulo, prox, hoje, novo]);
       corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */, nav])); corpo.appendChild(vista); prenderTitulo(corpo);
       /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
