@@ -564,7 +564,7 @@
         if (v.no_ar) return;
         var feitas = ETAPAS.filter(function (e) { return v[e[0]]; }).length, fim = fimDoVideo(v);
         if (!fim) return; /* entra tudo que tem data, tenha etapa marcada ou não */
-        itens.push({ data: fim, pct: Math.floor(feitas * 100 / ETAPAS.length), rotulo: feitas + '/' + ETAPAS.length, nome: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: (serieDe(v) ? serieDe(v).nome : 'Vídeo solto'), tempo: tempoProx(v.criado_em, fim),
+        itens.push({ video: v, data: fim, pct: Math.floor(feitas * 100 / ETAPAS.length), rotulo: feitas + '/' + ETAPAS.length, nome: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: (serieDe(v) ? serieDe(v).nome : 'Vídeo solto'), tempo: tempoProx(v.criado_em, fim),
           abrir: function () { irPara('series', v.serie_id || 'soltos', v.id); } });
       });
       cortes.forEach(function (c) {
@@ -584,7 +584,7 @@
         var linha = el('div', { class: 'prod-linha', role: 'button', tabindex: '0', style: 'display:block;cursor:pointer' }, [
           el('span', { class: 'prod-titulo' }, [document.createTextNode(it.nome), el('span', { class: 'prod-data', text: ' · ' + comDia(it.data) })]), /* a data prevista de ir ao ar, logo depois do título */
           el('span', { class: 'prod-sub', text: it.sub }),
-          it.corte ? chipsDoCorte(it.corte) : barraProx(it.pct, null, it.rotulo)
+          it.corte ? chipsDoCorte(it.corte) : it.video ? chipsDaEtapa(it.video) : barraProx(it.pct, null, it.rotulo)
         ]);
         if (it.tempo) linha.appendChild(barraProx(it.tempo.pct, it.tempo.cor, it.tempo.texto));
         linha.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('button')) return; it.abrir(); });
@@ -605,6 +605,7 @@
         porSerie[k].forEach(function (v) {
           var linha = el('div', { class: 'prod-linha' }, [el('span', { class: 'prod-titulo', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') })]);
           linha.appendChild(chip('Já está no blog', false, function () { gravar('prod_videos', videos, v, { blog_ok: true }).then(tela); }));
+          linha.appendChild(chipsDaEtapa(v)); var tBlog = barraTempo(v.criado_em, v.data_blog, false); if (tBlog) linha.appendChild(tBlog);
           cartao.appendChild(linha);
         });
       });
@@ -1192,7 +1193,7 @@
         if (!vs.length && !cs.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nada marcado neste dia.' }));
         vs.forEach(function (v) {
           cartao.appendChild(el('div', { class: 'prod-linha' }, [
-            el('div', {}, [el('span', { class: 'prod-titulo', text: nomeVideo(v) }), el('span', { class: 'prod-sub', text: 'vídeo grande · ' + rotuloAcesso(v) + (v.no_ar ? ' · já está no ar' : '') })]),
+            el('div', { style: 'flex:1;min-width:200px' }, [el('span', { class: 'prod-titulo', text: nomeVideo(v) }), el('span', { class: 'prod-sub', text: 'vídeo grande · ' + rotuloAcesso(v) + (v.no_ar ? ' · já está no ar' : '') }), chipsDaEtapa(v), barraTempo(v.criado_em, fimDoVideo(v), v.no_ar)]),
             botao('Abrir', function () { irPara('series', v.serie_id || 'soltos', v.id); })
           ]));
         });
