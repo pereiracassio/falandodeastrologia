@@ -1045,7 +1045,7 @@
       var s = (window.Carrinho && window.Carrinho.servicos) || {};
       site = Object.keys(s).filter(function (k) { return !/teste/i.test(k); }).map(function (k) { return { nome: s[k].titulo, valor: s[k].centavos / 100 }; });
     } catch (e) { /* sem os do site */ }
-    site.push({ nome: 'Acompanhamento Prático de Astrologia', valor: null }); /* a mentoria não está no carrinho, mas é lançada sempre: o nome sempre igual, sem digitar */
+    site.push({ nome: 'Acompanhamento Prático de Astrologia', valor: 335 }); /* a mentoria não está no carrinho, mas é lançada sempre: nome e valor (R$ 335,00 por mês, como em mentoria.html) sem digitar */
     return client.from('fin_servicos').select('nome,valor').order('nome').then(function (r) {
       var cad = (!r.error && r.data) || [], tem = {};
       cad.forEach(function (x) { tem[String(x.nome).toLowerCase()] = true; });
