@@ -375,3 +375,7 @@ Toda vez que um campo de data entra num lugar, o mesmo problema volta e o astró
 - **Redesenhar a tela com o seletor aberto fecha o seletor.** Não mexer no DOM do campo enquanto a pessoa escolhe.
 - O Playwright daqui NÃO reproduz o seletor do iPad: não dizer que "testei" um campo de data; o teste real é no iPad dele.
 - Caso concreto: busca por data da Liberação Zodiacal no Astro Hellenic (três rodadas até ficar com tamanho mínimo + botão **Ir**).
+
+## Papiro: NUNCA desfocar, sombrear, escurecer nem clarear; peça presa no topo = mesmo papiro alinhado (31/10/2026) — bronca do astrólogo
+
+Quando ele manda print do Google Agenda dizendo "fica preso", o pedido é o COMPORTAMENTO (travar), não o visual (desfoque/translúcido). **Proibido** `backdrop-filter`, blur, sombra, transparência ou cor nova no papiro. Peça presa no topo (`position: sticky`) usa o MESMO `var(--papiro-fundo)` da folha, com `background-size`/`background-position` calculados em JS para coincidir com o papiro da folha (ver `prenderTitulo` em `admin-agenda.html`): fica invisível, sem faixa. Nesta página `html,body{overflow-x:clip}` é necessário porque o `overflow-x:hidden` do `home.css` impede o sticky.
