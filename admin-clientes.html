@@ -251,8 +251,16 @@
           }).then(function (r) {
             virarAluno.disabled = false;
             if (r.error) { P.mensagem(msgAluno, P.traduzErro(r.error.message), 'erro'); return; }
-            if (avisoAcesso) { P.mensagem(msgAluno, 'Aluno criado, mas o acesso não foi criado (' + avisoAcesso + ').', 'erro'); setTimeout(function () { irParaAluno(r.data.id); }, 6000); return; }
-            irParaAluno(r.data.id);
+            var cod = codInput.value.trim() || cliente.codigo || ''; /* o código do aluno é o mesmo do cliente */
+            var pedidoCod = cod ? P.client.from('aluno_codigos').insert({ aluno_id: r.data.id, codigo: cod }) : Promise.resolve({});
+            Promise.resolve(pedidoCod).then(function (rc) {
+              var falhas = [];
+              if (avisoAcesso) falhas.push('o acesso não foi criado (' + avisoAcesso + ')');
+              if (rc && rc.error) falhas.push('o código não foi salvo (' + P.traduzErro(rc.error.message) + ')');
+              if (!falhas.length) { irParaAluno(r.data.id); return; }
+              P.mensagem(msgAluno, 'Aluno criado, mas ' + falhas.join(' e ') + '.', 'erro');
+              setTimeout(function () { irParaAluno(r.data.id); }, 6000);
+            });
           });
         });
       });
