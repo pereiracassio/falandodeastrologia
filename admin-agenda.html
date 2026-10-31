@@ -661,7 +661,7 @@
     function itensDaProducao() {
       return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
-        var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=cortes' : ''); };
+        var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
         /* as mesmas duas barras da Produção: etapas feitas e o tempo até a data */
         var ETV = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina', 'seo_ok', 'no_ar', 'cortes_feitos', 'blog_ok'], ETC = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
         var barras = function (item, lista, etapas, criado, fim) {
@@ -689,7 +689,7 @@
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
           var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
-          saida.push({ quando: horaJupiter(c.data, 9 * 60, true), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero || ''), sub: 'postar: ' + falta + ' · Júpiter', url: link(v, true), cor: '#1034A6', barras: barrasCorte(c, c.data) });
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero || ''), sub: 'postar: ' + falta + ' · Júpiter', url: link(v, c.id), cor: '#1034A6', barras: barrasCorte(c, c.data) });
         });
         return saida;
       }, function () { return []; });

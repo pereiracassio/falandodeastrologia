@@ -317,7 +317,7 @@
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
           var e = P.estado.ler();
-          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if ((e.vt === 'cortes' || e.vt === 'corte') && e.video) { abaVideo = e.vt; abaVideoDe = e.video; } if (e.st === 'videos' && e.serie) { abaSerie = 'videos'; abaSerieDe = e.serie; }
+          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if ((e.vt === 'cortes' || e.vt === 'corte') && e.video) { abaVideo = e.vt; abaVideoDe = e.video; if (e.vt === 'corte' && e.corte) corteAberto = e.corte; /* veio do To Do: abre ESSE corte */ } if (e.st === 'videos' && e.serie) { abaSerie = 'videos'; abaSerieDe = e.serie; }
           carregar();
         });
       });
