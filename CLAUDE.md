@@ -9,6 +9,8 @@ fundo próprio (nada de `rgba(255,250,232,...)`, branco, bege): quebra a experi�
 **Qualquer caixa/campo/opção no papiro = `background: transparent` + contorno de 1px em azul egípcio `#1F5FA3`.** Seleção = contorno mais grosso
 (3px), não fundo. Título em terracota `#A03E25`, texto em azul-noite `#16233F` (ver o fim do `page.css`).
 
+**Isto inclui (regra mais antiga que tudo, valia aqui e no Astro Hellenic desde o começo do papiro): NUNCA desfocar (`backdrop-filter`/blur), sombrear, escurecer, clarear nem pôr transparência ou cor nova sobre o papiro. Peça presa no topo (`position: sticky`) usa o MESMO `var(--papiro-fundo)` da folha, com `background-size`/`position` calculados em JS para coincidir com o papiro da folha (`prenderTitulo` em `admin-agenda.html`): fica invisível, sem faixa. Print do Google Agenda dizendo "fica preso" = pedido do COMPORTAMENTO (travar), nunca do visual. As horas planetárias do topo da Agenda também ficam presas (não somem).** Nessa página `html,body{overflow-x:clip}` é necessário: o `overflow-x:hidden` do `home.css` impede o sticky.
+
 ## Google Drive e cliente automático (17/10/2026)
 
 **Servidor na Vercel** (projeto `falandodeastrologia`, `https://falandodeastrologia.vercel.app`; o site em si continua no GitHub Pages). Variáveis em Production: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `WEBHOOK_CHAVE`. Mexeu em variável = precisa de redeploy.
@@ -375,7 +377,3 @@ Toda vez que um campo de data entra num lugar, o mesmo problema volta e o astró
 - **Redesenhar a tela com o seletor aberto fecha o seletor.** Não mexer no DOM do campo enquanto a pessoa escolhe.
 - O Playwright daqui NÃO reproduz o seletor do iPad: não dizer que "testei" um campo de data; o teste real é no iPad dele.
 - Caso concreto: busca por data da Liberação Zodiacal no Astro Hellenic (três rodadas até ficar com tamanho mínimo + botão **Ir**).
-
-## Papiro: NUNCA desfocar, sombrear, escurecer nem clarear; peça presa no topo = mesmo papiro alinhado (31/10/2026) — bronca do astrólogo
-
-Quando ele manda print do Google Agenda dizendo "fica preso", o pedido é o COMPORTAMENTO (travar), não o visual (desfoque/translúcido). **Proibido** `backdrop-filter`, blur, sombra, transparência ou cor nova no papiro. Peça presa no topo (`position: sticky`) usa o MESMO `var(--papiro-fundo)` da folha, com `background-size`/`background-position` calculados em JS para coincidir com o papiro da folha (ver `prenderTitulo` em `admin-agenda.html`): fica invisível, sem faixa. Nesta página `html,body{overflow-x:clip}` é necessário porque o `overflow-x:hidden` do `home.css` impede o sticky.
