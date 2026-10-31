@@ -1136,7 +1136,7 @@
         ]);
         ce.appendChild(editor); editores[c.id] = editor;
         /* na lista de cortes: uma linha por corte; tocar abre esse corte */
-        var nomeC = el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), dataC = el('span', { class: 'prod-data', style: 'display:block', text: c.data ? comDia(c.data) : 'sem data' });
+        var nomeC = el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), dataC = el('span', { class: 'prod-data', style: 'display:block;color:#16233F', text: c.data ? comDia(c.data) : 'sem data' }); /* data em preto: menos cor, para ler logo que é a data */
         d.addEventListener('change', function () { dataC.textContent = d.value ? comDia(d.value) : 'sem data'; });
         t.addEventListener('change', function () { nomeC.textContent = t.value.trim() || 'Corte'; botCorte.textContent = nomeDoCorteAberto(); });
         var abrirC = function () { corteAberto = c.id; mostrarAbaVideo('corte'); window.scrollTo(0, 0); };
