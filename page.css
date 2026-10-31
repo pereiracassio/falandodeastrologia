@@ -113,6 +113,11 @@ html body:has(.pagina-papiro) .sidemenu-toggle span,html body:has(.pagina-papiro
 html body:has(.pagina-papiro) .sidemenu-toggle span::before{top:-7px!important}
 html body:has(.pagina-papiro) .sidemenu-toggle span::after{top:7px!important}
 html body:has(.pagina-papiro) .cart-toggle svg{stroke:none;fill:#B5852F;width:28px!important;height:28px!important}
+/* Hermes das mensagens (painel): espelho do sino, no canto de baixo, na faixa vazia entre o texto e a moldura */
+html body:has(.pagina-papiro) .hermes-toggle{
+  right:calc(80px*var(--moldura-m) + 4px)!important;bottom:calc(130px*var(--moldura-m) + var(--barra-conversa,0px))!important;
+  width:34px!important;height:34px!important}
+html body:has(.pagina-papiro) .hermes-toggle img{width:30px!important;height:30px!important}
 /* texto justificado; subtítulos sem linha, como no blog */
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"]{text-align:justify!important}
 .pagina-papiro .folha-pagina p[style*="font-size: 17px"]{font-size:15px!important}
