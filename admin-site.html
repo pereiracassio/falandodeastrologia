@@ -310,20 +310,21 @@
       servicosCad.forEach(function (x) {
         var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
         var apagar = P.botaoApagar('Apagar');
-        editar.addEventListener('click', function () { editando = x; nome.value = x.nome; valor.value = String(x.valor).replace('.', ','); area.value = x.area_id || ''; add.textContent = 'Salvar'; nome.focus(); });
+        editar.addEventListener('click', function () { editando = x; nome.value = x.nome; valor.value = String(x.valor).replace('.', ','); area.value = x.area_id || ''; antigos.value = x.outros_nomes || ''; add.textContent = 'Salvar'; nome.focus(); });
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar o serviço "' + x.nome + '"? As entradas já lançadas não mudam.')) return;
           C.from('fin_servicos').delete().eq('id', x.id).then(function (r) { if (aviso(r)) carregarFin(); });
         });
         caixa.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
           el('div', {}, [el('span', { class: 'portal-item-titulo', text: x.nome }),
-            el('span', { class: 'portal-item-data', text: moeda(x.valor) + (x.area_id && porArea[x.area_id] ? ' · ' + porArea[x.area_id].nome : '') })]),
+            el('span', { class: 'portal-item-data', text: moeda(x.valor) + (x.area_id && porArea[x.area_id] ? ' · ' + porArea[x.area_id].nome : '') + (x.outros_nomes ? ' · antes: ' + x.outros_nomes.split('\n').filter(Boolean).join(', ') : '') })]),
           el('div', { class: 'portal-acoes' }, [editar, apagar])])]));
       });
       if (!servicosCad.length) caixa.appendChild(el('p', { text: 'Nenhum serviço cadastrado ainda.' }));
       var nome = el('input', { type: 'text', placeholder: 'Nome do serviço' });
       var valor = el('input', { type: 'text', inputmode: 'decimal', placeholder: 'Valor (0,00)' });
       var area = el('select');
+      var antigos = el('textarea', { rows: '2', placeholder: 'Um por linha' });
       area.appendChild(el('option', { value: '', text: 'Sem área' }));
       areas.forEach(function (a) { area.appendChild(el('option', { value: a.id, text: a.nome })); });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
@@ -335,14 +336,14 @@
         if (!site.length) { P.mensagem(msg, 'Os serviços do site já estão na sua lista.', 'ok'); return; }
         C.from('fin_servicos').insert(site.map(function (x) { return { nome: x.nome, valor: x.valor, area_id: astro ? astro.id : null }; })).then(function (r) { if (aviso(r)) carregarFin(); });
       });
-      var f = el('form', { style: 'margin-top:14px' }, [el('label', { text: 'Nome' }), nome, el('label', { text: 'Valor (R$)' }), valor, el('label', { text: 'Área' }), area,
+      var f = el('form', { style: 'margin-top:14px' }, [el('label', { text: 'Nome' }), nome, el('label', { text: 'Valor (R$)' }), valor, el('label', { text: 'Área' }), area, el('label', { text: 'Nomes antigos' }), antigos,
         msg, el('div', { class: 'portal-acoes' }, [add, trazer])]);
       f.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var v = lerValor(valor.value);
         if (!nome.value.trim()) { P.mensagem(msg, 'Escreva o nome do serviço.', 'erro'); return; }
         if (v == null) { P.mensagem(msg, 'Digite o valor (por exemplo 135,00).', 'erro'); return; }
-        var reg = { nome: nome.value.trim(), valor: v, area_id: area.value || null };
+        var reg = { nome: nome.value.trim(), valor: v, area_id: area.value || null, outros_nomes: antigos.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).join('\n') || null };
         var req = editando ? C.from('fin_servicos').update(reg).eq('id', editando.id) : C.from('fin_servicos').insert(reg);
         req.then(function (r) { if (aviso(r)) carregarFin(); });
       });

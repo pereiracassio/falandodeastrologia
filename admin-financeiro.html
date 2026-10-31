@@ -370,8 +370,16 @@
     function graficoRanking(titulo, campo, semNome, cor) {
       var caixa = el('div', {}, [subtitulo(titulo + ' · ' + rotuloEscopo())]);
       var tot = {}, soma = 0;
+      /* serviços: o nome antigo (cadastrado no serviço, em Configurações) conta no nome atual; maiúscula e minúscula não diferenciam */
+      var nomeAtual = {}, primeiroVisto = {};
+      if (campo === 'produto') servicosCad.forEach(function (sv) {
+        nomeAtual[String(sv.nome).trim().toLowerCase()] = sv.nome;
+        String(sv.outros_nomes || '').split('\n').forEach(function (a) { a = a.trim().toLowerCase(); if (a) nomeAtual[a] = sv.nome; });
+      });
       entradasDoEscopo().forEach(function (e) {
-        var k = String(e[campo] || '').trim() || semNome; tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0);
+        var k = String(e[campo] || '').trim() || semNome;
+        if (campo === 'produto' && k !== semNome) { var baixo = k.toLowerCase(); k = nomeAtual[baixo] || primeiroVisto[baixo] || (primeiroVisto[baixo] = k); }
+        tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0);
       });
       var ks = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
       if (!ks.length) { caixa.appendChild(vazio('Nenhuma entrada neste período.')); return caixa; }
