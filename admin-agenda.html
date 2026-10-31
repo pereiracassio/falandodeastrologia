@@ -1135,16 +1135,18 @@
         var agora = Date.now(), hs = diaPlanetarioDe(agora); if (hs.length < 24) return;
         var h = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0], dia = hs[0], nascer = hs[0].ini, por = hs[12].ini, proximo = hs[23].fim;
         caixa.textContent = '';
-        caixa.appendChild(el('div', { text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:13px;margin:0 0 6px' }));
-        caixa.appendChild(barraDe(nascer, proximo, agora, 'horas', false));
-        var rot = function (t) { return el('div', { text: t, style: 'font-family:var(--fonte-titulo);font-size:12px;margin-bottom:4px' }); };
-        caixa.appendChild(el('div', { style: 'display:flex;justify-content:center;align-items:flex-end;gap:36px;margin:8px 0 4px;text-align:center' }, [
-          el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, 84, '#A03E25')]),
-          h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, 44, h.noite ? '#1F5FA3' : '#B5852F')]) : null]));
+        caixa.appendChild(el('div', { text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:12px;margin:0 0 6px' }));
+        var rot = function (t) { return el('div', { text: t, style: 'font-family:var(--fonte-titulo);font-size:10px;margin-bottom:2px' }); };
+        var direita = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px' }, [barraDe(nascer, proximo, agora, 'horas', false)]);
         if (h) {
-          caixa.appendChild(barraDe(h.ini, h.fim, agora, 'minutos', false));
-          caixa.appendChild(el('div', { text: (hs.indexOf(h) % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), style: 'text-align:center;font-size:13px;margin-top:4px' }));
+          direita.appendChild(barraDe(h.ini, h.fim, agora, 'minutos', false));
+          direita.appendChild(el('div', { text: (hs.indexOf(h) % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), style: 'text-align:center;font-size:12px' }));
         }
+        caixa.appendChild(el('div', { style: 'display:flex;align-items:center;gap:14px' }, [
+          el('div', { style: 'flex:none;display:flex;align-items:flex-end;gap:10px;text-align:center' }, [
+            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, 50, '#A03E25')]),
+            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, 36, h.noite ? '#1F5FA3' : '#B5852F')]) : null]),
+          direita]));
       }
       clearInterval(window.__cabHoras);
       preparar().then(function () { pintar(); window.__cabHoras = setInterval(function () { if (document.visibilityState === 'visible') pintar(); }, 30000); }, function () { /* o erro aparece nas outras partes da tela */ });
