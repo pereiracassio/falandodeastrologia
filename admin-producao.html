@@ -604,8 +604,7 @@
         cartao.appendChild(el('span', { class: 'prod-sub', text: s ? s.nome + (s.assunto ? ' (assunto: ' + s.assunto + ')' : '') : 'Vídeos soltos' }));
         porSerie[k].forEach(function (v) {
           var linha = el('div', { class: 'prod-linha' }, [el('span', { class: 'prod-titulo', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') })]);
-          linha.appendChild(chip('Já está no blog', false, function () { gravar('prod_videos', videos, v, { blog_ok: true }).then(tela); }));
-          linha.appendChild(chipsDaEtapa(v)); var tBlog = barraTempo(v.criado_em, v.data_blog, false); if (tBlog) linha.appendChild(tBlog);
+          linha.appendChild(chipsDaEtapa(v, tela)); /* o passo "No blog" da barra já faz isso: some da fila quando marcado */ var tBlog = barraTempo(v.criado_em, v.data_blog, false); if (tBlog) linha.appendChild(tBlog);
           cartao.appendChild(linha);
         });
       });
