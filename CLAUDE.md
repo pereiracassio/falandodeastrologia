@@ -387,3 +387,15 @@ Ele odeia as caixas quadradas. **Campo de escrever não tem caixa: só a linha a
 - A regra do iOS continua: o seletor dispara `change` com a data de HOJE ao abrir; nunca agir/redesenhar no `change`; só quando a pessoa confirmar (botão Ir/Salvar) ou ao sair do campo.
 - No vídeo da Produção, as datas são todas campos como os outros, numa linha só: público/membros, disponível para membros, fica público em, e as datas limite dos cortes e do blog (opcionais); o horário de Júpiter vem depois.
 - **O formulário do Astro Hellenic embutido (`formulario.html`) e o próprio Astro Hellenic NÃO foram mexidos** (só o painel do Falando de Astrologia).
+
+## PROJETO FUTURO: sites sob medida para outros astrólogos (combinado em 31/10/2026, NÃO começou) — só depois que ele estiver na faculdade
+
+**Ideia dele:** uma área no site para astrólogos ("Você já é astrólogo? Quer um site estruturado, sob medida para o seu serviço?"). O astrólogo preenche uma aplicação (como a da Mentoria), o Cássio vê o que ele precisa, faz um orçamento e monta uma estrutura com as necessidades dele, como foi feito para o Falando de Astrologia. Entra na profissão futura dele (depois do Desenvolvimento de Software Multiplataforma da Fatec; ele também quer ter um Mac até lá). **Não puxar o assunto agora; só quando ele puxar.**
+
+**Decisões e combinados:**
+- **O primeiro cliente é uma "cobaia":** fazer para outra pessoa ensina o que fazer para outra pessoa (uma coisa é fazer para si). **Só depois de um site entregue com sucesso para outra pessoa se pensa em anunciar isso no site.** Nada de anúncio antes.
+- **Cada cliente com as PRÓPRIAS contas** (Supabase, GitHub e, se precisar, Vercel, no nome dele; plano grátis). O Cássio entra como convidado. Os dados ficam com o astrólogo, nunca com o Cássio (mesmo cuidado de separar o Supabase da psicanálise).
+- **SQL:** juntar tudo que está em `docs/*.sql` num arquivo único de INSTALAÇÃO, idempotente (rodável de novo sem erro, já é regra dele), colado uma vez no Supabase novo; os ajustes de cada astrólogo vão num segundo arquivo pequeno. Lembrar: neste Supabase o `service_role` não tem permissão automática (sempre `grant ... to service_role`).
+- **Vercel é o ponto fraco** (ele a evita): antes de vender, tirar o que ainda depende dela (Drive, criar acesso, páginas do blog, InfinitePay) e levar para o banco ou Supabase Edge Functions, como já foi feito com os avisos. Meta: cada site novo só precisa de GitHub + Supabase.
+- Lugar, fuso, nome, serviços e pagamento configuráveis, nada fixo na conta dele (lição do Astro Hellenic); checkout/pagamento nunca dentro de um produto vendido a vários.
+- Modelo possível: orçamento da montagem + manutenção mensal opcional. Valor de mercado de uma plataforma assim feita do zero por engenheiro de software: estimativa grosseira de centenas de milhares de reais; o astrólogo já sabe que o valor para cliente seria uma fração disso, por já existir a base.
