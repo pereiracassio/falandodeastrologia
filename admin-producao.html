@@ -836,6 +836,7 @@
       /* datas limite opcionais das duas etapas que sobram depois que o vídeo vai ao YouTube; sem data, o vídeo fica no fim do To Do, sem data */
       var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
       var dataBlog = el('input', { type: 'date' }); dataBlog.value = v.data_blog || '';
+      cartao.appendChild(el('hr', { class: 'prod-divisa', style: 'margin:22px 0 16px' })); /* separa as datas de publicação das datas limite, para a legenda de uma não parecer ser da outra */
       var tirarCortes = P.botaoApagar('Tirar a data'), tirarBlog = P.botaoApagar('Tirar a data');
       tirarCortes.addEventListener('click', function () { dataCortes.value = ''; dataCortes.dispatchEvent(new Event('change')); });
       tirarBlog.addEventListener('click', function () { dataBlog.value = ''; dataBlog.dispatchEvent(new Event('change')); });
