@@ -1075,7 +1075,11 @@
       desenharFotos();
       cc.appendChild(caixaFotos);
       if (!lista.length) cc.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte ainda. Toque em "+ corte" para cada trecho que você tirar do vídeo.' }));
-      lista.forEach(function (c) {
+      /* corte já postado no Instagram e no TikTok vai para o fim da lista, como "concluído" (a ordem dos outros não muda) */
+      var concluido = function (c) { return !!(c.instagram && c.tiktok); };
+      var ordenados = lista.filter(function (c) { return !concluido(c); }).concat(lista.filter(concluido)), marcouConcluidos = false;
+      ordenados.forEach(function (c) {
+        if (concluido(c) && !marcouConcluidos) { marcouConcluidos = true; if (lista.some(function (x) { return !concluido(x); })) cc.appendChild(el('p', { class: 'prod-grupo', text: 'Concluídos' })); }
         var t = el('input', { type: 'text', maxlength: '160', placeholder: 'Título ou ideia do corte' }); t.value = c.titulo || '';
         var d = el('input', { type: 'date' }); d.value = c.data || '';
         t.addEventListener('change', function () { gravar('prod_cortes', cortes, c, { titulo: t.value.trim() || null }); });
@@ -1140,7 +1144,9 @@
         d.addEventListener('change', function () { dataC.textContent = d.value ? comDia(d.value) : 'sem data'; });
         t.addEventListener('change', function () { nomeC.textContent = t.value.trim() || 'Corte'; botCorte.textContent = nomeDoCorteAberto(); });
         var abrirC = function () { corteAberto = c.id; mostrarAbaVideo('corte'); window.scrollTo(0, 0); };
-        var linhaC = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:160px' }, [nomeC, dataC]), botao('Abrir', abrirC)]);
+        var linhaC = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:160px' }, [nomeC, dataC,
+          barraProx(Math.floor(ETAPAS_CORTE.filter(function (e) { return c[e[0]]; }).length * 100 / ETAPAS_CORTE.length), null, ETAPAS_CORTE.filter(function (e) { return c[e[0]]; }).length + '/' + ETAPAS_CORTE.length),
+          barraTempo(c.criado_em, c.data, concluido(c))]), botao('Abrir', abrirC)]);
         linhaC.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') abrirC(); });
         cc.appendChild(linhaC);
       });
