@@ -170,7 +170,9 @@
       var novo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Entrada' });
       var areaForm = el('div', { class: 'barra-ocre' });
       novo.addEventListener('click', function () { formEntrada(areaForm, null); });
-      cartao.appendChild(el('div', { class: 'portal-acoes' }, [novo]));
+      var arrumar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Arrumar nomes' });
+      arrumar.addEventListener('click', function () { areaForm.textContent = ''; arrumarNomes(areaForm); });
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [novo, arrumar]));
       cartao.appendChild(areaForm);
 
       /* mês: setas dos lados e o nome no meio */
@@ -609,6 +611,61 @@
     }
 
     function campo(rotulo, controle) { return [el('label', { text: rotulo }), controle]; }
+
+    /* Arrumar nomes dos clientes: entradas antigas foram lançadas com o código velho ou sem código. Cada nome diferente do jeito de hoje ("código - nome", ou só o nome
+       para quem não tem código) aparece com a sugestão; ao aceitar, todas as entradas daquele nome passam para o jeito atual */
+    function arrumarNomes(destino) {
+      destino.textContent = '';
+      var norm = function (t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+      var semCodigo = function (t) { var i = String(t).indexOf(' - '); return i > 0 && /\d/.test(String(t).slice(0, i)) ? String(t).slice(i + 3) : String(t); };
+      var atuais = [], porNomeP = {}; /* clientes e alunos juntos; quem é as duas coisas aparece uma vez só */
+      clientes.concat(alunos).forEach(function (p) {
+        var k = norm(p.nome), ja = porNomeP[k];
+        if (ja) { if (!ja.codigo && p.codigo) ja.codigo = p.codigo; return; }
+        porNomeP[k] = { nome: p.nome, codigo: p.codigo || '' }; atuais.push(porNomeP[k]);
+      });
+      atuais.forEach(function (p) { p.forma = p.codigo ? p.codigo + ' - ' + p.nome : p.nome; });
+      var formas = {}; atuais.forEach(function (p) { formas[p.forma] = true; });
+      var msg = el('p', { class: 'portal-msg' }), lista = el('div');
+      destino.appendChild(el('h2', { text: 'Arrumar nomes dos clientes' })); destino.appendChild(lista); destino.appendChild(msg);
+      lista.appendChild(el('p', { text: 'Carregando...' }));
+      C.from('fin_entradas').select('cliente_nome,valor').range(0, 9999).then(function (r) {
+        lista.textContent = '';
+        if (r.error) { P.mensagem(msg, 'Não consegui ler as entradas.', 'erro'); return; }
+        var grupos = {};
+        (r.data || []).forEach(function (e) {
+          var n = String(e.cliente_nome || '').trim(); if (!n || formas[n]) return;
+          var g = grupos[n] || (grupos[n] = { nome: n, qtd: 0, soma: 0 }); g.qtd++; g.soma += Number(e.valor || 0);
+        });
+        var itens = Object.keys(grupos).map(function (k) { return grupos[k]; }).sort(function (a, b) { return b.soma - a.soma; });
+        if (!itens.length) { lista.appendChild(el('p', { text: 'Tudo certo, nenhum nome para arrumar.' })); return; }
+        itens.forEach(function (g) {
+          var caixa = el('div', { class: 'portal-item' });
+          var cand = atuais.filter(function (p) { return norm(p.nome) === norm(semCodigo(g.nome)); });
+          function passar(novo) {
+            if (!window.confirm('Passar ' + g.qtd + (g.qtd === 1 ? ' entrada' : ' entradas') + ' de "' + g.nome + '" para "' + novo + '"?')) return;
+            C.from('fin_entradas').update({ cliente_nome: novo }).eq('cliente_nome', g.nome).then(function (u) {
+              if (u.error) { P.mensagem(msg, P.traduzErro(u.error.message), 'erro'); return; }
+              [entradas, todas].forEach(function (l) { l.forEach(function (e) { if (String(e.cliente_nome || '').trim() === g.nome) e.cliente_nome = novo; }); });
+              caixa.remove(); P.mensagem(msg, g.qtd + (g.qtd === 1 ? ' entrada arrumada.' : ' entradas arrumadas.'), 'ok');
+            });
+          }
+          var info = el('div', {}, [el('span', { class: 'portal-item-titulo', text: g.nome }), el('span', { class: 'portal-item-data', text: g.qtd + (g.qtd === 1 ? ' entrada' : ' entradas') + ' · ' + moeda(g.soma) })]);
+          var acao = el('div', { class: 'portal-acoes' });
+          if (cand.length === 1) {
+            var aceitar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Passar para ' + cand[0].forma });
+            aceitar.addEventListener('click', function () { passar(cand[0].forma); }); acao.appendChild(aceitar);
+          } else {
+            var campo = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Escolher o cliente' }), escolha = '';
+            var bloco = P.combo(campo, function () { return atuais.map(function (p) { return { valor: p.forma, rotulo: p.forma, busca: p.forma.toLowerCase() }; }); }, function (i) { escolha = i.valor; campo.value = i.valor; }, false);
+            var ir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Passar' });
+            ir.addEventListener('click', function () { if (!escolha || campo.value !== escolha) { P.mensagem(msg, 'Escolha o cliente na lista.', 'erro'); return; } passar(escolha); });
+            acao.appendChild(bloco[0]); acao.appendChild(bloco[1]); acao.appendChild(ir);
+          }
+          caixa.appendChild(info); caixa.appendChild(acao); lista.appendChild(caixa);
+        });
+      });
+    }
 
     function formEntrada(destino, e) {
       destino.textContent = '';
