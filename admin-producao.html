@@ -1098,11 +1098,36 @@
         var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
         jupiterAzul(jupC, c.data, semDataJup);
         d.addEventListener('change', function () { jupiterAzul(jupC, d.value, semDataJup); });
+        /* link do vídeo deste corte no Google Fotos: depois de colado vira o ícone (abre), Copiar e Apagar discreto */
+        var caixaFotosC = el('div', { style: 'margin:0 0 12px' });
+        function desenharFotosC() {
+          caixaFotosC.textContent = '';
+          var u = P.linkSeguro(c.link_fotos);
+          if (u) {
+            var abrirC2 = el('a', { class: 'portal-btn portal-btn-sec', href: u, target: '_blank', rel: 'noopener', title: 'Abrir no Google Fotos', 'aria-label': 'Abrir no Google Fotos' });
+            abrirC2.innerHTML = '<svg viewBox="0 0 64 64" width="30" height="30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M27 37a11 11 0 0 0 15.5 0l9-9a11 11 0 0 0-15.5-15.5l-3 3"/><path d="M37 27a11 11 0 0 0-15.5 0l-9 9a11 11 0 0 0 15.5 15.5l3-3"/></svg>';
+            abrirC2.style.cssText = 'padding:6px 10px;color:#1034A6';
+            var apC = P.botaoApagar('Apagar');
+            apC.addEventListener('click', function () { gravar('prod_cortes', cortes, c, { link_fotos: null }).then(function (r) { if (!r.error) desenharFotosC(); }); });
+            caixaFotosC.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px' }, [abrirC2, botaoCopiar(function () { return u; }, 'Copiar o link'), apC]));
+          } else {
+            var campoLC = el('input', { type: 'url', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
+            campoLC.addEventListener('change', function () {
+              var tl = campoLC.value.trim();
+              if (!tl) return;
+              if (!P.linkSeguro(tl)) { P.mensagem(msgC, 'Esse link não parece certo. Cole o endereço inteiro, começando com https://', 'erro'); return; }
+              gravar('prod_cortes', cortes, c, { link_fotos: tl }).then(function (r) { if (!r.error) desenharFotosC(); });
+            });
+            caixaFotosC.appendChild(campoLC);
+          }
+        }
+        desenharFotosC();
         var editor = el('div', { class: 'prod-corte' }, [
           el('div', { class: 'prod-corte-topo' }, [t, P.colunaData(d, 'Data do corte')]),
           barraTempo(c.criado_em, c.data, cortePostado(c)),
           el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [botaoCopiar(function () { return t.value.trim(); }, 'Copiar o título')]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
+          caixaFotosC,
           campo('Texto do corte', tx),
           el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [botaoCopiar(function () { return tx.value; }, 'Copiar o texto')]),
           campo('Tags do YouTube Shorts', tg),
