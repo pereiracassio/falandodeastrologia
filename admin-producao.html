@@ -1100,16 +1100,21 @@
         var tx = el('textarea', { rows: '4', placeholder: 'Texto do corte (descrição, legenda)' }); tx.value = c.texto || '';
         var tg = el('textarea', { rows: '3', placeholder: 'tag1, tag2, tag3' }); tg.value = c.tags || '';
         var tempoC = null;
-        function agendarCorte() {
-          clearTimeout(tempoC);
-          tempoC = setTimeout(function () {
-            var campos = { texto: tx.value, tags: tg.value.trim() || null };
-            /* texto do corte e tags do YouTube Shorts preenchidos: o SEO do corte se marca sozinho (e, como sempre, marca Corte e Legenda junto) */
-            if (!c.seo_ok && tx.value.trim() && tg.value.trim()) { campos.seo_ok = true; (ANTES_NO_CORTE.seo_ok || []).forEach(function (k) { if (!c[k]) campos[k] = true; }); Object.keys(campos).forEach(function (k) { c[k] = campos[k]; }); pintarCorte(c); }
-            gravar('prod_cortes', cortes, c, campos);
-          }, 1000);
+        function agendarCorte() { clearTimeout(tempoC); tempoC = setTimeout(function () { gravar('prod_cortes', cortes, c, { texto: tx.value, tags: tg.value.trim() || null }); }, 1000); }
+        /* como no vídeo: o que falta para o SEO aparece em vermelho e, com tudo preenchido (texto do corte e tags do YouTube Shorts), o SEO se marca sozinho,
+           também ao abrir um corte que já estava completo. Marcar o SEO marca Corte e Legenda junto, como sempre. O link do Google Fotos não conta. */
+        var faltaSeoCorte = el('p', { class: 'prod-sub', style: 'margin:-4px 0 12px;color:#A03E25' });
+        function verSeoCorte() {
+          var falta = []; if (!tx.value.trim()) falta.push('texto do corte'); if (!tg.value.trim()) falta.push('tags do YouTube Shorts');
+          faltaSeoCorte.textContent = c.seo_ok || !falta.length ? '' : 'Falta para o SEO: ' + falta.join(', ');
+          if (c.seo_ok || falta.length) return;
+          var campos = { texto: tx.value, tags: tg.value.trim() || null, seo_ok: true };
+          (ANTES_NO_CORTE.seo_ok || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
+          Object.keys(campos).forEach(function (k) { c[k] = campos[k]; });
+          pintarCorte(c); gravar('prod_cortes', cortes, c, campos).then(function (r) { if (r && !r.error) avisoFlutuante('Marcado: SEO'); });
         }
-        tx.addEventListener('input', agendarCorte); tg.addEventListener('input', agendarCorte);
+        tx.addEventListener('input', function () { agendarCorte(); verSeoCorte(); }); tg.addEventListener('input', function () { agendarCorte(); verSeoCorte(); });
+        tx.addEventListener('change', verSeoCorte); tg.addEventListener('change', verSeoCorte);
         var jupC = el('div', { style: 'margin:6px 0 4px;color:#1034A6;font-size:16px;line-height:1.5' });
         var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
         jupiterAzul(jupC, c.data, semDataJup);
@@ -1143,6 +1148,7 @@
           barraTempo(c.criado_em, c.data, cortePostado(c)),
           el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [botaoCopiar(function () { return t.value.trim(); }, 'Copiar o título')]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
+          faltaSeoCorte,
           caixaFotosC,
           campo('Texto do corte', tx),
           el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [botaoCopiar(function () { return tx.value; }, 'Copiar o texto')]),
@@ -1151,6 +1157,7 @@
           jupC
         ]);
         ce.appendChild(editor); editores[c.id] = editor;
+        verSeoCorte();
         /* na lista de cortes: uma linha por corte; tocar abre esse corte */
         var nomeC = el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), dataC = el('span', { class: 'prod-data', style: 'display:block;color:#16233F', text: c.data ? comDia(c.data) : 'sem data' }); /* data em preto: menos cor, para ler logo que é a data */
         d.addEventListener('change', function () { dataC.textContent = d.value ? comDia(d.value) : 'sem data'; });
