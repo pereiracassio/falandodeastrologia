@@ -27,12 +27,14 @@
     html,body{overflow-x:clip;overflow-y:visible}
     .barra-agenda h2{font-size:12px!important;line-height:1.2!important;margin:0!important}
     /* o título Agenda e a barra de visões prendem no topo quando o título chega na altura do menu e do sino; a agenda corre por baixo. O fundo é o MESMO papiro da folha, alinhado com ela (nada de cor nova, sombra ou desfoque) */
-    h1.portal-titulo{position:sticky;z-index:901}
+    h1.portal-titulo,.cab-horas{position:sticky;z-index:901}
+    .cab-horas{padding-bottom:14px}
     .barra-agenda{position:sticky;z-index:900;margin:0 calc(-1*var(--moldura-ph));padding:4px var(--moldura-ph)}
-    h1.portal-titulo::before,.barra-agenda::before{content:"";position:absolute;z-index:-1;left:calc(-1*var(--moldura-ph));right:calc(-1*var(--moldura-ph));bottom:0;top:0;display:none;
+    h1.portal-titulo::before,.cab-horas::before,.barra-agenda::before{content:"";position:absolute;z-index:-1;left:calc(-1*var(--moldura-ph));right:calc(-1*var(--moldura-ph));bottom:0;top:0;display:none;
       background:var(--papiro-fundo);background-size:var(--bw,100%) var(--bh,100%);background-position:var(--bx,0) var(--by,0)}
-    h1.portal-titulo.presa::before{display:block;top:calc(-1*var(--topo-h1,0px))}
-    .barra-agenda.presa::before{display:block;left:0;right:0}
+    h1.portal-titulo.presa::before,.cab-horas.presa::before,.barra-agenda.presa::before{display:block}
+    h1.portal-titulo.presa::before{top:calc(-1*var(--topo-h1,0px))}
+    .barra-agenda.presa::before{left:0;right:0}
   </style>
 </head>
 <body>
@@ -393,23 +395,26 @@
     /* ---------- tela com as quatro visões ---------- */
     /* título (altura do menu e do sino) + barra de visões presos no topo; sem sticky puro porque a posição depende de onde o menu está */
     function prenderTitulo(corpo) {
-      var h1 = document.querySelector('h1.portal-titulo'), barra = corpo.querySelector('.barra-agenda');
-      if (!h1 || !barra) return;
+      var h1 = document.querySelector('h1.portal-titulo'), horas = corpo.querySelector('.cab-horas'), barra = corpo.querySelector('.barra-agenda'), folha = document.querySelector('.folha-pagina');
+      if (!h1 || !horas || !barra || !folha) return;
       function medir() {
         var t = document.querySelector('.sidemenu-toggle'), r = t ? t.getBoundingClientRect() : null, alt = h1.offsetHeight;
-        var topo = r && r.height ? Math.max(0, r.top + r.height / 2 - alt / 2) : 0;
-        h1.style.top = topo + 'px'; h1.style.setProperty('--topo-h1', topo + 'px'); barra.style.top = (topo + alt) + 'px';
-        h1.classList.toggle('presa', h1.getBoundingClientRect().top <= topo + 0.5);
-        barra.classList.toggle('presa', barra.getBoundingClientRect().top <= topo + alt + 0.5);
-        /* o papiro da peça presa = o papiro da folha, no mesmo lugar da tela */
-        var folha = document.querySelector('.folha-pagina'), f = folha.getBoundingClientRect(), fx = f.left + folha.clientLeft, fy = f.top + folha.clientTop;
-        var ph = parseFloat(getComputedStyle(barra).paddingLeft) || 0, b = barra.getBoundingClientRect(), h = h1.getBoundingClientRect();
-        function fundo(el, esq, cima) { el.style.setProperty('--bw', folha.clientWidth + 'px'); el.style.setProperty('--bh', folha.clientHeight + 'px'); el.style.setProperty('--bx', (fx - esq) + 'px'); el.style.setProperty('--by', (fy - cima) + 'px'); }
-        fundo(barra, b.left, b.top); fundo(h1, h.left - ph, h.top - topo);
+        var topo = r && r.height ? Math.max(0, r.top + r.height / 2 - alt / 2) : 0, topoHoras = topo + alt, topoBarra = topoHoras + horas.offsetHeight;
+        h1.style.top = topo + 'px'; horas.style.top = topoHoras + 'px'; barra.style.top = topoBarra + 'px';
+        var f = folha.getBoundingClientRect(), fx = f.left + folha.clientLeft, fy = f.top + folha.clientTop, ph = parseFloat(getComputedStyle(barra).paddingLeft) || 0;
+        [[h1, topo, -ph, true], [horas, topoHoras, -ph, true], [barra, topoBarra, 0, false]].forEach(function (x) {
+          var el = x[0], rc = el.getBoundingClientRect(), presa = rc.top <= x[1] + 0.5;
+          el.classList.toggle('presa', presa);
+          /* o papiro da peça presa = o papiro da folha, no mesmo lugar da tela (nada de cor nova) */
+          el.style.setProperty('--bw', folha.clientWidth + 'px'); el.style.setProperty('--bh', folha.clientHeight + 'px');
+          el.style.setProperty('--bx', (fx - (rc.left + x[2])) + 'px'); el.style.setProperty('--by', (fy - (presa ? x[1] : rc.top)) + 'px');
+          el.style.setProperty('--topo-h1', (x[3] && el === h1 ? topo : 0) + 'px');
+        });
       }
       var espera = false;
       function rolou() { if (espera) return; espera = true; requestAnimationFrame(function () { espera = false; medir(); }); }
       window.addEventListener('scroll', rolou, { passive: true }); window.addEventListener('resize', medir);
+      if (window.ResizeObserver) new ResizeObserver(medir).observe(horas);
       medir(); setTimeout(medir, 600); setTimeout(medir, 2000); /* o menu entra depois da página */
     }
     function montar(corpo) {
@@ -1124,7 +1129,7 @@
         el('div', { style: 'flex:1;height:4px;border:1px solid ' + cor }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + cor })]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, style: 'flex:none;white-space:nowrap' })]);
     }
     function cabecalhoHoras() {
-      var caixa = el('div', { style: 'margin:0 0 14px' });
+      var caixa = el('div', { class: 'cab-horas' });
       function pintar() {
         if (!document.body.contains(caixa) && caixa.firstChild) { clearInterval(window.__cabHoras); return; }
         var agora = Date.now(), hs = diaPlanetarioDe(agora); if (hs.length < 24) return;
