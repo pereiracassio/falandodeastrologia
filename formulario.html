@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=3">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Alunos">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Seus dados - Falando de Astrologia</title>
+  
+  <!-- Importação da fonte Cinzel do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="papiro.css?v=4">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="stylesheet" href="page.css?v=74">
+  <link rel="stylesheet" href="portal.css?v=22">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="tipografia.css?v=18">
+<script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="index.html" class="cab-logo cab-logo-menor"><img src="img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="blog.html">Blog</a><a href="aluno.html">Alunos</a><a href="sobre.html">Cássio</a><a href="index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Seus dados</h1>
+    <div class="portal-form-caixa"><iframe id="quadro" class="portal-form" title="Seus dados para o atendimento" scrolling="no"></iframe></div>
+  </div></div>
+</div></div>
+<script>
+(function () {
+  /* O formulário do Astro Hellenic, embutido aqui. Os dados caem no Astro Hellenic como sempre. Todo parâmetro do endereço (u, servico, nome, email...) passa adiante;
+     sem u/servico valem os do Acompanhamento. A página de dentro avisa a altura por postMessage. */
+  var q = new URLSearchParams(location.search);
+  if (!q.get('u')) q.set('u', '87101e7e-657c-4ca6-ab73-495e00af149f');
+  if (!q.get('servico')) q.set('servico', 'Acompanhamento Prático de Astrologia');
+  var quadro = document.getElementById('quadro');
+  window.addEventListener('message', function (ev) {
+    if (ev.source !== quadro.contentWindow || !ev.data || ev.data.tipo !== 'astrohellenic-altura') return;
+    var h = Number(ev.data.altura);
+    if (h > 100 && h < 8000) quadro.style.height = h + 'px';
+  });
+  quadro.src = 'https://astrohellenic.com/formulario.html?' + q.toString();
+})();
+</script>
+<script src="menu.js?v=51" defer></script>
+</body>
+</html>
