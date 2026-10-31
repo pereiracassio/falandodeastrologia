@@ -821,26 +821,25 @@
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
       cartao.appendChild(fila([1, 1], [el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return titulo.value.trim(); }, 'Copiar o título')]), el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return capaTexto.value.trim(); }, 'Copiar o texto da capa')])]));
       cartao.appendChild(fila([0.7, 2], [campo('Número na série', numero), campo('Link do YouTube', link)]));
-      cartao.appendChild(P.linhaDatas([P.colunaData(data, 'Disponível para membros')]));
       /* horário de Júpiter é para o dia em que o vídeo fica PÚBLICO; vídeo só de membros (ou sem data pública) usa a data dos membros */
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
       function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
       data.addEventListener('change', atualizarJupiter);
-      cartao.appendChild(jupV);
       var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
-      var blocoPublico = el('div', {}, [P.linhaDatas([P.colunaData(dataPublico, 'Fica público em')])]);
+      /* todas as datas são campos como os outros: o nome em cima, e as que andam juntas na mesma linha */
+      var blocoPublico = campo('Fica público em', dataPublico);
       blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
       cartao.appendChild(campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })));
-      cartao.appendChild(blocoPublico);
+      cartao.appendChild(fila([1, 1], [campo('Disponível para membros', data), blocoPublico]));
+      cartao.appendChild(jupV);
       /* datas limite opcionais das duas etapas que sobram depois que o vídeo vai ao YouTube; sem data, o vídeo fica no fim do To Do, sem data */
       var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
       var dataBlog = el('input', { type: 'date' }); dataBlog.value = v.data_blog || '';
-      cartao.appendChild(el('hr', { class: 'prod-divisa', style: 'margin:22px 0 16px' })); /* separa as datas de publicação das datas limite, para a legenda de uma não parecer ser da outra */
       var tirarCortes = P.botaoApagar('Tirar a data'), tirarBlog = P.botaoApagar('Tirar a data');
       tirarCortes.addEventListener('click', function () { dataCortes.value = ''; dataCortes.dispatchEvent(new Event('change')); });
       tirarBlog.addEventListener('click', function () { dataBlog.value = ''; dataBlog.dispatchEvent(new Event('change')); });
-      cartao.appendChild(P.linhaDatas([P.colunaData(dataCortes, 'Data limite dos cortes (opcional)', tirarCortes), P.colunaData(dataBlog, 'Data limite do blog (opcional)', tirarBlog)]));
+      cartao.appendChild(fila([1, 1], [campo('Data limite dos cortes (opcional)', el('div', {}, [dataCortes, tirarCortes])), campo('Data limite do blog (opcional)', el('div', {}, [dataBlog, tirarBlog]))]));
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
