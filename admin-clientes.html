@@ -227,6 +227,35 @@
         pastaDrive, msgCod, salvarCod
       ]);
       P.salvarSozinho(salvarCod);
+      /* transformar em aluno: cria o acesso (login) e a ficha de aluno com os dados do cliente */
+      var msgAluno = el('p', { class: 'portal-msg' });
+      var virarAluno = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Transformar em aluno' });
+      var linhaAluno = el('div', { style: 'margin-top:14px' }, [virarAluno, msgAluno]);
+      formCod.appendChild(linhaAluno);
+      var irParaAluno = function (id) { location.href = 'admin-alunos.html#aluno=' + id; };
+      var emailParaAluno = function () { return (emailInput.value || cliente.email || '').trim().toLowerCase(); };
+      virarAluno.addEventListener('click', function () {
+        var mail = emailParaAluno(), nomeA = nomeInput.value.trim();
+        if (!nomeA || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) { P.mensagem(msgAluno, 'Preencha o nome e o e-mail antes.', 'erro'); return; }
+        if (!confirm('Transformar ' + nomeA + ' em aluno?')) return;
+        virarAluno.disabled = true; P.mensagem(msgAluno, 'Criando...');
+        P.client.from('alunos').select('id').eq('email', mail).maybeSingle().then(function (ja) {
+          if (ja.data) { virarAluno.disabled = false; P.mensagem(msgAluno, 'Já é aluno.', 'ok'); irParaAluno(ja.data.id); return; }
+          var avisoAcesso = '';
+          P.client.auth.getSession().then(function (sessao) {
+            var jwt = sessao.data && sessao.data.session ? sessao.data.session.access_token : '';
+            return fetch('https://falandodeastrologia.vercel.app/api/criar-acesso', { method: 'POST', headers: { Authorization: 'Bearer ' + jwt, 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: nomeA, email: mail }) })
+              .then(function (resp) { return resp.json().catch(function () { return {}; }).then(function (d) { if (!resp.ok) throw new Error(d.detalhe || d.erro || 'erro'); }); });
+          }).catch(function (e) { avisoAcesso = e.message; }).then(function () {
+            return P.client.from('alunos').insert({ nome: nomeA, email: mail, nascimento: nascInput.value || null, whatsapp: whatsInput.value.trim() || null }).select('id').single();
+          }).then(function (r) {
+            virarAluno.disabled = false;
+            if (r.error) { P.mensagem(msgAluno, P.traduzErro(r.error.message), 'erro'); return; }
+            if (avisoAcesso) { P.mensagem(msgAluno, 'Aluno criado, mas o acesso não foi criado (' + avisoAcesso + ').', 'erro'); setTimeout(function () { irParaAluno(r.data.id); }, 6000); return; }
+            irParaAluno(r.data.id);
+          });
+        });
+      });
       formCod.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var valor = codInput.value.trim();
