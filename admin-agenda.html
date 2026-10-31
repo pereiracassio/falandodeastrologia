@@ -963,8 +963,8 @@
       var titulo = el('input', { type: 'text', placeholder: 'O que é', value: e ? e.titulo : (pre.titulo || '') });
       var dia = el('input', { type: 'date', value: e ? isoDia(e.ini) : (pre.dia || isoDia(Date.now())) });
       var ate = el('input', { type: 'date', value: e && e.diaTodo ? isoDia(Math.max(e.ini, e.fim - 1)) : (pre.dia || isoDia(Date.now())) });
-      var ini = el('input', { type: 'time', value: e && !e.diaTodo ? hhmm(e.ini) : (pre.ini || '09:00') });
-      var fim = el('input', { type: 'time', value: e && !e.diaTodo ? hhmm(e.fim) : (pre.fim || '10:00') });
+      var ini = el('input', { type: 'time', style: 'width:100%;max-width:100%;min-width:0;box-sizing:border-box', value: e && !e.diaTodo ? hhmm(e.ini) : (pre.ini || '09:00') });
+      var fim = el('input', { type: 'time', style: 'width:100%;max-width:100%;min-width:0;box-sizing:border-box', value: e && !e.diaTodo ? hhmm(e.fim) : (pre.fim || '10:00') });
       var local = el('input', { type: 'text', placeholder: 'Endereço ou lugar', value: e ? e.local : '' });
       var convidados = el('input', { type: 'text', placeholder: 'E-mails separados por vírgula', value: e ? e.convidados.join(', ') : '' });
       var descricao = el('textarea', { rows: '3', placeholder: 'Anotações' });
