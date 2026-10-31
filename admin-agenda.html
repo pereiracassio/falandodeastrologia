@@ -30,11 +30,12 @@
     h1.portal-titulo,.cab-horas{position:sticky;z-index:901}
     .cab-horas{padding-bottom:14px}
     .barra-agenda{position:sticky;z-index:900;margin:0 calc(-1*var(--moldura-ph));padding:4px var(--moldura-ph)}
-    h1.portal-titulo::before,.cab-horas::before,.barra-agenda::before{content:"";position:absolute;z-index:-1;left:calc(-1*var(--moldura-ph));right:calc(-1*var(--moldura-ph));bottom:0;top:0;display:none;
-      background:var(--papiro-fundo);background-size:var(--bw,100%) var(--bh,100%);background-position:var(--bx,0) var(--by,0)}
-    h1.portal-titulo.presa::before,.cab-horas.presa::before,.barra-agenda.presa::before{display:block}
-    h1.portal-titulo.presa::before{top:calc(-1*var(--topo-h1,0px))}
-    .barra-agenda.presa::before{left:0;right:0}
+    /* parte presa = uma folha de papiro por cima: o mesmo papiro alinhado, moldura dos lados e a beirada de baixo rasgada, com sombra sobre o papiro da agenda que corre por baixo */
+    .fundo-presa{position:fixed;top:0;z-index:899;display:none;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(70,45,15,.55))}
+    .fundo-presa i{display:block;width:100%;height:100%;box-sizing:border-box;border-style:solid;border-width:0 calc(80px*var(--moldura-m));border-image:url(img/moldura-redes.svg?v=3) 130 80 round;
+      background:var(--papiro-fundo);background-origin:border-box;background-size:var(--bw,100%) var(--bh,100%);background-position:var(--bx,0) var(--by,0);
+      clip-path:polygon(0 0, 100% 0, 100.00% calc(100% - 3px), 97.73% calc(100% - 2px), 95.45% calc(100% - 1px), 93.18% calc(100% - 3px), 90.91% calc(100% - 5px), 88.64% calc(100% - 0px), 86.36% calc(100% - 0px), 84.09% calc(100% - 6px), 81.82% calc(100% - 4px), 79.55% calc(100% - 0px), 77.27% calc(100% - 2px), 75.00% calc(100% - 4px), 72.73% calc(100% - 0px), 70.45% calc(100% - 4px), 68.18% calc(100% - 1px), 65.91% calc(100% - 0px), 63.64% calc(100% - 0px), 61.36% calc(100% - 3px), 59.09% calc(100% - 3px), 56.82% calc(100% - 0px), 54.55% calc(100% - 1px), 52.27% calc(100% - 0px), 50.00% calc(100% - 4px), 47.73% calc(100% - 3px), 45.45% calc(100% - 0px), 43.18% calc(100% - 6px), 40.91% calc(100% - 4px), 38.64% calc(100% - 0px), 36.36% calc(100% - 1px), 34.09% calc(100% - 5px), 31.82% calc(100% - 5px), 29.55% calc(100% - 4px), 27.27% calc(100% - 0px), 25.00% calc(100% - 4px), 22.73% calc(100% - 4px), 20.45% calc(100% - 3px), 18.18% calc(100% - 0px), 15.91% calc(100% - 1px), 13.64% calc(100% - 0px), 11.36% calc(100% - 4px), 9.09% calc(100% - 6px), 6.82% calc(100% - 1px), 4.55% calc(100% - 2px), 2.27% calc(100% - 3px), 0.00% calc(100% - 3px));}
+    .barra-agenda{padding-bottom:10px}
   </style>
 </head>
 <body>
@@ -397,23 +398,24 @@
     function prenderTitulo(corpo) {
       var h1 = document.querySelector('h1.portal-titulo'), horas = corpo.querySelector('.cab-horas'), barra = corpo.querySelector('.barra-agenda'), folha = document.querySelector('.folha-pagina');
       if (!h1 || !horas || !barra || !folha) return;
+      var miolo = document.createElement('i'), fundo = document.createElement('div'); fundo.className = 'fundo-presa'; fundo.appendChild(miolo); corpo.insertBefore(fundo, corpo.firstChild); /* dentro da mesma camada das peças presas, senão ficava por cima delas */
       function medir() {
         var t = document.querySelector('.sidemenu-toggle'), r = t ? t.getBoundingClientRect() : null, alt = h1.offsetHeight;
         var topo = r && r.height ? Math.max(0, r.top + r.height / 2 - alt / 2) : 0, topoHoras = topo + alt, topoBarra = topoHoras + horas.offsetHeight;
         h1.style.top = topo + 'px'; horas.style.top = topoHoras + 'px'; barra.style.top = topoBarra + 'px';
-        var f = folha.getBoundingClientRect(), fx = f.left + folha.clientLeft, fy = f.top + folha.clientTop, ph = parseFloat(getComputedStyle(barra).paddingLeft) || 0;
-        [[h1, topo, -ph, true], [horas, topoHoras, -ph, true], [barra, topoBarra, 0, false]].forEach(function (x) {
-          var el = x[0], rc = el.getBoundingClientRect(), presa = rc.top <= x[1] + 0.5;
-          el.classList.toggle('presa', presa);
-          /* o papiro da peça presa = o papiro da folha, no mesmo lugar da tela (nada de cor nova) */
-          el.style.setProperty('--bw', folha.clientWidth + 'px'); el.style.setProperty('--bh', folha.clientHeight + 'px');
-          el.style.setProperty('--bx', (fx - (rc.left + x[2])) + 'px'); el.style.setProperty('--by', (fy - (presa ? x[1] : rc.top)) + 'px');
-          el.style.setProperty('--topo-h1', (x[3] && el === h1 ? topo : 0) + 'px');
-        });
+        var presa = h1.getBoundingClientRect().top <= topo + 0.5, f = folha.getBoundingClientRect();
+        fundo.style.display = presa ? 'block' : 'none';
+        if (!presa) return;
+        fundo.style.left = f.left + 'px'; fundo.style.width = f.width + 'px'; fundo.style.height = (topoBarra + barra.offsetHeight) + 'px';
+        /* o papiro da folha de cima = o papiro da folha de baixo, no mesmo lugar da tela */
+        miolo.style.setProperty('--bw', folha.clientWidth + 'px'); miolo.style.setProperty('--bh', folha.clientHeight + 'px');
+        miolo.style.setProperty('--bx', (f.left + folha.clientLeft - f.left) + 'px'); miolo.style.setProperty('--by', (f.top + folha.clientTop) + 'px');
       }
       var espera = false;
       function rolou() { if (espera) return; espera = true; requestAnimationFrame(function () { espera = false; medir(); }); }
+      if (window.__prenderFim) window.__prenderFim();
       window.addEventListener('scroll', rolou, { passive: true }); window.addEventListener('resize', medir);
+      window.__prenderFim = function () { window.removeEventListener('scroll', rolou); window.removeEventListener('resize', medir); };
       if (window.ResizeObserver) new ResizeObserver(medir).observe(horas);
       medir(); setTimeout(medir, 600); setTimeout(medir, 2000); /* o menu entra depois da página */
     }
