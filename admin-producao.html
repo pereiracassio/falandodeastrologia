@@ -230,18 +230,19 @@
     var SVG_COPIAR = '<svg viewBox="0 0 64 64" width="15" height="15" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px"><rect x="22" y="22" width="30" height="34"/><path d="M42 22V10H12v34h10"/></svg>';
     var SVG_COPIADO = '<svg viewBox="0 0 64 64" width="15" height="15" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px"><path d="M12 34l14 14 26-28"/></svg>';
     function copiarAoTocar(alvo, icone, pegar) {
+      var base = icone.innerHTML; /* o que o ícone mostra em repouso (nada, no caso do nome de campo) */
       alvo.style.cursor = 'pointer'; alvo.setAttribute('role', 'button'); alvo.setAttribute('tabindex', '0');
       var fazer = function () {
         var txt = pegar();
         if (!txt) return;
-        copiarTexto(txt).then(function () { icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = SVG_COPIAR; }, 1500); }, function () { icone.textContent = ' não consegui'; setTimeout(function () { icone.innerHTML = SVG_COPIAR; }, 1500); });
+        copiarTexto(txt).then(function () { icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = base; }, 1500); }, function () { icone.textContent = ' não consegui'; setTimeout(function () { icone.innerHTML = base; }, 1500); });
       };
       alvo.addEventListener('click', fazer);
       alvo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); fazer(); } });
     }
     function rotuloCopiavel(texto, pegar) {
       var icone = el('span', {}), r = el('span', { class: 'prod-rotulo prod-fixo' }, [document.createTextNode(texto), icone]);
-      icone.innerHTML = SVG_COPIAR; copiarAoTocar(r, icone, pegar);
+      copiarAoTocar(r, icone, pegar); /* sem ícone em repouso: tocar no nome copia e só aí aparece o ✓ */
       return r;
     }
     function iconeCopiar(pegar, nome) { /* só o ícone, para onde não há nome de campo (título do corte, link) */
@@ -964,7 +965,7 @@
           var c = lerCard(l);
           var dois = function (n) { return String(n).padStart(2, '0'); };
           var tempo = c ? dois(c.m) + ':' + dois(c.s) + ':' + dois(c.f) : '';
-          var iconeMin = el('span', {}); if (tempo) iconeMin.innerHTML = SVG_COPIAR;
+          var iconeMin = el('span', {});
           var corpo = el('div', {}, [
             el('span', { class: 'prod-titulo' }, [document.createTextNode((i + 1) + '. ' + (tempo || 'falta a minutagem')), iconeMin]),
             el('span', { class: 'prod-sub', text: c ? c.titulo : l })
