@@ -679,7 +679,8 @@
     function telaSerie(area, id) {
       var s = id === 'soltos' ? null : achar(series, id);
       if (id !== 'soltos' && !s) { serieAberta = null; guardarEstado(); return telaSeries(area); }
-      var lista = videos.filter(function (v) { return (v.serie_id || null) === (s ? s.id : null); }).sort(function (a, b) { return (a.numero || 0) - (b.numero || 0); });
+      var lista = videos.filter(function (v) { return (v.serie_id || null) === (s ? s.id : null); }).sort(function (a, b) { return (a.temporada || 1) - (b.temporada || 1) || (a.numero || 0) - (b.numero || 0); });
+      var temporadaAtual = lista.reduce(function (m, v) { return Math.max(m, v.temporada || 1); }, 1), temporadasDaSerie = {}; lista.forEach(function (v) { temporadasDaSerie[v.temporada || 1] = 1; });
       /* na mesma linha do ← Voltar: "Série" (as informações) e "Vídeos" (a lista); depois do vídeo, volta já na lista */
       var abaS = s ? (abaSerieDe === id ? abaSerie : 'serie') : 'videos';
       var botSerie = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: nomeCurto(s ? s.nome : 'Série') });
@@ -723,10 +724,10 @@
           Promise.all(mudar.map(function (x) { return gravar('prod_videos', videos, x.v, { data_postar: x.d }); })).then(function () { P.mensagem(msg, 'Datas ajustadas a partir do primeiro vídeo.', 'ok'); tela(); });
         });
         var mais = botao('Criar os vídeos que faltam', function () {
-          var n = total.value ? +total.value : 0;
-          if (!n || n <= lista.length) { P.mensagem(msg, 'Escreva em "Quantos vídeos terá" um número maior que os vídeos que já existem.', 'erro'); return; }
+          var n = total.value ? +total.value : 0, daTemporada = lista.filter(function (v) { return (v.temporada || 1) === temporadaAtual; });
+          if (!n || n <= daTemporada.length) { P.mensagem(msg, 'Escreva em "Quantos vídeos terá" um número maior que os vídeos que já existem.', 'erro'); return; }
           var novos = [];
-          for (var i = lista.length + 1; i <= n; i++) novos.push({ serie_id: s.id, numero: i, titulo: 'Vídeo ' + i, acesso: s.acesso || 'publico' });
+          for (var i = daTemporada.length + 1; i <= n; i++) novos.push({ serie_id: s.id, numero: i, temporada: temporadaAtual, titulo: 'Vídeo ' + i, acesso: s.acesso || 'publico' });
           C.from('prod_videos').insert(novos).select('*').then(function (r) {
             if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
             (r.data || []).forEach(function (v) { videos.push(v); }); abaSerie = 'videos'; abaSerieDe = id; tela();
@@ -752,7 +753,9 @@
       var vc = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Vídeos' })]);
       area.appendChild(vc);
       if (!lista.length) vc.appendChild(el('p', { class: 'prod-vazio', text: s ? 'Nenhum vídeo ainda. Escreva "Quantos vídeos terá" e toque em "Criar os vídeos que faltam", ou use "Novo vídeo".' : 'Nenhum vídeo solto.' }));
+      var temporadaVista = null, haTemporadas = Object.keys(temporadasDaSerie).length > 1;
       lista.forEach(function (v) {
+        if (haTemporadas && (v.temporada || 1) !== temporadaVista) { temporadaVista = v.temporada || 1; vc.appendChild(el('hr', { class: 'prod-divisa' })); vc.appendChild(el('p', { class: 'prod-grupo', text: temporadaVista + 'ª temporada' })); } /* divisa entre as temporadas da mesma série */
         var nc = cortesDe(v.id).length;
         var miniatura = v.capa_url ? el('img', { class: 'prod-mini', src: v.capa_url, alt: '' }) : null;
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [
@@ -778,15 +781,25 @@
       /* o botão fica depois do último vídeo; o novo já vem com o número seguinte e a data uma semana depois do último */
       vc.appendChild(el('div', { class: 'prod-acoes-topo', style: 'margin-top:14px' }, [
         botao('Novo vídeo', function () {
-          var prox = lista.reduce(function (m, v) { return Math.max(m, v.numero || 0); }, 0) + 1;
+          var prox = lista.filter(function (v) { return (v.temporada || 1) === temporadaAtual; }).reduce(function (m, v) { return Math.max(m, v.numero || 0); }, 0) + 1;
           var ultima = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort().pop();
-          var novoVideo = { serie_id: s ? s.id : null, numero: prox, titulo: 'Vídeo ' + prox, acesso: s ? (s.acesso || 'publico') : 'publico' };
+          var novoVideo = { serie_id: s ? s.id : null, numero: prox, temporada: temporadaAtual, titulo: 'Vídeo ' + prox, acesso: s ? (s.acesso || 'publico') : 'publico' };
           if (ultima) novoVideo.data_postar = somarDias(ultima, 7);
           C.from('prod_videos').insert(novoVideo).select('*').single().then(function (r) {
             if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
             videos.push(r.data); irPara('series', serieAberta, r.data.id);
           });
-        }, false)
+        }, false),
+        s ? botao('Nova temporada', function () {
+          if (!window.confirm('Começar a ' + (temporadaAtual + 1) + 'ª temporada desta série? O primeiro vídeo dela será o número 1.')) return;
+          var ultima = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort().pop();
+          var novoVideo = { serie_id: s.id, numero: 1, temporada: temporadaAtual + 1, titulo: 'Vídeo 1', acesso: s.acesso || 'publico' };
+          if (ultima) novoVideo.data_postar = somarDias(ultima, 7);
+          C.from('prod_videos').insert(novoVideo).select('*').single().then(function (r) {
+            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+            videos.push(r.data); irPara('series', serieAberta, r.data.id);
+          });
+        }, false) : null
       ]));
       vc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar(function () { irPara('series'); })])); /* ← Voltar também embaixo */
       var blocoApagarSerie = el('div', { style: 'margin:56px 0 8px;text-align:center' }, apagar ? [apagar] : []);
@@ -834,6 +847,7 @@
       var titulo = el('input', { type: 'text', maxlength: '160' }); titulo.value = v.titulo || '';
       var capaTexto = el('input', { type: 'text', maxlength: '160', placeholder: 'O que está escrito na capa do vídeo' }); capaTexto.value = v.capa_texto || '';
       var numero = el('input', { type: 'number', min: '1' }); numero.value = v.numero || '';
+      var temporada = el('input', { type: 'number', min: '1' }); temporada.value = v.temporada || 1;
       var data = el('input', { type: 'date' }); data.value = v.data_postar || '';
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
@@ -844,7 +858,7 @@
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo, function () { return titulo.value.trim(); }), campo('Texto da capa', capaTexto, function () { return capaTexto.value.trim(); })]));
-      cartao.appendChild(fila([0.7, 2], [campo('Número na série', numero), campo('Link do YouTube', link)]));
+      cartao.appendChild(fila([0.7, 0.7, 2], [campo('Número na série', numero), campo('Temporada', temporada), campo('Link do YouTube', link)]));
       /* horário de Júpiter é para o dia em que o vídeo fica PÚBLICO; vídeo só de membros (ou sem data pública) usa a data dos membros */
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
@@ -1030,7 +1044,7 @@
       var tempoSalvar = null;
       function salvarSozinho() {
         var lk = link.value.trim(), okLink = !lk || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk);
-        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, data_cortes: dataCortes.value || null, data_blog: dataBlog.value || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, temporada: temporada.value ? +temporada.value : 1, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, data_cortes: dataCortes.value || null, data_blog: dataBlog.value || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
         if (titulo.value.trim()) c.titulo = titulo.value.trim(); /* título é obrigatório no banco: vazio não apaga o que já estava */
         if (okLink) c.link_youtube = lk || null;
         if (usaBlocos) c.roteiro_blocos = rb;
@@ -1045,7 +1059,7 @@
           marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
         }
       });
-      [titulo, capaTexto, link, numero, data, dataPublico, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+      [titulo, capaTexto, link, numero, temporada, data, dataPublico, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
         c.addEventListener('change', agendarSalvar);
         c.addEventListener('input', marcarSeoSePronto);
