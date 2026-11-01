@@ -429,17 +429,17 @@
     }, function () {});
     return a;
   }
-  /* abas de dentro dos Projetos: Projetos, Estudos e Produção. A barra mora fora da área da tela (#abas-projetos) e a troca de aba é DENTRO da mesma página: baixa a página de destino, troca só o conteúdo e roda o código dela, sem recarregar (recarregar fazia tudo piscar) */
+  /* abas de dentro dos Projetos: Projetos, Cursos, Estudos e Produção. A barra mora fora da área da tela (#abas-projetos) e a troca de aba é DENTRO da mesma página: baixa a página de destino, troca só o conteúdo e roda o código dela, sem recarregar (recarregar fazia tudo piscar) */
   function abasProjetos(atual) {
     var lugar = document.getElementById('abas-projetos'); if (!lugar) return;
     lugar.textContent = '';
     var barra = el('div', { class: 'portal-abas', role: 'tablist' });
-    [['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']].forEach(function (d) {
+    [['projetos', 'Projetos', 'admin-projetos.html'], ['cursos', 'Cursos', 'admin-projeto-curso.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']].forEach(function (d) {
       var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (d[0] === atual ? ' ativa' : ''), text: d[1] });
       b.addEventListener('click', function () { if (d[0] !== atual) trocarAbaProjetos(d[2]); });
       barra.appendChild(b);
     });
-    lugar.appendChild(barra);
+    lugar.appendChild(comSetas(el('div', { class: 'portal-abas-rola' }, [barra]))); /* quatro abas: cada uma do tamanho do nome, a barra rola para o lado */
   }
   function trocarAbaProjetos(destino) {
     var app = document.getElementById('app');
