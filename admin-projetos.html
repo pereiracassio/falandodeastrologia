@@ -358,7 +358,7 @@
         if (x.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: x.nota }));
         var acoes = el('div', { class: 'proj-acoes' });
         var sobe = el('button', { type: 'button', class: 'proj-mini', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'proj-mini', text: '↓', 'aria-label': 'Descer' });
-        sobe.disabled = i === 0; desce.disabled = i === grupo.length - 1;
+        sobe.disabled = i === 0 || !!x.data || !!grupo[i - 1].data; desce.disabled = i === grupo.length - 1 || !!x.data || !!grupo[i + 1].data; /* passo com data fica onde a data manda */
         function trocar(com) {
           Promise.all([C.from('projeto_passos').update({ ordem: com.ordem }).eq('id', x.id), C.from('projeto_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar);
         }
@@ -376,7 +376,12 @@
         return el('div', { class: 'proj-passo' + (x.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]);
       }
       /* o próximo passo no topo, os outros pendentes depois, e o que já foi feito embaixo */
-      var pendentes = meus.filter(function (x) { return !x.feito; }), prontos = meus.filter(function (x) { return x.feito; });
+      var pendentes = meus.filter(function (x) { return !x.feito; }).map(function (x, k) { return { x: x, k: k }; }).sort(function (a, b) {
+        /* passo com data sobe e fica em ordem de data; sem data, fica na ordem em que foi colocado */
+        if (!!a.x.data !== !!b.x.data) return a.x.data ? -1 : 1;
+        if (a.x.data && a.x.data !== b.x.data) return a.x.data < b.x.data ? -1 : 1;
+        return a.k - b.k;
+      }).map(function (o) { return o.x; }), prontos = meus.filter(function (x) { return x.feito; });
       function grupoDe(titulo, itens, grande) {
         if (!itens.length) return;
         lista.appendChild(el('p', { class: 'proj-grupo', text: titulo }));
