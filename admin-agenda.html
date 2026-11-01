@@ -677,6 +677,7 @@
         videos.forEach(function (v) {
           /* data limite para GRAVAR: o vídeo aparece no To do até ser marcado como gravado */
           if (v.data_gravar && !v.gravado && !v.no_ar) saida.push({ quando: doIso(v.data_gravar), diaTodo: true, titulo: (v.numero ? 'Vídeo ' + v.numero + ', ' : 'Vídeo, ') + (v.titulo || 'sem título'), sub: 'gravar', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, ETV, v.criado_em, v.data_gravar) });
+          if (v.data_gravar && !v.gravado && !v.no_ar) return; /* enquanto falta gravar, só o "gravar"; depois de marcado como gravado, vem o da próxima data (membros ou público, a primeira que tiver) até estar no YouTube */
           /* já no YouTube, mas ainda falta fazer os cortes e depois colocar no blog: fica na lista, sem data enquanto ele não puser a data limite */
           if (v.no_ar && !(v.cortes_feitos && v.blog_ok)) {
             var faltaCortes = !v.cortes_feitos, dl = (faltaCortes ? v.data_cortes : v.data_blog) || '';
