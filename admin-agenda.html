@@ -866,8 +866,10 @@
           var aberto = el('div', { class: 'barra-ocre' });
           texto.addEventListener('click', function () { if (x.url) { location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
           linha.appendChild(barra);
-          if (x.capa) linha.appendChild(el('img', { src: x.capa, alt: '', style: 'width:96px;height:54px;object-fit:cover;border:1px solid #1F5FA3;flex:none' })); /* a capinha do vídeo, se tiver */
-          linha.appendChild(texto);
+          if (x.capa) { /* a capinha do vídeo fica EM CIMA, do tamanho da coluna, e o texto escreve embaixo dela (no celular não espreme o texto) */
+            texto.style.flex = 'none'; texto.style.width = '100%';
+            linha.appendChild(el('div', { style: 'flex:1;min-width:0' }, [el('img', { src: x.capa, alt: '', style: 'display:block;width:100%;max-width:300px;aspect-ratio:16/9;object-fit:cover;border:1px solid #1F5FA3;margin:0 0 8px' }), texto]));
+          } else linha.appendChild(texto);
           if (x.tarefa) {
             var ap = P.botaoApagar('Apagar');
             ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (g) { if (g.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenhar(); }); });
