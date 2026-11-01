@@ -101,15 +101,17 @@
   </div>
   <div class="portal"><div class="portal-caixa">
     <h1 class="portal-titulo">Projetos</h1>
+    <div id="abas-projetos"></div>
     <div id="app"></div>
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=134"></script>
+  <script src="portal.js?v=135"></script>
   <script src="menu.js?v=54" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    P.abasProjetos('producao');
     var nomeAdmin = '';
     var DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     var DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -580,7 +582,6 @@
     function tela() {
       limpar();
       app.appendChild(topo(nomeAdmin));
-      app.appendChild(P.abasProjetos('producao'));
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       [['hoje', 'Próximos'], ['series', 'Séries'], ['calendario', 'Calendário']].forEach(function (d) {
         var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] ? ' ativa' : ''), text: d[1] });

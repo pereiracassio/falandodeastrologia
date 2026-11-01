@@ -32,17 +32,19 @@
   </div>
   <div class="portal"><div class="portal-caixa">
     <h1 class="portal-titulo">Projetos</h1>
+    <div id="abas-projetos"></div>
     <div id="app"></div>
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=134"></script>
+  <script src="portal.js?v=135"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=2"></script>
   <script src="menu.js?v=54" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
+    P.abasProjetos('estudos');
     var nomeAdmin = '', nomeCurto = '';
     var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
@@ -149,8 +151,7 @@
           P.voltarNoFim(app, voltar);
           return;
         }
-        app.appendChild(P.abasProjetos('estudos'));
-        var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
+          var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
         ativos.forEach(function (e) {
           var b = el('button', { type: 'button', role: 'tab', text: e.nome });
           b.className = 'portal-aba' + (rzAberto && e.id === rzAberto.id ? ' ativa' : '');

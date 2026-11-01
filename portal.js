@@ -429,15 +429,42 @@
     }, function () {});
     return a;
   }
-  /* abas de dentro dos Projetos: Projetos, Estudos e Produção (cada uma abre a sua tela) */
+  /* abas de dentro dos Projetos: Projetos, Estudos e Produção. A barra mora fora da área da tela (#abas-projetos) e a troca de aba é DENTRO da mesma página: baixa a página de destino, troca só o conteúdo e roda o código dela, sem recarregar (recarregar fazia tudo piscar) */
   function abasProjetos(atual) {
+    var lugar = document.getElementById('abas-projetos'); if (!lugar) return;
+    lugar.textContent = '';
     var barra = el('div', { class: 'portal-abas', role: 'tablist' });
     [['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']].forEach(function (d) {
       var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (d[0] === atual ? ' ativa' : ''), text: d[1] });
-      b.addEventListener('click', function () { if (d[0] !== atual) location.href = d[2]; });
+      b.addEventListener('click', function () { if (d[0] !== atual) trocarAbaProjetos(d[2]); });
       barra.appendChild(b);
     });
-    return barra;
+    lugar.appendChild(barra);
+  }
+  function trocarAbaProjetos(destino) {
+    var app = document.getElementById('app');
+    var recarregar = function () { location.href = destino; };
+    if (!app || !window.fetch || !window.DOMParser) { recarregar(); return; }
+    fetch(destino).then(function (r) { if (!r.ok) throw new Error('pagina'); return r.text(); }).then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var scripts = [].slice.call(doc.body.querySelectorAll('script'));
+      var interno = scripts.filter(function (s) { return !s.getAttribute('src'); }).pop();
+      if (!interno) throw new Error('pagina');
+      var externos = scripts.map(function (s) { return s.getAttribute('src'); }).filter(function (src) {
+        return src && !/supabase|portal\.js|menu\.js/.test(src) && !document.querySelector('script[src="' + src + '"]');
+      });
+      [].slice.call(document.head.querySelectorAll('style[data-aba]')).forEach(function (s) { s.remove(); });
+      [].slice.call(doc.head.querySelectorAll('style')).forEach(function (s) { var n = document.createElement('style'); n.setAttribute('data-aba', ''); n.textContent = s.textContent; document.head.appendChild(n); });
+      return externos.reduce(function (cadeia, src) {
+        return cadeia.then(function () { return new Promise(function (ok, erro) { var t = document.createElement('script'); t.src = src; t.onload = ok; t.onerror = erro; document.body.appendChild(t); }); });
+      }, Promise.resolve()).then(function () {
+        app.textContent = '';
+        document.title = doc.title;
+        try { history.replaceState(null, '', destino); } catch (e) { /* sem histórico */ }
+        window.scrollTo(0, 0);
+        var sc = document.createElement('script'); sc.textContent = interno.textContent; document.body.appendChild(sc);
+      });
+    }).catch(recarregar);
   }
   /* setinha de aviso numa barra que rola */
   function seta(lado, pontos, rotulo) {
