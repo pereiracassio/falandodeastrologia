@@ -928,11 +928,14 @@
       function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
       data.addEventListener('change', atualizarJupiter);
       var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
+      var dataGravar = el('input', { type: 'date' }); dataGravar.value = v.data_gravar || '';
       var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
       var dataBlog = el('input', { type: 'date' }); dataBlog.value = v.data_blog || '';
-      [data, dataPublico, dataCortes, dataBlog].forEach(function (c) { c.style.cssText = 'width:160px;min-width:160px;margin:0 0 6px'; });
+      [data, dataPublico, dataGravar, dataCortes, dataBlog].forEach(function (c) { c.style.cssText = 'width:160px;min-width:160px;margin:0 0 6px'; });
       var blocoPublico = campo('Fica público em', dataPublico);
       blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
+      var tirarGravar = P.botaoApagar('Tirar a data');
+      tirarGravar.addEventListener('click', function () { dataGravar.value = ''; dataGravar.dispatchEvent(new Event('change')); });
       var tirarCortes = P.botaoApagar('Tirar a data'), tirarBlog = P.botaoApagar('Tirar a data');
       tirarCortes.addEventListener('click', function () { dataCortes.value = ''; dataCortes.dispatchEvent(new Event('change')); });
       tirarBlog.addEventListener('click', function () { dataBlog.value = ''; dataBlog.dispatchEvent(new Event('change')); });
@@ -942,6 +945,7 @@
       cartao.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 28px;align-items:flex-start;margin:0 0 6px' }, [
         linhaGrupo([
           campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })),
+          campo('Data limite para gravar', el('div', {}, [dataGravar, tirarGravar])),
           campo('Disponível para membros', data), blocoPublico
         ]),
         linhaGrupo([campo('Data limite dos cortes', el('div', {}, [dataCortes, tirarCortes])), campo('Data limite do blog', el('div', {}, [dataBlog, tirarBlog]))])
@@ -1107,7 +1111,7 @@
       var tempoSalvar = null;
       function salvarSozinho() {
         var lk = link.value.trim(), okLink = !lk || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk);
-        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, temporada: temporada.value ? +temporada.value : 1, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, data_cortes: dataCortes.value || null, data_blog: dataBlog.value || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, temporada: temporada.value ? +temporada.value : 1, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, data_gravar: dataGravar.value || null, data_cortes: dataCortes.value || null, data_blog: dataBlog.value || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
         if (titulo.value.trim()) c.titulo = titulo.value.trim(); /* título é obrigatório no banco: vazio não apaga o que já estava */
         if (okLink) c.link_youtube = lk || null;
         if (usaBlocos) c.roteiro_blocos = rb;
@@ -1122,7 +1126,7 @@
           marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
         }
       });
-      [titulo, capaTexto, link, numero, temporada, data, dataPublico, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+      [titulo, capaTexto, link, numero, temporada, data, dataPublico, dataGravar, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
         c.addEventListener('change', agendarSalvar);
         c.addEventListener('input', marcarSeoSePronto);
