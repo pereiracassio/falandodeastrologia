@@ -765,7 +765,41 @@
       var caixaLigar = P.combo(ligar, function () { return opcoes; }, function (i) { ligacao = i; ligar.value = ''; escolhido.textContent = ''; escolhido.appendChild(document.createTextNode('Ligada a: ' + i.rotulo + ' ')); escolhido.appendChild(tirarLig); escolhido.style.display = ''; }, false);
       tirarLig.addEventListener('click', function () { ligacao = null; escolhido.style.display = 'none'; });
       opcoesDeLigacao().then(function (o) { opcoes = o; });
-      var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
+      /* pela hora planetária: escolhe o planeta e quantos dias à frente; mostra a primeira hora livre daquele planeta em cada dia e coloca todas as marcadas como tarefas */
+      var planetaSel = el('select', { 'aria-label': 'Hora do planeta' }); planetaSel.appendChild(el('option', { value: '', text: 'Nenhum' })); HP.CALDEIA.forEach(function (n) { planetaSel.appendChild(el('option', { value: n, text: n })); });
+      var diasN = el('input', { type: 'number', min: '1', max: '60', value: '7', style: 'width:90px' }), verHoras = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ver horários' }), resPlan = el('div');
+      verHoras.addEventListener('click', function () {
+        resPlan.textContent = '';
+        var t = nova.value.trim(); if (!t) { nova.focus(); return; }
+        if (!planetaSel.value) { P.mensagem(msg, 'Escolha o planeta.', 'erro'); return; }
+        var n = Math.max(1, Math.min(60, +diasN.value || 7)), hojeI = isoDia(Date.now());
+        resPlan.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando...' }));
+        preparar().then(function () { return eventosEntre(doIso(hojeI), doIso(somaDias(hojeI, n))); }).then(function (evs) {
+          resPlan.textContent = '';
+          var itens = [];
+          for (var i = 0; i < n; i++) {
+            var iso = somaDias(hojeI, i), agoraI = iso === hojeI ? Math.ceil(Date.now() / 300000) * 300000 : 0;
+            var sl = slotsDoDia(iso, evs, planetaSel.value, 30, '00:00', '23:59', 0, agoraI).sort(function (p, q) { return p.ini - q.ini; })[0];
+            if (!sl) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
+            var it = { iso: iso, hora: hhmm(sl.ini), marcado: true }; itens.push(it);
+            resPlan.appendChild(caixinha(rotuloDia(iso) + ', ' + it.hora, true, function (m) { it.marcado = m; atualiza(); }).el);
+          }
+          var colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
+          var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
+          if (!itens.length) return;
+          atualiza(); resPlan.appendChild(colocar);
+          colocar.addEventListener('click', function () {
+            colocar.disabled = true;
+            var linhas = itens.filter(function (x) { return x.marcado; }).map(function (x) { return { titulo: t, data: x.iso, hora: x.hora, url: ligacao ? ligacao.url : null, url_rotulo: ligacao ? ligacao.rotulo : null }; });
+            C.from('todo_tarefas').insert(linhas).select('*').then(function (r) {
+              if (r.error) { colocar.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); return; }
+              (r.data || []).forEach(function (x) { dados.tarefas.push(x); }); nova.value = ''; ligacao = null; escolhido.style.display = 'none'; resPlan.textContent = ''; form.style.display = 'none'; desenhar();
+            }, function () { colocar.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); });
+          });
+        }, function (e) { resPlan.textContent = ''; P.mensagem(msg, 'Não foi possível ler a agenda (' + (e && e.message || 'erro') + ').', 'erro'); });
+      });
+      var blocoPlaneta = el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Na hora de (opcional)' }), planetaSel, el('label', { text: 'Quantos dias à frente' }), diasN, el('div', { style: 'margin-top:8px' }, [verHoras]), resPlan]);
+      var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), blocoPlaneta, el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
       var lista = el('div'); vista.appendChild(form); vista.appendChild(lista);
       alternarFormTodo = function () { var abre = form.style.display === 'none'; form.style.display = abre ? '' : 'none'; if (abre) nova.focus(); };
       lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
