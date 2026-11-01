@@ -476,7 +476,7 @@
           })(somaDias(ini0, k));
         } else { titulo.style.display = ''; titulo.style.gridTemplateColumns = ''; titulo.textContent = visao === 'todo' ? '' : tituloPeriodo(); }
         [ant, prox, hoje].forEach(function (b) { b.style.display = visao === 'todo' ? 'none' : ''; }); /* escondido de verdade (não só invisível): senão ele roubava a largura das abas no celular */
-        var rol = abas.parentNode, at = botoes[visao]; if (rol && at) rol.scrollLeft = Math.max(0, at.offsetLeft - (rol.clientWidth - at.offsetWidth) / 2); /* a aba aberta sempre aparece na barra */
+        var rol = abas.parentNode, at = botoes[visao]; if (rol && at && (at.offsetLeft < rol.scrollLeft || at.offsetLeft + at.offsetWidth > rol.scrollLeft + rol.clientWidth)) rol.scrollLeft = Math.max(0, at.offsetLeft - (rol.clientWidth - at.offsetWidth) / 2); /* a aba aberta sempre aparece na barra */
         if (visao === 'horas') { ++pedido; vista.textContent = ''; vistaHoras(vista); return; }
         if (visao === 'todo') { var minha = ++pedido; mostrarEncaixe(); vistaTodo(vista, function () { return minha === pedido; }); return; }
         var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
