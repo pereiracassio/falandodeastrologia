@@ -450,7 +450,8 @@
         corpoF.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:center' }, [ir, cancela]));
       });
       ant.addEventListener('click', function () { passo(-1); window.scrollTo(0, 0); }); prox.addEventListener('click', function () { passo(1); window.scrollTo(0, 0); });
-            var controles = el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none' }, [ant, hoje, prox, novo]); /* os botões moram na linha das abas, para o título ocupar a largura inteira (na semana, cada dia cai em cima da sua coluna) */
+            abas.appendChild(el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none;padding:0 6px 0 12px' }, [ant, hoje, prox])); /* ‹ data › é a última aba: corre junto com as outras */
+            var controles = el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none' }, [novo]); /* os botões moram na linha das abas, para o título ocupar a largura inteira (na semana, cada dia cai em cima da sua coluna) */
       corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('div', { style: 'flex:1;min-width:0' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */]), controles]), titulo])); corpo.appendChild(vista); prenderTitulo(corpo);
       /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
       var encaixePronto = false;
