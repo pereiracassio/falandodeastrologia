@@ -774,8 +774,11 @@
         if (!planetaSel.value) { P.mensagem(msg, 'Escolha o planeta.', 'erro'); return; }
         var n = Math.max(1, Math.min(60, +diasN.value || 7)), hojeI = isoDia(Date.now());
         resPlan.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando...' }));
+        var mostrarErro = function (e) { resPlan.textContent = ''; resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui montar os horários: ' + ((e && e.message) || e || 'erro') })); }; /* o erro de verdade aparece aqui, logo embaixo do botão */
         preparar().then(function () { return eventosEntre(doIso(hojeI), doIso(somaDias(hojeI, n))); }).then(function (evs) {
+          try {
           resPlan.textContent = '';
+          if (evs.falhas && evs.falhas.length) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não sugiro horário (poderia estar ocupado). Tente de novo.' })); return; }
           var itens = [], colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
           var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
           for (var i = 0; i < n; i++) {
@@ -795,7 +798,8 @@
               (r.data || []).forEach(function (x) { dados.tarefas.push(x); }); nova.value = ''; ligacao = null; escolhido.style.display = 'none'; resPlan.textContent = ''; form.style.display = 'none'; desenhar();
             }, function () { colocar.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); });
           });
-        }, function (e) { resPlan.textContent = ''; P.mensagem(msg, 'Não foi possível ler a agenda (' + (e && e.message || 'erro') + ').', 'erro'); });
+          } catch (e) { mostrarErro(e); }
+        }, mostrarErro);
       });
       var blocoPlaneta = el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Na hora de (opcional)' }), planetaSel, el('label', { text: 'Quantos dias à frente' }), diasN, el('div', { style: 'margin-top:8px' }, [verHoras]), resPlan]);
       var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), blocoPlaneta, el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
