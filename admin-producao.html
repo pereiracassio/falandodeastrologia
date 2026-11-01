@@ -118,6 +118,46 @@
     /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
     var BLOCO_FIXO_DESCRICAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
     var FIM_DESCRICAO = '\n\n' + BLOCO_FIXO_DESCRICAO + LINHA_DESCRICAO + '\nCapítulos\n00:00 Início\n';
+    /* lê uma nota do Notas da Apple (colada) e separa: título (1ª linha), roteiro em blocos ("Bloco N: ..."), texto do YouTube (depois da 1ª linha de traços até "Cards"), cards e tags */
+    function lerNotaDoNotas(bruto) {
+      var linhas = String(bruto || '').replace(/\r/g, '').split('\n');
+      var ehTraco = function (l) { return /^\s*[—–\-─_=]{10,}\s*$/.test(l); };
+      var i0 = 0; while (i0 < linhas.length && !linhas[i0].trim()) i0++;
+      var titulo = (linhas[i0] || '').trim(), resto = linhas.slice(i0 + 1);
+      var iSep = -1; for (var k = 0; k < resto.length; k++) if (ehTraco(resto[k])) { iSep = k; break; }
+      var roteiroLinhas = iSep >= 0 ? resto.slice(0, iSep) : resto, depois = iSep >= 0 ? resto.slice(iSep + 1) : [];
+      /* roteiro: cada "Bloco N: nome" começa um bloco */
+      var blocos = [], atual = null, antes = [];
+      roteiroLinhas.forEach(function (l) {
+        if (/^\s*bloco\s*\d+\s*[:.\-–—]/i.test(l)) { atual = { nome: l.replace(/^\s*bloco\s*\d+\s*[:.\-–—]\s*/i, '').trim(), linhas: [] }; blocos.push(atual); }
+        else if (atual) atual.linhas.push(l); else antes.push(l);
+      });
+      var limpa = function (arr) { return arr.join('\n').replace(/^\s+|\s+$/g, '').replace(/\n{3,}/g, '\n\n'); };
+      var textoBloco = function (b) { var c = limpa(b.linhas); return (b.nome ? b.nome + (c ? '\n\n' : '') : '') + c; };
+      var roteiro = null, roteiroBlocos = null;
+      if (blocos.length) {
+        var tb = blocos.map(textoBloco), pre = limpa(antes);
+        if (pre) tb[0] = pre + '\n\n' + tb[0];
+        if (tb.length === 1) roteiroBlocos = { gancho: tb[0], blocos: [''], conclusao: '' };
+        else if (tb.length === 2) roteiroBlocos = { gancho: tb[0], blocos: [tb[1]], conclusao: '' };
+        else roteiroBlocos = { gancho: tb[0], blocos: tb.slice(1, -1), conclusao: tb[tb.length - 1] };
+      } else roteiro = limpa(roteiroLinhas);
+      /* texto do YouTube: da linha de traços até "Cards"; cards: linhas de minutagem logo depois; tags: o parágrafo seguinte */
+      var iCards = -1; for (var c = 0; c < depois.length; c++) if (/^\s*cards?\s*:?\s*$/i.test(depois[c])) { iCards = c; break; }
+      var textoYT = limpa(iCards >= 0 ? depois.slice(0, iCards) : depois), cards = '', tags = '';
+      if (iCards >= 0) {
+        var apos = depois.slice(iCards + 1), j = 0;
+        while (j < apos.length && !apos[j].trim()) j++;
+        var cl = []; while (j < apos.length && apos[j].trim()) { cl.push(apos[j].trim()); j++; }
+        cards = cl.join('\n');
+        tags = limpa(apos.slice(j));
+      } else { /* sem "Cards": as tags são o último parágrafo com várias vírgulas e sem # */
+        var paras = textoYT.split(/\n\s*\n/), ult = paras[paras.length - 1] || '';
+        if ((ult.match(/,/g) || []).length >= 3 && ult.indexOf('#') < 0) { tags = ult.trim(); textoYT = paras.slice(0, -1).join('\n\n').trim(); }
+      }
+      tags = tags.replace(/\s*\n\s*/g, ' ').replace(/[,\s]+$/, '');
+      return { titulo: titulo, roteiro: roteiro, roteiroBlocos: roteiroBlocos, texto: textoYT, cards: cards, tags: tags };
+    }
     /* etapas de cada corte, na ordem: cortar, legendar, SEO e, no fim, onde foi postado */
     var ETAPAS_CORTE = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
 
@@ -790,6 +830,28 @@
             videos.push(r.data); irPara('series', serieAberta, r.data.id);
           });
         }, false),
+        botao('Importar do Notas', function () {
+          if (areaNotas.firstChild) { areaNotas.textContent = ''; return; }
+          var cx = el('textarea', { rows: '8', placeholder: 'Cole aqui a nota inteira' }), res = el('p', { class: 'prod-sub', text: '' });
+          var jaNoAr = el('input', { type: 'checkbox', id: 'notasNoAr', checked: 'checked' });
+          var ok = botao('Criar o vídeo', function () {
+            var n = lerNotaDoNotas(cx.value);
+            if (!n.titulo) { P.mensagem(msg, 'Cole a nota primeiro.', 'erro'); return; }
+            var prox = lista.filter(function (x) { return (x.temporada || 1) === temporadaAtual; }).reduce(function (m, x) { return Math.max(m, x.numero || 0); }, 0) + 1;
+            var novo = { serie_id: s ? s.id : null, numero: prox, temporada: temporadaAtual, titulo: n.titulo, acesso: s ? (s.acesso || 'publico') : 'publico', texto_postagem: n.texto || null, tags: n.tags || null, cards: n.cards || null };
+            if (n.roteiroBlocos) novo.roteiro_blocos = n.roteiroBlocos; else if (n.roteiro) novo.roteiro = n.roteiro;
+            if (jaNoAr.checked) { novo.roteiro_ok = true; novo.gravado = true; novo.editado = true; novo.edicao_fina = true; novo.seo_ok = true; novo.no_ar = true; }
+            C.from('prod_videos').insert(novo).select('*').single().then(function (r) {
+              if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+              videos.push(r.data); irPara('series', serieAberta, r.data.id);
+            });
+          }, false);
+          cx.addEventListener('input', function () {
+            var n = lerNotaDoNotas(cx.value), nb = n.roteiroBlocos ? 1 + n.roteiroBlocos.blocos.length + (n.roteiroBlocos.conclusao ? 1 : 0) : 0;
+            res.textContent = cx.value.trim() ? (n.titulo + ' · ' + (nb ? nb + ' blocos' : n.roteiro ? 'roteiro' : 'sem roteiro') + ' · ' + (n.texto ? 'texto' : 'sem texto') + ' · ' + (n.cards ? n.cards.split('\n').length + ' card(s)' : 'sem cards') + ' · ' + (n.tags ? n.tags.split(',').length + ' tags' : 'sem tags')) : '';
+          });
+          areaNotas.appendChild(el('div', { class: 'barra-ocre', style: 'margin:14px 0' }, [cx, res, el('label', { style: 'display:flex;gap:8px;align-items:center;margin:8px 0' }, [jaNoAr, document.createTextNode('Já está no YouTube')]), el('div', { class: 'portal-acoes' }, [ok])]));
+        }),
         s ? botao('Nova temporada', function () {
           if (!window.confirm('Começar a ' + (temporadaAtual + 1) + 'ª temporada desta série? O primeiro vídeo dela será o número 1.')) return;
           var ultima = lista.map(function (v) { return v.data_postar; }).filter(Boolean).sort().pop();
@@ -801,6 +863,7 @@
           });
         }, false) : null
       ]));
+      var areaNotas = el('div', {}); vc.appendChild(areaNotas);
       vc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar(function () { irPara('series'); })])); /* ← Voltar também embaixo */
       var blocoApagarSerie = el('div', { style: 'margin:56px 0 8px;text-align:center' }, apagar ? [apagar] : []);
       area.appendChild(blocoApagarSerie);
