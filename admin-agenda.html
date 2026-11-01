@@ -738,13 +738,13 @@
     function itensDePassos() {
       var pega = function (q) { return q.then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; }); };
       return Promise.all([
-        pega(C.from('projeto_passos').select('titulo,data,feito,projeto_id').not('data', 'is', null).eq('feito', false)), pega(C.from('projetos').select('id,nome')),
+        pega(C.from('projeto_passos').select('id,titulo,data,feito,projeto_id').not('data', 'is', null).eq('feito', false)), pega(C.from('projetos').select('id,nome')),
         pega(C.from('aluno_trilha_passos').select('titulo,data,feito,trilha_id,tipo,item_id,atividade_id,lido_em').not('data', 'is', null).eq('feito', false)),
         pega(C.from('aluno_trilhas').select('id,nome,aluno_id')), pega(C.from('alunos').select('id,nome')), pega(C.from('aluno_codigos').select('aluno_id,codigo')),
         pega(C.from('atividades').select('id,corrigida_em'))
       ]).then(function (r) {
         var saida = [], porId = function (l, id) { return l.filter(function (x) { return x.id === id; })[0]; };
-        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: '#A03E25' }); });
+        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: '#A03E25' }); });
         r[2].forEach(function (x) {
           if (x.tipo === 'material' && x.lido_em) return;
           if (x.tipo === 'gravacao' && x.item_id) return;
@@ -836,6 +836,12 @@
         cx.addEventListener('click', function () {
           cx.textContent = '✓'; cx.disabled = true;
           var falhou = function () { cx.textContent = ''; cx.disabled = false; alert('Não foi possível salvar.'); };
+          if (x.passoId) { /* passo de projeto: marcado como feito na tabela dos projetos (continua igual lá) */
+            C.from('projeto_passos').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.passoId).then(function (g) {
+              if (g.error) return falhou(); dados.fora = dados.fora.filter(function (i) { return i !== x; }); desenhar();
+            }, falhou);
+            return;
+          }
           if (x.tarefa) { /* tarefa dele: concluída na própria tabela */
             C.from('todo_tarefas').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.tarefa.id).then(function (g) {
               if (g.error) return falhou(); dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenhar();
@@ -886,7 +892,7 @@
           }
           /* dois lugares FIXOS, sempre os mesmos: a caixa de marcar (mais para dentro) e o planeta no canto direito, com ou sem o outro */
           var lugarCaixa = el('span', { style: 'flex:none;width:26px;display:flex;align-items:center;justify-content:center' });
-          if (x.chave || x.tarefa) lugarCaixa.appendChild(caixinhaFeito(x, linha, aberto)); /* compromisso e aniversário saem da lista quando ele marca; o resto sai sozinho quando é resolvido na própria tela */
+          if (x.chave || x.tarefa || x.passoId) lugarCaixa.appendChild(caixinhaFeito(x, linha, aberto)); /* compromisso e aniversário saem da lista quando ele marca; o resto sai sozinho quando é resolvido na própria tela */
           var lugarPlaneta = el('span', { style: 'flex:none;width:30px;display:flex;align-items:center;justify-content:center' });
           if (plT) lugarPlaneta.appendChild(plT);
           linha.appendChild(lugarCaixa); linha.appendChild(lugarPlaneta);
