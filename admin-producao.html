@@ -226,15 +226,28 @@
         document.body.removeChild(t);
       });
     }
-    function botaoCopiar(pegar, rotulo) {
-      var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: rotulo || 'Copiar' });
-      b.addEventListener('click', function () {
+    /* copiar sem botão escrito "Copiar": tocar no NOME do campo (ou no ícone) copia o conteúdo; o ícone vira ✓ por um instante */
+    var SVG_COPIAR = '<svg viewBox="0 0 64 64" width="15" height="15" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px"><rect x="22" y="22" width="30" height="34"/><path d="M42 22V10H12v34h10"/></svg>';
+    var SVG_COPIADO = '<svg viewBox="0 0 64 64" width="15" height="15" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px"><path d="M12 34l14 14 26-28"/></svg>';
+    function copiarAoTocar(alvo, icone, pegar) {
+      alvo.style.cursor = 'pointer'; alvo.setAttribute('role', 'button'); alvo.setAttribute('tabindex', '0');
+      var fazer = function () {
         var txt = pegar();
-        if (!txt) { b.textContent = 'Vazio'; setTimeout(function () { b.textContent = rotulo || 'Copiar'; }, 1200); return; }
-        copiarTexto(txt).then(function () { b.textContent = 'Copiado!'; }, function () { b.textContent = 'Não consegui copiar'; });
-        setTimeout(function () { b.textContent = rotulo || 'Copiar'; }, 1500);
-      });
-      return b;
+        if (!txt) return;
+        copiarTexto(txt).then(function () { icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = SVG_COPIAR; }, 1500); }, function () { icone.textContent = ' não consegui'; setTimeout(function () { icone.innerHTML = SVG_COPIAR; }, 1500); });
+      };
+      alvo.addEventListener('click', fazer);
+      alvo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); fazer(); } });
+    }
+    function rotuloCopiavel(texto, pegar) {
+      var icone = el('span', {}), r = el('span', { class: 'prod-rotulo prod-fixo' }, [document.createTextNode(texto), icone]);
+      icone.innerHTML = SVG_COPIAR; copiarAoTocar(r, icone, pegar);
+      return r;
+    }
+    function iconeCopiar(pegar, nome) { /* só o ícone, para onde não há nome de campo (título do corte, link) */
+      var icone = el('span', { title: nome || 'Copiar', 'aria-label': nome || 'Copiar', style: 'color:#1034A6;padding:4px 6px;display:inline-block' });
+      icone.innerHTML = SVG_COPIAR.replace('margin-left:6px', 'margin-left:0'); copiarAoTocar(icone, icone, pegar);
+      return icone;
     }
 
     /* roteiro em tela cheia para ler enquanto grava: letra grande e ajustável, rolagem automática, fundo claro ou escuro */
@@ -497,7 +510,7 @@
       setTimeout(function () { var at = caixa.querySelector('.ativa'); if (caixa.scrollWidth > caixa.clientWidth && at) caixa.scrollLeft = Math.max(0, at.offsetLeft - caixa.clientWidth / 2 + at.offsetWidth / 2); }, 0); /* se não couber, deixa à vista o nível aberto */
       return env;
     }
-    function campo(rotulo, entrada) { return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
+    function campo(rotulo, entrada, pegar) { return el('div', {}, [pegar ? rotuloCopiavel(rotulo, pegar) : el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
     function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; guardarEstado(); tela(); window.scrollTo(0, 0); }
 
     /* ---------- estrutura: abas ---------- */
@@ -818,8 +831,7 @@
       var cardsLista = el('div', {});
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
-      cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo), campo('Texto da capa', capaTexto)]));
-      cartao.appendChild(fila([1, 1], [el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return titulo.value.trim(); }, 'Copiar o título')]), el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return capaTexto.value.trim(); }, 'Copiar o texto da capa')])]));
+      cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo, function () { return titulo.value.trim(); }), campo('Texto da capa', capaTexto, function () { return capaTexto.value.trim(); })]));
       cartao.appendChild(fila([0.7, 2], [campo('Número na série', numero), campo('Link do YouTube', link)]));
       /* horário de Júpiter é para o dia em que o vídeo fica PÚBLICO; vídeo só de membros (ou sem data pública) usa a data dos membros */
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
@@ -909,24 +921,24 @@
       }
       var linkRoteiro = el('div', { class: 'portal-acoes', style: 'margin:0 0 8px' }, [botao('Gravar com o roteiro (tela cheia)', function () {
         modoGravacao(titulo.value, usaBlocos ? itensBlocos() : [{ nome: '', texto: roteiro.value }]);
-      }, false), botaoCopiar(function () {
-        /* o roteiro inteiro em um texto só: cada bloco com o nome em cima (Gancho, Bloco 1, ..., Conclusão); blocos vazios ficam de fora */
+      }, false)]);
+      /* o roteiro inteiro em um texto só (tocar no nome "Roteiro"): cada bloco com o nome em cima (Gancho, Bloco 1, ..., Conclusão); blocos vazios ficam de fora */
+      var roteiroTodo = function () {
         if (!usaBlocos) return roteiro.value.trim();
         return itensBlocos().filter(function (i) { return i.texto.trim(); }).map(function (i) { return i.nome + '\n' + i.texto.trim(); }).join('\n\n');
-      }, 'Copiar o roteiro todo')]);
-      if (usaBlocos) { cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Roteiro' })); desenharBlocos(); cartao.appendChild(areaBlocos); }
-      else cartao.appendChild(campo('Roteiro', roteiro));
+      };
+      if (usaBlocos) { cartao.appendChild(rotuloCopiavel('Roteiro', roteiroTodo)); desenharBlocos(); cartao.appendChild(areaBlocos); }
+      else cartao.appendChild(campo('Roteiro', roteiro, roteiroTodo));
       /* o roteiro só vira "pronto" quando você disser que terminou (às vezes ainda está sendo escrito) */
       cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' })]));
       cartao.appendChild(linkRoteiro);
-      cartao.appendChild(campo('Texto que vai junto (vai inteiro para a descrição do YouTube)', texto));
-      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return texto.value; }, 'Copiar o texto'),
+      cartao.appendChild(campo('Texto que vai junto (vai inteiro para a descrição do YouTube)', texto, function () { return texto.value; }));
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [
         botao('Colocar a linha e Capítulos no fim', function () {
           if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
           texto.value = texto.value.replace(/\s+$/, '') + FIM_DESCRICAO; texto.dispatchEvent(new Event('input'));
         })]));
-      cartao.appendChild(campo('Tags do YouTube', tags));
-      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botaoCopiar(function () { return tags.value.trim(); }, 'Copiar as tags')]));
+      cartao.appendChild(campo('Tags do YouTube', tags, function () { return tags.value.trim(); }));
       cartao.appendChild(campo('Cards (um por linha, no máximo 5)', cardsTxt));
       cartao.appendChild(avisoCards);
       cartao.appendChild(cardsLista);
@@ -952,11 +964,14 @@
           var c = lerCard(l);
           var dois = function (n) { return String(n).padStart(2, '0'); };
           var tempo = c ? dois(c.m) + ':' + dois(c.s) + ':' + dois(c.f) : '';
+          var iconeMin = el('span', {}); if (tempo) iconeMin.innerHTML = SVG_COPIAR;
           var corpo = el('div', {}, [
-            el('span', { class: 'prod-titulo', text: (i + 1) + '. ' + (tempo || 'falta a minutagem') }),
+            el('span', { class: 'prod-titulo' }, [document.createTextNode((i + 1) + '. ' + (tempo || 'falta a minutagem')), iconeMin]),
             el('span', { class: 'prod-sub', text: c ? c.titulo : l })
           ]);
-          cardsLista.appendChild(el('div', { class: 'prod-linha' }, [corpo, tempo ? botaoCopiar(function () { return tempo; }, 'Copiar minutagem') : null]));
+          var linhaCard = el('div', { class: 'prod-linha' }, [corpo]);
+          if (tempo) copiarAoTocar(linhaCard, iconeMin, function () { return tempo; }); /* tocar na minutagem copia */
+          cardsLista.appendChild(linhaCard);
         });
       }
       desenharCards();
@@ -1136,7 +1151,7 @@
             abrirC2.style.cssText = 'padding:6px 10px;color:#1034A6';
             var apC = P.botaoApagar('Apagar');
             apC.addEventListener('click', function () { gravar('prod_cortes', cortes, c, { link_fotos: null }).then(function (r) { if (!r.error) desenharFotosC(); }); });
-            caixaFotosC.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px' }, [abrirC2, botaoCopiar(function () { return u; }, 'Copiar o link'), apC]));
+            caixaFotosC.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px' }, [abrirC2, iconeCopiar(function () { return u; }, 'Copiar o link'), apC]));
           } else {
             var campoLC = el('input', { type: 'url', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
             campoLC.addEventListener('change', function () {
@@ -1152,14 +1167,12 @@
         var editor = el('div', { class: 'prod-corte' }, [
           el('div', { class: 'prod-corte-topo' }, [t, P.colunaData(d, 'Data do corte')]),
           barraTempo(c.criado_em, c.data, cortePostado(c)),
-          el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [botaoCopiar(function () { return t.value.trim(); }, 'Copiar o título')]),
+          el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [iconeCopiar(function () { return t.value.trim(); }, 'Copiar o título')]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
           faltaSeoCorte,
           caixaFotosC,
-          campo('Texto do corte', tx),
-          el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [botaoCopiar(function () { return tx.value; }, 'Copiar o texto')]),
-          campo('Tags do YouTube Shorts', tg),
-          el('div', { class: 'portal-acoes', style: 'margin:0 0 6px' }, [botaoCopiar(function () { return tg.value.trim(); }, 'Copiar as tags')]),
+          campo('Texto do corte', tx, function () { return tx.value; }),
+          campo('Tags do YouTube Shorts', tg, function () { return tg.value.trim(); }),
           jupC
         ]);
         ce.appendChild(editor); editores[c.id] = editor;

@@ -70,6 +70,14 @@
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(ok, plano); else plano();
     }
 
+    /* sem botão "Copiar link": tocar no nome copia o link */
+    function tocarParaCopiar(bloco, link, msg) {
+      bloco.style.cursor = 'pointer'; bloco.setAttribute('role', 'button'); bloco.setAttribute('tabindex', '0');
+      bloco.addEventListener('click', function () { copiar(link, msg); });
+      bloco.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); copiar(link, msg); } });
+      return bloco;
+    }
+
     function tela() {
       limpar();
       app.appendChild(topo(nomeAdmin));
@@ -79,13 +87,11 @@
       var servicos = window.Carrinho.servicos;
       Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).forEach(function (k) {
         var s = servicos[k], link = SITE + '/carrinho.html?add=' + k;
-        var copia = el('button', { type: 'button', class: 'portal-btn', text: 'Copiar link' });
-        copia.addEventListener('click', function () { copiar(link, msg); });
         var abre = el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Abrir' });
         cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-          el('div', {}, [el('span', { class: 'portal-item-titulo', text: s.titulo }),
-            el('span', { class: 'portal-item-data', text: window.Carrinho.reais(s.centavos) + (s.restrito ? ' · só por este link (não aparece no site)' : '') })]),
-          el('div', { class: 'portal-acoes' }, [copia, abre])
+          tocarParaCopiar(el('div', {}, [el('span', { class: 'portal-item-titulo', text: s.titulo }),
+            el('span', { class: 'portal-item-data', text: window.Carrinho.reais(s.centavos) + (s.restrito ? ' · só por este link (não aparece no site)' : '') })]), link, msg),
+          el('div', { class: 'portal-acoes' }, [abre])
         ])]));
       });
       cartao.appendChild(msg);
@@ -109,9 +115,6 @@
             var url = guardados[l.chave] != null ? guardados[l.chave] : l.padrao;
             var acoes = el('div', { class: 'portal-acoes' });
             if (url) {
-              var copia = el('button', { type: 'button', class: 'portal-btn', text: 'Copiar link' });
-              copia.addEventListener('click', function () { copiar(url, msg2); });
-              acoes.appendChild(copia);
               acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: url, target: '_blank', rel: 'noopener', text: 'Abrir' }));
             }
             var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: url ? 'Trocar o link' : 'Colar o link' });
@@ -126,8 +129,9 @@
               });
             });
             acoes.appendChild(trocar);
-            caixa.appendChild(el('div', { class: 'portal-item-linha' }, [el('div', {}, [el('span', { class: 'portal-item-titulo', text: l.nome }),
-              el('span', { class: 'portal-item-data', text: url ? url : 'Ainda sem link. ' + l.dica })]), acoes]));
+            var blocoL = el('div', {}, [el('span', { class: 'portal-item-titulo', text: l.nome }),
+              el('span', { class: 'portal-item-data', text: url ? url : 'Ainda sem link. ' + l.dica })]);
+            caixa.appendChild(el('div', { class: 'portal-item-linha' }, [url ? tocarParaCopiar(blocoL, url, msg2) : blocoL, acoes]));
           }
           desenhar(); meus.appendChild(caixa);
         });
