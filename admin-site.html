@@ -36,8 +36,8 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=132"></script>
-  <script src="menu.js?v=52" defer></script>
+  <script src="portal.js?v=133"></script>
+  <script src="menu.js?v=53" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -222,7 +222,7 @@
         corpo.appendChild(msg);
       }).catch(function (e) {
         corpo.textContent = '';
-        corpo.appendChild(el('p', { text: e.message === 'desconectado' || e.message === 'permissao' ? 'Para escolher as agendas, conecte o Google (cartão Google Drive, acima) e abra a aba Agenda uma vez para permitir o Google Agenda.' : 'Não foi possível ler as agendas agora (' + e.message + ').' }));
+        corpo.appendChild(el('p', { text: e.message === 'desconectado' || e.message === 'permissao' ? 'Para escolher as agendas, conecte o Google (cartão Google Drive, na aba Falando de Astrologia) e abra a aba Agenda uma vez para permitir o Google Agenda.' : 'Não foi possível ler as agendas agora (' + e.message + ').' }));
       });
       return cartao;
     }
@@ -452,18 +452,40 @@
 
       cartao.appendChild(foto); cartao.appendChild(msg); cartao.appendChild(acoes);
       cartao.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:14px', text: 'A foto é cortada em quadrado, pelo centro, e aparece redonda na página Sobre. Escolha uma em que o rosto fique no meio.' }));
-      app.appendChild(cartao);
+      var abaSite = el('div'), abaDaily = el('div');
+      abaSite.appendChild(cartao);
       /* o que antes ficava no Painel dos Alunos e em Clientes: pasta de cada um no Drive, conexão com o Google e avisos no celular */
-      app.appendChild(P.cartaoPastaBase('alunos'));
-      app.appendChild(P.cartaoPastaBase('clientes'));
+      abaSite.appendChild(P.cartaoPastaBase('alunos'));
+      abaSite.appendChild(P.cartaoPastaBase('clientes'));
       var conexaoDrive = P.cartaoConexaoDrive();
-      if (conexaoDrive) app.appendChild(conexaoDrive);
-      app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
-      app.appendChild(cartaoLugar());
-      app.appendChild(cartaoTextoFixo());
-      app.appendChild(cartaoAgendas());
-      app.appendChild(cartaoImportarClientes());
-      app.appendChild(cartaoAreas); app.appendChild(cartaoServicos);
+      if (conexaoDrive) abaSite.appendChild(conexaoDrive);
+      abaSite.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
+      abaSite.appendChild(cartaoTextoFixo());
+      abaSite.appendChild(cartaoImportarClientes());
+      abaSite.appendChild(cartaoAreas); abaSite.appendChild(cartaoServicos);
+      /* configurações do Hellenic Daily: o que serve à agenda e às horas, separado das do site (a engrenagem é uma só, no meio da barra) */
+      abaDaily.appendChild(cartaoLugar());
+      abaDaily.appendChild(cartaoAgendas());
+      var ABAS_CFG = [{ chave: 'site', nome: 'Falando de Astrologia', el: abaSite }, { chave: 'daily', nome: 'Hellenic Daily', el: abaDaily }];
+      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div'), botoesAbas = {};
+      function mostrarAba(chave) {
+        ABAS_CFG.forEach(function (ab) {
+          var ativa = ab.chave === chave;
+          botoesAbas[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
+          botoesAbas[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
+          ab.el.style.display = ativa ? '' : 'none';
+        });
+        P.estado.mesclar({ aba: chave });
+      }
+      ABAS_CFG.forEach(function (ab) {
+        var b = el('button', { type: 'button', role: 'tab', text: ab.nome });
+        b.addEventListener('click', function () { mostrarAba(ab.chave); });
+        botoesAbas[ab.chave] = b; barraAbas.appendChild(b); conteudoAba.appendChild(ab.el);
+      });
+      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
+      app.appendChild(conteudoAba);
+      var abaInicial = (P.estado.ler && P.estado.ler().aba) || 'site';
+      mostrarAba(botoesAbas[abaInicial] ? abaInicial : 'site');
       carregarFin();
       /* no fim da lista: Trocar senha e, abaixo, o Sair (botão cheio, terracota) */
       var areaSenha = el('div', { style: 'width:100%' });

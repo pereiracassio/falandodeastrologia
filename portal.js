@@ -551,8 +551,9 @@
     /* duas metades na mesma barra, sem divisa: primeiro o Falando de Astrologia, depois o Hellenic Daily (Agenda, Estudos, Produção, Projetos), cada uma em ordem alfabética */
     var DAILY = { agenda: 1, estudos: 1, producao: 1, projetos: 1 };
     itens.sort(function (a, b) { return ((DAILY[a[0]] ? 1 : 0) - (DAILY[b[0]] ? 1 : 0)) || a[1].localeCompare(b[1], 'pt'); });
-    /* a ⚙ (configurações) é SEMPRE a última aba, mesmo quando entrarem abas novas: abas novas entram na lista acima, nunca depois dela */
-    itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
+    /* a ⚙ (configurações) fica NO MEIO da barra, entre as abas do Falando de Astrologia e as do Hellenic Daily: é dos dois (ao abrir, tem uma aba para cada lado) */
+    var meio = itens.findIndex(function (i) { return DAILY[i[0]]; });
+    itens.splice(meio < 0 ? itens.length : meio, 0, ['site', '\u2699\uFE0E', 'admin-site.html']);
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
       if (i[0] === 'site') { a.setAttribute('aria-label', 'Configurações'); a.title = 'Configurações'; a.appendChild(el('span', { class: 'engrenagem', text: i[1] })); } /* a engrenagem é maior que a letra, para ficar do tamanho dos botões escritos */

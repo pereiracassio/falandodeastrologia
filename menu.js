@@ -44,8 +44,9 @@
     var DAILY = { "Agenda": 1, "Estudos": 1, "Produção": 1, "Projetos": 1 };
     links.sort(function (a, b) { return ((DAILY[a.label] ? 1 : 0) - (DAILY[b.label] ? 1 : 0)) || a.label.localeCompare(b.label, "pt"); });
     links.push(verSite);
-    /* Configurações é SEMPRE o último botão do painel (antes de "Ver o site"), mesmo quando entrarem botões novos acima */
-    links.splice(links.length - 1, 0, { label: "Configurações", href: "admin-site.html" });
+    /* Configurações fica NO MEIO, entre o Falando de Astrologia e o Hellenic Daily (é dos dois) */
+    var meioMenu = links.findIndex(function (l) { return DAILY[l.label]; });
+    links.splice(meioMenu < 0 ? links.length - 1 : meioMenu, 0, { label: "Configurações", href: "admin-site.html" });
   }
 
   /* aluno ou cliente logado (sinal guardado por aluno.html/cliente.html ao entrar/sair; é só conveniência de tela, não é segurança): o botão "Cássio" da barra de cima vira "Seu espaço" */
