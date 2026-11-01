@@ -768,6 +768,7 @@
       /* pela hora planetária: escolhe o planeta e quantos dias à frente; mostra a primeira hora livre daquele planeta em cada dia e coloca todas as marcadas como tarefas */
       var planetaSel = el('select', { 'aria-label': 'Hora do planeta' }); planetaSel.appendChild(el('option', { value: '', text: 'Nenhum' })); HP.CALDEIA.forEach(function (n) { planetaSel.appendChild(el('option', { value: n, text: n })); });
       var diasN = el('input', { type: 'number', min: '1', max: '60', value: '7', style: 'width:90px' }), verHoras = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ver horários' }), resPlan = el('div');
+      var deT = el('input', { type: 'time', value: '06:00', style: 'min-height:36px;min-width:110px' }), ateT = el('input', { type: 'time', value: '22:00', style: 'min-height:36px;min-width:110px' });
       verHoras.addEventListener('click', function () {
         resPlan.textContent = '';
         var t = nova.value.trim(); if (!t) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Escreva primeiro o que fazer (o campo de cima).' })); nova.focus(); return; }
@@ -783,9 +784,14 @@
           var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
           for (var i = 0; i < n; i++) {
             var iso = somaDias(hojeI, i), agoraI = iso === hoje0 ? Math.ceil(Date.now() / 300000) * 300000 : 0;
-            var sl = slotsDoDia(iso, evs, planetaSel.value, 30, '00:00', '23:59', 0, agoraI).sort(function (p, q) { return p.ini - q.ini; })[0];
-            if (!sl) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
-            (function (it) { itens.push(it); resPlan.appendChild(caixinha(rotuloDia(iso) + ', ' + it.hora, true, function (m) { it.marcado = m; atualiza(); }).el); })({ iso: iso, hora: hhmm(sl.ini), marcado: true });
+            /* TODAS as horas livres do planeta no dia (uma por hora do planeta, a primeira parte livre dela), dentro de "A partir de" e "Até", com 15 min de folga dos compromissos */
+            var vistas = {}, sls = slotsDoDia(iso, evs, planetaSel.value, 30, deT.value || '06:00', ateT.value || '22:00', 15 * 60000, agoraI).sort(function (p, q) { return p.ini - q.ini; }).filter(function (x) { if (vistas[x.hora.ini]) return false; vistas[x.hora.ini] = 1; return true; });
+            if (!sls.length) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
+            resPlan.appendChild(el('div', { text: rotuloDia(iso), style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;margin:14px 0 0' }));
+            sls.forEach(function (sl) {
+              var it = { iso: iso, hora: hhmm(sl.ini), marcado: false }; itens.push(it);
+              resPlan.appendChild(caixinha(hhmm(sl.ini) + ' às ' + hhmm(sl.hora.fim), false, function (m) { it.marcado = m; atualiza(); }).el);
+            });
           }
           if (!itens.length) return;
           atualiza(); resPlan.appendChild(colocar);
@@ -805,7 +811,7 @@
           catch (e) { try { montar([], semAgenda); } catch (e2) { mostrarErro(e2); } }
         }, function () { try { montar([], semAgenda); } catch (e) { mostrarErro(e); } });
       });
-      var blocoPlaneta = el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Na hora de (opcional)' }), planetaSel, el('label', { text: 'Quantos dias à frente' }), diasN, el('div', { style: 'margin-top:8px' }, [verHoras]), resPlan]);
+      var blocoPlaneta = el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Na hora de (opcional)' }), planetaSel, el('label', { text: 'Quantos dias à frente' }), diasN, P.linhaDatas([el('div', {}, [el('label', { text: 'A partir de' }), deT]), el('div', {}, [el('label', { text: 'Até' }), ateT])]), el('div', { style: 'margin-top:8px' }, [verHoras]), resPlan]);
       var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), blocoPlaneta, el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
       var lista = el('div'); vista.appendChild(form); vista.appendChild(lista);
       formTodoEl = form;
