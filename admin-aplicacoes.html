@@ -101,12 +101,12 @@
           var itens = aba === 'novas' ? novasCompletas : aba === 'incompletas' ? naoConcluidas : todas;
           if (!itens.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: aba === 'todas' ? 'Nenhuma aplicação ainda.' : 'Nada por aqui.' }));
           itens.forEach(function (a) {
-            var abrir = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir' });
-            abrir.addEventListener('click', function () { detalhe(a); });
             var estado = (a.concluida ? 'Completa' : 'Não concluída') + ' · ' + SITUACOES[a.situacao];
-            corpo.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-              el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.nome }), el('span', { class: 'portal-item-data', text: dataHora(a.criado_em) + ' · ' + estado })]), abrir
-            ])]));
+            var itemA = el('div', { class: 'portal-item', style: 'cursor:pointer', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [
+              el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.nome }), el('span', { class: 'portal-item-data', text: dataHora(a.criado_em) + ' · ' + estado })])
+            ])]);
+            itemA.addEventListener('click', function () { detalhe(a); }); /* a linha inteira abre */
+            corpo.appendChild(itemA);
           });
         }
         defs.forEach(function (d) {

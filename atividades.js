@@ -496,7 +496,7 @@
         r.data.forEach(function (a) {
           /* "Corrigir" só depois que o aluno enviou e enquanto falta corrigir (antiga: enquanto não tem nenhuma correção); senão "Abrir" */
           var falta = !a.rascunho && a.enviada_em && !a.somente_leitura && (a.antiga ? !x.corrigidas[a.id] : !a.corrigida_em);
-          var abrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: falta ? 'Corrigir' : 'Abrir' });
+          var abrir = falta ? el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Corrigir' }) : null; /* sem botão "Abrir": a linha inteira abre */
           var info = el('span', { class: 'portal-item-data', text: a.rascunho ? 'Rascunho · o aluno ainda não vê' : linhaDatas(a) + (a.enviada_em ? '' : ' · O aluno ainda não enviou') });
           corpo.appendChild(linhaClicavel(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
             el('div', {}, [el('span', { class: 'portal-item-titulo', text: a.titulo }), info]), abrir
