@@ -775,18 +775,17 @@
         var n = Math.max(1, Math.min(60, +diasN.value || 7)), hojeI = isoDia(Date.now());
         resPlan.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando...' }));
         var mostrarErro = function (e) { resPlan.textContent = ''; resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui montar os horários: ' + ((e && e.message) || e || 'erro') })); }; /* o erro de verdade aparece aqui, logo embaixo do botão */
-        preparar().then(function () { return eventosEntre(doIso(hojeI), doIso(somaDias(hojeI, n))); }).then(function (evs) {
-          try {
+        /* uma hora livre do planeta por dia (considerando os compromissos, quando a agenda pôde ser lida) e a lista de caixinhas */
+        function montar(evs, aviso) {
           resPlan.textContent = '';
-          if (evs.falhas && evs.falhas.length) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não sugiro horário (poderia estar ocupado). Tente de novo.' })); return; }
+          if (aviso) resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#A03E25', text: aviso }));
           var itens = [], colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
           var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
           for (var i = 0; i < n; i++) {
             var iso = somaDias(hojeI, i), agoraI = iso === hojeI ? Math.ceil(Date.now() / 300000) * 300000 : 0;
             var sl = slotsDoDia(iso, evs, planetaSel.value, 30, '00:00', '23:59', 0, agoraI).sort(function (p, q) { return p.ini - q.ini; })[0];
             if (!sl) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
-            var it = { iso: iso, hora: hhmm(sl.ini), marcado: true }; itens.push(it);
-            resPlan.appendChild(caixinha(rotuloDia(iso) + ', ' + it.hora, true, function (m) { it.marcado = m; atualiza(); }).el);
+            (function (it) { itens.push(it); resPlan.appendChild(caixinha(rotuloDia(iso) + ', ' + it.hora, true, function (m) { it.marcado = m; atualiza(); }).el); })({ iso: iso, hora: hhmm(sl.ini), marcado: true });
           }
           if (!itens.length) return;
           atualiza(); resPlan.appendChild(colocar);
@@ -798,8 +797,13 @@
               (r.data || []).forEach(function (x) { dados.tarefas.push(x); }); nova.value = ''; ligacao = null; escolhido.style.display = 'none'; resPlan.textContent = ''; form.style.display = 'none'; desenhar();
             }, function () { colocar.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); });
           });
-          } catch (e) { mostrarErro(e); }
-        }, mostrarErro);
+        }
+        /* se a agenda não puder ser lida (ou algo falhar com os compromissos), mostra mesmo assim as horas do planeta, avisando que não conferiu a agenda */
+        var semAgenda = 'Não consegui conferir a sua agenda agora: estes são só os horários do planeta, sem checar compromissos.';
+        preparar().then(function () { return eventosEntre(doIso(hojeI), doIso(somaDias(hojeI, n))); }).then(function (evs) {
+          try { montar(evs, evs.falhas && evs.falhas.length ? 'Não consegui ler: ' + evs.falhas.join(', ') + '. Confira esses horários na agenda.' : ''); }
+          catch (e) { try { montar([], semAgenda); } catch (e2) { mostrarErro(e2); } }
+        }, function () { try { montar([], semAgenda); } catch (e) { mostrarErro(e); } });
       });
       var blocoPlaneta = el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Na hora de (opcional)' }), planetaSel, el('label', { text: 'Quantos dias à frente' }), diasN, el('div', { style: 'margin-top:8px' }, [verHoras]), resPlan]);
       var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), blocoPlaneta, el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
