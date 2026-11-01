@@ -770,8 +770,8 @@
       var diasN = el('input', { type: 'number', min: '1', max: '60', value: '7', style: 'width:90px' }), verHoras = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ver horários' }), resPlan = el('div');
       verHoras.addEventListener('click', function () {
         resPlan.textContent = '';
-        var t = nova.value.trim(); if (!t) { nova.focus(); return; }
-        if (!planetaSel.value) { P.mensagem(msg, 'Escolha o planeta.', 'erro'); return; }
+        var t = nova.value.trim(); if (!t) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Escreva primeiro o que fazer (o campo de cima).' })); nova.focus(); return; }
+        if (!planetaSel.value) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Escolha o planeta.' })); return; }
         var n = Math.max(1, Math.min(60, +diasN.value || 7)), hojeI = isoDia(Date.now());
         resPlan.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando...' }));
         var mostrarErro = function (e) { resPlan.textContent = ''; resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui montar os horários: ' + ((e && e.message) || e || 'erro') })); }; /* o erro de verdade aparece aqui, logo embaixo do botão */
