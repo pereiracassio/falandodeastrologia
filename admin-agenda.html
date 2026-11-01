@@ -68,7 +68,7 @@
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     var VISOES = [['horas', 'Horas'], ['todo', 'To Do'], ['lista', 'Lista'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
-    var visao = 'semana', ancora = '', areaForm = null, atualizar = function () {};
+    var visao = 'semana', ancora = '', areaForm = null, atualizar = function () {}, formTodoEl = null;
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
@@ -239,7 +239,7 @@
         calendarios = c.cal; todosCalendarios = c.todos || c.cal; if (isFinite(c.lat) && isFinite(c.lon)) { LAT = c.lat; LON = c.lon; lugarNome = c.nome || lugarNome; }
         corpo.textContent = ''; montar(corpo);
         var antes = calendarios.map(function (x) { return x.id; }).join('|'), qtdAniv = aniversarios.length;
-        preparar().then(function () { if (calendarios.map(function (x) { return x.id; }).join('|') !== antes || aniversarios.length !== qtdAniv) atualizar(); }, function () { /* o erro aparece quando os compromissos não carregam */ });
+        preparar().then(function () { if (calendarios.map(function (x) { return x.id; }).join('|') !== antes || aniversarios.length !== qtdAniv) { if (visao === 'todo' && formTodoEl && document.body.contains(formTodoEl) && formTodoEl.style.display !== 'none') return; /* não refaz a tela por baixo de quem está preenchendo o To do (isso apagava o formulário e a lista de horários) */ atualizar(); } }, function () { /* o erro aparece quando os compromissos não carregam */ });
         return;
       }
       preparar().then(function () { corpo.textContent = ''; montar(corpo); }, function (e) { mostraErroAbrir(corpo, e); });
@@ -804,6 +804,7 @@
       var blocoPlaneta = el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Na hora de (opcional)' }), planetaSel, el('label', { text: 'Quantos dias à frente' }), diasN, el('div', { style: 'margin-top:8px' }, [verHoras]), resPlan]);
       var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), blocoPlaneta, el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
       var lista = el('div'); vista.appendChild(form); vista.appendChild(lista);
+      formTodoEl = form;
       alternarFormTodo = function () { var abre = form.style.display === 'none'; form.style.display = abre ? '' : 'none'; if (abre) nova.focus(); };
       lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       function adicionar() {
