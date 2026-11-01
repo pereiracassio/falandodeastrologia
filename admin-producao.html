@@ -511,7 +511,23 @@
       setTimeout(function () { var at = caixa.querySelector('.ativa'); if (caixa.scrollWidth > caixa.clientWidth && at) caixa.scrollLeft = Math.max(0, at.offsetLeft - caixa.clientWidth / 2 + at.offsetWidth / 2); }, 0); /* se não couber, deixa à vista o nível aberto */
       return env;
     }
-    function campo(rotulo, entrada, pegar) { return el('div', {}, [pegar ? rotuloCopiavel(rotulo, pegar) : el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]); }
+    function campo(rotulo, entrada, pegar) {
+      if (!pegar) return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]);
+      /* campo que copia: com texto, tocar NELE copia (✓ ao lado do nome); para escrever, toca em "Editar" (vira "Pronto"). Vazio já nasce editável */
+      var icone = el('span', {}), ed = el('span', { text: 'Editar', role: 'button', tabindex: '0', style: 'font-size:12px;opacity:.6;text-decoration:underline;cursor:pointer;margin-left:12px;font-family:var(--fonte-mao)' });
+      var r = el('span', { class: 'prod-rotulo prod-fixo' }, [document.createTextNode(rotulo), icone, ed]);
+      var travar = function (sim) { entrada.readOnly = sim; ed.textContent = sim ? 'Editar' : 'Pronto'; entrada.style.cursor = sim ? 'pointer' : ''; };
+      travar(!!String(entrada.value || '').trim());
+      entrada.addEventListener('click', function () {
+        if (!entrada.readOnly) return;
+        var txt = pegar(); if (!txt) return;
+        copiarTexto(txt).then(function () { icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = ''; }, 1500); }, function () { icone.textContent = ' não consegui'; setTimeout(function () { icone.textContent = ''; }, 1500); });
+      });
+      var alterna = function () { travar(!entrada.readOnly); if (!entrada.readOnly) entrada.focus(); };
+      ed.addEventListener('click', alterna);
+      ed.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); alterna(); } });
+      return el('div', {}, [r, entrada]);
+    }
     function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; guardarEstado(); tela(); window.scrollTo(0, 0); }
 
     /* ---------- estrutura: abas ---------- */
