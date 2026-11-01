@@ -408,3 +408,6 @@ A barra do Hellenic Daily agora é **Agenda · Horas · Projetos · To do** (e o
 
 ## A tela NÃO pode pular, em lugar nenhum (01/11/2026) — bronca dele, vale para TODA tela e peça nova
 Ao subir, descer, marcar, adicionar ou apagar, a tela era redesenhada e voltava ao topo. **Solução geral, uma vez só, em `portal.js` (`naoPular`, no fim):** guarda a rolagem e, depois de qualquer redesenho do `#app`, volta ao mesmo lugar; quem QUER ir ao topo (abrir outra tela, criar projeto) usa `window.scrollTo(0, 0)` (guardado também). Por isso vale para todas as telas do painel e dos portais que têm `#app`. Peça nova: ao abrir OUTRA tela, chamar `window.scrollTo(0, 0)`; para abrir formulário e focar um campo, `focus({ preventScroll: true })`. Ele não quer explicação técnica disto.
+
+## Ordem da lista dentro de um projeto (01/11/2026) — regra dele
+Passos e subprojetos pendentes ficam nesta ordem: **1º o que tem data** (passo ou subprojeto com data final), em ordem de data; **2º os subprojetos sem data, do mais concluído para o menos concluído** (a mesma regra da lista de Projetos); **3º os passos comuns**, na ordem em que ele arrumou. Subprojeto não tem setas (a ordem dele é automática) e o passo comum só troca de lugar com outro passo comum.

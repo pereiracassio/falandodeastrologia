@@ -371,7 +371,7 @@
       }
 
       /* passos e subprojetos na MESMA lista, na ordem que você arrumar */
-      var ordenados = meus.concat(filhosDe(proj.id).map(function (c) { var k = contagem(c); return { filhoProj: c, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai, data: c.data_fim || null, /* subprojeto com data final sobe e fica em ordem de data, como o passo com data */ feito: k.total > 0 && k.feitos === k.total, k: k }; }))
+      var ordenados = meus.concat(filhosDe(proj.id).map(function (c) { var k = contagem(c); return { filhoProj: c, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai, data: c.data_fim || null, pct: k.total ? Math.floor(k.feitos * 100 / k.total) : 0, /* subprojeto com data final sobe e fica em ordem de data, como o passo com data */ feito: k.total > 0 && k.feitos === k.total, k: k }; }))
         .map(function (x, i) { return { x: x, i: i }; }).sort(function (a, b) { return ((a.x.ordem || 0) - (b.x.ordem || 0)) || (a.i - b.i); }).map(function (o) { return o.x; });
       var lista = el('div', { style: 'margin-top:14px' });
       if (!ordenados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum passo ainda.' }));
@@ -387,7 +387,8 @@
       }
       function setas(x, grupo, i) {
         var sobe = el('button', { type: 'button', class: 'proj-mini', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'proj-mini', text: '↓', 'aria-label': 'Descer' });
-        sobe.disabled = i === 0 || !!x.data || !!grupo[i - 1].data; desce.disabled = i === grupo.length - 1 || !!x.data || !!grupo[i + 1].data; /* passo com data fica onde a data manda */
+        var comum = function (o) { return !!o && !o.data && !o.filhoProj; }; /* só passos comuns trocam de lugar entre si: o resto tem a ordem dele (data ou andamento) */
+        sobe.disabled = !comum(x) || !comum(grupo[i - 1]); desce.disabled = !comum(x) || !comum(grupo[i + 1]);
         sobe.addEventListener('click', function (ev) { ev.stopPropagation(); renumerar(x, grupo[i - 1]); });
         desce.addEventListener('click', function (ev) { ev.stopPropagation(); renumerar(x, grupo[i + 1]); });
         return [sobe, desce];
@@ -397,7 +398,7 @@
         var c = x.filhoProj, k = x.k;
         var textos = [el('span', { class: 'proj-titulo', text: c.nome }), linhaDeBarra(Math.floor(k.feitos * 100 / k.total), null, k.feitos + '/' + k.total)];
         var tp = tempoDoProjeto(c); if (tp) textos.push(linhaDeBarra(tp.pct, tp.cor, tp.texto));
-        if (!leitura) { var ac = el('div', { class: 'proj-acoes' }); setas(x, grupo, i).forEach(function (b) { ac.appendChild(b); }); textos.push(ac); }
+        
         var linha = el('div', { class: 'proj-passo' + (x.feito ? ' feito' : ''), role: 'button', tabindex: '0', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:0' }, textos)]);
         var abrir = function () { if (leitura) verConcluido = c.id; else { aberto = c.id; P.estado.gravar({ projeto: aberto }); } desenhar(); window.scrollTo(0, 0); };
         linha.addEventListener('click', abrir);
@@ -430,9 +431,11 @@
       }
       /* o próximo passo no topo, os outros pendentes depois, e o que já foi feito embaixo */
       var pendentes = ordenados.filter(function (x) { return !x.feito; }).map(function (x, k) { return { x: x, k: k }; }).sort(function (a, b) {
-        /* passo com data sobe e fica em ordem de data; sem data, fica na ordem em que foi colocado */
-        if (!!a.x.data !== !!b.x.data) return a.x.data ? -1 : 1;
-        if (a.x.data && a.x.data !== b.x.data) return a.x.data < b.x.data ? -1 : 1;
+        /* 1º o que tem data (passo ou subprojeto), em ordem de data; 2º os subprojetos sem data, do mais concluído para o menos; 3º os passos comuns, na ordem em que foram colocados */
+        var rank = function (o) { return o.x.data ? 0 : o.x.filhoProj ? 1 : 2; };
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+        if (rank(a) === 0 && a.x.data !== b.x.data) return a.x.data < b.x.data ? -1 : 1;
+        if (rank(a) === 1 && a.x.pct !== b.x.pct) return b.x.pct - a.x.pct;
         return a.k - b.k;
       }).map(function (o) { return o.x; }), prontos = ordenados.filter(function (x) { return x.feito; });
       function grupoDe(titulo, itens, grande) {
