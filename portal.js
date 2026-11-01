@@ -450,8 +450,13 @@
     if (aniversariosPromessa) return aniversariosPromessa;
     var hoje = diaDeHoje(), ano = +hoje.slice(0, 4), mes = +hoje.slice(5, 7), dia = +hoje.slice(8, 10);
     var bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
-    var pega = function (tabela) { return client.from(tabela).select('nome,email,whatsapp,nascimento').not('nascimento', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }); };
-    aniversariosPromessa = Promise.all([pega('clientes'), pega('alunos')]).then(function (r) {
+    var pega = function (tabela, tabCod, colCod) {
+      return Promise.all([
+        client.from(tabela).select('id,nome,email,whatsapp,nascimento').not('nascimento', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }),
+        client.from(tabCod).select(colCod + ',codigo').then(function (r) { return r.data || []; }, function () { return []; })
+      ]).then(function (r) { var cods = {}; r[1].forEach(function (c) { cods[c[colCod]] = c.codigo; }); return r[0].map(function (x) { x.codigo = cods[x.id] || ''; return x; }); });
+    };
+    aniversariosPromessa = Promise.all([pega('clientes', 'cliente_codigos', 'cliente_id'), pega('alunos', 'aluno_codigos', 'aluno_id')]).then(function (r) {
       var vistos = {}, saida = [];
       r[0].concat(r[1]).forEach(function (p) {
         if (!/^\d{4}-\d{2}-\d{2}/.test(p.nascimento || '')) return;
@@ -459,8 +464,8 @@
         if (m === 2 && d === 29 && !bissexto) d = 28;
         if (m !== mes || d !== dia) return;
         var k = p.email ? String(p.email).toLowerCase() : String(p.nome).toLowerCase() + '|' + p.nascimento;
-        if (vistos[k]) { if (!vistos[k].whatsapp && p.whatsapp) vistos[k].whatsapp = p.whatsapp; return; }
-        vistos[k] = { nome: String(p.nome || '').trim(), whatsapp: p.whatsapp || '', hoje: hoje };
+        if (vistos[k]) { if (!vistos[k].whatsapp && p.whatsapp) vistos[k].whatsapp = p.whatsapp; if (!vistos[k].codigo && p.codigo) vistos[k].codigo = p.codigo; return; }
+        vistos[k] = { nome: String(p.nome || '').trim(), codigo: p.codigo || '', whatsapp: p.whatsapp || '', hoje: hoje };
         saida.push(vistos[k]);
       });
       return saida;
