@@ -932,7 +932,7 @@
       var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
       var dataBlog = el('input', { type: 'date' }); dataBlog.value = v.data_blog || '';
       [data, dataPublico, dataGravar, dataCortes, dataBlog].forEach(function (c) { c.style.cssText = 'width:160px;min-width:160px;margin:0 0 6px'; });
-      var blocoPublico = campo('Fica público em', dataPublico);
+      var blocoPublico = campo('Público', dataPublico);
       blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
       var tirarGravar = P.botaoApagar('Tirar a data');
       tirarGravar.addEventListener('click', function () { dataGravar.value = ''; dataGravar.dispatchEvent(new Event('change')); });
@@ -945,10 +945,10 @@
       cartao.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 28px;align-items:flex-start;margin:0 0 6px' }, [
         linhaGrupo([
           campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })),
-          campo('Data limite para gravar', el('div', {}, [dataGravar, tirarGravar])),
-          campo('Disponível para membros', data), blocoPublico
+          campo('Gravação', el('div', {}, [dataGravar, tirarGravar])),
+          campo('Membros', data), blocoPublico
         ]),
-        linhaGrupo([campo('Data limite dos cortes', el('div', {}, [dataCortes, tirarCortes])), campo('Data limite do blog', el('div', {}, [dataBlog, tirarBlog]))])
+        linhaGrupo([campo('Cortes', el('div', {}, [dataCortes, tirarCortes])), campo('Blog', el('div', {}, [dataBlog, tirarBlog]))])
       ]));
       cartao.appendChild(jupV);
       var capaUrl = v.capa_url || '', capaNova = null;
