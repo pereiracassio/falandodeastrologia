@@ -371,7 +371,7 @@
       }
 
       /* passos e subprojetos na MESMA lista, na ordem que você arrumar */
-      var ordenados = meus.concat(filhosDe(proj.id).map(function (c) { var k = contagem(c); return { filhoProj: c, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai, data: null, feito: k.total > 0 && k.feitos === k.total, k: k }; }))
+      var ordenados = meus.concat(filhosDe(proj.id).map(function (c) { var k = contagem(c); return { filhoProj: c, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai, data: c.data_fim || null, /* subprojeto com data final sobe e fica em ordem de data, como o passo com data */ feito: k.total > 0 && k.feitos === k.total, k: k }; }))
         .map(function (x, i) { return { x: x, i: i }; }).sort(function (a, b) { return ((a.x.ordem || 0) - (b.x.ordem || 0)) || (a.i - b.i); }).map(function (o) { return o.x; });
       var lista = el('div', { style: 'margin-top:14px' });
       if (!ordenados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum passo ainda.' }));
