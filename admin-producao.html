@@ -39,6 +39,7 @@
        Cinzel no que já vem pronto (rótulos, etapas, botões de marcar); letra à mão no que o Cássio escreve. */
     .prod-fixo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
     .prod-divisa{border:0;border-top:2px solid #1F5FA3;margin:16px 0}
+    .rotulo-ocre{font-family:'Cinzel',serif;color:#B5852F!important;font-size:15px!important;text-transform:lowercase;letter-spacing:.04em} /* nomes que já vêm prontos (Roteiro, Gancho, Bloco N, Conclusão): Cinzel em ocre */
     .prod-rotulo{display:block;font-size:13px;color:#16233F;letter-spacing:.04em;margin:0 0 4px}
     .prod-grupo{margin:0 0 6px;font-size:18px;font-weight:700;color:#A03E25}
     .prod-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)}
@@ -993,7 +994,8 @@
       function caixaBloco(rotulo, valor, dica, aoMudar, extra) {
         var t = el('textarea', { rows: '6', placeholder: dica }); t.value = valor;
         t.addEventListener('input', function () { aoMudar(t.value); agendarSalvar(); });
-        return el('div', {}, [campo(rotulo, t, function () { return t.value; }), extra]); /* cada bloco do roteiro copia ao tocar no texto; "Editar" libera para escrever */
+        var c = campo(rotulo, t, function () { return t.value; }); c.firstChild.classList.add('rotulo-ocre');
+        return el('div', {}, [c, extra]); /* cada bloco do roteiro copia ao tocar no texto; "Editar" libera para escrever */
       }
       function desenharBlocos() {
         areaBlocos.textContent = '';
@@ -1001,9 +1003,9 @@
         rb.blocos.forEach(function (txt, i) {
           var tirar = null;
           if (rb.blocos.length > 1) {
-            tirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir o bloco ' + (i + 1) });
+            tirar = P.botaoApagar('Apagar'); /* detalhe discreto, no fim do bloco */
             tirar.addEventListener('click', function () {
-              if (rb.blocos[i].trim() && !window.confirm('Excluir o bloco ' + (i + 1) + ' com o texto dele?')) return;
+              if (rb.blocos[i].trim() && !window.confirm('Apagar o bloco ' + (i + 1) + ' com o texto dele? Não dá para desfazer.')) return;
               rb.blocos.splice(i, 1); desenharBlocos(); agendarSalvar();
             });
           }
@@ -1020,8 +1022,8 @@
         if (!usaBlocos) return roteiro.value.trim();
         return itensBlocos().filter(function (i) { return i.texto.trim(); }).map(function (i) { return i.nome + '\n' + i.texto.trim(); }).join('\n\n');
       };
-      if (usaBlocos) { cartao.appendChild(rotuloCopiavel('Roteiro', roteiroTodo)); desenharBlocos(); cartao.appendChild(areaBlocos); }
-      else cartao.appendChild(campo('Roteiro', roteiro, roteiroTodo));
+      if (usaBlocos) { var rotRot = rotuloCopiavel('Roteiro', roteiroTodo); rotRot.classList.add('rotulo-ocre'); cartao.appendChild(rotRot); desenharBlocos(); cartao.appendChild(areaBlocos); }
+      else { var cRot = campo('Roteiro', roteiro, roteiroTodo); cRot.firstChild.classList.add('rotulo-ocre'); cartao.appendChild(cRot); }
       /* o roteiro só vira "pronto" quando você disser que terminou (às vezes ainda está sendo escrito) */
       cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' })]));
       cartao.appendChild(linkRoteiro);
