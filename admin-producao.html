@@ -103,7 +103,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=130"></script>
+  <script src="portal.js?v=131"></script>
   <script src="menu.js?v=51" defer></script>
   <script>
   (function () {
@@ -1087,7 +1087,7 @@
       }, false)]));
       /* link do vídeo no Google Fotos: campo de link padrão do site (colado vira o ícone; tocar copia; "Editar" troca). Campo vazio salva como sem link */
       var caixaFotos = el('div', { style: 'margin:0 0 16px;display:flex;align-items:center;gap:14px' });
-      var campoL = el('input', { type: 'url', placeholder: 'Colar o link do vídeo no Google Fotos', style: 'margin:0' });
+      var campoL = el('input', { type: 'url', 'data-link-abre': '1', placeholder: 'Colar o link do vídeo no Google Fotos', style: 'margin:0' });
       campoL.value = P.linkSeguro(v.link_fotos) || '';
       campoL.addEventListener('change', function () {
         var t = campoL.value.trim();
@@ -1139,7 +1139,7 @@
         d.addEventListener('change', function () { jupiterAzul(jupC, d.value, semDataJup); });
         /* link do vídeo deste corte no Google Fotos: mesmo campo de link padrão do site */
         var caixaFotosC = el('div', { style: 'margin:0 0 12px;display:flex;align-items:center;gap:14px' });
-        var campoLC = el('input', { type: 'url', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
+        var campoLC = el('input', { type: 'url', 'data-link-abre': '1', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
         campoLC.value = P.linkSeguro(c.link_fotos) || '';
         campoLC.addEventListener('change', function () {
           var tl = campoLC.value.trim();
