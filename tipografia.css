@@ -49,3 +49,12 @@ html body :is(h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro .folha-pagina h
 html body .pagina-papiro .folha-pagina .capa-folha :is(h1,div,span,p)[style]{font-family:var(--fonte-titulo)!important}
 html body .pagina-papiro .folha-pagina .capa-folha :is(h1,div,span,p)[style]{text-transform:none!important}
 html body .pagina-papiro .folha-pagina .capa-folha :is(h1,div,span,p)[style*="text-transform:uppercase"]{text-transform:uppercase!important}
+
+/* RÓTULOS FIXOS (regra dele, 01/11/2026): nome de campo, título de grupo, legenda e etiqueta que já vêm prontos no site são Cinzel, OCRE, negrito, caixa baixa, MESMO tamanho; o que ele escreve ou edita fica à mão.
+   Peça nova com texto fixo desse tipo = classe `rotulo-fixo` (ou já cai em label). */
+html body .pagina-papiro :is(label,.rotulo-fixo,.data-legenda-nome,.proj-grupo,.prod-rotulo,.fin-rotulo,.prod-grupo,.fin-escopo-rotulo):not(.impresso){font-family:var(--fonte-titulo)!important;color:#B5852F!important;text-transform:lowercase!important;letter-spacing:.04em;font-weight:700!important;opacity:1!important}
+html body .pagina-papiro :is(label,.data-legenda-nome,.proj-grupo,.prod-rotulo,.fin-rotulo,.prod-grupo,.fin-escopo-rotulo):not(.impresso){font-size:13px!important;line-height:1.3!important}
+html body .pagina-papiro .rotulo-fixo:not(.impresso){font-size:13px}
+html body .pagina-papiro label:not(.impresso) :is(span,strong,em,small,b,i){font-family:inherit!important;color:inherit!important;text-transform:inherit!important;letter-spacing:inherit;font-size:inherit!important;font-weight:inherit!important}
+/* classes antigas de texto fixo (spans perdiam para a regra geral de span) e botões discretos (Editar, Apagar, Renomear, Tirar a data): botão é Cinzel */
+html body .pagina-papiro :is(.prod-fixo,.fin-fixo,.portal-apagar,.proj-mini,.botao-fixo){font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}

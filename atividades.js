@@ -768,7 +768,7 @@
               avisarNovaAtividade(a.titulo);
             });
           });
-          area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Rascunho' }), el('p', { class: 'portal-vazio', style: 'margin-bottom:10px', text: 'O aluno ainda não vê esta atividade. Confira, mexa no que quiser e envie.' }), msgEnviar, enviarAluno]));
+          area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Rascunho' }), el('p', { class: 'portal-vazio', style: 'margin-bottom:10px', text: 'O aluno ainda não vê esta atividade. Confira, mexa no que quiser e envie.' }), msgEnviar, enviarAluno]));
         }
 
         /* datas da atividade (dá pra acertar à mão, principalmente nas antigas) */
@@ -787,7 +787,7 @@
             Object.assign(a, campos); P.mensagem(msgDatas, 'Datas salvas.', 'ok');
           });
         });
-        var cartaoDatas = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Datas' }),
+        var cartaoDatas = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Datas' }),
           el('label', { text: 'Data da atividade' }), dAt]);
         if (a.enviada_em && !a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data em que o aluno respondeu' })); cartaoDatas.appendChild(dResp); }
         if (!a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr); }
@@ -810,14 +810,14 @@
             a.descricao = novo; a.titulo = novoTitulo; P.mensagem(msgTexto, 'Salvo.', 'ok');
           });
         });
-        area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: 'Título e texto antes das perguntas' }), el('label', { text: 'Título' }), tituloAtividade, el('label', { text: 'Texto (opcional)' }), textoAtividade, msgTexto, salvarTexto]));
+        area.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Título e texto antes das perguntas' }), el('label', { text: 'Título' }), tituloAtividade, el('label', { text: 'Texto (opcional)' }), textoAtividade, msgTexto, salvarTexto]));
 
         /* imagem do mapa da atividade (PNG ou JPEG): o aluno vê em cima das perguntas e ela entra no caderno */
         var cartaoImagem = el('div', { class: 'portal-cartao' });
         var msgImagem = el('p', { class: 'portal-msg' });
         function desenharImagem() {
           cartaoImagem.textContent = '';
-          cartaoImagem.appendChild(el('p', { class: 'portal-item-titulo', text: 'Imagem do mapa' }));
+          cartaoImagem.appendChild(el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Imagem do mapa' }));
           if (a.imagem_caminho) cartaoImagem.appendChild(figuraDoMapa(a.imagem_caminho));
           else cartaoImagem.appendChild(el('p', { class: 'portal-vazio', style: 'margin-bottom:10px', text: 'Nenhuma imagem. Se a atividade for sobre um mapa, anexe a imagem aqui (PNG ou JPEG).' }));
           var acoesImg = el('div', { class: 'portal-acoes' }, [botaoDeImagem(a.imagem_caminho ? 'Trocar a imagem' : 'Anexar imagem', function (arq) {

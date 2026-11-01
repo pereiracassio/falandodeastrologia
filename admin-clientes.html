@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="page.css?v=77">
   <link rel="stylesheet" href="portal.css?v=25">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=20">
+  <link rel="stylesheet" href="tipografia.css?v=26">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -99,7 +99,7 @@
       var cancelarNovo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
       cancelarNovo.addEventListener('click', function () { areaForm.textContent = ''; });
       var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
-        el('p', { class: 'portal-item-titulo', text: 'Novo cliente' }),
+        el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Novo cliente' }),
         el('p', { text: 'Cadastre o nome e o Gmail que o cliente usou na contratação. O acesso dele é criado aqui, ao adicionar. Ele entra na página Seu espaço com o Google, sem senha.' }),
         el('label', { for: 'novoCodigo', text: 'Código do cliente' }), codigo,
         el('label', { for: 'novoNome', text: 'Nome' }), nome,

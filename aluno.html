@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="page.css?v=77">
   <link rel="stylesheet" href="portal.css?v=25">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=20">
+  <link rel="stylesheet" href="tipografia.css?v=26">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -365,10 +365,10 @@
           if (x.data && !feito) texto.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) }));
           var cb = el('input', { type: 'checkbox', class: 'caixinha', disabled: '' }); cb.checked = feito;
           if (x.tipo === 'material') {
-            if (!it) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
+            if (!it) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else {
               texto.push(itemDaLista(it, 'materiais'));
-              if (x.lido_em) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'Você já leu' }));
+              if (x.lido_em) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'Você já leu' }));
               else {
                 var li = el('button', { type: 'button', class: 'portal-btn', text: 'Marquei que li', style: 'margin-top:8px' });
                 li.disabled = !!previa;
@@ -377,10 +377,10 @@
               }
             }
           } else if (x.tipo === 'gravacao') {
-            if (!it) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
+            if (!it) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else texto.push(itemDaLista(it, 'gravacoes'));
           } else if (x.tipo === 'atividade') {
-            if (!at) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'em preparação' }));
+            if (!at) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else {
               texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: at.antiga || at.somente_leitura ? 'Já feita' : !at.enviada_em ? 'Para responder' : at.corrigida_em ? 'Corrigida' : 'Enviada para correção' }));
               var abrirAt = el('button', { type: 'button', class: 'portal-btn', text: at.enviada_em || at.antiga || at.somente_leitura ? 'Ver a atividade' : 'Responder', style: 'margin-top:8px' });
@@ -403,7 +403,7 @@
           c.appendChild(P.barraLinha(pct, null, feitos.length + '/' + m.length));
           var iniT = t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE');
           if (t.data_fim) c.appendChild(P.barraTempoDias(iniT, t.data_fim));
-          c.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px', text: 'Início: ' + P.dataBR(t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE')) + (t.data_fim ? ' · Previsto: ' + P.dataBR(t.data_fim) : '') }));
+          c.appendChild(el('p', { class: 'portal-item-data', style: 'font-size:15px' }, [el('span', { class: 'rotulo-fixo', text: 'Início: ' }), document.createTextNode(P.dataBR(t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE')) + (t.data_fim ? ' · Previsto: ' + P.dataBR(t.data_fim) : ''))]));
           cartao.appendChild(c); cartao.appendChild(corpo); raiz.appendChild(cartao);
           var abertas = window.__trilhasAbertasAluno = window.__trilhasAbertasAluno || [];
           function pintarT() { var ab = abertas.indexOf(t.id) >= 0; corpo.style.display = ab ? '' : 'none'; sinalT.textContent = ab ? '−' : '+'; c.setAttribute('aria-expanded', ab ? 'true' : 'false'); }

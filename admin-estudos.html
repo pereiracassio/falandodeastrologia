@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="page.css?v=77">
   <link rel="stylesheet" href="portal.css?v=25">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=20">
+  <link rel="stylesheet" href="tipografia.css?v=26">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -233,7 +233,7 @@
 
         /* cartão do estudo: nome; barra de progresso da SEMANA (segunda a domingo; sábado e domingo mostram a semana que vem); barra do TEMPO se tiver data final */
         var cartao = el('div', { class: 'portal-cartao' });
-        var renomear = el('button', { type: 'button', text: 'Renomear' });
+        var renomear = el('button', { type: 'button', class: 'botao-fixo', text: 'Renomear' });
         renomear.style.cssText = 'background:none;border:0;padding:0;color:#1034A6;font:inherit;font-size:13px;font-weight:700;cursor:pointer;display:' + (encerrado ? 'none' : 'inline');
         renomear.addEventListener('click', function () {
           var n = (prompt('Nome do estudo', est.nome) || '').trim();
@@ -250,7 +250,7 @@
         var daSemana = est.por_semana ? tudo.filter(function (a) { return dia(a) >= segunda && dia(a) <= domingo; }) : [];
         if (daSemana.length) {
           var nFeitas = daSemana.filter(concluida).length, pct = Math.round(nFeitas * 100 / daSemana.length);
-          cartao.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px;margin:10px 0 0', text: 'Semana de ' + diaCurto(daSemana[0].data) + ' a ' + diaCurto(daSemana[daSemana.length - 1].data) }));
+          cartao.appendChild(el('p', { class: 'portal-item-data rotulo-fixo', style: 'margin:10px 0 0', text: 'Semana de ' + diaCurto(daSemana[0].data) + ' a ' + diaCurto(daSemana[daSemana.length - 1].data) }));
           cartao.appendChild(P.barraLinha(pct, null, nFeitas + '/' + daSemana.length));
         }
         if (est.data_fim) cartao.appendChild(P.barraTempoDias(est.data_inicio, est.data_fim));
@@ -516,7 +516,7 @@
     function quadroConta(q, resposta) {
       var ALTURA = 240, PASSO = 200;
       var caixa = el('div', { style: 'margin:10px 0 14px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none' });
-      caixa.appendChild(el('p', { class: 'portal-item-data', text: 'Espaço para a conta' }));
+      caixa.appendChild(el('p', { class: 'portal-item-data rotulo-fixo', text: 'Espaço para a conta' }));
       var cv = el('canvas'); cv.style.cssText = 'display:block;width:100%;height:' + ALTURA + 'px;border:1px solid #1F5FA3;background:transparent;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent';
       caixa.appendChild(cv);
       var g = cv.getContext('2d'), dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -601,7 +601,7 @@
     var MOTIVOS = [['atencao', 'Li errado ou me distraí'], ['conceito', 'Não entendi o conceito'], ['conta', 'Errei a conta']];
     function motivoErro(q, resposta) {
       var caixa = el('div', { style: 'margin:6px 0 8px' });
-      caixa.appendChild(el('p', { class: 'portal-item-data', text: 'Por que errei?' }));
+      caixa.appendChild(el('p', { class: 'portal-item-data rotulo-fixo', text: 'Por que errei?' }));
       var desenhar = function () {
         while (caixa.childNodes.length > 1) caixa.removeChild(caixa.lastChild);
         MOTIVOS.forEach(function (m) {
@@ -633,7 +633,7 @@
         resol.textContent = '';
         if (!q.resolucao) return;
         var t = textoFormatado(q.resolucao); t.style.marginTop = '8px';
-        resol.appendChild(el('p', { class: 'portal-item-data', text: 'Resolução' })); resol.appendChild(t);
+        resol.appendChild(el('p', { class: 'portal-item-data rotulo-fixo', text: 'Resolução' })); resol.appendChild(t);
       };
       if (q.tipo === 'multipla') {
         var desenhar = function () {

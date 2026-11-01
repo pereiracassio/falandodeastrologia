@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="page.css?v=77">
   <link rel="stylesheet" href="portal.css?v=25">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=20">
+  <link rel="stylesheet" href="tipografia.css?v=26">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -102,7 +102,7 @@
       var cancelarNovo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
       cancelarNovo.addEventListener('click', function () { areaForm.textContent = ''; });
       var form = el('form', { class: 'portal-item', style: 'margin-bottom:14px' }, [
-        el('p', { class: 'portal-item-titulo', text: 'Novo aluno' }),
+        el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Novo aluno' }),
         el('p', { text: 'O acesso dele é criado aqui, ao adicionar. Ele entra com o Google (o mesmo Gmail) ou toca em "Esqueci minha senha" na tela de entrada.' }),
         el('label', { for: 'novoNome', text: 'Nome' }), nome,
         el('label', { for: 'novoEmail', text: 'E-mail (o mesmo do acesso)' }), email,
@@ -536,8 +536,8 @@
                 P.client.from('aluno_acompanhamento').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
               });
               var textos = [el('span', { class: 'portal-item-titulo', style: 'color:#B5852F', text: P.dataBR(String(i.data).slice(0, 10)) })];
-              if (i.paramos) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px', text: 'Paramos em: ' + i.paramos }));
-              if (i.proximo) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px', text: 'Vou trabalhar: ' + i.proximo }));
+              if (i.paramos) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px' }, [el('span', { class: 'rotulo-fixo', text: 'Paramos em: ' }), document.createTextNode(i.paramos)]));
+              if (i.proximo) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px' }, [el('span', { class: 'rotulo-fixo', text: 'Vou trabalhar: ' }), document.createTextNode(i.proximo)]));
               lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, textos), el('div', { class: 'portal-acoes' }, [editar, apagar])])]));
             });
           });
