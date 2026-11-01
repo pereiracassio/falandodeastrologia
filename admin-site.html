@@ -92,6 +92,22 @@
       ['Fortaleza', -3.7319, -38.5267, -3], ['Natal', -5.7945, -35.211, -3], ['Belém', -1.4558, -48.4902, -3], ['Manaus', -3.119, -60.0217, -4],
       ['Cuiabá', -15.6014, -56.0979, -4], ['Campo Grande', -20.4697, -54.6201, -4], ['Porto Velho', -8.7612, -63.9004, -4]
     ];
+    /* texto que vem em todo vídeo, em cima da linha e dos Capítulos (a Produção lê daqui; sem nada salvo vale o texto de sempre) */
+    var TEXTO_FIXO_PADRAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
+    function cartaoTextoFixo() {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Texto fixo dos vídeos' })]);
+      var area = el('textarea', { rows: '10' }), msg = el('p', { class: 'portal-msg' }), salvo = false, t = null;
+      area.value = TEXTO_FIXO_PADRAO;
+      C.from('site_config').select('valor').eq('chave', 'prod_texto_fixo').maybeSingle().then(function (r) { if (r.data && typeof r.data.valor === 'string') area.value = r.data.valor; });
+      area.addEventListener('input', function () {
+        P.mensagem(msg, 'Digitando...'); clearTimeout(t);
+        t = setTimeout(function () {
+          C.from('site_config').upsert({ chave: 'prod_texto_fixo', valor: area.value, atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (r) { P.mensagem(msg, r.error ? 'Não salvou.' : 'Salvo.', r.error ? 'erro' : 'ok'); });
+        }, 1200);
+      });
+      cartao.appendChild(area); cartao.appendChild(msg);
+      return cartao;
+    }
     function cartaoLugar() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Lugar das horas planetárias' })]);
       var corpo = el('div'); cartao.appendChild(corpo);
@@ -444,6 +460,7 @@
       if (conexaoDrive) app.appendChild(conexaoDrive);
       app.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
       app.appendChild(cartaoLugar());
+      app.appendChild(cartaoTextoFixo());
       app.appendChild(cartaoAgendas());
       app.appendChild(cartaoImportarClientes());
       app.appendChild(cartaoAreas); app.appendChild(cartaoServicos);

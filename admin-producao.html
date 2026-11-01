@@ -118,7 +118,9 @@
     var LINHA_DESCRICAO = '———————————————————————————————————————————————————';
     /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
     var BLOCO_FIXO_DESCRICAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
-    var FIM_DESCRICAO = '\n\n' + BLOCO_FIXO_DESCRICAO + LINHA_DESCRICAO + '\nCapítulos\n00:00 Início\n';
+    /* o texto fixo pode ser editado em Configurações ("Texto fixo dos vídeos", site_config.prod_texto_fixo); sem nada salvo lá vale o de cima */
+    var TEXTO_FIXO = BLOCO_FIXO_DESCRICAO;
+    function fimDescricao() { var f = String(TEXTO_FIXO || '').replace(/\s+$/, ''); return '\n\n' + (f ? f + '\n\n' : '') + LINHA_DESCRICAO + '\nCapítulos\n00:00 Início\n'; }
     /* lê uma nota do Notas da Apple (colada) e separa: título (1ª linha), roteiro em blocos ("Bloco N: ..."), texto do YouTube (depois da 1ª linha de traços até "Cards"), cards e tags */
     function lerNotaDoNotas(bruto) {
       var linhas = String(bruto || '').replace(/\r/g, '').split('\n');
@@ -379,7 +381,8 @@
         C.from('prod_series').select('*').order('criado_em'),
         C.from('prod_videos').select('*').order('numero').order('criado_em'),
         C.from('prod_cortes').select('*').order('ordem').order('criado_em'),
-        C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle()
+        C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle(),
+        C.from('site_config').select('valor').eq('chave', 'prod_texto_fixo').maybeSingle()
       ]).then(function (r) {
         if (r[0].error || r[1].error || r[2].error) {
           limpar(); app.appendChild(topo(nomeAdmin));
@@ -387,6 +390,7 @@
           return;
         }
         series = r[0].data || []; videos = r[1].data || []; cortes = r[2].data || [];
+        if (r[4] && r[4].data && typeof r[4].data.valor === 'string') TEXTO_FIXO = r[4].data.valor;
         try { /* lugar usado nas horas planetárias (guardado no Supabase, vale em qualquer aparelho) */
           var salvo = r[3] && r[3].data && r[3].data.valor ? JSON.parse(r[3].data.valor) : null;
           if (salvo && isFinite(salvo.lat) && isFinite(salvo.lon) && isFinite(salvo.fuso)) LOCAL_HORAS = { nome: String(salvo.nome || 'outro lugar'), lat: +salvo.lat, lon: +salvo.lon, fuso: +salvo.fuso };
@@ -915,7 +919,7 @@
       var data = el('input', { type: 'date' }); data.value = v.data_postar || '';
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
-      var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || FIM_DESCRICAO; /* vídeo sem texto ainda já nasce com a linha e a palavra Capítulos */
+      var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || fimDescricao(); /* vídeo sem texto ainda já nasce com a linha e a palavra Capítulos */
       var tags = el('textarea', { rows: '3', placeholder: 'tag1, tag2, tag3' }); tags.value = v.tags || '';
       var cardsTxt = el('textarea', { rows: '4', placeholder: 'Um card por linha, no máximo 5, assim: 03:45:12 Título do vídeo do card' }); cardsTxt.value = v.cards || '';
       var cardsLista = el('div', {});
@@ -1031,7 +1035,7 @@
       var botLinha = P.botaoApagar('Adicionar linha'); /* discreto: só põe a linha e Capítulos no fim do texto */
       botLinha.addEventListener('click', function () {
         if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
-        texto.value = texto.value.replace(/\s+$/, '') + FIM_DESCRICAO; texto.dispatchEvent(new Event('input'));
+        texto.value = texto.value.replace(/\s+$/, '') + fimDescricao(); texto.dispatchEvent(new Event('input'));
       });
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botLinha]));
       cartao.appendChild(campo('Tags do YouTube', tags, function () { return tags.value.trim(); }));
