@@ -411,3 +411,4 @@ Ao subir, descer, marcar, adicionar ou apagar, a tela era redesenhada e voltava 
 
 ## Ordem da lista dentro de um projeto (01/11/2026) — regra dele
 Passos e subprojetos pendentes ficam nesta ordem: **1º o que tem data** (passo ou subprojeto com data final), em ordem de data; **2º os subprojetos sem data, do mais concluído para o menos concluído** (a mesma regra da lista de Projetos); **3º os passos comuns**, na ordem em que ele arrumou. Subprojeto não tem setas (a ordem dele é automática) e o passo comum só troca de lugar com outro passo comum.
+- **Rótulos fixos da lista de um projeto (Próximo passo, Depois, Feitos; `.proj-grupo`): Cinzel e OCRE** (01/11/2026, pedido dele: são do site, não escritos por ele). Estão nas listas do `tipografia.css` (fonte e caixa baixa) e no fim do `page.css` (cor).

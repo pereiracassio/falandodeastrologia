@@ -325,3 +325,6 @@ html.fda-admin-tela .pagina-papiro .cab-papiro>.cab-nav{visibility:hidden}
 
 /* painel: nada de linha embaixo do título (a borda de cima do primeiro cartão); linha só no FIM de uma seção */
 html.fda-admin-tela .pagina-papiro #app>.portal-cartao:first-child{border-top:0!important}
+
+/* rótulos fixos da lista de um projeto (Próximo passo, Depois, Feitos): Cinzel e ocre (são do site, não escritos por ele) */
+.pagina-papiro .proj-grupo{color:#B5852F!important}
