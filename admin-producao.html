@@ -993,7 +993,7 @@
       function caixaBloco(rotulo, valor, dica, aoMudar, extra) {
         var t = el('textarea', { rows: '6', placeholder: dica }); t.value = valor;
         t.addEventListener('input', function () { aoMudar(t.value); agendarSalvar(); });
-        return el('div', {}, [campo(rotulo, t), extra]);
+        return el('div', {}, [campo(rotulo, t, function () { return t.value; }), extra]); /* cada bloco do roteiro copia ao tocar no texto; "Editar" libera para escrever */
       }
       function desenharBlocos() {
         areaBlocos.textContent = '';
