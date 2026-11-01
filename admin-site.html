@@ -460,11 +460,11 @@
       var conexaoDrive = P.cartaoConexaoDrive();
       if (conexaoDrive) abaSite.appendChild(conexaoDrive);
       abaSite.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
-      abaSite.appendChild(cartaoTextoFixo());
       abaSite.appendChild(cartaoImportarClientes());
       abaSite.appendChild(cartaoAreas); abaSite.appendChild(cartaoServicos);
       /* configurações do Hellenic Daily: o que serve à agenda e às horas, separado das do site (a engrenagem é uma só, no meio da barra) */
       abaDaily.appendChild(cartaoLugar());
+      abaDaily.appendChild(cartaoTextoFixo()); /* texto fixo da Produção: Produção é do Hellenic Daily */
       abaDaily.appendChild(cartaoAgendas());
       var ABAS_CFG = [{ chave: 'site', nome: 'Falando de Astrologia', el: abaSite }, { chave: 'daily', nome: 'Hellenic Daily', el: abaDaily }];
       var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div'), botoesAbas = {};
