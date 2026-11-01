@@ -37,8 +37,12 @@
     .prod-seg .prod-chip{flex:1 1 auto;white-space:nowrap;border:0;border-left:1px solid #1F5FA3;padding:6px 3px;font-size:9px;letter-spacing:0;text-align:center;color:#A03E25}
     .prod-seg .prod-chip:first-child{border-left:0}
     .prod-seg .prod-chip.on{background:#1F5FA3;color:#F3E3B8;font-weight:400}
+    /* barra do módulo: sete pedaços cabem na tela, os nomes compridos quebram em duas linhas dentro do pedaço */
+    .prod-seg.modulo{overflow:hidden}
+    .prod-seg.modulo .prod-chip{white-space:normal;flex:1 1 auto;padding:5px 1px;font-size:8.5px;line-height:1.15;word-break:keep-all}
     .pc-aula{padding:12px 0;border-bottom:1px solid #1F5FA3}
     .pc-aula:last-child{border-bottom:0}
+    span.prod-chip{display:inline-block}
   </style>
 </head>
 <body>
@@ -134,32 +138,61 @@
       acoes.appendChild(ap); textos.push(acoes);
       return el('div', { class: 'proj-passo' + (p.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]);
     }
-    /* lista de passos de um grupo, com o formulário de passo novo/editar logo embaixo */
+    /* formulário de passo (novo ou editar), dentro da área que abre embaixo da lista */
+    function formPasso(area, c, fase, mid, item) {
+      area.textContent = '';
+      var msg = el('p', { class: 'portal-msg' }), titulo = el('input', { type: 'text', id: 'pcTitulo', required: '' }), nota = el('textarea', { rows: '2', placeholder: 'Anotação (opcional)' });
+      if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; }
+      var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Adicionar passo' }), cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+      cancelar.addEventListener('click', function () { area.textContent = ''; });
+      var f = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pcTitulo', text: 'Passo' }), titulo, nota, msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
+      f.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
+        salvar.disabled = true;
+        var ordem = passos.filter(function (p) { return p.curso_id === c.id; }).reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0) + 1;
+        var pedido = item ? C.from('pc_passos').update({ titulo: t, nota: nota.value.trim() || null }).eq('id', item.id) : C.from('pc_passos').insert({ curso_id: c.id, modulo_id: mid || null, fase: mid ? 'modulo' : fase, titulo: t, nota: nota.value.trim() || null, ordem: ordem });
+        pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else carregar(); });
+      });
+      area.appendChild(f); titulo.focus({ preventScroll: true });
+    }
+    /* os passos de um grupo que ainda faltam (o que já foi feito vai para a parte "Feitos", lá embaixo), com o formulário de passo novo logo embaixo */
     function blocoPassos(c, fase, mid) {
       var caixa = el('div'), lista = el('div', { style: 'border-top:1px solid #1F5FA3' }), area = el('div', { class: 'barra-ocre' });
-      var itens = passosDe(c.id, fase, mid);
-      itens.forEach(function (p) { lista.appendChild(linhaPasso(p, form)); });
+      var itens = passosDe(c.id, fase, mid).filter(function (p) { return !p.feito; });
+      itens.forEach(function (p) { lista.appendChild(linhaPasso(p, function (x) { formPasso(area, c, fase, mid, x); })); });
       if (itens.length) caixa.appendChild(lista);
-      function form(item) {
-        area.textContent = '';
-        var msg = el('p', { class: 'portal-msg' }), titulo = el('input', { type: 'text', id: 'pcTitulo', required: '' }), nota = el('textarea', { rows: '2', placeholder: 'Anotação (opcional)' });
-        if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; }
-        var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Adicionar passo' }), cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
-        cancelar.addEventListener('click', function () { area.textContent = ''; });
-        var f = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pcTitulo', text: 'Passo' }), titulo, nota, msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
-        f.addEventListener('submit', function (ev) {
-          ev.preventDefault();
-          var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
-          salvar.disabled = true;
-          var ordem = passos.filter(function (p) { return p.curso_id === c.id; }).reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0) + 1;
-          var pedido = item ? C.from('pc_passos').update({ titulo: t, nota: nota.value.trim() || null }).eq('id', item.id) : C.from('pc_passos').insert({ curso_id: c.id, modulo_id: mid || null, fase: mid ? 'modulo' : fase, titulo: t, nota: nota.value.trim() || null, ordem: ordem });
-          pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else carregar(); });
-        });
-        area.appendChild(f); titulo.focus({ preventScroll: true });
-      }
-      caixa.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:8px' }, [minilink('+ Adicionar passo', function () { if (!area.firstChild) form(null); })]));
+      caixa.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:8px' }, [minilink('+ Adicionar passo', function () { if (!area.firstChild) formPasso(area, c, fase, mid, null); })]));
       caixa.appendChild(area);
       return caixa;
+    }
+    /* parte "Feitos": os passos ticados saem das listas de cima e vêm para cá; desticar devolve para o lugar */
+    function listaFeitos(c, mid) {
+      var itens = passos.filter(function (p) { return p.curso_id === c.id && p.feito && (mid ? p.modulo_id === mid : !p.modulo_id); }).sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); });
+      var caixa = el('div'), area = el('div', { class: 'barra-ocre' });
+      if (!itens.length) return caixa;
+      caixa.appendChild(grupo('Feitos'));
+      var lista = el('div', { style: 'border-top:1px solid #1F5FA3' });
+      itens.forEach(function (p) { lista.appendChild(linhaPasso(p, function (x) { formPasso(area, c, x.fase, mid, x); })); });
+      caixa.appendChild(lista); caixa.appendChild(area);
+      return caixa;
+    }
+    /* a barra de etapas do MÓDULO, igual à do vídeo na Produção: cada pedaço escrito em vermelho, e ao ticar fica azul com o nome vazado.
+       Apostila é do módulo; Aulas fica azul quando já existe ao menos uma; Gravação, Edição grossa... ficam azuis quando TODAS as aulas têm aquela etapa (tocar marca ou desmarca em todas as aulas). */
+    function chipsModulo(c, m, vivo) {
+      var et = etapasDe(c), as = aulasDe(m.id);
+      var defs = [
+        { r: 'Apostila', on: !!m.apostila_ok, fn: function () { var v = !m.apostila_ok; m.apostila_ok = v; m.apostila_em = v ? new Date().toISOString() : null; desenhar(); C.from('pc_modulos').update({ apostila_ok: v, apostila_em: m.apostila_em }).eq('id', m.id).then(falhou); } },
+        { r: 'Aulas', on: as.length > 0, fn: null }];
+      ETAPAS.filter(function (e) { return et.indexOf(e[0]) >= 0; }).forEach(function (e) {
+        var todas = as.length > 0 && as.every(function (a) { return a[e[0]]; });
+        defs.push({ r: e[1], on: todas, fn: as.length ? function () { var v = !todas; as.forEach(function (a) { a[e[0]] = v; }); desenhar(); var o = {}; o[e[0]] = v; C.from('pc_aulas').update(o).eq('modulo_id', m.id).then(falhou); } : null });
+      });
+      return el('div', { class: 'prod-seg modulo' }, defs.map(function (d) {
+        var ativo = vivo && d.fn, b = el(ativo ? 'button' : 'span', { class: 'prod-chip prod-fixo' + (d.on ? ' on' : ''), text: d.r });
+        if (ativo) { b.setAttribute('type', 'button'); b.setAttribute('aria-pressed', d.on ? 'true' : 'false'); b.addEventListener('click', d.fn); } else b.style.cursor = 'inherit';
+        return b;
+      }));
     }
 
     /* ---------- telas ---------- */
@@ -263,7 +296,7 @@
       cartao.appendChild(grupo('Módulos'));
       var lm = el('div', { style: 'border-top:1px solid #1F5FA3' });
       modulosDe(c.id).forEach(function (m) {
-        var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('span', { class: 'portal-item-titulo', text: m.nome }), barra(contModulo(m))]);
+        var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('span', { class: 'portal-item-titulo', text: m.nome }), chipsModulo(c, m, false)]);
         var abrir = function () { ir(c.id, m.id); };
         linha.addEventListener('click', abrir); linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
         lm.appendChild(linha);
@@ -291,6 +324,8 @@
       });
       cartao.appendChild(fila);
 
+      cartao.appendChild(listaFeitos(c, null));
+
       var apagar = P.botaoApagar('Apagar este curso');
       apagar.addEventListener('click', function () { if (!confirm('Apagar o curso "' + c.nome + '" com os módulos, aulas e passos? Não dá para desfazer.')) return; C.from('pc_cursos').delete().eq('id', c.id).then(function (r) { if (!falhou(r)) { aberto = null; P.estado.gravar({}); carregar(); } }); });
       P.voltarNoFim(app, voltar); P.apagarNoFim(app, apagar);
@@ -303,12 +338,7 @@
       var ren = el('button', { type: 'button', class: 'botao-fixo', text: 'Renomear', style: 'background:none;border:0;padding:0;color:#1034A6;font-size:13px;cursor:pointer' });
       ren.addEventListener('click', function () { var n = (prompt('Nome do módulo', m.nome) || '').trim(); if (!n || n === m.nome) return; C.from('pc_modulos').update({ nome: n }).eq('id', m.id).then(function (r) { if (!falhou(r)) carregar(); }); });
       cartao.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: m.nome, style: 'margin:0' }), ren]));
-      cartao.appendChild(barra(contModulo(m)));
-
-      cartao.appendChild(grupo('Apostila'));
-      var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = !!m.apostila_ok;
-      cb.addEventListener('change', function () { m.apostila_ok = cb.checked; m.apostila_em = cb.checked ? new Date().toISOString() : null; desenhar(); C.from('pc_modulos').update({ apostila_ok: m.apostila_ok, apostila_em: m.apostila_em }).eq('id', m.id).then(falhou); });
-      cartao.appendChild(el('div', { class: 'proj-passo' + (m.apostila_ok ? ' feito' : ''), style: 'border-top:1px solid #1F5FA3' }, [cb, el('div', { style: 'flex:1' }, [el('span', { class: 'proj-titulo', text: 'Apostila pronta' })])]));
+      cartao.appendChild(chipsModulo(c, m, true));
 
       cartao.appendChild(grupo('Aulas'));
       var et = etapasDe(c), as = aulasDe(m.id), lista = el('div', { style: 'border-top:1px solid #1F5FA3' });
@@ -334,6 +364,7 @@
         minilink('Criar várias aulas', function () { var n = parseInt(prompt('Quantas aulas?') || '', 10); if (n > 0 && n <= 60) criar(n); })]));
 
       cartao.appendChild(grupo('Outros passos')); cartao.appendChild(blocoPassos(c, 'modulo', m.id));
+      cartao.appendChild(listaFeitos(c, m.id));
 
       var apagar = P.botaoApagar('Apagar este módulo');
       apagar.addEventListener('click', function () { if (!confirm('Apagar o módulo "' + m.nome + '" com as aulas? Não dá para desfazer.')) return; C.from('pc_modulos').delete().eq('id', m.id).then(function (r) { if (!falhou(r)) { moduloAberto = null; P.estado.gravar({ curso: c.id }); carregar(); } }); });
