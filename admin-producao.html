@@ -261,13 +261,18 @@
 
     /* copia para a área de transferência (com plano B para navegadores que não deixam) */
     function copiarTexto(txt) {
-      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(txt);
-      return new Promise(function (ok, erro) {
-        var t = document.createElement('textarea'); t.value = txt; t.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
-        document.body.appendChild(t); t.focus(); t.select();
-        try { document.execCommand('copy') ? ok() : erro(); } catch (e) { erro(e); }
-        document.body.removeChild(t);
-      });
+      /* plano B (iPhone/iPad): textarea escondido selecionado + execCommand; só vale "não consegui" se os DOIS jeitos falharem */
+      var planoB = function () {
+        return new Promise(function (ok, erro) {
+          var t = document.createElement('textarea'); t.value = txt; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+          document.body.appendChild(t); t.focus(); t.select(); try { t.setSelectionRange(0, t.value.length); } catch (e) { /* segue */ }
+          var feito = false; try { feito = document.execCommand('copy'); } catch (e) { feito = false; }
+          document.body.removeChild(t);
+          feito ? ok() : erro(new Error('copiar'));
+        });
+      };
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(txt).catch(planoB);
+      return planoB();
     }
     /* copiar sem botão escrito "Copiar": tocar no NOME do campo (ou no ícone) copia o conteúdo; o ícone vira ✓ por um instante */
     var SVG_COPIAR = '<svg viewBox="0 0 64 64" width="15" height="15" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px"><rect x="22" y="22" width="30" height="34"/><path d="M42 22V10H12v34h10"/></svg>';
@@ -278,7 +283,7 @@
       var fazer = function () {
         var txt = pegar();
         if (!txt) return;
-        copiarTexto(txt).then(function () { avisoFlutuante('Copiado'); icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = base; }, 1500); }, function () { icone.textContent = ' não consegui'; setTimeout(function () { icone.innerHTML = base; }, 1500); });
+        copiarTexto(txt).then(function () { avisoFlutuante('Copiado'); icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = base; }, 1500); }, function () { avisoFlutuante('Não consegui copiar', true); });
       };
       alvo.addEventListener('click', fazer);
       alvo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); fazer(); } });
@@ -561,7 +566,7 @@
       entrada.addEventListener('click', function () {
         if (!entrada.readOnly) return;
         var txt = pegar(); if (!txt) return;
-        copiarTexto(txt).then(function () { avisoFlutuante('Copiado'); icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = ''; }, 1500); }, function () { icone.textContent = ' não consegui'; setTimeout(function () { icone.textContent = ''; }, 1500); });
+        copiarTexto(txt).then(function () { avisoFlutuante('Copiado'); icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = ''; }, 1500); }, function () { avisoFlutuante('Não consegui copiar', true); });
       });
       var alterna = function () { travar(!entrada.readOnly); if (!entrada.readOnly) entrada.focus(); };
       ed.addEventListener('click', alterna);
