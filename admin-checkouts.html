@@ -35,7 +35,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=129"></script>
+  <script src="portal.js?v=130"></script>
   <script src="menu.js?v=51" defer></script>
   <script src="carrinho.js?v=6"></script>
   <script>
@@ -64,20 +64,6 @@
     }
 
     /* copia o texto; se o aparelho não deixar, abre uma caixa pra copiar à mão */
-    function copiar(texto, msg) {
-      var ok = function () { P.mensagem(msg, 'Link copiado! É só colar no WhatsApp.', 'ok'); };
-      var plano = function () { window.prompt('Copie o link:', texto); };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(ok, plano); else plano();
-    }
-
-    /* sem botão "Copiar link": tocar no nome copia o link */
-    function tocarParaCopiar(bloco, link, msg) {
-      bloco.style.cursor = 'pointer'; bloco.setAttribute('role', 'button'); bloco.setAttribute('tabindex', '0');
-      bloco.addEventListener('click', function () { copiar(link, msg); });
-      bloco.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); copiar(link, msg); } });
-      return bloco;
-    }
-
     function tela() {
       limpar();
       app.appendChild(topo(nomeAdmin));
@@ -87,11 +73,10 @@
       var servicos = window.Carrinho.servicos;
       Object.keys(servicos).filter(function (k) { return !/^teste/.test(k); }).forEach(function (k) {
         var s = servicos[k], link = SITE + '/carrinho.html?add=' + k;
-        var abre = el('a', { class: 'portal-btn portal-btn-sec', href: link, target: '_blank', rel: 'noopener', text: 'Abrir' });
         cartao.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [
-          tocarParaCopiar(el('div', {}, [el('span', { class: 'portal-item-titulo', text: s.titulo }),
-            el('span', { class: 'portal-item-data', text: window.Carrinho.reais(s.centavos) + (s.restrito ? ' · só por este link (não aparece no site)' : '') })]), link, msg),
-          el('div', { class: 'portal-acoes' }, [abre])
+          el('div', {}, [el('span', { class: 'portal-item-titulo', text: s.titulo }),
+            el('span', { class: 'portal-item-data', text: window.Carrinho.reais(s.centavos) + (s.restrito ? ' · só por este link (não aparece no site)' : '') })]),
+          el('div', { class: 'portal-acoes' }, [P.iconeLink(link)])
         ])]));
       });
       cartao.appendChild(msg);
@@ -115,9 +100,10 @@
             var url = guardados[l.chave] != null ? guardados[l.chave] : l.padrao;
             var acoes = el('div', { class: 'portal-acoes' });
             if (url) {
-              acoes.appendChild(el('a', { class: 'portal-btn portal-btn-sec', href: url, target: '_blank', rel: 'noopener', text: 'Abrir' }));
+              acoes.appendChild(P.iconeLink(url));
             }
-            var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: url ? 'Trocar o link' : 'Colar o link' });
+            var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: url ? 'Editar' : 'Colar o link' });
+            if (url) trocar.style.cssText = 'background:transparent;border:0;border-radius:0;padding:4px;font-size:12px;opacity:.6;text-decoration:underline;font-family:var(--fonte-mao)';
             trocar.addEventListener('click', function () {
               var novo = window.prompt('Cole o link (https://...):', url || '');
               if (novo == null) return;
@@ -130,8 +116,8 @@
             });
             acoes.appendChild(trocar);
             var blocoL = el('div', {}, [el('span', { class: 'portal-item-titulo', text: l.nome }),
-              el('span', { class: 'portal-item-data', text: url ? url : 'Ainda sem link. ' + l.dica })]);
-            caixa.appendChild(el('div', { class: 'portal-item-linha' }, [url ? tocarParaCopiar(blocoL, url, msg2) : blocoL, acoes]));
+              el('span', { class: 'portal-item-data', text: url ? '' : 'Ainda sem link. ' + l.dica })]);
+            caixa.appendChild(el('div', { class: 'portal-item-linha' }, [blocoL, acoes]));
           }
           desenhar(); meus.appendChild(caixa);
         });

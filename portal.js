@@ -1097,6 +1097,59 @@
     new MutationObserver(function (muds) { muds.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) { if (n.tagName === 'INPUT' && n.type === 'date') dataCaderno(n); else todasDatas(n); } }); }); }).observe(document.body, { childList: true, subtree: true });
   }
   if (document.body) ligarDatas(); else document.addEventListener('DOMContentLoaded', ligarDatas);
+  /* PADRÃO DE LINK EM TODO O SITE: link colado não aparece escrito, vira o ícone de elo; tocar no ícone COPIA o link; ao lado, um "Editar" pequeno abre o campo para trocar
+     (vira "Pronto"). Campo de link vazio é só o campo. Todo input type=url da página vira assim sozinho, mesmo os criados depois; .value, change e input continuam valendo. */
+  var SVG_ELO = '<svg viewBox="0 0 64 64" width="30" height="30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M27 37a11 11 0 0 0 15.5 0l9-9a11 11 0 0 0-15.5-15.5l-3 3"/><path d="M37 27a11 11 0 0 0-15.5 0l-9 9a11 11 0 0 0 15.5 15.5l3-3"/></svg>';
+  var SVG_ELO_OK = '<svg viewBox="0 0 64 64" width="30" height="30" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 34l14 14 26-28"/></svg>';
+  function copiarParaAreaDeTransferencia(txt) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(txt);
+    return new Promise(function (ok, erro) {
+      var t = el('textarea', { style: 'position:fixed;top:0;left:0;opacity:0' }); t.value = txt; document.body.appendChild(t); t.focus(); t.select();
+      try { document.execCommand('copy') ? ok() : erro(); } catch (e) { erro(e); } document.body.removeChild(t);
+    });
+  }
+  function linkCopiavel(inp) {
+    if (inp.classList.contains('link-copiavel-input') || !inp.parentNode) return inp;
+    inp.classList.add('link-copiavel-input');
+    var editando = false;
+    var icone = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:#1034A6;cursor:pointer;flex:none' });
+    icone.innerHTML = SVG_ELO;
+    var ed = el('span', { text: 'Editar', role: 'button', tabindex: '0', style: 'font-size:12px;opacity:.6;text-decoration:underline;cursor:pointer;font-family:var(--fonte-mao)' });
+    var env = el('span', { class: 'link-copiavel', style: 'display:none;align-items:center;gap:14px' }, [icone, ed]);
+    inp.parentNode.insertBefore(env, inp.nextSibling);
+    var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    function pinta() {
+      var tem = String(desc.get.call(inp) || '').trim() !== '';
+      env.style.display = tem || editando ? 'flex' : 'none';
+      icone.style.display = editando ? 'none' : '';
+      inp.style.display = tem && !editando ? 'none' : '';
+      ed.textContent = editando ? 'Pronto' : 'Editar';
+    }
+    icone.addEventListener('click', function () {
+      var u = String(inp.value || '').trim(); if (!u) return;
+      copiarParaAreaDeTransferencia(u).then(function () { icone.innerHTML = SVG_ELO_OK; setTimeout(function () { icone.innerHTML = SVG_ELO; }, 1500); }, function () { window.prompt('Copie o link:', u); });
+    });
+    var alterna = function () { editando = !editando; pinta(); if (editando) { inp.focus(); } };
+    ed.addEventListener('click', alterna);
+    ed.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); alterna(); } });
+    Object.defineProperty(inp, 'value', { configurable: true, get: function () { return desc.get.call(this); }, set: function (x) { desc.set.call(this, x); pinta(); } });
+    inp.addEventListener('change', function () { if (!editando) pinta(); }); /* link novo colado num campo vazio já vira o ícone */
+    pinta();
+    return inp;
+  }
+  /* só o ícone de elo que copia (para link fixo, que não se edita) */
+  function iconeLink(u) {
+    var b = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:#1034A6;cursor:pointer;flex:none' });
+    b.innerHTML = SVG_ELO;
+    b.addEventListener('click', function () { copiarParaAreaDeTransferencia(u).then(function () { b.innerHTML = SVG_ELO_OK; setTimeout(function () { b.innerHTML = SVG_ELO; }, 1500); }, function () { window.prompt('Copie o link:', u); }); });
+    return b;
+  }
+  function todosLinks(raiz) { [].forEach.call((raiz.querySelectorAll ? raiz.querySelectorAll('input[type=url]:not(.link-copiavel-input)') : []), linkCopiavel); }
+  function ligarLinks() {
+    todosLinks(document);
+    new MutationObserver(function (muds) { muds.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) { if (n.tagName === 'INPUT' && n.type === 'url') linkCopiavel(n); else todosLinks(n); } }); }); }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.body) ligarLinks(); else document.addEventListener('DOMContentLoaded', ligarLinks);
   /* barras de progresso e de tempo, SEMPRE neste desenho: "62% [barra] 12/23 dias" (o tanto de passos ou de dias no fim da linha) */
   function barraLinha(pct, cor, fim) {
     return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [
@@ -1400,7 +1453,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias

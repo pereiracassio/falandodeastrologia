@@ -103,7 +103,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=129"></script>
+  <script src="portal.js?v=130"></script>
   <script src="menu.js?v=51" defer></script>
   <script>
   (function () {
@@ -244,11 +244,6 @@
       var icone = el('span', {}), r = el('span', { class: 'prod-rotulo prod-fixo' }, [document.createTextNode(texto), icone]);
       copiarAoTocar(r, icone, pegar); /* sem ícone em repouso: tocar no nome copia e só aí aparece o ✓ */
       return r;
-    }
-    function iconeCopiar(pegar, nome) { /* só o ícone, para onde não há nome de campo (título do corte, link) */
-      var icone = el('span', { title: nome || 'Copiar', 'aria-label': nome || 'Copiar', style: 'color:#1034A6;padding:4px 6px;display:inline-block' });
-      icone.innerHTML = SVG_COPIAR.replace('margin-left:6px', 'margin-left:0'); copiarAoTocar(icone, icone, pegar);
-      return icone;
     }
 
     /* roteiro em tela cheia para ler enquanto grava: letra grande e ajustável, rolagem automática, fundo claro ou escuro */
@@ -1090,31 +1085,16 @@
           cortes.push(r.data); corteAberto = r.data.id; abaVideo = 'corte'; abaVideoDe = v.id; tela(); /* o corte novo abre sozinho para editar */
         });
       }, false)]));
-      /* link do vídeo no Google Fotos, para achar o arquivo fácil: depois de colado vira só o ícone 🔗 (toca e abre no app do Fotos) e um Apagar discreto, para não acumular link no banco */
-      var caixaFotos = el('div', { style: 'margin:0 0 16px' });
-      function desenharFotos() {
-        caixaFotos.textContent = '';
-        var u = P.linkSeguro(v.link_fotos);
-        if (u) {
-          var abrir = el('a', { class: 'portal-btn portal-btn-sec', href: u, target: '_blank', rel: 'noopener', title: 'Abrir no Google Fotos', 'aria-label': 'Abrir no Google Fotos' });
-          /* ícone de elo em traço azul, da família dos outros ícones do site (grade 64, traço redondo) */
-          abrir.innerHTML = '<svg viewBox="0 0 64 64" width="30" height="30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M27 37a11 11 0 0 0 15.5 0l9-9a11 11 0 0 0-15.5-15.5l-3 3"/><path d="M37 27a11 11 0 0 0-15.5 0l-9 9a11 11 0 0 0 15.5 15.5l3-3"/></svg>';
-          abrir.style.cssText = 'padding:6px 10px;color:#1034A6';
-          var ap = P.botaoApagar('Apagar');
-          ap.addEventListener('click', function () { gravar('prod_videos', videos, v, { link_fotos: null }).then(function (r) { if (!r.error) desenharFotos(); }); });
-          caixaFotos.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px' }, [abrir, ap]));
-        } else {
-          var campoL = el('input', { type: 'url', placeholder: 'Colar o link do vídeo no Google Fotos', style: 'margin:0' });
-          campoL.addEventListener('change', function () {
-            var t = campoL.value.trim();
-            if (!t) return;
-            if (!P.linkSeguro(t)) { P.mensagem(msgC, 'Esse link não parece certo. Cole o endereço inteiro, começando com https://', 'erro'); return; }
-            gravar('prod_videos', videos, v, { link_fotos: t }).then(function (r) { if (!r.error) desenharFotos(); });
-          });
-          caixaFotos.appendChild(campoL);
-        }
-      }
-      desenharFotos();
+      /* link do vídeo no Google Fotos: campo de link padrão do site (colado vira o ícone; tocar copia; "Editar" troca). Campo vazio salva como sem link */
+      var caixaFotos = el('div', { style: 'margin:0 0 16px;display:flex;align-items:center;gap:14px' });
+      var campoL = el('input', { type: 'url', placeholder: 'Colar o link do vídeo no Google Fotos', style: 'margin:0' });
+      campoL.value = P.linkSeguro(v.link_fotos) || '';
+      campoL.addEventListener('change', function () {
+        var t = campoL.value.trim();
+        if (t && !P.linkSeguro(t)) { P.mensagem(msgC, 'Esse link não parece certo. Cole o endereço inteiro, começando com https://', 'erro'); return; }
+        gravar('prod_videos', videos, v, { link_fotos: t || null });
+      });
+      caixaFotos.appendChild(campoL);
       cc.appendChild(caixaFotos);
       if (!lista.length) cc.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum corte ainda. Toque em "+ corte" para cada trecho que você tirar do vídeo.' }));
       /* corte já postado no Instagram e no TikTok vai para o fim da lista, como "concluído" (a ordem dos outros não muda) */
@@ -1157,34 +1137,19 @@
         var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
         jupiterAzul(jupC, c.data, semDataJup);
         d.addEventListener('change', function () { jupiterAzul(jupC, d.value, semDataJup); });
-        /* link do vídeo deste corte no Google Fotos: depois de colado vira o ícone (abre), Copiar e Apagar discreto */
-        var caixaFotosC = el('div', { style: 'margin:0 0 12px' });
-        function desenharFotosC() {
-          caixaFotosC.textContent = '';
-          var u = P.linkSeguro(c.link_fotos);
-          if (u) {
-            var abrirC2 = el('a', { class: 'portal-btn portal-btn-sec', href: u, target: '_blank', rel: 'noopener', title: 'Abrir no Google Fotos', 'aria-label': 'Abrir no Google Fotos' });
-            abrirC2.innerHTML = '<svg viewBox="0 0 64 64" width="30" height="30" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M27 37a11 11 0 0 0 15.5 0l9-9a11 11 0 0 0-15.5-15.5l-3 3"/><path d="M37 27a11 11 0 0 0-15.5 0l-9 9a11 11 0 0 0 15.5 15.5l3-3"/></svg>';
-            abrirC2.style.cssText = 'padding:6px 10px;color:#1034A6';
-            var apC = P.botaoApagar('Apagar');
-            apC.addEventListener('click', function () { gravar('prod_cortes', cortes, c, { link_fotos: null }).then(function (r) { if (!r.error) desenharFotosC(); }); });
-            caixaFotosC.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px' }, [abrirC2, iconeCopiar(function () { return u; }, 'Copiar o link'), apC]));
-          } else {
-            var campoLC = el('input', { type: 'url', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
-            campoLC.addEventListener('change', function () {
-              var tl = campoLC.value.trim();
-              if (!tl) return;
-              if (!P.linkSeguro(tl)) { P.mensagem(msgC, 'Esse link não parece certo. Cole o endereço inteiro, começando com https://', 'erro'); return; }
-              gravar('prod_cortes', cortes, c, { link_fotos: tl }).then(function (r) { if (!r.error) desenharFotosC(); });
-            });
-            caixaFotosC.appendChild(campoLC);
-          }
-        }
-        desenharFotosC();
+        /* link do vídeo deste corte no Google Fotos: mesmo campo de link padrão do site */
+        var caixaFotosC = el('div', { style: 'margin:0 0 12px;display:flex;align-items:center;gap:14px' });
+        var campoLC = el('input', { type: 'url', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
+        campoLC.value = P.linkSeguro(c.link_fotos) || '';
+        campoLC.addEventListener('change', function () {
+          var tl = campoLC.value.trim();
+          if (tl && !P.linkSeguro(tl)) { P.mensagem(msgC, 'Esse link não parece certo. Cole o endereço inteiro, começando com https://', 'erro'); return; }
+          gravar('prod_cortes', cortes, c, { link_fotos: tl || null });
+        });
+        caixaFotosC.appendChild(campoLC);
         var editor = el('div', { class: 'prod-corte' }, [
-          el('div', { class: 'prod-corte-topo' }, [t, P.colunaData(d, 'Data do corte')]),
+          el('div', { class: 'prod-corte-topo' }, [campo('Título do corte', t, function () { return t.value.trim(); }), P.colunaData(d, 'Data do corte')]),
           barraTempo(c.criado_em, c.data, cortePostado(c)),
-          el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [iconeCopiar(function () { return t.value.trim(); }, 'Copiar o título')]),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
           faltaSeoCorte,
           caixaFotosC,
