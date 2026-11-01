@@ -104,6 +104,10 @@
       var de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, t = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
       return 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')';
     }
+    /* estudo dentro de estudo: o grande soma as aulas dos menores (e dos menores dos menores) */
+    function filhosDe(id) { return estudos.filter(function (e) { return e.estudo_pai_id === id; }); }
+    function arvoreDe(e) { var r = [e]; filhosDe(e.id).forEach(function (f) { r = r.concat(arvoreDe(f)); }); return r; }
+    function raizDe(id) { var q = estudos.filter(function (x) { return x.id === id; })[0]; while (q && q.estudo_pai_id) { var pai = q.estudo_pai_id; q = estudos.filter(function (x) { return x.id === pai; })[0]; } return q; }
     function carregarEstudos() {
       return C.from('estudos').select('*').order('criado_em').then(function (r) {
         if (r.error) return r.error;
@@ -113,7 +117,7 @@
     function novoEstudo() {
       var nome = (prompt('Nome do estudo') || '').trim();
       if (!nome) return;
-      C.from('estudos').insert({ nome: nome, data_inicio: hojeISO() }).select('id').then(function (r) {
+      C.from('estudos').insert({ nome: nome, data_inicio: hojeISO(), por_semana: false }).select('id').then(function (r) {
         if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar (já existe um estudo com esse nome?).'); return; }
         aberto = r.data[0].id; verEncerrado = null; lista();
       });
@@ -123,9 +127,13 @@
     function lista(aviso) {
       if (typeof aviso !== 'string') aviso = ''; /* o toque do ← Voltar chega aqui como evento, não como aviso */
       carregarEstudos().then(function (erro) {
-        var ativos = estudos.filter(function (e) { return !e.encerrado; }), enc = estudos.filter(function (e) { return e.encerrado; });
-        if (aberto !== 'encerrados' && !ativos.some(function (e) { return e.id === aberto; })) aberto = ativos.length ? ativos[0].id : (enc.length ? 'encerrados' : null);
-        if (verEncerrado && !enc.some(function (e) { return e.id === verEncerrado; })) verEncerrado = null;
+        var raizes = estudos.filter(function (e) { return !e.estudo_pai_id; });
+        var ativos = raizes.filter(function (e) { return !e.encerrado; }), enc = raizes.filter(function (e) { return e.encerrado; });
+        var rzAberto = aberto && aberto !== 'encerrados' ? raizDe(aberto) : null;
+        if (aberto !== 'encerrados' && !(rzAberto && !rzAberto.encerrado)) aberto = ativos.length ? ativos[0].id : (enc.length ? 'encerrados' : null);
+        rzAberto = aberto && aberto !== 'encerrados' ? raizDe(aberto) : null;
+        var rzVer = verEncerrado ? raizDe(verEncerrado) : null;
+        if (verEncerrado && !(rzVer && rzVer.encerrado)) verEncerrado = null;
         var velha = app.querySelector('.portal-abas-rola'), rolagem = velha ? velha.scrollLeft : null; /* a barra de abas fica onde estava */
         limpar(); P.estado.gravar(aberto && aberto !== 'encerrados' ? { estudo: aberto } : {});
         app.appendChild(topo(nomeAdmin));
@@ -133,17 +141,18 @@
         if (erro) { app.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(erro.message) })); return; }
         /* estudo encerrado aberto para ver: sem abas, só ele, com ← Voltar em cima e embaixo */
         if (aberto === 'encerrados' && verEncerrado) {
-          var voltar = function () { verEncerrado = null; lista(); };
+          var verEst = estudos.filter(function (e) { return e.id === verEncerrado; })[0];
+          var voltar = function () { verEncerrado = verEst.estudo_pai_id || null; lista(); };
           app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
           var dest = el('div'); app.appendChild(dest);
-          mostrarEstudo(enc.filter(function (e) { return e.id === verEncerrado; })[0], dest, true);
+          mostrarEstudo(verEst, dest, true);
           P.voltarNoFim(app, voltar);
           return;
         }
         var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' });
         ativos.forEach(function (e) {
           var b = el('button', { type: 'button', role: 'tab', text: e.nome });
-          b.className = 'portal-aba' + (e.id === aberto ? ' ativa' : '');
+          b.className = 'portal-aba' + (rzAberto && e.id === rzAberto.id ? ' ativa' : '');
           b.addEventListener('click', function () { aberto = e.id; lista(); });
           barraAbas.appendChild(b);
         });
@@ -176,7 +185,7 @@
           destino.appendChild(cx);
         } else if (!aberto) destino.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhum estudo ainda.' })]));
         else {
-          mostrarEstudo(ativos.filter(function (e) { return e.id === aberto; })[0], destino, false);
+          mostrarEstudo(estudos.filter(function (e) { return e.id === aberto; })[0], destino, false);
         }
       });
     }
@@ -184,16 +193,18 @@
     /* o estudo aberto: nome, barra da semana, barra do tempo (se tiver data final), datas, aulas e os botões do fim */
     function mostrarEstudo(est, corpo, encerrado) {
       corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+      var arv = arvoreDe(est).map(function (x) { return x.id; });
       Promise.all([
-        C.from('estudo_aulas').select('id,data,materia,titulo').eq('estudo_id', est.id).order('data').order('criado_em'),
+        C.from('estudo_aulas').select('id,estudo_id,data,materia,titulo').in('estudo_id', arv).order('data').order('criado_em'),
         C.from('estudo_questoes').select('id,aula_id,tipo,correta'),
         C.from('estudo_respostas').select('questao_id,opcao,texto')
       ]).then(function (rs) {
         corpo.textContent = '';
         var erro = rs[0].error || rs[1].error || rs[2].error;
         if (erro) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(erro.message) })); return; }
-        var aulas = rs[0].data || [], resp = {}, ids = {};
-        aulas.forEach(function (a) { ids[a.id] = true; });
+        var todas = rs[0].data || [], aulas = todas.filter(function (a) { return a.estudo_id === est.id; }), resp = {}, ids = {};
+        var tudo = todas;
+        todas.forEach(function (a) { ids[a.id] = true; });
         (rs[2].data || []).forEach(function (x) { resp[x.questao_id] = x; });
         var prog = {};
         (rs[1].data || []).forEach(function (q) {
@@ -232,7 +243,9 @@
         base.setDate(base.getDate() + (dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow));
         var iso = function (d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
         var segunda = iso(base); base.setDate(base.getDate() + 6); var domingo = iso(base);
-        var daSemana = aulas.filter(function (a) { return dia(a) >= segunda && dia(a) <= domingo; });
+        var nTodas = tudo.length, nOk = tudo.filter(concluida).length;
+        if (nTodas) cartao.appendChild(P.barraLinha(Math.round(nOk * 100 / nTodas), null, nOk + '/' + nTodas));
+        var daSemana = est.por_semana ? tudo.filter(function (a) { return dia(a) >= segunda && dia(a) <= domingo; }) : [];
         if (daSemana.length) {
           var nFeitas = daSemana.filter(concluida).length, pct = Math.round(nFeitas * 100 / daSemana.length);
           cartao.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;font-size:15px;margin:10px 0 0', text: 'Semana de ' + diaCurto(daSemana[0].data) + ' a ' + diaCurto(daSemana[daSemana.length - 1].data) }));
@@ -256,10 +269,34 @@
           };
           var o2 = function (c) { var o = {}; o[c] = null; return o; };
           cartao.appendChild(P.linhaDatas([campoData('Início', 'data_inicio', 'estIni', false), campoData('Data final (opcional)', 'data_fim', 'estFim', true)]));
+          var cxSemana = el('input', { type: 'checkbox', class: 'caixinha', id: 'estSemana' }); cxSemana.checked = !!est.por_semana;
+          cxSemana.addEventListener('change', function () {
+            C.from('estudos').update({ por_semana: cxSemana.checked }).eq('id', est.id).then(function (r) { if (r.error) alert('Não foi possível salvar.'); else { est.por_semana = cxSemana.checked; lista(); } });
+          });
+          cartao.appendChild(el('label', { for: 'estSemana', style: 'display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer' }, [cxSemana, el('span', { text: 'Dividir por semanas' })]));
         }
+        var voltarPai = function () { if (encerrado) verEncerrado = est.estudo_pai_id; else aberto = est.estudo_pai_id; lista(); window.scrollTo(0, 0); };
+        if (est.estudo_pai_id && !encerrado) corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltarPai)]));
         corpo.appendChild(cartao);
 
-        if (!aulas.length) corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhuma aula ainda.' })]));
+        /* estudos menores: uma linha cada, com a barra deles (as aulas deles e as dos que estão dentro); tocar abre */
+        var menores = filhosDe(est.id);
+        if (menores.length) {
+          var cm = el('div', { class: 'portal-cartao' });
+          menores.forEach(function (m) {
+            var ar = arvoreDe(m).map(function (x) { return x.id; }), aulasM = tudo.filter(function (a) { return ar.indexOf(a.estudo_id) >= 0; });
+            var ok = aulasM.filter(concluida).length, linhaM = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [el('strong', { text: m.nome }), P.barraLinha(aulasM.length ? Math.round(ok * 100 / aulasM.length) : 0, null, ok + '/' + aulasM.length)]);
+            if (m.data_fim) { var tm = P.barraTempoDias(m.data_inicio, m.data_fim); if (tm) linhaM.appendChild(tm); }
+            linhaM.style.cssText = 'padding:12px 0;border-bottom:1px solid rgba(31,95,163,.7);cursor:pointer;-webkit-tap-highlight-color:transparent';
+            var abrirM = function () { if (encerrado) verEncerrado = m.id; else aberto = m.id; lista(); window.scrollTo(0, 0); };
+            linhaM.addEventListener('click', abrirM);
+            linhaM.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrirM(); } });
+            cm.appendChild(linhaM);
+          });
+          cm.lastChild.style.borderBottom = '0';
+          corpo.appendChild(cm);
+        }
+        if (!aulas.length && !menores.length) corpo.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-vazio', text: 'Nenhuma aula ainda.' })]));
         /* a lista: o que falta fazer, na ordem das datas; uma linha grossa; e, mais apagado, o que já foi feito (o mais recente primeiro) */
         var faltam = aulas.filter(function (x) { return !concluida(x); }), feitas = aulas.filter(concluida).reverse();
         if (faltam.length) {
@@ -287,7 +324,40 @@
             arq.files[0].text().then(importar).then(function (n) { lista('Pronto! ' + n + (n === 1 ? ' aula importada.' : ' aulas importadas.')); })
               .catch(function (e) { imp.disabled = false; P.mensagem(msg, 'Não consegui importar: ' + (e && e.message ? e.message : e), 'erro'); });
           });
-          corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [imp, arq]));
+          var sub = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Estudo menor' });
+          sub.addEventListener('click', function () {
+            var nome = (prompt('Nome do estudo menor') || '').trim();
+            if (!nome) return;
+            C.from('estudos').insert({ nome: nome, data_inicio: hojeISO(), por_semana: false, estudo_pai_id: est.id }).select('id').then(function (r) {
+              if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar (já existe um estudo com esse nome?).'); return; }
+              aberto = r.data[0].id; lista();
+            });
+          });
+          var mover = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar dentro de outro estudo' });
+          var areaMover = el('div', { class: 'barra-ocre' });
+          mover.addEventListener('click', function () {
+            if (areaMover.firstChild) return;
+            var proibidos = {}; arvoreDe(est).forEach(function (x) { proibidos[x.id] = true; });
+            var sel = el('select', { id: 'estPai' }), porId = {};
+            sel.appendChild(el('option', { value: '', text: 'Nenhum (estudo solto)' }));
+            (function listar(lista, nivel) { lista.forEach(function (x) { if (proibidos[x.id] || x.encerrado) return; porId[String(x.id)] = x; sel.appendChild(el('option', { value: String(x.id), text: new Array(nivel + 1).join('— ') + x.nome })); listar(filhosDe(x.id), nivel + 1); }); })(estudos.filter(function (x) { return !x.estudo_pai_id; }), 0);
+            sel.value = est.estudo_pai_id ? String(est.estudo_pai_id) : '';
+            var colocar = el('button', { type: 'submit', class: 'portal-btn', text: 'Colocar' }), cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' }), msgM = el('p', { class: 'portal-msg' });
+            cancelar.addEventListener('click', function () { areaMover.textContent = ''; });
+            var fm = el('form', { class: 'portal-cartao' }, [el('label', { for: 'estPai', text: 'Dentro de' }), sel, msgM, el('div', { class: 'portal-acoes' }, [colocar, cancelar])]);
+            fm.addEventListener('submit', function (ev) {
+              ev.preventDefault();
+              var novoPai = sel.value ? porId[sel.value] : null;
+              if ((novoPai ? novoPai.id : null) === (est.estudo_pai_id || null)) { areaMover.textContent = ''; return; }
+              colocar.disabled = true;
+              C.from('estudos').update({ estudo_pai_id: novoPai ? novoPai.id : null }).eq('id', est.id).then(function (r) {
+                if (r.error) { colocar.disabled = false; P.mensagem(msgM, P.traduzErro(r.error.message), 'erro'); } else lista();
+              });
+            });
+            areaMover.appendChild(fm);
+          });
+          corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px;flex-wrap:wrap' }, [imp, arq, sub, mover]));
+          corpo.appendChild(areaMover);
           corpo.appendChild(msg);
         }
         /* no fim das lições: gera o caderno em PDF e abre para ver */
@@ -327,12 +397,13 @@
             lista();
           });
         });
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:28px' }, [enc]));
+        if (!est.estudo_pai_id) corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:28px' }, [enc]));
         var apagar = P.botaoApagar('Apagar este estudo');
         apagar.addEventListener('click', function () {
-          if (!confirm('Apagar o estudo "' + est.nome + '" com todas as aulas, respostas e desenhos? Não dá para desfazer.')) return;
-          C.from('estudos').delete().eq('id', est.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = null; verEncerrado = null; lista(); } });
+          if (!confirm('Apagar o estudo "' + est.nome + '" com todas as aulas, respostas e desenhos?' + (filhosDe(est.id).length ? ' Os estudos menores dentro dele ficam soltos.' : '') + ' Não dá para desfazer.')) return;
+          C.from('estudos').delete().eq('id', est.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = est.estudo_pai_id || null; verEncerrado = encerrado ? (est.estudo_pai_id || null) : null; lista(); } });
         });
+        if (est.estudo_pai_id && !encerrado) P.voltarNoFim(corpo, voltarPai);
         P.apagarNoFim(corpo, apagar);
       });
     }
