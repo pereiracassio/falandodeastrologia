@@ -37,12 +37,8 @@
     .prod-seg .prod-chip{flex:1 1 auto;white-space:nowrap;border:0;border-left:1px solid #1F5FA3;padding:6px 3px;font-size:9px;letter-spacing:0;text-align:center;color:#A03E25}
     .prod-seg .prod-chip:first-child{border-left:0}
     .prod-seg .prod-chip.on{background:#1F5FA3;color:#F3E3B8;font-weight:400}
-    /* barra do módulo: sete pedaços cabem na tela, os nomes compridos quebram em duas linhas dentro do pedaço */
-    .prod-seg.modulo{overflow:hidden}
-    .prod-seg.modulo .prod-chip{white-space:normal;flex:1 1 auto;padding:5px 1px;font-size:8.5px;line-height:1.15;word-break:keep-all}
     .pc-aula{padding:12px 0;border-bottom:1px solid #1F5FA3}
     .pc-aula:last-child{border-bottom:0}
-    span.prod-chip{display:inline-block}
   </style>
 </head>
 <body>
@@ -177,24 +173,6 @@
       caixa.appendChild(lista); caixa.appendChild(area);
       return caixa;
     }
-    /* a barra de etapas do MÓDULO, igual à do vídeo na Produção: cada pedaço escrito em vermelho, e ao ticar fica azul com o nome vazado.
-       Apostila é do módulo; Aulas fica azul quando já existe ao menos uma; Gravação, Edição grossa... ficam azuis quando TODAS as aulas têm aquela etapa (tocar marca ou desmarca em todas as aulas). */
-    function chipsModulo(c, m, vivo) {
-      var et = etapasDe(c), as = aulasDe(m.id);
-      var defs = [
-        { r: 'Apostila', on: !!m.apostila_ok, fn: function () { var v = !m.apostila_ok; m.apostila_ok = v; m.apostila_em = v ? new Date().toISOString() : null; desenhar(); C.from('pc_modulos').update({ apostila_ok: v, apostila_em: m.apostila_em }).eq('id', m.id).then(falhou); } },
-        { r: 'Aulas', on: as.length > 0, fn: null }];
-      ETAPAS.filter(function (e) { return et.indexOf(e[0]) >= 0; }).forEach(function (e) {
-        var todas = as.length > 0 && as.every(function (a) { return a[e[0]]; });
-        defs.push({ r: e[1], on: todas, fn: as.length ? function () { var v = !todas; as.forEach(function (a) { a[e[0]] = v; }); desenhar(); var o = {}; o[e[0]] = v; C.from('pc_aulas').update(o).eq('modulo_id', m.id).then(falhou); } : null });
-      });
-      return el('div', { class: 'prod-seg modulo' }, defs.map(function (d) {
-        var ativo = vivo && d.fn, b = el(ativo ? 'button' : 'span', { class: 'prod-chip prod-fixo' + (d.on ? ' on' : ''), text: d.r });
-        if (ativo) { b.setAttribute('type', 'button'); b.setAttribute('aria-pressed', d.on ? 'true' : 'false'); b.addEventListener('click', d.fn); } else b.style.cursor = 'inherit';
-        return b;
-      }));
-    }
-
     /* ---------- telas ---------- */
     function desenhar() {
       limpar(); app.appendChild(topo(nomeAdmin));
@@ -296,7 +274,7 @@
       cartao.appendChild(grupo('Módulos'));
       var lm = el('div', { style: 'border-top:1px solid #1F5FA3' });
       modulosDe(c.id).forEach(function (m) {
-        var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('span', { class: 'portal-item-titulo', text: m.nome }), chipsModulo(c, m, false)]);
+        var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('span', { class: 'portal-item-titulo', text: m.nome }), barra(contModulo(m))]);
         var abrir = function () { ir(c.id, m.id); };
         linha.addEventListener('click', abrir); linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
         lm.appendChild(linha);
@@ -338,7 +316,12 @@
       var ren = el('button', { type: 'button', class: 'botao-fixo', text: 'Renomear', style: 'background:none;border:0;padding:0;color:#1034A6;font-size:13px;cursor:pointer' });
       ren.addEventListener('click', function () { var n = (prompt('Nome do módulo', m.nome) || '').trim(); if (!n || n === m.nome) return; C.from('pc_modulos').update({ nome: n }).eq('id', m.id).then(function (r) { if (!falhou(r)) carregar(); }); });
       cartao.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: m.nome, style: 'margin:0' }), ren]));
-      cartao.appendChild(chipsModulo(c, m, true));
+      cartao.appendChild(barra(contModulo(m)));
+
+      cartao.appendChild(grupo('Apostila'));
+      var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = !!m.apostila_ok;
+      cb.addEventListener('change', function () { m.apostila_ok = cb.checked; m.apostila_em = cb.checked ? new Date().toISOString() : null; desenhar(); C.from('pc_modulos').update({ apostila_ok: m.apostila_ok, apostila_em: m.apostila_em }).eq('id', m.id).then(falhou); });
+      cartao.appendChild(el('div', { class: 'proj-passo' + (m.apostila_ok ? ' feito' : ''), style: 'border-top:1px solid #1F5FA3' }, [cb, el('div', { style: 'flex:1' }, [el('span', { class: 'proj-titulo', text: 'Apostila pronta' })])]));
 
       cartao.appendChild(grupo('Aulas'));
       var et = etapasDe(c), as = aulasDe(m.id), lista = el('div', { style: 'border-top:1px solid #1F5FA3' });
