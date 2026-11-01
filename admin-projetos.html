@@ -80,7 +80,10 @@
       });
     }
 
-    function carregar() {
+    /* mexer num passo (subir, descer, marcar) redesenha a tela, mas ela NÃO pode pular: guarda onde estava e volta ao mesmo lugar */
+    function noLugar(refaz) { var y = window.scrollY; refaz(); window.scrollTo(0, y); requestAnimationFrame(function () { window.scrollTo(0, y); }); }
+    function carregar(manter) {
+      var y = manter === true ? window.scrollY : null;
       Promise.all([
         C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio,projeto_pai_id,ordem_no_pai').order('ordem').order('criado_em'),
         C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em')
@@ -89,6 +92,7 @@
         projetos = res[0].data; passos = res[1].data;
         if (arrumarNumeros()) return;
         desenhar();
+        if (y != null) { window.scrollTo(0, y); requestAnimationFrame(function () { window.scrollTo(0, y); }); }
       });
     }
 
@@ -379,7 +383,7 @@
           var v = n + 1;
           if (it.filhoProj) return it.filhoProj.ordem_no_pai === v ? null : C.from('projetos').update({ ordem_no_pai: v }).eq('id', it.filhoProj.id);
           return it.ordem === v ? null : C.from('projeto_passos').update({ ordem: v }).eq('id', it.id);
-        }).filter(Boolean)).then(carregar);
+        }).filter(Boolean)).then(function () { carregar(true); });
       }
       function setas(x, grupo, i) {
         var sobe = el('button', { type: 'button', class: 'proj-mini', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'proj-mini', text: '↓', 'aria-label': 'Descer' });
@@ -405,7 +409,7 @@
         var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito' });
         cb.checked = !!x.feito; cb.disabled = !!leitura;
         cb.addEventListener('change', function () {
-          x.feito = cb.checked; desenhar();
+          x.feito = cb.checked; noLugar(desenhar);
           C.from('projeto_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
         var textos = [el('span', { class: 'proj-titulo', text: x.titulo })];
