@@ -473,6 +473,7 @@
         var modo = modoDe(visao), h1x = document.querySelector('h1.portal-titulo');
         if (h1x) h1x.textContent = ROTULO[modo]; document.title = ROTULO[modo] + ' - Falando de Astrologia';
         VISOES.forEach(function (v) { botoes[v[0]].style.display = CALV.indexOf(v[0]) >= 0 && modo === 'agenda' ? '' : 'none'; }); /* Horas e To do saíram desta barra: são abas da barra de cima */
+        novo.style.display = modo === 'horas' ? 'none' : ''; /* nas Horas só se encaixa: o + de compromisso normal é da Agenda */
         cabH.grande = modo === 'horas'; cabH.style.position = cabH.grande ? 'static' : ''; if (cabH.pintar) cabH.pintar();
         if (modo !== modoBarra) { modoBarra = modo; P.navAdmin(modo, nomeAdmin, sair); } /* a aba marcada na barra de cima acompanha */
         hoje.textContent = curto(ancora);
