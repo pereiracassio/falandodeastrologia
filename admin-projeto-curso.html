@@ -269,7 +269,20 @@
       var tirar = null; if (c.data_fim) { tirar = P.botaoApagar('Tirar a data'); tirar.addEventListener('click', function () { C.from('pc_cursos').update({ data_fim: null }).eq('id', c.id).then(function () { carregar(); }); }); }
       cartao.appendChild(P.linhaDatas([P.colunaData(ini, 'Início'), P.colunaData(fim, 'Data final (opcional)', tirar)]));
 
-      cartao.appendChild(grupo('Ideia')); cartao.appendChild(blocoPassos(c, 'ideia', null));
+      /* Ideia = o texto onde ele cola a visão geral do curso; salva sozinho */
+      cartao.appendChild(grupo('Ideia'));
+      var ideia = el('textarea', { rows: '6', id: 'pcIdeia', 'aria-label': 'Ideia do curso' }), msgIdeia = el('p', { class: 'portal-msg' }), espera = null;
+      ideia.value = c.ideia || '';
+      var gravaIdeia = function () {
+        C.from('pc_cursos').update({ ideia: ideia.value }).eq('id', c.id).then(function (r) {
+          if (r.error) P.mensagem(msgIdeia, 'Não foi possível salvar a ideia (' + P.traduzErro(r.error.message) + ').', 'erro');
+          else { c.ideia = ideia.value; P.mensagem(msgIdeia, 'Salvo.', 'ok'); }
+        });
+      };
+      ideia.addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(gravaIdeia, 1200); });
+      ideia.addEventListener('blur', function () { clearTimeout(espera); if (ideia.value !== (c.ideia || '')) gravaIdeia(); });
+      cartao.appendChild(ideia); cartao.appendChild(msgIdeia);
+      cartao.appendChild(grupo('Planejamento')); cartao.appendChild(blocoPassos(c, 'ideia', null));
 
       cartao.appendChild(grupo('Módulos'));
       var lm = el('div', { style: 'border-top:1px solid #1F5FA3' });

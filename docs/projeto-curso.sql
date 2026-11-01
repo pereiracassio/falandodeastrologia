@@ -41,6 +41,9 @@ create table if not exists public.pc_passos (
   data date,
   criado_em timestamptz not null default now()
 );
+-- (01/11) texto da ideia do curso
+alter table public.pc_cursos add column if not exists ideia text;
+
 create index if not exists pc_modulos_curso_idx on public.pc_modulos (curso_id);
 create index if not exists pc_aulas_modulo_idx on public.pc_aulas (modulo_id);
 create index if not exists pc_passos_curso_idx on public.pc_passos (curso_id);
