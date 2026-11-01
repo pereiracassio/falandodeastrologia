@@ -399,3 +399,6 @@ A barra do Hellenic Daily tem só **Agenda** e **Projetos** (e no menu lateral t
 
 ## Produção no Hellenic Daily: a decidir (01/11/2026)
 A Produção (dentro dos Projetos) pode entrar na cópia para o Hellenic Daily, útil para quem produz vídeos de YouTube. **Ainda é decisão dele, não decidir por ele.** Se entrar, nada pode ser fixo no jeito de trabalhar dele: etapas, texto fixo e o que mais for dele viram OPCIONAIS; a ligação com o blog fica de fora (o blog é do site Falando de Astrologia).
+
+## Painel: nada de linha embaixo do título (01/11/2026) — regra dele
+No painel não há linha entre o título da tela e o primeiro cartão (era a borda de cima do primeiro `.portal-cartao`; ele disse que "no começo não tem essa linha"). Regra em `page.css` (`html.fda-admin-tela .pagina-papiro #app>.portal-cartao:first-child{border-top:0}`); por isso `P.navAdmin` devolve um fragmento vazio, e não mais um `div` escondido, para o cartão ser mesmo o primeiro filho. Linha só no FIM de uma seção.

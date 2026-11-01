@@ -322,3 +322,6 @@ html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-b
 
 /* painel do administrador: os 4 botões do site (Blog, Alunos, Cássio, Serviços) são trocados pela barra de abas do painel; escondidos já na primeira pintura para não piscar a cada troca de aba (o espaço fica reservado) */
 html.fda-admin-tela .pagina-papiro .cab-papiro>.cab-nav{visibility:hidden}
+
+/* painel: nada de linha embaixo do título (a borda de cima do primeiro cartão); linha só no FIM de uma seção */
+html.fda-admin-tela .pagina-papiro #app>.portal-cartao:first-child{border-top:0!important}

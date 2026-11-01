@@ -626,7 +626,7 @@
       lugar.textContent = '';
       lugar.appendChild(barra);
       grupo.scrollLeft = rolou || posicaoGuardada();
-      return el('div', { style: 'display:none' });
+      return document.createDocumentFragment(); /* nada entra na tela: a barra já foi para o cabeçalho (um div escondido aqui atrapalhava o :first-child do CSS) */
     }
     return barra;
   }
