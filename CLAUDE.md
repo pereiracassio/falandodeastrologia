@@ -396,3 +396,6 @@ Um estudo grande pode ter estudos menores dentro (`estudos.estudo_pai_id`, apaga
 
 ## Estudos e Produção moram DENTRO dos Projetos (01/11/2026) — pedido dele, desde o começo
 A barra do Hellenic Daily tem só **Agenda** e **Projetos** (e no menu lateral também). Dentro dos Projetos há uma barra de abas **Projetos | Estudos | Produção** (`P.abasProjetos`, `portal.js`), no alto de cada uma das três telas, e cada aba abre a sua página (`admin-projetos.html`, `admin-estudos.html`, `admin-producao.html`: as páginas e tabelas continuam as mesmas). `navAdmin('estudos' | 'producao')` marca a aba **Projetos** da barra de cima. As linhas de Estudos e Produção no fim da lista de Projetos SAÍRAM (a aba substitui). Aba nova de dentro dos Projetos = entrar na lista de `abasProjetos`. Nas telas de dentro (projeto aberto, aula, vídeo) a barra de abas de Projetos não aparece: só no nível da lista.
+
+## Produção no Hellenic Daily: a decidir (01/11/2026)
+A Produção (dentro dos Projetos) pode entrar na cópia para o Hellenic Daily, útil para quem produz vídeos de YouTube. **Ainda é decisão dele, não decidir por ele.** Se entrar, nada pode ser fixo no jeito de trabalhar dele: etapas, texto fixo e o que mais for dele viram OPCIONAIS; a ligação com o blog fica de fora (o blog é do site Falando de Astrologia).
