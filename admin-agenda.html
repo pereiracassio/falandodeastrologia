@@ -776,7 +776,8 @@
         resPlan.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando...' }));
         preparar().then(function () { return eventosEntre(doIso(hojeI), doIso(somaDias(hojeI, n))); }).then(function (evs) {
           resPlan.textContent = '';
-          var itens = [];
+          var itens = [], colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
+          var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
           for (var i = 0; i < n; i++) {
             var iso = somaDias(hojeI, i), agoraI = iso === hojeI ? Math.ceil(Date.now() / 300000) * 300000 : 0;
             var sl = slotsDoDia(iso, evs, planetaSel.value, 30, '00:00', '23:59', 0, agoraI).sort(function (p, q) { return p.ini - q.ini; })[0];
@@ -784,8 +785,6 @@
             var it = { iso: iso, hora: hhmm(sl.ini), marcado: true }; itens.push(it);
             resPlan.appendChild(caixinha(rotuloDia(iso) + ', ' + it.hora, true, function (m) { it.marcado = m; atualiza(); }).el);
           }
-          var colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
-          var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
           if (!itens.length) return;
           atualiza(); resPlan.appendChild(colocar);
           colocar.addEventListener('click', function () {
