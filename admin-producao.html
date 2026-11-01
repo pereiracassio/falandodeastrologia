@@ -1028,11 +1028,12 @@
       cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' })]));
       cartao.appendChild(linkRoteiro);
       cartao.appendChild(campo('Texto que vai junto (vai inteiro para a descrição do YouTube)', texto, function () { return texto.value; }));
-      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [
-        botao('Colocar a linha e Capítulos no fim', function () {
-          if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
-          texto.value = texto.value.replace(/\s+$/, '') + FIM_DESCRICAO; texto.dispatchEvent(new Event('input'));
-        })]));
+      var botLinha = P.botaoApagar('Adicionar linha'); /* discreto: só põe a linha e Capítulos no fim do texto */
+      botLinha.addEventListener('click', function () {
+        if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
+        texto.value = texto.value.replace(/\s+$/, '') + FIM_DESCRICAO; texto.dispatchEvent(new Event('input'));
+      });
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botLinha]));
       cartao.appendChild(campo('Tags do YouTube', tags, function () { return tags.value.trim(); }));
       cartao.appendChild(campo('Cards (um por linha, no máximo 5)', cardsTxt));
       cartao.appendChild(avisoCards);
