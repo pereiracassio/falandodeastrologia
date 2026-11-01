@@ -40,7 +40,9 @@
     ];
     /* em ordem alfabética (o "Ver o site", que é o último, fica de fora) */
     var verSite = links.pop();
-    links.sort(function (a, b) { return a.label.localeCompare(b.label, "pt"); });
+    /* duas metades, sem divisa: Falando de Astrologia primeiro, Hellenic Daily (Agenda, Estudos, Produção, Projetos) depois */
+    var DAILY = { "Agenda": 1, "Estudos": 1, "Produção": 1, "Projetos": 1 };
+    links.sort(function (a, b) { return ((DAILY[a.label] ? 1 : 0) - (DAILY[b.label] ? 1 : 0)) || a.label.localeCompare(b.label, "pt"); });
     links.push(verSite);
     /* Configurações é SEMPRE o último botão do painel (antes de "Ver o site"), mesmo quando entrarem botões novos acima */
     links.splice(links.length - 1, 0, { label: "Configurações", href: "admin-site.html" });

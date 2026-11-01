@@ -548,7 +548,9 @@
     sinoAdmin();
     var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['producao', 'Produção', 'admin-producao.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* em ordem alfabética, para achar mais fácil */
-    itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
+    /* duas metades na mesma barra, sem divisa: primeiro o Falando de Astrologia, depois o Hellenic Daily (Agenda, Estudos, Produção, Projetos), cada uma em ordem alfabética */
+    var DAILY = { agenda: 1, estudos: 1, producao: 1, projetos: 1 };
+    itens.sort(function (a, b) { return ((DAILY[a[0]] ? 1 : 0) - (DAILY[b[0]] ? 1 : 0)) || a[1].localeCompare(b[1], 'pt'); });
     /* a ⚙ (configurações) é SEMPRE a última aba, mesmo quando entrarem abas novas: abas novas entram na lista acima, nunca depois dela */
     itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
     var botoes = itens.map(function (i) {
