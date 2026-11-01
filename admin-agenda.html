@@ -772,7 +772,7 @@
         resPlan.textContent = '';
         var t = nova.value.trim(); if (!t) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Escreva primeiro o que fazer (o campo de cima).' })); nova.focus(); return; }
         if (!planetaSel.value) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Escolha o planeta.' })); return; }
-        var n = Math.max(1, Math.min(60, +diasN.value || 7)), hojeI = isoDia(Date.now());
+        var n = Math.max(1, Math.min(60, +diasN.value || 7)), hoje0 = isoDia(Date.now()), hojeI = /^\d{4}-\d{2}-\d{2}$/.test(dia.value) && dia.value > hoje0 ? dia.value : hoje0; /* começa no dia que você pôs em "Dia" (nunca antes de hoje) */
         resPlan.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando...' }));
         var mostrarErro = function (e) { resPlan.textContent = ''; resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui montar os horários: ' + ((e && e.message) || e || 'erro') })); }; /* o erro de verdade aparece aqui, logo embaixo do botão */
         /* uma hora livre do planeta por dia (considerando os compromissos, quando a agenda pôde ser lida) e a lista de caixinhas */
@@ -782,7 +782,7 @@
           var itens = [], colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
           var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
           for (var i = 0; i < n; i++) {
-            var iso = somaDias(hojeI, i), agoraI = iso === hojeI ? Math.ceil(Date.now() / 300000) * 300000 : 0;
+            var iso = somaDias(hojeI, i), agoraI = iso === hoje0 ? Math.ceil(Date.now() / 300000) * 300000 : 0;
             var sl = slotsDoDia(iso, evs, planetaSel.value, 30, '00:00', '23:59', 0, agoraI).sort(function (p, q) { return p.ini - q.ini; })[0];
             if (!sl) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
             (function (it) { itens.push(it); resPlan.appendChild(caixinha(rotuloDia(iso) + ', ' + it.hora, true, function (m) { it.marcado = m; atualiza(); }).el); })({ iso: iso, hora: hhmm(sl.ini), marcado: true });
