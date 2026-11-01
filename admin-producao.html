@@ -955,11 +955,11 @@
       var capaUrl = v.capa_url || '', capaNova = null;
       var previa = el('img', { alt: '', style: 'display:none;width:100%;max-width:420px;height:auto;margin:0 0 10px;border:1px solid #1F5FA3' });
       var escolher = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
-      var botImg = el('button', { type: 'button', class: 'portal-btn portal-btn-sec' });
-      var botTirar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Tirar a foto' });
+      var botImg = P.botaoApagar('Trocar a foto'); /* discreto: texto pequeno, apagado e sublinhado */
+      var botTirar = P.botaoApagar('Remover');
       function mostrarCapa() {
         previa.style.display = capaUrl ? 'block' : 'none'; if (capaUrl) previa.src = capaUrl;
-        botImg.textContent = capaUrl ? 'Trocar a foto da capa' : 'Escolher a foto da capa';
+        botImg.textContent = capaUrl ? 'Trocar a foto' : 'Escolher a foto';
         botTirar.style.display = capaUrl ? '' : 'none';
       }
       botImg.addEventListener('click', function () { escolher.click(); });
@@ -973,7 +973,7 @@
       });
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Foto da capa (a mesma que vai para o blog)' }));
       cartao.appendChild(previa);
-      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [botImg, botTirar, escolher]));
+      cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px;align-items:center;gap:22px' }, [botImg, botTirar, escolher]));
       mostrarCapa();
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Etapas' }));
       cartao.appendChild(chipsDaEtapa(v));
