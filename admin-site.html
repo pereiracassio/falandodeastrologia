@@ -222,7 +222,7 @@
         corpo.appendChild(msg);
       }).catch(function (e) {
         corpo.textContent = '';
-        corpo.appendChild(el('p', { text: e.message === 'desconectado' || e.message === 'permissao' ? 'Para escolher as agendas, conecte o Google (cartão Google Drive, na aba Falando de Astrologia) e abra a aba Agenda uma vez para permitir o Google Agenda.' : 'Não foi possível ler as agendas agora (' + e.message + ').' }));
+        corpo.appendChild(el('p', { text: e.message === 'desconectado' || e.message === 'permissao' ? 'Conecte o Google e permita o Google Agenda para escolher as agendas.' : 'Não foi possível ler as agendas agora (' + e.message + ').' }));
       });
       return cartao;
     }
@@ -458,11 +458,12 @@
       abaSite.appendChild(P.cartaoPastaBase('alunos'));
       abaSite.appendChild(P.cartaoPastaBase('clientes'));
       var conexaoDrive = P.cartaoConexaoDrive();
-      if (conexaoDrive) abaSite.appendChild(conexaoDrive);
+      
       abaSite.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
       abaSite.appendChild(cartaoImportarClientes());
       abaSite.appendChild(cartaoAreas); abaSite.appendChild(cartaoServicos);
       /* configurações do Hellenic Daily: o que serve à agenda e às horas, separado das do site (a engrenagem é uma só, no meio da barra) */
+      if (conexaoDrive) abaDaily.appendChild(conexaoDrive); /* conexão Google (Drive e Agenda): uma só, na aba do Hellenic Daily */
       abaDaily.appendChild(cartaoLugar());
       abaDaily.appendChild(cartaoTextoFixo()); /* texto fixo da Produção: Produção é do Hellenic Daily */
       abaDaily.appendChild(cartaoAgendas());
