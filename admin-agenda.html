@@ -676,17 +676,17 @@
         };
         videos.forEach(function (v) {
           /* data limite para GRAVAR: o vídeo aparece no To do até ser marcado como gravado */
-          if (v.data_gravar && !v.gravado && !v.no_ar) saida.push({ quando: doIso(v.data_gravar), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: 'gravar', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, ETV, v.criado_em, v.data_gravar) });
+          if (v.data_gravar && !v.gravado && !v.no_ar) saida.push({ ord: v.numero || 0, quando: doIso(v.data_gravar), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: 'gravar', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, ETV, v.criado_em, v.data_gravar) });
           if (v.data_gravar && !v.gravado && !v.no_ar) return; /* enquanto falta gravar, só o "gravar"; depois de marcado como gravado, vem o da próxima data (membros ou público, a primeira que tiver) até estar no YouTube */
           /* já no YouTube, mas ainda falta fazer os cortes e depois colocar no blog: fica na lista, sem data enquanto ele não puser a data limite */
           if (v.no_ar && !(v.cortes_feitos && v.blog_ok)) {
             var faltaCortes = !v.cortes_feitos, dl = (faltaCortes ? v.data_cortes : v.data_blog) || '';
-            saida.push({ quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, ETV, v.criado_em, dl) });
+            saida.push({ ord: v.numero || 0, quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, ETV, v.criado_em, dl) });
             return;
           }
           var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
           var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título');
-          saida.push({ quando: horaJupiter(d, 16 * 60, false), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, ETV, v.criado_em, d) });
+          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', barras: barras(v, ETV, v.criado_em, d) });
         });
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
@@ -862,7 +862,7 @@
         dados.tarefas.forEach(function (t) {
           itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data });
         });
-        itens.sort(function (a, b) { return a.quando === b.quando ? 0 : a.quando < b.quando ? -1 : 1; });
+        itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; }); /* no mesmo dia/horário, vídeos em ordem crescente de número */
         if (dados.falhas.length) lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + dados.falhas.join(', ') + '.' }));
         if (!itens.length) { lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nada para fazer.' })); return; }
         var hoje = isoDia(Date.now()), grupoAtual = '', bloco1 = null;
