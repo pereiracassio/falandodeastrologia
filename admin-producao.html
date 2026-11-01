@@ -105,8 +105,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=133"></script>
-  <script src="menu.js?v=53" defer></script>
+  <script src="portal.js?v=134"></script>
+  <script src="menu.js?v=54" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -580,6 +580,7 @@
     function tela() {
       limpar();
       app.appendChild(topo(nomeAdmin));
+      app.appendChild(P.abasProjetos('producao'));
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
       [['hoje', 'Próximos'], ['series', 'Séries'], ['calendario', 'Calendário']].forEach(function (d) {
         var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] ? ' ativa' : ''), text: d[1] });

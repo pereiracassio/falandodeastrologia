@@ -29,9 +29,7 @@
       { label: "Financeiro", href: "admin-financeiro.html" },
       { label: "Capa", href: "capa.html" },
       { label: "Blog", href: "admin-blog.html" },
-      { label: "Produção", href: "admin-producao.html" },
       { label: "Visitas", href: "admin-visitas.html" },
-      { label: "Estudos", href: "admin-estudos.html" },
       { label: "Curso", href: "admin-curso.html" },
       { label: "Leitor", href: "admin-leitor.html" },
       { label: "Projetos", href: "admin-projetos.html" },
@@ -41,7 +39,7 @@
     /* em ordem alfabética (o "Ver o site", que é o último, fica de fora) */
     var verSite = links.pop();
     /* duas metades, sem divisa: Falando de Astrologia primeiro, Hellenic Daily (Agenda, Estudos, Produção, Projetos) depois */
-    var DAILY = { "Agenda": 1, "Estudos": 1, "Produção": 1, "Projetos": 1 };
+    var DAILY = { "Agenda": 1, "Projetos": 1 };
     links.sort(function (a, b) { return ((DAILY[a.label] ? 1 : 0) - (DAILY[b.label] ? 1 : 0)) || a.label.localeCompare(b.label, "pt"); });
     links.push(verSite);
     /* Configurações fica NO MEIO, entre o Falando de Astrologia e o Hellenic Daily (é dos dois) */

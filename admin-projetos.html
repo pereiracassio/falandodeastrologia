@@ -50,8 +50,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=133"></script>
-  <script src="menu.js?v=53" defer></script>
+  <script src="portal.js?v=134"></script>
+  <script src="menu.js?v=54" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -85,56 +85,9 @@
       ]).then(function (res) {
         if (res[0].error || res[1].error) { limpar(); app.appendChild(topo(nomeAdmin)); app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os projetos.' })); return; }
         projetos = res[0].data; passos = res[1].data;
-        carregarEspeciais().then(function () {
-          if (arrumarNumeros()) return;
-          desenhar();
-        });
+        if (arrumarNumeros()) return;
+        desenhar();
       });
-    }
-
-    /* Estudos e Produção também são projetos (de tipos mais específicos): aparecem na lista com a barra deles e, ao tocar, abrem a tela própria. Só leitura aqui: as tabelas e telas deles continuam as mesmas */
-    var especiais = [];
-    var ETAPAS_VIDEO = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina', 'seo_ok', 'no_ar', 'cortes_feitos', 'blog_ok'];
-    function carregarEspeciais() {
-      return Promise.all([
-        C.from('estudos').select('id,nome,data_inicio,data_fim,encerrado,estudo_pai_id').order('criado_em'),
-        C.from('estudo_aulas').select('id,estudo_id'),
-        C.from('estudo_questoes').select('id,aula_id,tipo'),
-        C.from('estudo_respostas').select('questao_id,opcao,texto'),
-        C.from('prod_videos').select(ETAPAS_VIDEO.join(','))
-      ]).then(function (rs) {
-        especiais = [];
-        if (!rs[0].error && !rs[1].error && !rs[2].error && !rs[3].error) {
-          var resp = {}; (rs[3].data || []).forEach(function (x) { resp[x.questao_id] = x; });
-          var prog = {};
-          (rs[2].data || []).forEach(function (q) {
-            var p = prog[q.aula_id] = prog[q.aula_id] || { total: 0, feitas: 0 }, r = resp[q.id]; p.total++;
-            if (q.tipo === 'multipla' ? (r && r.opcao != null) : (r && r.texto)) p.feitas++;
-          });
-          var todosE = rs[0].data || [];
-          var arvoreE = function (id) { var r = [id]; todosE.filter(function (x) { return x.estudo_pai_id === id; }).forEach(function (f) { r = r.concat(arvoreE(f.id)); }); return r; };
-          todosE.filter(function (e) { return !e.encerrado && !e.estudo_pai_id; }).forEach(function (e) {
-            var ids = arvoreE(e.id), aulas = (rs[1].data || []).filter(function (a) { return ids.indexOf(a.estudo_id) >= 0; });
-            var feitas = aulas.filter(function (a) { var p = prog[a.id]; return p && p.total > 0 && p.feitas === p.total; }).length;
-            especiais.push({ nome: e.nome, feitos: feitas, total: aulas.length, inicio: e.data_inicio, fim: e.data_fim, url: 'admin-estudos.html#estudo=' + encodeURIComponent(e.id) });
-          });
-        }
-        if (!rs[4].error && (rs[4].data || []).length) {
-          var v = rs[4].data, tot = v.length * ETAPAS_VIDEO.length;
-          var fe = v.reduce(function (n, x) { return n + ETAPAS_VIDEO.filter(function (k) { return x[k]; }).length; }, 0);
-          especiais.push({ nome: 'Produção', feitos: fe, total: tot, url: 'admin-producao.html' });
-        }
-      }, function () { especiais = []; });
-    }
-    function linhaEspecial(e) {
-      var pct = e.total ? Math.floor(e.feitos * 100 / e.total) : 0;
-      var cabeca = el('div', { style: 'display:flex;align-items:center;gap:10px' }, [el('span', { style: 'flex:none;width:26px' }), el('span', { class: 'portal-item-titulo', text: e.nome })]);
-      var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [cabeca, linhaDeBarra(pct, null, e.feitos + '/' + e.total)]);
-      if (e.fim) { var t = tempoDoProjeto({ data_fim: e.fim, data_inicio: e.inicio, criado_em: e.inicio }); if (t) linha.appendChild(linhaDeBarra(t.pct, t.cor, t.texto)); }
-      var abrir = function () { location.href = e.url; };
-      linha.addEventListener('click', abrir);
-      linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
-      return linha;
     }
 
     /* projeto concluído perde o número e os que vinham depois sobem um lugar (concluiu o 1: o 2 vira 1, o 3 vira 2...). Devolve true se mandou gravar (e recarrega depois) */
@@ -290,14 +243,14 @@
         P.voltarNoFim(app, voltarLista);
         return;
       }
+      app.appendChild(P.abasProjetos('projetos'));
       var novo = el('button', { type: 'button', class: 'portal-btn', text: '+ Novo projeto' });
       novo.addEventListener('click', novoProjeto);
       app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 12px' }, [novo]));
       var lista = el('div', { class: 'portal-cartao' });
       app.appendChild(lista);
-      if (!ativos.length && !especiais.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' }));
+      if (!ativos.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum projeto ainda.' }));
       ativos.forEach(function (p) { lista.appendChild(linhaDoProjeto(p, ativos)); });
-      especiais.forEach(function (e) { lista.appendChild(linhaEspecial(e)); });
       var arquivo = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
       var importar = el('button', { type: 'button', class: 'portal-btn', text: 'Importar projetos' });
       importar.addEventListener('click', function () { arquivo.click(); });
