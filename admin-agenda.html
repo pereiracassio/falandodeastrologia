@@ -826,13 +826,17 @@
           linha.appendChild(barra);
           if (x.capa) linha.appendChild(el('img', { src: x.capa, alt: '', style: 'width:96px;height:54px;object-fit:cover;border:1px solid #1F5FA3;flex:none' })); /* a capinha do vídeo, se tiver */
           linha.appendChild(texto);
-          if (plT) linha.appendChild(plT); /* no canto direito, grande, como no Dia */
           if (x.tarefa) {
             var ap = P.botaoApagar('Apagar');
             ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (g) { if (g.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenhar(); }); });
             linha.appendChild(ap);
           }
-          if (x.chave || x.tarefa) linha.appendChild(caixinhaFeito(x, linha, aberto)); /* compromisso e aniversário saem da lista quando ele marca; o resto sai sozinho quando é resolvido na própria tela */
+          /* dois lugares FIXOS, sempre os mesmos: a caixa de marcar (mais para dentro) e o planeta no canto direito, com ou sem o outro */
+          var lugarCaixa = el('span', { style: 'flex:none;width:26px;display:flex;align-items:center;justify-content:center' });
+          if (x.chave || x.tarefa) lugarCaixa.appendChild(caixinhaFeito(x, linha, aberto)); /* compromisso e aniversário saem da lista quando ele marca; o resto sai sozinho quando é resolvido na própria tela */
+          var lugarPlaneta = el('span', { style: 'flex:none;width:30px;display:flex;align-items:center;justify-content:center' });
+          if (plT) lugarPlaneta.appendChild(plT);
+          linha.appendChild(lugarCaixa); linha.appendChild(lugarPlaneta);
           bloco1.appendChild(linha); bloco1.appendChild(aberto);
         });
       }
