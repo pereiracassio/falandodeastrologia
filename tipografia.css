@@ -26,7 +26,7 @@ h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titu
 .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao h2{font-family:var(--fonte-titulo)!important}
 .pagina-papiro .folha-pagina .portal-cartao h2{color:#A03E25!important;text-transform:none!important;font-weight:700!important;letter-spacing:.5px!important;font-size:17px!important}
 /* nome dos campos (rótulos) é Cinzel; o que se digita dentro dos campos é a fonte à mão */
-.pagina-papiro label,.pagina-papiro .portal label{font-family:var(--fonte-titulo)!important;font-size:13px;letter-spacing:.04em}
+.pagina-papiro label,.pagina-papiro .portal label,.pagina-papiro .prod-rotulo{font-family:var(--fonte-titulo)!important;font-size:13px;letter-spacing:.04em}
 /* parte "impressa" de um questionário (pergunta, opções, passo): Cinzel; o que a pessoa escreve ou escolhe-marca fica à mão */
 .pagina-papiro .impresso,.pagina-papiro button.impresso{font-family:var(--fonte-titulo)!important}
 .pagina-papiro :is(h2,h3).impresso{font-family:var(--fonte-titulo)!important;font-weight:600!important}
@@ -41,7 +41,7 @@ body.checkout .pagina-papiro .card :is(input,textarea,select){font-family:var(--
    com maiúscula no meio (WhatsApp) as letras sobem e descem. Por isso nada de text-transform: uppercase em Cinzel. */
 html body :is(h1,.pagina-papiro h1,.titulo-pagina,.pagina-papiro .folha-pagina h2.titulo-pagina[style],.pagina-papiro .folha-pagina h2.titulo-pagina,.pagina-papiro h2.titulo-pagina,.portal-titulo,.barra-assunto,.blog-card h2,.blog-home-titulo,
   .cab-nav,.cab-nav a,.portal-btn,.portal-aba,.portal-grupo>*,.blog-botao,.btn-pay,.btn-google,.papiro .folha b,.pagina-papiro a[href*="carrinho.html"],.sidemenu-nav a,
-  .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao h2,.pagina-papiro label,.pagina-papiro .portal label,
+  .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao h2,.pagina-papiro label,.pagina-papiro .portal label,.pagina-papiro .prod-rotulo,
   .pagina-papiro .impresso,.pagina-papiro button.impresso,.pagina-papiro .folha-pagina :is(h2,h3).impresso,.brand,.nav-menu a,
   body.checkout .pagina-papiro .card :is(p,span,strong,div,a,button,label,li)){text-transform:lowercase!important}
 
