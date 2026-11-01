@@ -21,6 +21,8 @@
   if (ehAdmin && /\/(admin-[a-z]+|capa)\.html$/.test(location.pathname)) {
     links = [
       { label: "Agenda", href: "admin-agenda.html" },
+      { label: "Horas", href: "admin-agenda.html#v=horas" },
+      { label: "To do", href: "admin-agenda.html#v=todo" },
       { label: "Aplicações", href: "admin-aplicacoes.html" },
       { label: "Alunos", href: "admin-alunos.html" },
       { label: "Mensagens", href: "admin-mensagens.html" },
@@ -39,7 +41,7 @@
     /* em ordem alfabética (o "Ver o site", que é o último, fica de fora) */
     var verSite = links.pop();
     /* duas metades, sem divisa: Falando de Astrologia primeiro, Hellenic Daily (Agenda, Estudos, Produção, Projetos) depois */
-    var DAILY = { "Agenda": 1, "Projetos": 1 };
+    var DAILY = { "Agenda": 1, "Horas": 1, "Projetos": 1, "To do": 1 };
     links.sort(function (a, b) { return ((DAILY[a.label] ? 1 : 0) - (DAILY[b.label] ? 1 : 0)) || a.label.localeCompare(b.label, "pt"); });
     links.push(verSite);
     /* Configurações fica NO MEIO, entre o Falando de Astrologia e o Hellenic Daily (é dos dois) */

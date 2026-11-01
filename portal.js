@@ -584,16 +584,17 @@
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
     if (atual === 'estudos' || atual === 'producao') atual = 'projetos'; /* Estudos e Produção moram dentro dos Projetos */
-    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
+    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['horas', 'Horas', 'admin-agenda.html#v=horas'], ['todo', 'To do', 'admin-agenda.html#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* em ordem alfabética, para achar mais fácil */
     /* duas metades na mesma barra, sem divisa: primeiro o Falando de Astrologia, depois o Hellenic Daily (Agenda, Estudos, Produção, Projetos), cada uma em ordem alfabética */
-    var DAILY = { agenda: 1, projetos: 1 };
+    var DAILY = { agenda: 1, horas: 1, projetos: 1, todo: 1 };
     itens.sort(function (a, b) { return ((DAILY[a[0]] ? 1 : 0) - (DAILY[b[0]] ? 1 : 0)) || a[1].localeCompare(b[1], 'pt'); });
     /* a ⚙ (configurações) fica NO MEIO da barra, entre as abas do Falando de Astrologia e as do Hellenic Daily: é dos dois (ao abrir, tem uma aba para cada lado) */
     var meio = itens.findIndex(function (i) { return DAILY[i[0]]; });
     itens.splice(meio < 0 ? itens.length : meio, 0, ['site', '\u2699\uFE0E', 'admin-site.html']);
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
+      if (i[0] === 'agenda' || i[0] === 'horas' || i[0] === 'todo') a.addEventListener('click', function (ev) { if (window.fdaAgendaIr) { ev.preventDefault(); window.fdaAgendaIr(i[0]); } }); /* já estando na Agenda, troca de aba sem recarregar */
       if (i[0] === 'site') { a.setAttribute('aria-label', 'Configurações'); a.title = 'Configurações'; a.appendChild(el('span', { class: 'engrenagem', text: i[1] })); } /* a engrenagem é maior que a letra, para ficar do tamanho dos botões escritos */
       if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid #1F5FA3;padding:10px 22px;color:#A03E25'; }
       return a;

@@ -52,8 +52,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=136"></script>
-  <script src="menu.js?v=54" defer></script>
+  <script src="portal.js?v=137"></script>
+  <script src="menu.js?v=55" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
   (function () {
@@ -69,11 +69,18 @@
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     var VISOES = [['horas', 'Horas'], ['todo', 'To Do'], ['lista', 'Lista'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
-    var visao = 'semana', ancora = '', areaForm = null, atualizar = function () {}, formTodoEl = null;
+    /* Horas e To do são abas do Hellenic Daily (na barra de cima), junto com a Agenda; a Agenda abre na última aba de dentro que ficou aberta */
+    var CALV = ['lista', 'dia', 'semana', 'mes', 'ano'], ROTULO = { agenda: 'Agenda', horas: 'Horas', todo: 'To do' };
+    function modoDe(v) { return v === 'horas' ? 'horas' : v === 'todo' ? 'todo' : 'agenda'; }
+    function ultimaVisaoCal() { try { var v = localStorage.getItem('fda_agenda_visao'); return CALV.indexOf(v) >= 0 ? v : 'semana'; } catch (e) { return 'semana'; } }
+    function guardarVisaoCal(v) { try { if (CALV.indexOf(v) >= 0) localStorage.setItem('fda_agenda_visao', v); } catch (e) { /* sem armazenamento */ } }
+    function visaoDoEndereco() { var v = P.estado.ler().v; return ['horas', 'todo'].concat(CALV).indexOf(v) >= 0 ? v : ultimaVisaoCal(); }
+    var visao = visaoDoEndereco(), ancora = '', areaForm = null, atualizar = function () {}, formTodoEl = null;
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
-    function topo(texto) { return P.navAdmin('agenda', texto, sair); }
+    var modoBarra = null;
+    function topo(texto) { modoBarra = modoDe(visao); return P.navAdmin(modoBarra, texto, sair); }
     function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
     function p2(n) { return String(n).padStart(2, '0'); }
     /* tudo em horário de Brasília: "local" = ms deslocado, lido com os métodos UTC */
@@ -402,7 +409,7 @@
       var miolo = document.createElement('i'), fundo = document.createElement('div'); fundo.className = 'fundo-presa'; fundo.appendChild(miolo); corpo.insertBefore(fundo, corpo.firstChild); /* dentro da mesma camada das peças presas, senão ficava por cima delas */
       function medir() {
         var t = document.querySelector('.sidemenu-toggle'), r = t ? t.getBoundingClientRect() : null, alt = h1.offsetHeight;
-        var topo = r && r.height ? Math.max(0, r.top + r.height / 2 - alt / 2) : 0, topoHoras = topo + alt, topoBarra = topoHoras + horas.offsetHeight;
+        var topo = r && r.height ? Math.max(0, r.top + r.height / 2 - alt / 2) : 0, topoHoras = topo + alt, topoBarra = topoHoras + (horas.style.position === 'static' ? 0 : horas.offsetHeight);
         h1.style.top = topo + 'px'; horas.style.top = topoHoras + 'px'; barra.style.top = topoBarra + 'px';
         var presa = h1.getBoundingClientRect().top <= topo + 0.5, f = folha.getBoundingClientRect();
         fundo.style.display = presa ? 'block' : 'none';
@@ -423,7 +430,7 @@
     function montar(corpo) {
       var ent = P.estado.ler();
       ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
-      visao = 'todo'; /* o Hellenic Daily SEMPRE abre no To do, mesmo vindo de um endereço com outra visão guardada */
+      visao = visaoDoEndereco(); /* abre onde ficou: horas, to do ou a última aba da agenda */
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:6px 0 4px;text-align:center;width:100%;font-size:12.5px;line-height:1.15' }), encaixe = el('div');
       var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
@@ -453,7 +460,7 @@
       ant.addEventListener('click', function () { passo(-1); window.scrollTo(0, 0); }); prox.addEventListener('click', function () { passo(1); window.scrollTo(0, 0); });
             abas.appendChild(el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none;padding:0 6px 0 12px' }, [ant, hoje, prox])); /* ‹ data › é a última aba: corre junto com as outras */
             var controles = el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none' }, [novo]); /* os botões moram na linha das abas, para o título ocupar a largura inteira (na semana, cada dia cai em cima da sua coluna) */
-      corpo.appendChild(cabecalhoHoras()); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('div', { style: 'flex:1;min-width:0' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */]), controles]), titulo])); corpo.appendChild(vista); prenderTitulo(corpo);
+      var cabH = cabecalhoHoras(); corpo.appendChild(cabH); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('div', { style: 'flex:1;min-width:0' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */]), controles]), titulo])); corpo.appendChild(vista); prenderTitulo(corpo);
       /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
       var encaixePronto = false;
       function mostrarEncaixe() { /* o encaixe agora abre ao tocar numa hora da aba Horas */ }
@@ -462,6 +469,12 @@
       function mudou() {
         VISOES.forEach(function (v) { botoes[v[0]].className = 'portal-aba' + (v[0] === visao ? ' ativa' : ''); botoes[v[0]].setAttribute('aria-selected', v[0] === visao ? 'true' : 'false'); });
         P.estado.gravar({ v: visao, d: ancora });
+        guardarVisaoCal(visao);
+        var modo = modoDe(visao), h1x = document.querySelector('h1.portal-titulo');
+        if (h1x) h1x.textContent = ROTULO[modo]; document.title = ROTULO[modo] + ' - Falando de Astrologia';
+        VISOES.forEach(function (v) { botoes[v[0]].style.display = CALV.indexOf(v[0]) >= 0 && modo === 'agenda' ? '' : 'none'; }); /* Horas e To do saíram desta barra: são abas da barra de cima */
+        cabH.grande = modo === 'horas'; cabH.style.position = cabH.grande ? 'static' : ''; if (cabH.pintar) cabH.pintar();
+        if (modo !== modoBarra) { modoBarra = modo; P.navAdmin(modo, nomeAdmin, sair); } /* a aba marcada na barra de cima acompanha */
         hoje.textContent = curto(ancora);
         titulo.textContent = '';
         if (visao === 'semana') { /* na semana o título são os próprios dias (Dom 15, Seg 16...), não o período por extenso */
@@ -499,6 +512,8 @@
         }, function (e) { if (meu === pedido) { mostrarEncaixe(); if (e.message === 'desconectado' || e.message === 'permissao') { mostraErroAbrir(vista, e); } else if (!guardado) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); } } });
       }
       atualizar = mudou;
+      window.fdaAgendaIr = function (modo) { visao = modo === 'agenda' ? ultimaVisaoCal() : modo; if (visao === 'dia') ancora = isoDia(Date.now()); mudou(); window.scrollTo(0, 0); };
+      window.addEventListener('hashchange', function () { var e = P.estado.ler(); if (e.v && e.v !== visao && ['horas', 'todo'].concat(CALV).indexOf(e.v) >= 0) { visao = e.v; mudou(); window.scrollTo(0, 0); } });
       mudou();
     }
 
@@ -1255,22 +1270,23 @@
       var caixa = el('div', { class: 'cab-horas' });
       function pintar() {
         if (!document.body.contains(caixa) && caixa.firstChild) { clearInterval(window.__cabHoras); return; }
-        var agora = Date.now(), hs = diaPlanetarioDe(agora); if (hs.length < 24) return;
+        var G = !!caixa.grande, agora = Date.now(), hs = diaPlanetarioDe(agora); if (hs.length < 24) return;
         var h = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0], dia = hs[0], nascer = hs[0].ini, por = hs[12].ini, proximo = hs[23].fim;
         caixa.textContent = '';
-        caixa.appendChild(el('div', { text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:12px;margin:0 0 6px' }));
-        var rot = function (t) { return el('div', { text: t, style: 'font-family:var(--fonte-titulo);font-size:10px;margin-bottom:2px' }); };
+        caixa.appendChild(el('div', { text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:' + (G ? 15 : 12) + 'px;margin:0 0 ' + (G ? 12 : 6) + 'px' }));
+        var rot = function (t) { return el('div', { text: t, style: 'font-family:var(--fonte-titulo);font-size:' + (G ? 13 : 10) + 'px;margin-bottom:' + (G ? 4 : 2) + 'px' }); };
         var direita = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px' }, [barraDe(nascer, proximo, agora, 'horas', false)]);
         if (h) {
           direita.appendChild(barraDe(h.ini, h.fim, agora, 'minutos', false));
-          direita.appendChild(el('div', { text: (hs.indexOf(h) % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), style: 'text-align:center;font-size:12px' }));
+          direita.appendChild(el('div', { text: (hs.indexOf(h) % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), style: 'text-align:center;font-size:' + (G ? 15 : 12) + 'px' }));
         }
-        caixa.appendChild(el('div', { style: 'display:flex;align-items:center;gap:14px' }, [
-          el('div', { style: 'flex:none;display:flex;align-items:flex-end;gap:10px;text-align:center' }, [
-            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, 50, '#A03E25')]),
-            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, 36, h.noite ? '#1F5FA3' : '#B5852F')]) : null]),
+        caixa.appendChild(el('div', { style: G ? 'display:flex;flex-direction:column;align-items:stretch;gap:14px' : 'display:flex;align-items:center;gap:14px' }, [
+          el('div', { style: 'flex:none;display:flex;align-items:flex-end;gap:' + (G ? 34 : 10) + 'px;text-align:center' + (G ? ';justify-content:center' : '') }, [
+            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, G ? 76 : 50, '#A03E25')]),
+            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, G ? 54 : 36, h.noite ? '#1F5FA3' : '#B5852F')]) : null]),
           direita]));
       }
+      caixa.pintar = pintar;
       clearInterval(window.__cabHoras);
       preparar().then(function () { pintar(); window.__cabHoras = setInterval(function () { if (document.visibilityState === 'visible') pintar(); }, 30000); }, function () { /* o erro aparece nas outras partes da tela */ });
       return caixa;
