@@ -51,7 +51,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=137"></script>
+  <script src="portal.js?v=138"></script>
   <script src="menu.js?v=55" defer></script>
   <script>
   (function () {
@@ -331,7 +331,7 @@
       var ordem = projetos.reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0) + 1;
       C.from('projetos').insert({ nome: nome, ordem: ordem }).select('id').then(function (r) {
         if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar.'); return; }
-        aberto = r.data[0].id; P.estado.gravar({ projeto: aberto }); carregar();
+        aberto = r.data[0].id; P.estado.gravar({ projeto: aberto }); window.scrollTo(0, 0); carregar();
       });
     }
 
@@ -474,7 +474,7 @@
           pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else carregar(); });
         });
         areaForm.appendChild(form);
-        titulo.focus();
+        titulo.focus({ preventScroll: true });
       }
       var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
       add.addEventListener('click', function () { if (!areaForm.firstChild) formPasso(null); });
@@ -486,7 +486,7 @@
         var ordemNoPai = ordenados.reduce(function (m, y) { return y.ordem < 1e9 ? Math.max(m, y.ordem || 0) : m; }, 0) + 1;
         C.from('projetos').insert({ nome: nome, ordem: ordemG, projeto_pai_id: proj.id, ordem_no_pai: ordemNoPai }).select('id').then(function (r) {
           if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar.'); return; }
-          aberto = r.data[0].id; P.estado.gravar({ projeto: aberto }); carregar();
+          aberto = r.data[0].id; P.estado.gravar({ projeto: aberto }); window.scrollTo(0, 0); carregar();
         });
       });
       var mover = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar dentro de outro projeto' });

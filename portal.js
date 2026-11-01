@@ -1502,4 +1502,32 @@
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
   };
+
+  /* A TELA NÃO PULA (regra dele): quase toda ação redesenha a área #app (esvazia e monta de novo) e o navegador joga a rolagem para o topo. Aqui, uma vez para o site todo:
+     guarda onde a tela estava e, depois de qualquer redesenho, volta para lá. Quem QUER ir ao topo (abrir outra tela) usa window.scrollTo, que também é guardado. */
+  (function naoPular() {
+    var app = document.getElementById('app'); if (!app || !window.MutationObserver) return;
+    var y = window.scrollY || 0;
+    var guarda = function () { y = window.scrollY || 0; };
+    window.addEventListener('scroll', guarda, { passive: true });
+    ['scrollTo', 'scrollBy'].forEach(function (nome) {
+      var original = window[nome];
+      window[nome] = function (a, b) {
+        var r = original.apply(window, arguments);
+        if (nome === 'scrollTo') y = typeof a === 'object' && a ? (a.top != null ? a.top : y) : (b != null ? b : y);
+        else y = window.scrollY || 0;
+        return r;
+      };
+    });
+    var espera = false;
+    new MutationObserver(function () {
+      if (espera) return; espera = true;
+      Promise.resolve().then(function () {
+        espera = false;
+        var maximo = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        var alvo = Math.min(y, maximo);
+        if (y > 2 && (window.scrollY || 0) < alvo - 2) window.scrollTo(0, alvo);
+      });
+    }).observe(app, { childList: true, subtree: true });
+  })();
 })();

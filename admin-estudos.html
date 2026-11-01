@@ -37,7 +37,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=137"></script>
+  <script src="portal.js?v=138"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=2"></script>
   <script src="menu.js?v=55" defer></script>
@@ -121,7 +121,7 @@
       if (!nome) return;
       C.from('estudos').insert({ nome: nome, data_inicio: hojeISO(), por_semana: false }).select('id').then(function (r) {
         if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar (já existe um estudo com esse nome?).'); return; }
-        aberto = r.data[0].id; verEncerrado = null; lista();
+        aberto = r.data[0].id; verEncerrado = null; window.scrollTo(0, 0); lista();
       });
     }
 
@@ -332,7 +332,7 @@
             if (!nome) return;
             C.from('estudos').insert({ nome: nome, data_inicio: hojeISO(), por_semana: false, estudo_pai_id: est.id }).select('id').then(function (r) {
               if (r.error || !r.data || !r.data[0]) { alert('Não foi possível criar (já existe um estudo com esse nome?).'); return; }
-              aberto = r.data[0].id; lista();
+              aberto = r.data[0].id; window.scrollTo(0, 0); lista();
             });
           });
           var mover = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar dentro de outro estudo' });
