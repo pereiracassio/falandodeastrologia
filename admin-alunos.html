@@ -344,7 +344,7 @@
           x.feito = cb.checked; desenhar();
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
-        var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (pontos(x) >= 1 ? 'text-decoration:line-through;opacity:.6' : '') })];
+        var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (pontos(x) >= 1 ? 'text-decoration:line-through;opacity:.6' : '') })];
         if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
         if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
         if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (at.antiga || at.somente_leitura ? 'já feita' : !at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
@@ -386,7 +386,7 @@
           ap.addEventListener('click', function () { if (confirm('Apagar o passo "' + x.titulo + '"?')) P.client.from('aluno_trilha_passos').delete().eq('id', x.id).then(carregar); });
           acoes.appendChild(ap); texto.push(acoes); texto.push(areaLigar);
         }
-        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid #1F5FA3' }, [cb, el('div', { style: 'flex:1;min-width:0' }, texto)]);
+        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid #1F5FA3' }, (ehMaterial || ehAtividade ? [] : [cb]).concat([el('div', { style: 'flex:1;min-width:0' }, texto)])); /* caixinha só no passo comum: material, atividade e gravação andam sozinhos */
       }
       function listaDePassos(alvo, lista, leitura, grande) {
         var caixa = el('div', { style: 'border-bottom:1px solid #1F5FA3' + (grande ? ';border-top:2px solid #1F5FA3' : '') });
@@ -411,14 +411,21 @@
         /* prazo opcional: com data final aparece a barra do tempo logo embaixo, no mesmo desenho */
         if (t.data_fim) cabeca.appendChild(P.barraTempoDias(inicioDe(t), t.data_fim));
         c.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio', true), campoDataTrilha('Data final prevista (opcional)', t, 'data_fim')]));
-        if (pend.length) { c.appendChild(rotulo('Próximo passo')); listaDePassos(c, pend.slice(0, 1), false, true); }
-        if (pend.length > 1) {
-          c.appendChild(rotulo('Depois'));
-          var cx = el('div', { style: 'border-bottom:1px solid #1F5FA3' });
-          pend.slice(1).forEach(function (x, k) { cx.appendChild(linhaPasso(x, pend, k + 1, false)); });
+        /* igual ao To do: Atrasados, um bloco por DIA, Sem data e Feitos (as edições de cada passo continuam as mesmas) */
+        var hojeT = new Date().toLocaleDateString('sv-SE'), amanhaT = (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString('sv-SE'); })();
+        var MESES_T = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], SEM_T = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hojeT ? 'Hoje' : iso === amanhaT ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
+        var gruposT = [], porDiaT = {}, atrasT = pend.filter(function (x) { return x.data && x.data < hojeT; }), semT = pend.filter(function (x) { return !x.data; });
+        if (atrasT.length) gruposT.push(['Atrasados', atrasT]);
+        pend.filter(function (x) { return x.data && x.data >= hojeT; }).forEach(function (x) { if (!porDiaT[x.data]) { porDiaT[x.data] = []; gruposT.push([rotuloDiaT(x.data), porDiaT[x.data]]); } porDiaT[x.data].push(x); });
+        if (semT.length) gruposT.push(['Sem data', semT]);
+        if (feitos.length) gruposT.push(['Feitos', feitos]);
+        gruposT.forEach(function (g) {
+          c.appendChild(el('div', { text: g[0], style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
+          var cx = el('div', {});
+          g[1].forEach(function (x, k) { var l = linhaPasso(x, g[1], k, false); if (k === 0) l.style.borderTop = '0'; cx.appendChild(l); });
           c.appendChild(cx);
-        }
-        if (feitos.length) { c.appendChild(rotulo('Feitos')); listaDePassos(c, feitos, false, false); }
+        });
         var campo = el('input', { type: 'text', placeholder: 'Novo passo', style: 'flex:1;min-width:0' });
         var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
         var enviar = function () {
