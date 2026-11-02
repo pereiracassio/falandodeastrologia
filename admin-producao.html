@@ -219,6 +219,20 @@
       if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
       h.forEach(function (x) { caixa.appendChild(el('div', { text: hhmm(x[0]) + ' a ' + hhmm(x[1]) })); });
     }
+    /* os horários de Júpiter do dia, um por linha, para ESCOLHER qual vale (a escolhida fica terracota com ✓; tocar de novo desfaz). Só a palavra, sem quadrado */
+    function jupiterEscolha(caixa, isoD, indice, avisoSemData, aoEscolher) {
+      caixa.textContent = '';
+      if (!isoD) { if (avisoSemData) caixa.appendChild(el('div', { text: avisoSemData })); return; }
+      var p = isoD.split('-'), h = horasDeJupiter(isoD);
+      caixa.appendChild(el('div', { style: 'font-weight:700', text: p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de Júpiter' }));
+      if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
+      h.forEach(function (x, i) {
+        var on = indice === i;
+        var b = el('button', { type: 'button', text: hhmm(x[0]) + ' a ' + hhmm(x[1]) + (on ? '  ✓' : ''), style: 'display:block;background:transparent;border:0;border-radius:0;padding:2px 0;margin:0;font:inherit;cursor:pointer;text-align:left;color:' + (on ? '#A03E25' : '#1034A6') + ';font-weight:' + (on ? '700' : '400') });
+        b.addEventListener('click', function () { indice = on ? null : i; aoEscolher(indice); jupiterEscolha(caixa, isoD, indice, avisoSemData, aoEscolher); });
+        caixa.appendChild(b);
+      });
+    }
     function hhmm(min) { var m = ((min % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
     function textoJupiter(isoD) {
       if (!isoD) return '';
@@ -1084,7 +1098,7 @@
         var p = d.split('-'), curta = p[2] + '/' + p[1] + '/' + p[0].slice(2);
         jupFim.appendChild(el('div', { style: 'font-weight:700', text: curta + ', horários de Júpiter' }));
         if (!h.length) jupFim.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
-        h.forEach(function (x) { jupFim.appendChild(el('div', { text: hhmm(x[0]) + ' a ' + hhmm(x[1]) })); });
+        jupiterEscolha(jupFim, d, v.hora_jupiter == null ? null : v.hora_jupiter, '', function (i) { gravar('prod_videos', videos, v, { hora_jupiter: i }); });
       }
       pintarJupFim();
       dataPublico.addEventListener('change', atualizarJupiter);
@@ -1223,8 +1237,9 @@
         tx.addEventListener('change', verSeoCorte); tg.addEventListener('change', verSeoCorte);
         var jupC = el('div', { style: 'margin:6px 0 4px;color:#1034A6;font-size:16px;line-height:1.5' });
         var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
-        jupiterAzul(jupC, c.data, semDataJup);
-        d.addEventListener('change', function () { jupiterAzul(jupC, d.value, semDataJup); });
+        var escolhaC = function (i) { gravar('prod_cortes', cortes, c, { hora_jupiter: i }); };
+        jupiterEscolha(jupC, c.data, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC);
+        d.addEventListener('change', function () { jupiterEscolha(jupC, d.value, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC); });
         /* link do vídeo deste corte no Google Fotos: mesmo campo de link padrão do site */
         var caixaFotosC = el('div', { style: 'margin:0 0 12px;display:flex;align-items:center;gap:14px' });
         var campoLC = el('input', { type: 'url', 'data-link-abre': '1', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
