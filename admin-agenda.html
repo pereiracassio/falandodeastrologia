@@ -798,11 +798,11 @@
         var saida = [], porId = function (l, id) { return l.filter(function (x) { return x.id === id; })[0]; };
         r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: '#A03E25' }); });
         r[2].forEach(function (x) {
-          if (x.tipo === 'material' && x.lido_em) return;
-          if (x.tipo === 'gravacao' && x.item_id) return;
-          if (x.tipo === 'atividade' && x.atividade_id) { var a = porId(r[6], x.atividade_id); if (a && a.corrigida_em) return; }
+          /* a parte DELE acabou quando o item foi ligado (material, gravação ou atividade disponível para o aluno) */
+          if ((x.tipo === 'material' || x.tipo === 'gravacao') && (x.item_id || x.lido_em)) return;
+          if (x.tipo === 'atividade' && x.atividade_id) return;
           var t = porId(r[3], x.trilha_id); if (!t) return; var al = porId(r[4], t.aluno_id), c = r[5].filter(function (y) { return y.aluno_id === t.aluno_id; })[0];
-          saida.push({ quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'trilha ' + t.nome + ' · ' + (c && c.codigo ? c.codigo + ' · ' : '') + (al ? al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(t.aluno_id) + '&aba=acompanhamento', cor: '#A03E25' });
+          saida.push({ quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'trilha ' + t.nome + ' · ' + (c && c.codigo ? c.codigo + ' · ' : '') + (al ? al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(t.aluno_id) + '&aba=trilha', cor: '#A03E25' });
         });
         return saida;
       });
