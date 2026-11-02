@@ -176,10 +176,10 @@
       return saida;
     }
     /* os vídeos e cortes da Produção entram na agenda como compromissos LIVRES (não bloqueiam horário), cada um nas horas de Júpiter do dia dele (o horário que a Produção sugere para postar):
-       as MESMAS datas do antigo calendário da Produção: vídeo pela data de postar, cortes pela data de cada um (juntos por dia). O To do da Produção não foi mexido */
+       vídeo pela data em que fica público (só de membros: a data dos membros, igual ao To do da Produção), cortes pela data de cada um (juntos por dia). O To do da Produção não foi mexido */
     function carregarProducao() {
       return Promise.all([
-        C.from('prod_videos').select('id,numero,titulo,data_postar').then(function (r) { return r.data || []; }, function () { return []; }),
+        C.from('prod_videos').select('id,numero,titulo,data_postar,data_publico,acesso').then(function (r) { return r.data || []; }, function () { return []; }),
         C.from('prod_cortes').select('id,titulo,data,video_id').not('data', 'is', null).then(function (r) { return r.data || []; }, function () { return []; })
       ]).then(function (r) { producao = { videos: r[0], cortes: r[1] }; });
     }
@@ -194,7 +194,7 @@
         });
       }
       producao.videos.forEach(function (v) {
-        var iso = v.data_postar; if (!iso) return;
+        var iso = (v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar; if (!iso) return; /* a mesma regra do To do da Produção: público = data em que fica público; só membros = data dos membros */
         var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'Vídeo'); nasHorasDeJupiter('prod-v-' + v.id, 'Vídeo ' + nome, iso, []);
       });
       var porDia = {};
