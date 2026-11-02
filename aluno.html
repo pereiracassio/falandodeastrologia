@@ -370,16 +370,16 @@
         var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
         function linha(x) {
           var feito = pontos(x) >= 1, it = itemDe(x), at = ativDe(x);
-          var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
+          var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
           var hojeISO = new Date().toLocaleDateString('sv-SE'), abrirLinha = null;
-          if (x.data && !parteFeita(x)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (x.data < hojeISO ? '#A03E25' : '#1034A6'), text: x.devolvidaEm ? 'devolvida para refazer em ' + P.dataBR(x.devolvidaEm) : (x.data < hojeISO ? 'atrasado · ' : '') + 'até ' + P.dataBR(x.data) }));
+          if (x.data && !parteFeita(x) && (x.data < hojeISO || x.devolvidaEm)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (x.data < hojeISO ? '#A03E25' : '#1034A6'), text: x.devolvidaEm ? 'devolvida para refazer em ' + P.dataBR(x.devolvidaEm) : (x.data < hojeISO ? 'atrasado · ' : '') + 'até ' + P.dataBR(x.data) }));
           if (x.tipo === 'material') {
             if (!it) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else {
               texto.push(itemDaLista(it, 'materiais'));
               if (x.lido_em) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'Você já leu' }));
               else {
-                var li = el('button', { type: 'button', class: 'portal-btn', text: 'Marquei que li', style: 'margin-top:8px' });
+                var li = el('button', { type: 'button', class: 'portal-btn', text: 'Marcar como lido', style: 'margin-top:8px' });
                 li.disabled = !!previa;
                 li.addEventListener('click', function () { li.disabled = true; P.client.rpc('marcar_li_trilha', { p_passo: x.id }).then(function (r) { if (r.error) { li.disabled = false; alert('Não foi possível marcar agora.'); } else { abaAoVoltar = 'trilha'; desenharPaginaDoAluno(userAtual, aluno, previa); } }); });
                 texto.push(li);
@@ -425,14 +425,20 @@
           c.addEventListener('click', alternarT);
           c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); alternarT(); } });
           pintarT();
-          var hoje = new Date().toLocaleDateString('sv-SE'), em = function (n) { var d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString('sv-SE'); };
+          /* igual ao To do dele: Atrasados, depois um bloco por DIA (Hoje, 5 de novembro...), depois Sem data e Feitos */
+          var hoje = new Date().toLocaleDateString('sv-SE'), amanha = (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString('sv-SE'); })();
+          var MESES_T = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], SEM_T = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+          var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
           var aFazer = pend.filter(function (x) { return !parteFeita(x); }), cumpridos = m.filter(parteFeita);
-          var grupos = [['Atrasado', aFazer.filter(function (x) { return x.data && x.data < hoje; })], ['Hoje', aFazer.filter(function (x) { return x.data === hoje; })], ['Amanhã', aFazer.filter(function (x) { return x.data === em(1); })],
-            ['Esta semana', aFazer.filter(function (x) { return x.data > em(1) && x.data <= em(7); })], ['Depois', aFazer.filter(function (x) { return x.data > em(7); })], ['Sem data', aFazer.filter(function (x) { return !x.data; })], ['Feitos', cumpridos]];
+          var grupos = [], porDia = {};
+          var atrasados = aFazer.filter(function (x) { return x.data && x.data < hoje; }); if (atrasados.length) grupos.push(['Atrasados', atrasados]);
+          aFazer.filter(function (x) { return x.data && x.data >= hoje; }).forEach(function (x) { if (!porDia[x.data]) { porDia[x.data] = []; grupos.push([rotuloDiaT(x.data), porDia[x.data]]); } porDia[x.data].push(x); });
+          var semData = aFazer.filter(function (x) { return !x.data; }); if (semData.length) grupos.push(['Sem data', semData]);
+          if (cumpridos.length) grupos.push(['Feitos', cumpridos]);
           grupos.forEach(function (g) {
             if (!g[1].length) return;
-            corpo.appendChild(rotulo(g[0]));
-            var caixa = el('div', { style: 'border-bottom:1px solid #1F5FA3' });
+            corpo.appendChild(el('div', { text: g[0], style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
+            var caixa = el('div', {});
             g[1].forEach(function (x, i) { var l = linha(x); if (i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
             corpo.appendChild(caixa);
           });
