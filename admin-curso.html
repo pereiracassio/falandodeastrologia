@@ -123,7 +123,7 @@
           if (!tit.value.trim()) return;
           C.from('cursos').update({ titulo: tit.value.trim() }).eq('id', id).then(function (r) { if (r.error) msgErro(msgT, r.error); else P.mensagem(msgT, 'Salvo.', 'ok'); });
         });
-        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes' }, [salvarT])]))); P.salvarSozinho(salvarT);
+        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes', style: 'display:none' }, [salvarT])]))); P.salvarSozinho(salvarT); /* o botão fica escondido (salva sozinho): a caixa dele não pode sobrar como espaço vazio */
 
         var caixaM = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Módulos' })]);
         if (!mods.length) caixaM.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }));
