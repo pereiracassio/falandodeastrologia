@@ -46,7 +46,7 @@
   <script src="leitor.js?v=8"></script>
   <script src="curso.js?v=1"></script>
   <script src="conversa.js?v=7"></script>
-  <script src="atividades.js?v=38"></script>
+  <script src="atividades.js?v=39"></script>
   <script src="caderno.js?v=11"></script>
   <script>
   (function () {
@@ -342,7 +342,7 @@
       Promise.all([
         P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
         P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data').order('ordem').order('criado_em'),
-        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga').eq('aluno_id', aluno.id)
+        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,devolvida_em').eq('aluno_id', aluno.id)
       ]).then(function (rs) {
         raiz.textContent = '';
         if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a trilha agora.' })); return; }
@@ -352,6 +352,8 @@
         var meus = function (t) { return passos.filter(function (x) { return x.trilha_id === t.id; }); };
         var ativDe = function (x) { return x.atividade_id ? ativs.filter(function (a) { return a.id === x.atividade_id; })[0] : null; };
         var itemDe = function (x) { return x.item_id ? (itens || []).filter(function (i) { return i.id === x.item_id; })[0] : null; };
+        /* atividade devolvida para refazer: o passo conta como "do dia em que foi devolvida" */
+        passos.forEach(function (x) { var a = x.tipo === 'atividade' ? ativDe(x) : null; if (a && a.devolvida_em && !a.enviada_em) { x.devolvidaEm = new Date(a.devolvida_em).toLocaleDateString('sv-SE'); x.data = x.devolvidaEm; } });
         var pontos = function (x) {
           if (x.tipo === 'material') return x.lido_em ? 1 : (itemDe(x) ? 0.5 : 0);
           if (x.tipo === 'gravacao') return itemDe(x) ? 1 : 0;
@@ -370,7 +372,7 @@
           var feito = pontos(x) >= 1, it = itemDe(x), at = ativDe(x);
           var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
           var hojeISO = new Date().toLocaleDateString('sv-SE'), abrirLinha = null;
-          if (x.data && !parteFeita(x)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (x.data < hojeISO ? '#A03E25' : '#1034A6'), text: (x.data < hojeISO ? 'atrasado · ' : '') + 'até ' + P.dataBR(x.data) }));
+          if (x.data && !parteFeita(x)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (x.data < hojeISO ? '#A03E25' : '#1034A6'), text: x.devolvidaEm ? 'devolvida para refazer em ' + P.dataBR(x.devolvidaEm) : (x.data < hojeISO ? 'atrasado · ' : '') + 'até ' + P.dataBR(x.data) }));
           if (x.tipo === 'material') {
             if (!it) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else {

@@ -1049,7 +1049,7 @@
           var reabrir = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Devolver para o aluno refazer' });
           reabrir.addEventListener('click', function () {
             if (!confirm('Devolver para o aluno? Ele poderá mudar as respostas e enviar de novo.')) return;
-            C.from('atividades').update({ enviada_em: null }).eq('id', a.id).then(function (r) {
+            C.from('atividades').update({ enviada_em: null, devolvida_em: new Date().toISOString() }).eq('id', a.id).then(function (r) {
               if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
               a.enviada_em = null; telaDaAtividade(a);
             });
