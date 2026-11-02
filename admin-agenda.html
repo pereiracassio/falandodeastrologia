@@ -65,7 +65,7 @@
     var SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     /* o que fazer -> em qual hora planetária (mude aqui se quiser outra combinação) */
     var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno']]; /* a lista só sugere: ele pode escrever qualquer outra coisa */
-    var nomeAdmin = '', aniversarios = [], calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
+    var nomeAdmin = '', aniversarios = [], producao = { videos: [], cortes: [] }, calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
     var DIA = 86400000, HORA_PX = 48, ATIVA = null;
     var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     var VISOES = [['horas', 'Horas'], ['todo', 'To Do'], ['lista', 'Lista'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
@@ -175,11 +175,32 @@
       });
       return saida;
     }
+    /* os vídeos e cortes da Produção entram na agenda como compromissos de dia inteiro, LIVRES (não bloqueiam horário): vídeo pela data de postar, cortes pela data de cada um (juntos por dia) */
+    function carregarProducao() {
+      return Promise.all([
+        C.from('prod_videos').select('id,numero,titulo,data_postar').not('data_postar', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }),
+        C.from('prod_cortes').select('id,titulo,data,video_id').not('data', 'is', null).then(function (r) { return r.data || []; }, function () { return []; })
+      ]).then(function (r) { producao = { videos: r[0], cortes: r[1] }; });
+    }
+    function producaoEntre(de, ate) {
+      var saida = [], base = function (id, titulo, iso, linhas) {
+        var ini = doIso(iso);
+        return { id: id, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#1F5FA3', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } };
+      }, dentro = function (iso) { var i = doIso(iso); return i >= de && i < ate; };
+      producao.videos.forEach(function (v) { if (dentro(v.data_postar)) { var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'Vídeo'); saida.push(base('prod-v-' + v.id, 'Vídeo ' + nome, v.data_postar, [])); } });
+      var porDia = {};
+      producao.cortes.forEach(function (c) { if (dentro(c.data)) (porDia[c.data] = porDia[c.data] || []).push(c); });
+      Object.keys(porDia).forEach(function (iso) {
+        var cs = porDia[iso], nomes = cs.map(function (c) { var v = producao.videos.filter(function (x) { return x.id === c.video_id; })[0]; return c.titulo || (v ? 'Corte de ' + (v.numero ? v.numero + '. ' : '') + v.titulo : 'Corte'); });
+        saida.push(base('prod-c-' + iso, cs.length === 1 ? 'Corte' : cs.length + ' cortes', iso, nomes));
+      });
+      return saida;
+    }
     function preparar() {
       if (prontoP) return prontoP;
       var valorDe = function (chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); };
       /* tudo ao mesmo tempo: lugar, agendas escolhidas e a lista do Google */
-      prontoP = Promise.all([valorDe('prod_local_horas'), valorDe('agenda_ocultas'), gapi('/users/me/calendarList?minAccessRole=freeBusyReader'), carregarAniversarios()]).then(function (r) {
+      prontoP = Promise.all([valorDe('prod_local_horas'), valorDe('agenda_ocultas'), gapi('/users/me/calendarList?minAccessRole=freeBusyReader'), carregarAniversarios(), carregarProducao()]).then(function (r) {
         var v = r[0], ocultas = r[1] || [];
         if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); }
         todosCalendarios = r[2].items || [];
@@ -316,6 +337,7 @@
     function detalhe(destino, e) {
       destino.textContent = '';
       if (e.aniversario) { detalheAniversario(destino, e); return; }
+      if (e.producao) { var fx = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' }); fx.addEventListener('click', function () { destino.textContent = ''; }); destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:#A03E25' }), el('p', { text: rotuloDia(isoDia(e.ini)), style: 'margin:10px 0 0' })].concat(e.producao.linhas.map(function (l) { return el('p', { text: l, style: 'margin:6px 0 0' }); }), [el('div', { style: 'margin-top:14px' }, [fx])]))); return; }
       var ultimo = isoDia(Math.max(e.ini, e.fim - 1)), quando = e.diaTodo ? (isoDia(e.ini) === ultimo ? 'o dia todo' : 'de ' + curto(isoDia(e.ini)) + ' a ' + curto(ultimo)) : 'das ' + hhmm(e.ini) + ' às ' + hhmm(e.fim);
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
@@ -501,7 +523,7 @@
         if (visao === 'todo') { var minha = ++pedido; mostrarEncaixe(); vistaTodo(vista, function () { return minha === pedido; }); return; }
         var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
         var desenha = function (evs0) {
-          var evs = evs0.concat(aniversariosEntre(iv[0], iv[1])); evs.falhas = evs0.falhas; var rolou = window.scrollY;
+          var evs = evs0.concat(aniversariosEntre(iv[0], iv[1]), producaoEntre(iv[0], iv[1])); evs.falhas = evs0.falhas; var rolou = window.scrollY;
           eventos = evs; vista.textContent = ''; mostrarEncaixe();
           if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Tente de novo.' }));
           if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
@@ -933,6 +955,7 @@
         dados.fora = []; dados.feitos = r[1] || {}; dados.falhas = r[0].falhas || []; dados.tarefas = r[5];
         r[0].concat(aniversariosEntre(de, ate)).forEach(function (e) {
           if (/holiday|addressbook#contacts/.test(e.calId || '')) return; /* feriados não entram; aniversários vêm da lista de clientes e alunos */
+          if (e.livre && !e.aniversario) return; /* compromisso que deixa a agenda livre não entra no To do: só os que deixam ocupada */
           if (!e.aniversario && e.fim <= agora) return; /* compromisso que já terminou sai sozinho; só o que ele precisa resolver fica atrasado */
           dados.fora.push({ quando: e.ini, diaTodo: e.diaTodo, titulo: e.titulo, sub: e.aniversario ? 'aniversário · mandar a mensagem' : e.calNome, chave: e.aniversario ? 'a|' + e.id + '|' + e.ini : '', /* só aniversário tem caixinha; compromisso sai sozinho quando o horário acaba */ evento: e, cor: e.aniversario ? '#A03E25' : preenche(e) });
         });

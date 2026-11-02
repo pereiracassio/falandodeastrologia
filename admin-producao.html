@@ -75,15 +75,6 @@
     .prod-corte input{margin-bottom:8px}
     .prod-corte-topo{display:grid;grid-template-columns:1fr 160px;gap:0 10px}
     @media(max-width:560px){.prod-corte-topo{grid-template-columns:1fr}}
-    .prod-cal{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #1F5FA3;border-left:1px solid #1F5FA3}
-    .prod-cal>*{border-right:1px solid #1F5FA3;border-bottom:1px solid #1F5FA3;min-height:64px;padding:3px;font-size:11px;overflow:hidden;box-sizing:border-box}
-    .prod-cal .cab{min-height:0;text-align:center;font-size:11px;color:#1034A6;padding:5px 0}
-    .prod-cal .dia{cursor:pointer;text-align:left;background:transparent;border-radius:0;appearance:none;-webkit-appearance:none;font:inherit;margin:0;color:#16233F;border-top:0;border-left:0;width:100%;min-height:78px;vertical-align:top}
-    .prod-cal .dia.hoje{box-shadow:inset 0 0 0 3px #1F5FA3}
-    .prod-cal .dia.sel{color:#A03E25;box-shadow:inset 0 0 0 3px #A03E25}
-    .prod-cal .dia b{display:block;font-size:12px;color:#16233F}
-    .prod-cal .vid{display:block;color:#A03E25;font-weight:700;line-height:1.15;margin-top:2px}
-    .prod-cal .cor{display:block;color:#1034A6;line-height:1.15;margin-top:2px}
     .prox-barra{height:14px;border:1px solid #1F5FA3}
     .prox-barra i{display:block;height:100%;background:#1F5FA3}
     .prod-barra{height:8px;border:1px solid #1F5FA3;margin:6px 0 2px}
@@ -173,7 +164,7 @@
     var corteAberto = null; /* corte que está aberto para editar (começa no último) */
     var abaVideo = 'video', abaVideoDe = null; /* dentro do vídeo: 'video' ou 'cortes' (e de qual vídeo) */
     var aba = 'hoje', serieAberta = null, videoAberto = null; /* serieAberta: id, 'soltos' ou null */
-    var mesCal = { ano: new Date().getFullYear(), mes: new Date().getMonth() }, diaCal = null;
+    
 
     /* ---------- horas planetárias: sugestão dos horários de Júpiter ----------
        Mesmo cálculo da ferramenta Horas do Astro Hellenic (nascer e pôr do sol arredondados ao minuto, 12 horas de dia e 12 de noite,
@@ -377,7 +368,7 @@
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
           var e = P.estado.ler();
-          aba = e.aba || 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if ((e.vt === 'cortes' || e.vt === 'corte') && e.video) { abaVideo = e.vt; abaVideoDe = e.video; if (e.vt === 'corte' && e.corte) corteAberto = e.corte; /* veio do To Do: abre ESSE corte */ } if (e.st === 'videos' && e.serie) { abaSerie = 'videos'; abaSerieDe = e.serie; }
+          aba = e.aba === 'series' ? 'series' : 'hoje'; serieAberta = e.serie || null; videoAberto = e.video || null; if ((e.vt === 'cortes' || e.vt === 'corte') && e.video) { abaVideo = e.vt; abaVideoDe = e.video; if (e.vt === 'corte' && e.corte) corteAberto = e.corte; /* veio do To Do: abre ESSE corte */ } if (e.st === 'videos' && e.serie) { abaSerie = 'videos'; abaSerieDe = e.serie; }
           carregar();
         });
       });
@@ -583,7 +574,7 @@
       limpar();
       app.appendChild(topo(nomeAdmin));
       var barra = el('div', { class: 'portal-abas', role: 'tablist' });
-      [['hoje', 'Próximos'], ['series', 'Séries'], ['calendario', 'Calendário']].forEach(function (d) {
+      [['hoje', 'Próximos'], ['series', 'Séries']].forEach(function (d) {
         var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] ? ' ativa' : ''), text: d[1] });
         b.addEventListener('click', function () { irPara(d[0]); });
         barra.appendChild(b);
@@ -594,8 +585,7 @@
         if (videoAberto && achar(videos, videoAberto)) telaVideo(area, achar(videos, videoAberto));
         else if (serieAberta) telaSerie(area, serieAberta);
         else telaSeries(area);
-      } else if (aba === 'calendario') telaCalendario(area);
-      else telaHoje(area);
+      } else telaHoje(area);
     }
 
     /* ---------- HOJE ---------- */
@@ -1274,45 +1264,6 @@
       var blocoApagar = el('div', { style: 'margin:56px 0 8px;text-align:center' }, [apagar]);
       area.appendChild(blocoApagar);
       mostrarAbaVideo(abaAtual);
-    }
-
-    /* ---------- CALENDÁRIO ---------- */
-    function telaCalendario(area) {
-      var cartao = el('div', { class: 'portal-cartao' });
-      area.appendChild(cartao);
-      var ant = botao('Anterior', function () { mesCal.mes--; if (mesCal.mes < 0) { mesCal.mes = 11; mesCal.ano--; } tela(); });
-      var prox = botao('Próximo', function () { mesCal.mes++; if (mesCal.mes > 11) { mesCal.mes = 0; mesCal.ano++; } tela(); });
-      cartao.appendChild(el('div', { class: 'prod-linha', style: 'border:0' }, [ant, el('span', { class: 'prod-grupo', style: 'margin:0', text: MESES[mesCal.mes] + ' ' + mesCal.ano }), prox]));
-      var grade = el('div', { class: 'prod-cal' });
-      DIAS_CURTOS.forEach(function (d) { grade.appendChild(el('div', { class: 'cab prod-fixo', text: d })); });
-      var primeiro = new Date(mesCal.ano, mesCal.mes, 1), nDias = new Date(mesCal.ano, mesCal.mes + 1, 0).getDate(), h = hoje();
-      for (var i = 0; i < primeiro.getDay(); i++) grade.appendChild(el('div', {}));
-      for (var n = 1; n <= nDias; n++) {
-        (function (n) {
-          var s = mesCal.ano + '-' + String(mesCal.mes + 1).padStart(2, '0') + '-' + String(n).padStart(2, '0');
-          var vs = videos.filter(function (v) { return v.data_postar === s; }), cs = cortes.filter(function (c) { return c.data === s; });
-          var cel = el('button', { type: 'button', class: 'dia' + (s === h ? ' hoje' : '') + (s === diaCal ? ' sel' : '') }, [el('b', { text: String(n) })]);
-          vs.forEach(function (v) { cel.appendChild(el('span', { class: 'vid', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || '') })); });
-          if (cs.length) cel.appendChild(el('span', { class: 'cor', text: cs.length + (cs.length === 1 ? ' corte' : ' cortes') }));
-          cel.addEventListener('click', function () { diaCal = s; tela(); });
-          grade.appendChild(cel);
-        })(n);
-      }
-      cartao.appendChild(grade);
-      if (diaCal) {
-        cartao.appendChild(el('hr', { class: 'prod-divisa' }));
-        cartao.appendChild(el('p', { class: 'prod-grupo', text: comDia(diaCal) }));
-        var vs = videos.filter(function (v) { return v.data_postar === diaCal; }), cs = cortes.filter(function (c) { return c.data === diaCal; });
-        if (!vs.length && !cs.length) cartao.appendChild(el('p', { class: 'prod-vazio', text: 'Nada marcado neste dia.' }));
-        vs.forEach(function (v) {
-          var linhaV = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [
-            el('div', { style: 'flex:1;min-width:200px' }, [el('span', { class: 'prod-titulo', text: nomeVideo(v) }), el('span', { class: 'prod-sub', text: 'vídeo grande · ' + rotuloAcesso(v) + (v.no_ar ? ' · já está no ar' : '') }), chipsDaEtapa(v), barraTempo(v.criado_em, fimDoVideo(v), v.no_ar)])
-          ]);
-          linhaV.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') irPara('series', v.serie_id || 'soltos', v.id); });
-          cartao.appendChild(linhaV);
-        });
-        cs.forEach(function (c) { cartao.appendChild(linhaCorte(c, false)); });
-      }
     }
 
     C.auth.getSession().then(function (r) {
