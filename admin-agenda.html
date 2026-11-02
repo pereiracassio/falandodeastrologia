@@ -432,35 +432,40 @@
       ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
       visao = visaoDoEndereco(); /* abre onde ficou: horas, to do ou a última aba da agenda */
       areaForm = el('div');
-      var vista = el('div'), titulo = el('h2', { style: 'margin:6px 0 4px;text-align:center;width:100%;font-size:12.5px;line-height:1.15' }), encaixe = el('div');
+      var vista = el('div'), titulo = el('h2', { style: 'margin:6px 0 4px;text-align:center;flex:1;min-width:0;font-size:12.5px;line-height:1.15' }), encaixe = el('div');
       var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
       novo.addEventListener('click', function () { if (visao === 'todo') { if (alternarFormTodo) alternarFormTodo(); return; } formulario(abrirFolha(), null, { dia: visao === 'dia' ? ancora : undefined }); });
       var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:0' }), botoes = {};
       VISOES.forEach(function (v) {
         var b = el('button', { type: 'button', class: 'portal-aba', text: v[1] });
-        b.addEventListener('click', function () { visao = v[0]; if (v[0] === 'dia') ancora = isoDia(Date.now()); /* a aba Dia é o hoje */ mudou(); window.scrollTo(0, 0); /* a aba nova abre no topo, não na altura da anterior */ });
+        b.addEventListener('click', function () { visao = v[0]; mudou(); window.scrollTo(0, 0); /* a aba nova abre no topo, não na altura da anterior */ });
         botoes[v[0]] = b; abas.appendChild(b);
       });
       var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' || visao === 'horas' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
-      var ant = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '‹', 'aria-label': 'Anterior', style: 'font-size:24px;padding:0 6px;line-height:1' }), prox = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '›', 'aria-label': 'Próximo', style: 'font-size:24px;padding:0 6px;line-height:1' });
-      /* a data do meio mostra onde está e abre um calendário para ir a outro dia. O seletor do iPad dispara "mudou" com a data de HOJE assim que abre, antes de a pessoa escolher:
+      var estSeta = 'flex:none;background:transparent;border:0;border-radius:0;color:#1034A6;font-size:30px;line-height:1;padding:0 6px;cursor:pointer;font-family:inherit';
+      var ant = el('button', { type: 'button', text: '‹', 'aria-label': 'Anterior', style: estSeta }), prox = el('button', { type: 'button', text: '›', 'aria-label': 'Próximo', style: estSeta });
+      /* a data em terracota fica entre ‹ e › na mesma linha; só no Dia (e nas Horas) tocar nela abre o calendário para buscar a data. O seletor do iPad dispara "mudou" com a data de HOJE assim que abre,
          por isso o campo só guarda o valor, e só o botão Ir leva até lá (nada redesenha com o seletor aberto) */
-      var hoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '', 'aria-label': 'Escolher a data' });
-      hoje.addEventListener('click', function () {
+      var hoje = titulo;
+      var buscaData = function () {
         var corpoF = abrirFolha();
         var campo = el('input', { type: 'date', value: ancora, style: 'min-height:36px;min-width:160px;width:100%;box-sizing:border-box;margin:10px 0' });
-        var ir = el('button', { type: 'button', class: 'portal-btn', text: 'Ir' }), cancela = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+        var ir = el('button', { type: 'button', class: 'portal-btn', text: 'Ir' }), diaHoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' }), cancela = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
         var escolhida = ancora;
         campo.addEventListener('change', function () { if (/^\d{4}-\d{2}-\d{2}$/.test(campo.value)) escolhida = campo.value; }); /* só guarda */
         ir.addEventListener('click', function () { var d = /^\d{4}-\d{2}-\d{2}$/.test(campo.value) ? campo.value : escolhida; corpoF.textContent = ''; ancora = d; mudou(); window.scrollTo(0, 0); });
+        diaHoje.addEventListener('click', function () { corpoF.textContent = ''; ancora = isoDia(Date.now()); mudou(); window.scrollTo(0, 0); });
         cancela.addEventListener('click', function () { corpoF.textContent = ''; });
         corpoF.appendChild(el('h2', { text: 'Ir para o dia' })); corpoF.appendChild(campo);
-        corpoF.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:center' }, [ir, cancela]));
-      });
+        corpoF.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:center' }, [ir, diaHoje, cancela]));
+      };
+      titulo.addEventListener('click', function () { if (visao === 'dia' || visao === 'horas') buscaData(); });
       ant.addEventListener('click', function () { passo(-1); window.scrollTo(0, 0); }); prox.addEventListener('click', function () { passo(1); window.scrollTo(0, 0); });
-            abas.appendChild(el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none;padding:0 6px 0 12px' }, [ant, hoje, prox])); /* ‹ data › é a última aba: corre junto com as outras */
-            var controles = el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none' }, [novo]); /* os botões moram na linha das abas, para o título ocupar a largura inteira (na semana, cada dia cai em cima da sua coluna) */
-      var cabH = cabecalhoHoras(); corpo.appendChild(cabH); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('div', { style: 'flex:1;min-width:0' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */]), controles]), titulo])); corpo.appendChild(vista); prenderTitulo(corpo);
+      var diasSemana = el('div', { style: 'display:none' });
+      var linhaTitulo = el('div', { style: 'display:flex;align-items:center;justify-content:center;gap:4px' }, [ant, titulo, prox]);
+      var blocoTitulo = el('div', {}, [linhaTitulo, diasSemana]);
+                        var controles = el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none' }, [novo]); /* os botões moram na linha das abas, para o título ocupar a largura inteira (na semana, cada dia cai em cima da sua coluna) */
+      var cabH = cabecalhoHoras(); corpo.appendChild(cabH); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('div', { style: 'flex:1;min-width:0' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */]), controles]), blocoTitulo])); corpo.appendChild(vista); prenderTitulo(corpo);
       /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
       var encaixePronto = false;
       function mostrarEncaixe() { /* o encaixe agora abre ao tocar numa hora da aba Horas */ }
@@ -476,11 +481,10 @@
         novo.style.display = modo === 'horas' ? 'none' : ''; /* nas Horas só se encaixa: o + de compromisso normal é da Agenda */
         cabH.grande = modo === 'horas'; cabH.style.position = cabH.grande ? 'static' : ''; if (cabH.pintar) cabH.pintar();
         if (modo !== modoBarra) { modoBarra = modo; P.navAdmin(modo, nomeAdmin, sair); } /* a aba marcada na barra de cima acompanha */
-        hoje.textContent = curto(ancora);
-        titulo.textContent = '';
+        titulo.textContent = ''; titulo.style.cursor = visao === 'dia' || visao === 'horas' ? 'pointer' : 'default'; diasSemana.textContent = '';
         if (visao === 'semana') { /* na semana o título são os próprios dias (Dom 15, Seg 16...), não o período por extenso */
           var ini0 = somaDias(ancora, -diaSem(ancora)), hojeIso = isoDia(Date.now());
-          titulo.style.display = 'grid'; titulo.style.gridTemplateColumns = 'repeat(7, minmax(0, 1fr))';
+          titulo.textContent = tituloPeriodo(); diasSemana.style.cssText = 'display:grid;grid-template-columns:repeat(7, minmax(0, 1fr))';
           for (var k = 0; k < 7; k++) (function (iso) {
             var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:0;font-family:var(--fonte-mao);color:#A03E25;text-align:center;line-height:1.1' });
             b.appendChild(el('div', { class: 'rotulo-fixo', text: SEM_CURTO[diaSem(iso)], style: 'font-size:10px' }));
@@ -488,10 +492,10 @@
             if (iso === hojeIso) n.style.cssText += ';border:2px solid #B5852F;color:#A03E25';
             b.appendChild(n);
             b.addEventListener('click', function () { visao = 'dia'; ancora = iso; mudou(); });
-            titulo.appendChild(b);
+            diasSemana.appendChild(b);
           })(somaDias(ini0, k));
-        } else { titulo.style.display = ''; titulo.style.gridTemplateColumns = ''; titulo.textContent = visao === 'todo' ? '' : tituloPeriodo(); }
-        [ant, prox, hoje].forEach(function (b) { b.style.display = visao === 'todo' ? 'none' : ''; }); /* escondido de verdade (não só invisível): senão ele roubava a largura das abas no celular */
+        } else { diasSemana.style.display = 'none'; titulo.textContent = visao === 'todo' ? '' : tituloPeriodo(); }
+        blocoTitulo.style.display = visao === 'todo' ? 'none' : ''; /* escondido de verdade (não só invisível): senão ele roubava a largura das abas no celular */
         var rol = abas.parentNode, at = botoes[visao]; if (rol && at && (at.offsetLeft < rol.scrollLeft || at.offsetLeft + at.offsetWidth > rol.scrollLeft + rol.clientWidth)) rol.scrollLeft = Math.max(0, at.offsetLeft - (rol.clientWidth - at.offsetWidth) / 2); /* a aba aberta sempre aparece na barra */
         if (visao === 'horas') { ++pedido; vista.textContent = ''; vistaHoras(vista); return; }
         if (visao === 'todo') { var minha = ++pedido; mostrarEncaixe(); vistaTodo(vista, function () { return minha === pedido; }); return; }
@@ -499,7 +503,7 @@
         var desenha = function (evs0) {
           var evs = evs0.concat(aniversariosEntre(iv[0], iv[1])); evs.falhas = evs0.falhas; var rolou = window.scrollY;
           eventos = evs; vista.textContent = ''; mostrarEncaixe();
-          if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Toque em hoje para tentar de novo.' }));
+          if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Tente de novo.' }));
           if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
           else if (visao === 'mes') vistaMes(vista, evs); else if (visao === 'lista') vistaLista(vista, evs); else vistaAno(vista, evs);
           if (visao === 'lista') window.scrollTo(0, rolou);
