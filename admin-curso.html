@@ -154,6 +154,9 @@
         trazer.addEventListener('click', function () {
           if (!selPc.value) { P.mensagem(msgPc, 'Escolha o projeto de curso.', 'erro'); return; }
           trazer.disabled = true; P.mensagem(msgPc, 'Trazendo...', 'ok');
+          /* o número já aparece sozinho ("Módulo 1 ·", "1. "): tira o que ele escreveu no começo do nome lá no projeto */
+          var semNumMod = function (t) { return String(t || '').replace(/^\s*m[óo]dulo\s*\d+\s*[-–—.:)]*\s*/i, '').trim(); };
+          var semNumAula = function (t) { return String(t || '').replace(/^\s*(aula\s*)?\d+\s*[-–—.:)]*\s*/i, '').trim(); };
           var falha = function (e) { trazer.disabled = false; msgErro(msgPc, e && e.message ? e : { message: String(e) }); };
           Promise.all([C.from('pc_modulos').select('id,nome,ordem').eq('curso_id', selPc.value).order('ordem'), C.from('curso_modulos').select('id,ordem,titulo').eq('curso_id', id)]).then(function (rs) {
             if (rs[0].error || rs[1].error) throw (rs[0].error || rs[1].error);
@@ -164,13 +167,13 @@
               var proxima = destino.reduce(function (mx, m) { return Math.max(mx, m.ordem || 0); }, 0), novos = 0, aulasNovas = 0, seq = Promise.resolve();
               origem.forEach(function (om) {
                 seq = seq.then(function () {
-                  var igual = destino.filter(function (d) { return (d.titulo || '').trim().toLowerCase() === (om.nome || '').trim().toLowerCase(); })[0];
-                  var pegar = igual ? Promise.resolve(igual) : C.from('curso_modulos').insert({ curso_id: id, ordem: ++proxima, titulo: om.nome }).select().single().then(function (r) { if (r.error) throw r.error; novos++; return r.data; });
+                  var igual = destino.filter(function (d) { return semNumMod(d.titulo).toLowerCase() === semNumMod(om.nome).toLowerCase(); })[0];
+                  var pegar = igual ? Promise.resolve(igual) : C.from('curso_modulos').insert({ curso_id: id, ordem: ++proxima, titulo: semNumMod(om.nome) || om.nome }).select().single().then(function (r) { if (r.error) throw r.error; novos++; return r.data; });
                   return pegar.then(function (dm) {
                     return C.from('curso_aulas').select('ordem').eq('modulo_id', dm.id).then(function (re) {
                       if (re.error) throw re.error;
                       var tem = (re.data || []).map(function (a) { return a.ordem; });
-                      var linhas = (ra.data || []).filter(function (a) { return a.modulo_id === om.id && tem.indexOf(a.numero) < 0; }).map(function (a) { return { modulo_id: dm.id, ordem: a.numero, titulo: (a.titulo || '').trim() || 'Aula ' + a.numero }; });
+                      var linhas = (ra.data || []).filter(function (a) { return a.modulo_id === om.id && tem.indexOf(a.numero) < 0; }).map(function (a) { return { modulo_id: dm.id, ordem: a.numero, titulo: semNumAula(a.titulo) || 'Aula' }; });
                       if (!linhas.length) return;
                       return C.from('curso_aulas').insert(linhas).then(function (ri) { if (ri.error) throw ri.error; aulasNovas += linhas.length; });
                     });
