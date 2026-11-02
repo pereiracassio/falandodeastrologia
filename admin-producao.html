@@ -27,13 +27,6 @@
     .prod-vt-topo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:0 0 10px}
     .prod-vt{display:flex}
     /* uma linha só: ← Voltar, os níveis (azuis; o aberto em ocre) e as abas do nível; se não couber, corre para o lado */
-    .prod-nivel{display:flex;align-items:center;gap:16px;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 0 12px;font-size:13px;font-weight:700;padding:4px 0}
-    .prod-nivel::-webkit-scrollbar{display:none}
-    .prod-nivel button,.prod-nivel .portal-btn{flex:none;text-transform:lowercase;background:none!important;border:0!important;padding:6px 0!important;margin:0;font:inherit;font-size:13px!important;color:#1034A6!important;cursor:pointer;box-shadow:none!important}
-    html body .pagina-papiro .prod-nivel .portal-aba,html body .pagina-papiro .prod-nivel .portal-aba.ativa{flex:none;border:0!important;border-width:0!important;padding:6px 0!important;font-size:13px!important;letter-spacing:0}
-    .prod-nivel .nivel-voltar{color:#A03E25!important}
-    .prod-nivel .ativa,.prod-nivel .prod-trilha-atual{color:#B5852F!important}
-    .prod-nivel .prod-trilha-sep{flex:none;color:#1034A6}
     html body.pagina-papiro .prod-vt .portal-aba,html body .pagina-papiro .prod-vt .portal-aba{flex:none;padding:9px 16px!important;white-space:nowrap;border:0!important}
     .prod-vt-topo .portal-btn{white-space:nowrap}
     /* Produção de vídeos: nas regras do site (papiro sem fundo próprio, contorno azul egípcio, canto reto).
@@ -552,17 +545,21 @@
     var voltarDoVideo = null;
     function nomeCurto(t, n) { t = String(t || '').trim(); return t.length > (n || 20) ? t.slice(0, (n || 20) - 1).trim() + '…' : t; }
     /* barra única dos níveis, numa linha: ← Voltar, Séries › série › vídeo e, depois, as abas do nível (Série/Vídeos, Vídeo/Cortes) */
+    /* os níveis (série, vídeos, vídeo, cortes, corte) não têm mais linha própria: entram na MESMA linha de abas de "próximos | séries" e a linha corre para o lado.
+       A primeira parte ("Séries") é a própria aba Séries, então não se repete: só guarda o que ela deve fazer ao ser tocada (salvar antes de sair, no vídeo). */
+    var barraPrincipal = null, ganchoSeries = null;
     function barraNivel(voltar, partes, abas) {
-      var caixa = el('div', { class: 'prod-nivel impresso' });
-      if (voltar) { voltar.classList.add('nivel-voltar'); caixa.appendChild(voltar); }
-      partes.forEach(function (p, i) {
-        if (p.ir) { var b = el('button', { type: 'button', text: p.nome }); b.addEventListener('click', p.ir); caixa.appendChild(b); }
-        else caixa.appendChild(el('span', { class: 'prod-trilha-atual', text: p.nome }));
-      });
-      if (abas && abas.length) abas.forEach(function (b, i) { caixa.appendChild(b); });
-      var env = P.comSetas(caixa);
-      setTimeout(function () { var at = caixa.querySelector('.ativa'); if (caixa.scrollWidth > caixa.clientWidth && at) caixa.scrollLeft = Math.max(0, at.offsetLeft - caixa.clientWidth / 2 + at.offsetWidth / 2); }, 0); /* se não couber, deixa à vista o nível aberto */
-      return env;
+      var barra = barraPrincipal;
+      if (barra) {
+        partes.forEach(function (p, i) {
+          if (i === 0 && p.nome === 'Séries') { ganchoSeries = p.ir; return; }
+          var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (p.ir ? '' : ' ativa'), text: p.nome });
+          if (p.ir) b.addEventListener('click', p.ir);
+          barra.appendChild(b);
+        });
+        (abas || []).forEach(function (b) { barra.appendChild(b); });
+      }
+      return document.createDocumentFragment();
     }
     function campo(rotulo, entrada, pegar) {
       if (!pegar) return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]);
@@ -587,19 +584,24 @@
     function tela() {
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var barra = el('div', { class: 'portal-abas', role: 'tablist' });
+      var barra = el('div', { class: 'portal-abas', role: 'tablist' }), tabSeries = null;
+      barraPrincipal = barra; ganchoSeries = null;
       [['hoje', 'Próximos'], ['series', 'Séries']].forEach(function (d) {
-        var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] ? ' ativa' : ''), text: d[1] });
-        b.addEventListener('click', function () { irPara(d[0]); });
+        var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (aba === d[0] && !(aba === 'series' && (serieAberta || videoAberto)) ? ' ativa' : ''), text: d[1] });
+        b.addEventListener('click', function () { if (d[0] === 'series' && ganchoSeries) ganchoSeries(); else irPara(d[0]); });
+        if (d[0] === 'series') tabSeries = b;
         barra.appendChild(b);
       });
-      app.appendChild(barra);
+      var rola = el('div', { class: 'portal-abas-rola' }, [barra]);
+      app.appendChild(P.comSetas(rola));
       var area = el('div', {}); app.appendChild(area);
       if (aba === 'series') {
         if (videoAberto && achar(videos, videoAberto)) telaVideo(area, achar(videos, videoAberto));
         else if (serieAberta) telaSerie(area, serieAberta);
         else telaSeries(area);
       } else telaHoje(area);
+      if (!barra.querySelector('.ativa') && tabSeries) tabSeries.className += ' ativa'; /* vídeos soltos: sem níveis, a aba Séries segue marcada */
+      setTimeout(function () { var at = barra.querySelector('.ativa:last-of-type') || barra.querySelector('.ativa'), todas = barra.querySelectorAll('.ativa'); at = todas[todas.length - 1]; if (at && (at.offsetLeft < rola.scrollLeft || at.offsetLeft + at.offsetWidth > rola.scrollLeft + rola.clientWidth)) rola.scrollLeft = Math.max(0, at.offsetLeft - (rola.clientWidth - at.offsetWidth) / 2); }, 0); /* o nível aberto sempre aparece na linha */
     }
 
     /* ---------- HOJE ---------- */
