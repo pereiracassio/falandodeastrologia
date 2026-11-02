@@ -183,25 +183,21 @@
       }
       return { nasce: evento(true), poe: evento(false) };
     }
-    /* as horas de Júpiter que caem no dia civil isoD, como [início, fim] em minutos desde a meia-noite (cortadas em 0 e 1440);
-       entram também as da noite do dia anterior que passam da meia-noite */
+    /* as horas de Júpiter do DIA PLANETÁRIO de isoD, como [início, fim] em minutos desde a meia-noite de isoD: o dia começa no nascer do sol e vai até o nascer do dia seguinte,
+       então a madrugada seguinte (depois da meia-noite) é deste dia e o início passa de 1440 (hhmm mostra a hora certa) */
     function horasDeJupiter(isoD) {
-      var achadas = [];
-      [-1, 0].forEach(function (desl) {
-        var d = deIso(somarDias(isoD, desl)), seg = deIso(somarDias(isoD, desl + 1));
-        var hoje_ = solEmMinutos(d.getFullYear(), d.getMonth() + 1, d.getDate()), amanha = solEmMinutos(seg.getFullYear(), seg.getMonth() + 1, seg.getDate());
-        if (hoje_.nasce == null || hoje_.poe == null || amanha.nasce == null) return;
-        var base = desl * 1440, ini = CALDAICA.indexOf(REGENTE_DO_DIA[d.getDay()]);
-        var durDia = (hoje_.poe - hoje_.nasce) / 12, durNoite = (amanha.nasce + 1440 - hoje_.poe) / 12;
-        for (var i = 0; i < 24; i++) {
-          var dia = i < 12, j = dia ? i : i - 12;
-          if (CALDAICA[(ini + i) % 7] !== 'Jupiter') continue;
-          var a = base + (dia ? hoje_.nasce + j * durDia : hoje_.poe + j * durNoite), b = a + (dia ? durDia : durNoite);
-          if (b <= 0 || a >= 1440) continue;
-          achadas.push([Math.max(0, Math.round(a)), Math.min(1440, Math.round(b))]);
-        }
-      });
-      return achadas.sort(function (x, y) { return x[0] - y[0]; });
+      var achadas = [], d = deIso(isoD), seg = deIso(somarDias(isoD, 1));
+      var hoje_ = solEmMinutos(d.getFullYear(), d.getMonth() + 1, d.getDate()), amanha = solEmMinutos(seg.getFullYear(), seg.getMonth() + 1, seg.getDate());
+      if (hoje_.nasce == null || hoje_.poe == null || amanha.nasce == null) return achadas;
+      var ini = CALDAICA.indexOf(REGENTE_DO_DIA[d.getDay()]);
+      var durDia = (hoje_.poe - hoje_.nasce) / 12, durNoite = (amanha.nasce + 1440 - hoje_.poe) / 12;
+      for (var i = 0; i < 24; i++) {
+        var dia = i < 12, j = dia ? i : i - 12;
+        if (CALDAICA[(ini + i) % 7] !== 'Jupiter') continue;
+        var a = dia ? hoje_.nasce + j * durDia : hoje_.poe + j * durNoite, b = a + (dia ? durDia : durNoite);
+        achadas.push([Math.round(a), Math.round(b)]);
+      }
+      return achadas;
     }
     /* bloco azul "dd/mm/aa, horários de Júpiter" com um horário por linha; vazio se não há data */
     function jupiterAzul(caixa, isoD, avisoSemData) {

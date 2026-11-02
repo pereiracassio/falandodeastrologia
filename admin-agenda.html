@@ -187,12 +187,13 @@
       var saida = [];
       /* uma hora de Júpiter só por item: a que ele escolheu na Produção (hora_jupiter); sem escolha, vídeo = a mais perto das 16h, corte = a primeira */
       function naHoraDeJupiter(idBase, titulo, iso, linhas, escolha, ehVideo) {
-        var d0 = doIso(iso);
-        if (d0 + DIA <= de || d0 >= ate) return;
-        var hs = HP.horasEntre(d0, d0 + DIA, LAT, LON).filter(function (h) { return h.planeta === 'Júpiter'; });
+        var d0 = doIso(iso), pa = iso.split('-');
+        /* o dia planetário começa no nascer do sol: as horas de Júpiter do dia são as 24 horas que COMEÇAM no nascer desse dia (as da madrugada seguinte são deste dia, não do próximo) */
+        var hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === 'Júpiter'; });
         if (!hs.length) return;
         var h = escolha != null ? hs[Math.min(escolha, hs.length - 1)] : ehVideo ? hs.slice().sort(function (x, y) { return Math.abs(x.ini - (d0 + 16 * 3600000)) - Math.abs(y.ini - (d0 + 16 * 3600000)); })[0] : hs[0];
-        var ini = Math.max(h.ini, d0), fim = Math.min(h.fim, d0 + DIA);
+        if (h.fim <= de || h.ini >= ate) return;
+        var ini = h.ini, fim = h.fim;
         saida.push({ id: idBase, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: fim, diaTodo: false, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#1F5FA3', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } });
       }
       producao.videos.forEach(function (v) {
