@@ -793,7 +793,7 @@
         pega(C.from('projeto_passos').select('id,titulo,data,feito,projeto_id').not('data', 'is', null).eq('feito', false)), pega(C.from('projetos').select('id,nome')),
         pega(C.from('aluno_trilha_passos').select('titulo,data,feito,trilha_id,tipo,item_id,atividade_id,lido_em').or('data.not.is.null,atividade_id.not.is.null').eq('feito', false)),
         pega(C.from('aluno_trilhas').select('id,nome,aluno_id')), pega(C.from('alunos').select('id,nome')), pega(C.from('aluno_codigos').select('aluno_id,codigo')),
-        pega(C.from('atividades').select('id,corrigida_em,enviada_em'))
+        C.from('atividades').select('id,corrigida_em,enviada_em,antiga,somente_leitura,rascunho').then(function (r) { return r.error ? C.from('atividades').select('id,corrigida_em,enviada_em,antiga').then(function (r2) { return r2.error ? [] : (r2.data || []); }) : (r.data || []); }, function () { return []; })
       ]).then(function (r) {
         var saida = [], porId = function (l, id) { return l.filter(function (x) { return x.id === id; })[0]; };
         r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: '#A03E25' }); });
@@ -802,7 +802,7 @@
           if ((x.tipo === 'material' || x.tipo === 'gravacao') && (x.item_id || x.lido_em)) return;
           var quandoPasso = x.data, tituloPasso = x.titulo;
           if (x.tipo === 'atividade' && x.atividade_id) { /* atividade ligada: só volta ao To do para CORRIGIR, no dia em que o aluno enviou (atrasa se não corrigir) */
-            var at = porId(r[6], x.atividade_id); if (!at || !at.enviada_em || at.corrigida_em) return;
+            var at = porId(r[6], x.atividade_id); if (!at || !at.enviada_em || at.corrigida_em || at.antiga || at.somente_leitura || at.rascunho) return; /* antiga/já feita/rascunho nunca entram para corrigir */
             quandoPasso = new Date(at.enviada_em).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); tituloPasso = 'Corrigir: ' + x.titulo;
           }
           if (!quandoPasso) return;
