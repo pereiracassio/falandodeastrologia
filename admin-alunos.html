@@ -338,7 +338,7 @@
       }
       function linhaPasso(x, grupo, i, leitura) {
         var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade' || x.tipo === 'gravacao';
-        var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito' });
+        var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito', style: 'flex:none;margin-top:4px' });
         cb.checked = ehMaterial ? !!x.lido_em : ehAtividade ? pontos(x) >= 1 : !!x.feito; cb.disabled = !!leitura || ehMaterial || ehAtividade; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
           x.feito = cb.checked; desenhar();
@@ -386,7 +386,7 @@
           ap.addEventListener('click', function () { if (confirm('Apagar o passo "' + x.titulo + '"?')) P.client.from('aluno_trilha_passos').delete().eq('id', x.id).then(carregar); });
           acoes.appendChild(ap); texto.push(acoes); texto.push(areaLigar);
         }
-        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid #1F5FA3' }, (ehMaterial || ehAtividade ? [] : [cb]).concat([el('div', { style: 'flex:1;min-width:0' }, texto)])); /* caixinha só no passo comum: material, atividade e gravação andam sozinhos */
+        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid #1F5FA3' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb])); /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
       }
       function listaDePassos(alvo, lista, leitura, grande) {
         var caixa = el('div', { style: 'border-bottom:1px solid #1F5FA3' + (grande ? ';border-top:2px solid #1F5FA3' : '') });
