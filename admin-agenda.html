@@ -175,24 +175,33 @@
       });
       return saida;
     }
-    /* os vídeos e cortes da Produção entram na agenda como compromissos de dia inteiro, LIVRES (não bloqueiam horário): vídeo pela data de postar, cortes pela data de cada um (juntos por dia) */
+    /* os vídeos e cortes da Produção entram na agenda como compromissos LIVRES (não bloqueiam horário), cada um nas horas de Júpiter do dia dele (o horário que a Produção sugere para postar):
+       as MESMAS datas do antigo calendário da Produção: vídeo pela data de postar, cortes pela data de cada um (juntos por dia). O To do da Produção não foi mexido */
     function carregarProducao() {
       return Promise.all([
-        C.from('prod_videos').select('id,numero,titulo,data_postar').not('data_postar', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }),
+        C.from('prod_videos').select('id,numero,titulo,data_postar').then(function (r) { return r.data || []; }, function () { return []; }),
         C.from('prod_cortes').select('id,titulo,data,video_id').not('data', 'is', null).then(function (r) { return r.data || []; }, function () { return []; })
       ]).then(function (r) { producao = { videos: r[0], cortes: r[1] }; });
     }
     function producaoEntre(de, ate) {
-      var saida = [], base = function (id, titulo, iso, linhas) {
-        var ini = doIso(iso);
-        return { id: id, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#1F5FA3', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } };
-      }, dentro = function (iso) { var i = doIso(iso); return i >= de && i < ate; };
-      producao.videos.forEach(function (v) { if (dentro(v.data_postar)) { var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'Vídeo'); saida.push(base('prod-v-' + v.id, 'Vídeo ' + nome, v.data_postar, [])); } });
+      var saida = [];
+      function nasHorasDeJupiter(idBase, titulo, iso, linhas) {
+        var d0 = doIso(iso);
+        if (d0 + DIA <= de || d0 >= ate) return;
+        HP.horasEntre(d0, d0 + DIA, LAT, LON).filter(function (h) { return h.planeta === 'Júpiter'; }).forEach(function (h) {
+          var ini = Math.max(h.ini, d0), fim = Math.min(h.fim, d0 + DIA);
+          saida.push({ id: idBase + '-' + ini, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: fim, diaTodo: false, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#1F5FA3', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } });
+        });
+      }
+      producao.videos.forEach(function (v) {
+        var iso = v.data_postar; if (!iso) return;
+        var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'Vídeo'); nasHorasDeJupiter('prod-v-' + v.id, 'Vídeo ' + nome, iso, []);
+      });
       var porDia = {};
-      producao.cortes.forEach(function (c) { if (dentro(c.data)) (porDia[c.data] = porDia[c.data] || []).push(c); });
+      producao.cortes.forEach(function (c) { (porDia[c.data] = porDia[c.data] || []).push(c); });
       Object.keys(porDia).forEach(function (iso) {
         var cs = porDia[iso], nomes = cs.map(function (c) { var v = producao.videos.filter(function (x) { return x.id === c.video_id; })[0]; return c.titulo || (v ? 'Corte de ' + (v.numero ? v.numero + '. ' : '') + v.titulo : 'Corte'); });
-        saida.push(base('prod-c-' + iso, cs.length === 1 ? 'Corte' : cs.length + ' cortes', iso, nomes));
+        nasHorasDeJupiter('prod-c-' + iso, cs.length === 1 ? 'Corte' : cs.length + ' cortes', iso, nomes);
       });
       return saida;
     }
