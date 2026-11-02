@@ -394,7 +394,10 @@
         if (!trilhas.length) raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma trilha ainda.' }));
         ativas.forEach(function (t) {
           var m = meus(t), soma = m.reduce(function (a, x) { return a + pontos(x); }, 0), pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
-          var pend = m.filter(function (x) { return pontos(x) < 1; }), feitos = m.filter(function (x) { return pontos(x) >= 1; });
+          var pend = m.filter(function (x) { return pontos(x) < 1; }).sort(function (a, b) {
+            if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
+            if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
+          }), feitos = m.filter(function (x) { return pontos(x) >= 1; });
           /* sanfona: nome e barras sempre à vista; ao tocar, abrem/fecham os passos (barra ocre do lado) */
           var cartao = el('div', { style: 'margin-bottom:22px;padding-bottom:20px;border-bottom:2px solid #1F5FA3' });
           var c = el('div', { role: 'button', tabindex: '0', 'aria-expanded': 'false', style: 'cursor:pointer' }), corpo = el('div', { class: 'barra-ocre', style: 'margin-top:12px' });

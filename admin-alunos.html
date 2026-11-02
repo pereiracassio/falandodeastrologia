@@ -357,8 +357,10 @@
         if (!leitura) {
           var acoes = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:6px' });
           var troca = function (com) { Promise.all([P.client.from('aluno_trilha_passos').update({ ordem: com.ordem }).eq('id', x.id), P.client.from('aluno_trilha_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar); };
-          acoes.appendChild(mini('↑', function () { troca(grupo[i - 1]); }, i === 0));
-          acoes.appendChild(mini('↓', function () { troca(grupo[i + 1]); }, i === grupo.length - 1));
+          /* passo com data se ordena sozinho pela data; as setas só valem entre passos sem data */
+          var vizAnt = grupo[i - 1], vizPro = grupo[i + 1];
+          acoes.appendChild(mini('↑', function () { troca(vizAnt); }, !!x.data || i === 0 || !vizAnt || !!vizAnt.data));
+          acoes.appendChild(mini('↓', function () { troca(vizPro); }, !!x.data || i === grupo.length - 1 || !vizPro || !!vizPro.data));
           var areaLigar = el('div');
           function abrirLigacao(tipo) {
             if (areaLigar.firstChild) { areaLigar.textContent = ''; return; }
@@ -393,7 +395,10 @@
       }
       var trilhasAbertas = []; /* trilhas abertas (sanfona); fica aqui para não fechar quando a tela se refaz */
       function cartaoDaTrilha(t) {
-        var m = meus(t), feitos = m.filter(function (x) { return pontos(x) >= 1; }), pend = m.filter(function (x) { return pontos(x) < 1; });
+        var m = meus(t), feitos = m.filter(function (x) { return pontos(x) >= 1; }), pend = m.filter(function (x) { return pontos(x) < 1; }).sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
+          if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
+          if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
+        });
         var soma = m.reduce(function (a, x) { return a + pontos(x); }, 0);
         var pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
         var cartao = el('div', { class: 'portal-cartao', style: 'border-top:0!important;border-bottom:2px solid #1F5FA3!important;padding:0 0 20px!important;margin:0 0 20px!important' }); /* a linha fica no FIM da trilha, depois do Apagar, para saber de qual trilha é cada botão */
