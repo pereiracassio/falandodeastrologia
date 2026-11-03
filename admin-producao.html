@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=77">
-  <link rel="stylesheet" href="portal.css?v=25">
+  <link rel="stylesheet" href="portal.css?v=26">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=26">
   <style>
@@ -89,7 +89,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=143"></script>
+  <script src="portal.js?v=144"></script>
   <script src="menu.js?v=56" defer></script>
   <script>
   (function () {
@@ -431,7 +431,7 @@
     }
     function chipsDoCorte(c) {
       /* a mesma barra de passos dos vídeos, só com as etapas do corte */
-      return el('div', { class: 'prod-seg' }, ETAPAS_CORTE.map(function (rd) {
+      var botoes = ETAPAS_CORTE.map(function (rd) {
         var b = chip(rd[1], !!c[rd[0]], function () {
           var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
           if (novo) (ANTES_NO_CORTE[rd[0]] || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
@@ -441,7 +441,8 @@
         }, { 'data-corte': c.id, 'data-campo': rd[0] });
         b.classList.add('prod-seg-item');
         return b;
-      }));
+      });
+      return P.barraComDatas(botoes, ETAPAS_CORTE.map(function (x) { return x[0]; }), c.datas_etapas, function (o) { gravar('prod_cortes', cortes, c, { datas_etapas: o }); });
     }
     /* SEO do vídeo só pode ser marcado com todos os campos do vídeo preenchidos */
     function faltaParaSeo(v) {
@@ -483,13 +484,14 @@
     }
     function chipsDaEtapa(v, aoMudar) {
       /* uma barra só dividida em passos: o passo marcado fica azul, com o nome vazado */
-      return el('div', { class: 'prod-seg' }, ETAPAS.map(function (et) {
+      var botoes = ETAPAS.map(function (et) {
         var b = chip(et[1], !!v[et[0]], function () {
           marcarEtapa(v, et[0], !v[et[0]]).then(function () { if (aoMudar) aoMudar(); });
         }, { 'data-video': v.id, 'data-etapa': et[0] });
         b.classList.add('prod-seg-item');
         return b;
-      }));
+      });
+      return P.barraComDatas(botoes, ETAPAS.map(function (x) { return x[0]; }), v.datas_etapas, function (o) { gravar('prod_videos', videos, v, { datas_etapas: o }); });
     }
     function botao(texto, aoClicar, sec) {
       var b = el('button', { type: 'button', class: 'portal-btn' + (sec === false ? '' : ' portal-btn-sec'), text: texto });
@@ -989,7 +991,6 @@
       mostrarCapa();
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Etapas' }));
       cartao.appendChild(chipsDaEtapa(v));
-      cartao.appendChild(P.datasEtapas(ETAPAS, v.datas_etapas, function (o) { gravar('prod_videos', videos, v, { datas_etapas: o }); }));
       var tempoV = barraTempo(v.criado_em, fimDoVideo(v), v.no_ar); if (tempoV) cartao.appendChild(tempoV);
       var faltaSeoLinha = el('p', { class: 'prod-sub', style: 'margin:-4px 0 12px;color:#A03E25' });
       cartao.appendChild(faltaSeoLinha);
@@ -1256,7 +1257,6 @@
           el('div', { class: 'prod-corte-topo' }, [campo('Título do corte', t, function () { return t.value.trim(); }), P.colunaData(d, 'Data do corte')]),
           barraTempo(c.criado_em, c.data, cortePostado(c)),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c), tirar]),
-          P.datasEtapas(ETAPAS_CORTE, c.datas_etapas, function (o) { gravar('prod_cortes', cortes, c, { datas_etapas: o }); }),
           faltaSeoCorte,
           caixaFotosC,
           campo('Texto do corte', tx, function () { return tx.value; }),

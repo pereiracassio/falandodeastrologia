@@ -99,3 +99,12 @@ textarea.escrita-livre:focus{outline:none}
 .portal select{border:0;border-bottom:1.5px solid #1F5FA3;border-radius:0;padding:8px 2px;background:transparent}
 .portal input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]):not([type=button]):not([type=submit]):not(.data-caderno-input):focus,
 .portal select:focus{outline:none;border:0;border-bottom:2px solid #A03E25;padding:8px 2px}
+
+/* barra de etapas com a data de cada etapa por cima (portal.barraComDatas): duas linhas, uma coluna por etapa */
+.prod-seg.com-datas{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;grid-auto-columns:minmax(max-content,1fr);border:0;overflow-x:auto;align-items:end}
+.prod-seg.com-datas .prod-data-cel{display:flex;justify-content:center;min-width:0;padding:0 4px}
+.prod-seg.com-datas .prod-data-cel .data-caderno{margin:0 0 2px;min-height:26px}
+.prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:11px;line-height:26px;gap:2px}
+.prod-seg.com-datas .prod-data-cel .data-caderno-texto i{padding:0 1px}
+.prod-seg.com-datas .prod-chip.prod-chip{border:1px solid #1F5FA3;margin-left:-1px;border-radius:0}
+.prod-seg.com-datas .prod-chip.on.on{border:1px solid #1F5FA3}

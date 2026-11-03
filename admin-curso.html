@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=77">
-  <link rel="stylesheet" href="portal.css?v=25">
+  <link rel="stylesheet" href="portal.css?v=26">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=26">
   <style>
@@ -55,7 +55,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=143"></script>
+  <script src="portal.js?v=144"></script>
   <script src="curso.js?v=1"></script>
   <script src="menu.js?v=56" defer></script>
   <script>
@@ -187,7 +187,8 @@
     /* barra de etapas da aula (como na Produção); o Upload se marca sozinho quando a aula tem vídeo */
     function etapasDaAula(a, curso, aoMudar, aoTocarUpload) {
       var et = etapasDe(curso);
-      return el('div', { class: 'prod-seg' }, ETAPAS.filter(function (e) { return et.indexOf(e[0]) >= 0; }).map(function (e) {
+      var lista = ETAPAS.filter(function (e) { return et.indexOf(e[0]) >= 0; });
+      var botoes = lista.map(function (e) {
         var b = el('button', { type: 'button', class: 'prod-chip prod-fixo' + (etapaFeita(a, e[0]) ? ' on' : ''), text: e[1], 'aria-pressed': etapaFeita(a, e[0]) ? 'true' : 'false' });
         b.addEventListener('click', function () {
           if (e[0] === 'upload') { if (aoTocarUpload) aoTocarUpload(); return; }
@@ -195,7 +196,8 @@
           var o = {}; o[e[0]] = a[e[0]]; C.from('curso_aulas').update(o).eq('id', a.id).then(function (r) { if (!falhou(r)) { if (aoMudar) aoMudar(); } });
         });
         return b;
-      }));
+      });
+      return P.barraComDatas(botoes, lista.map(function (x) { return x[0]; }), a.datas_etapas, function (o) { a.datas_etapas = o; C.from('curso_aulas').update({ datas_etapas: o }).eq('id', a.id); });
     }
 
     /* ---------- cursos ---------- */
@@ -432,7 +434,7 @@
           C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null, apostila_ok: apOk }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
         var cartao = el('div', { class: 'portal-cartao' }, [].concat(
-          [el('h2', { text: 'Módulo ' + m.ordem })], campo('Nome', tit), construindo ? [P.datasEtapas([['apostila', 'Apostila']], m.datas_etapas, function (o) { m.datas_etapas = o; C.from('curso_modulos').update({ datas_etapas: o }).eq('id', id); })] : [],
+          [el('h2', { text: 'Módulo ' + m.ordem })], campo('Nome', tit),
           [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
         if (construindo) {
           cartao.insertBefore(barra(contModulo(D, m)), cartao.children[1]);
@@ -531,7 +533,6 @@
         });
         var partes = [].concat([el('h2', { text: 'Aula ' + a.ordem })]);
         if (curso.construindo !== false) partes.push(etapasDaAula(a, curso, null, null));
-        if (curso.construindo !== false) partes.push(P.datasEtapas(ETAPAS.filter(function (e) { return etapasDe(curso).indexOf(e[0]) >= 0; }), a.datas_etapas, function (o) { a.datas_etapas = o; C.from('curso_aulas').update({ datas_etapas: o }).eq('id', id); }));
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
           partes, campo('Nome', tit), campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');

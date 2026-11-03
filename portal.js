@@ -1175,21 +1175,18 @@
   }
   function barraTempoDias(inicio, fimData) { var t = tempoDias(inicio, fimData); return t ? barraLinha(t.pct, t.cor, t.texto) : null; }
   function linhaDatas(colunas) { return el('div', { class: 'data-linha' }, colunas); }
-  /* DATAS DAS ETAPAS (opcionais): um link discreto "Datas das etapas" abre uma linha com uma data para cada etapa (o nome em cima, como nas outras datas). Fechado por padrão, para não poluir.
-     etapas = [[chave, nome], ...]; atual = objeto {chave: 'aaaa-mm-dd'}; salvar(objeto) é chamado ao escolher a data (só grava, não redesenha nada: o calendário não fecha). */
-  function datasEtapas(etapas, atual, salvar) {
-    var obj = Object.assign({}, atual || {}), caixa = el('div', { style: 'margin:2px 0 8px' }), corpo = el('div', { class: 'barra-ocre', style: 'display:none;margin-top:6px' });
-    var botao = botaoApagar('Datas das etapas');
-    function rotulo() { var n = etapas.filter(function (e) { return obj[e[0]]; }).length; botao.textContent = 'Datas das etapas' + (n ? ' (' + n + ')' : ''); }
-    var cols = etapas.map(function (e) {
-      var i = el('input', { type: 'date' }); i.value = obj[e[0]] || '';
-      i.addEventListener('change', function () { if (i.value) obj[e[0]] = i.value; else delete obj[e[0]]; salvar(Object.assign({}, obj)); });
-      i.addEventListener('blur', rotulo);
-      return colunaData(i, e[1]);
+  /* BARRA DE ETAPAS COM DATAS (opcionais): acima de CADA etapa fica um campo de data, sem nada escrito (é a data em que aquela etapa deve estar pronta).
+     botoes = os botões de etapa já montados; chaves = a chave de cada etapa (mesma ordem); datas = {chave: 'aaaa-mm-dd'}; salvar(objeto) só grava (nada é redesenhado: o calendário não fecha).
+     Vale para toda barra de etapas do software (Produção: vídeo e corte; Curso: aulas). */
+  function barraComDatas(botoes, chaves, datas, salvar) {
+    var obj = Object.assign({}, datas || {}), caixa = el('div', { class: 'prod-seg com-datas' });
+    botoes.forEach(function (b, i) {
+      var inp = el('input', { type: 'date', 'aria-label': 'Data para fazer' }); inp.value = obj[chaves[i]] || '';
+      inp.addEventListener('change', function () { if (inp.value) obj[chaves[i]] = inp.value; else delete obj[chaves[i]]; salvar(Object.assign({}, obj)); });
+      var cel = el('div', { class: 'prod-data-cel' }, [inp]);
+      cel.addEventListener('click', function (e) { e.stopPropagation(); }); /* mexer na data nunca abre a linha */
+      caixa.appendChild(cel); caixa.appendChild(b);
     });
-    corpo.appendChild(linhaDatas(cols));
-    botao.addEventListener('click', function () { corpo.style.display = corpo.style.display === 'none' ? '' : 'none'; });
-    rotulo(); caixa.appendChild(botao); caixa.appendChild(corpo);
     return caixa;
   }
   function apagarNoFim(app, botao) { /* no fim da tela, centralizado e bem afastado */
@@ -1479,7 +1476,7 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, datasEtapas: datasEtapas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
   };
 
   /* A TELA NÃO PULA (regra dele): quase toda ação redesenha a área #app (esvazia e monta de novo) e o navegador joga a rolagem para o topo. Aqui, uma vez para o site todo:
