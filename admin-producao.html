@@ -354,14 +354,6 @@
       clearTimeout(tempoAviso); tempoAviso = setTimeout(function () { a.style.display = 'none'; }, 2200);
     }
 
-    /* aviso com "Desfazer" (fica 6 s): para tirar na hora o que foi marcado sem querer */
-    function avisoDesfazer(texto, desfazer) {
-      avisoFlutuante(texto); var a = document.getElementById('prod-aviso');
-      var b = el('button', { type: 'button', text: ' desfazer', style: 'background:transparent;border:0;padding:0;margin-left:12px;font:inherit;color:#A03E25;text-decoration:underline;cursor:pointer' });
-      b.addEventListener('click', function () { a.style.display = 'none'; desfazer(); });
-      a.appendChild(b); clearTimeout(tempoAviso); tempoAviso = setTimeout(function () { a.style.display = 'none'; }, 6000);
-    }
-
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
     function topo(texto) { return P.navAdmin('producao', texto, sair); }
@@ -443,10 +435,8 @@
           var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
           if (novo) (ANTES_NO_CORTE[rd[0]] || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
           Object.keys(campos).forEach(function (k) { c[k] = campos[k]; });
-          var volta = {}; Object.keys(campos).forEach(function (k) { volta[k] = !campos[k]; });
           pintarCorte(c);
           gravar('prod_cortes', cortes, c, campos);
-          if (novo) avisoDesfazer('Marcado: ' + rd[1], function () { Object.keys(volta).forEach(function (k) { c[k] = volta[k]; }); pintarCorte(c); gravar('prod_cortes', cortes, c, volta); });
         }, { 'data-corte': c.id, 'data-campo': rd[0] });
         b.classList.add('prod-seg-item');
         return b;
@@ -494,14 +484,7 @@
       /* uma barra só dividida em passos: o passo marcado fica azul, com o nome vazado */
       return el('div', { class: 'prod-seg' }, ETAPAS.map(function (et) {
         var b = chip(et[1], !!v[et[0]], function () {
-          var antes = Object.assign({}, v), ligando = !v[et[0]];
-          marcarEtapa(v, et[0], ligando).then(function () {
-            if (ligando) avisoDesfazer('Marcado: ' + et[1], function () {
-              var volta = {}; ETAPAS.forEach(function (x) { if (!!antes[x[0]] !== !!v[x[0]]) volta[x[0]] = !!antes[x[0]]; });
-              Object.keys(volta).forEach(function (k) { v[k] = volta[k]; }); pintarEtapas(v); gravar('prod_videos', videos, v, volta).then(function () { if (aoMudar) aoMudar(); });
-            });
-            if (aoMudar) aoMudar();
-          });
+          marcarEtapa(v, et[0], !v[et[0]]).then(function () { if (aoMudar) aoMudar(); });
         }, { 'data-video': v.id, 'data-etapa': et[0] });
         b.classList.add('prod-seg-item');
         return b;
