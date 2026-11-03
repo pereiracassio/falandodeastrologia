@@ -46,17 +46,15 @@
   </div>
   <div class="portal"><div class="portal-caixa">
     <h1 class="portal-titulo">Projetos</h1>
-    <div id="abas-projetos"></div>
     <div id="app"></div>
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=141"></script>
-  <script src="menu.js?v=55" defer></script>
+  <script src="portal.js?v=142"></script>
+  <script src="menu.js?v=56" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
-    P.abasProjetos('projetos');
     var nomeAdmin = '', projetos = [], passos = [], aberto = null, verConcluido = null;
 
     function limpar() { app.textContent = ''; }

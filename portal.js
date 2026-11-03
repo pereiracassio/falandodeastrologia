@@ -429,43 +429,6 @@
     }, function () {});
     return a;
   }
-  /* abas de dentro dos Projetos: Projetos, Cursos, Estudos e Produção. A barra mora fora da área da tela (#abas-projetos) e a troca de aba é DENTRO da mesma página: baixa a página de destino, troca só o conteúdo e roda o código dela, sem recarregar (recarregar fazia tudo piscar) */
-  function abasProjetos(atual) {
-    var lugar = document.getElementById('abas-projetos'); if (!lugar) return;
-    lugar.textContent = '';
-    var barra = el('div', { class: 'portal-abas', role: 'tablist' });
-    [['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']].forEach(function (d) {
-      var b = el('button', { type: 'button', role: 'tab', class: 'portal-aba' + (d[0] === atual ? ' ativa' : ''), text: d[1] });
-      b.addEventListener('click', function () { if (d[0] !== atual) trocarAbaProjetos(d[2]); });
-      barra.appendChild(b);
-    });
-    lugar.appendChild(comSetas(el('div', { class: 'portal-abas-rola' }, [barra]))); /* quatro abas: cada uma do tamanho do nome, a barra rola para o lado */
-  }
-  function trocarAbaProjetos(destino) {
-    var app = document.getElementById('app');
-    var recarregar = function () { location.href = destino; };
-    if (!app || !window.fetch || !window.DOMParser) { recarregar(); return; }
-    fetch(destino).then(function (r) { if (!r.ok) throw new Error('pagina'); return r.text(); }).then(function (html) {
-      var doc = new DOMParser().parseFromString(html, 'text/html');
-      var scripts = [].slice.call(doc.body.querySelectorAll('script'));
-      var interno = scripts.filter(function (s) { return !s.getAttribute('src'); }).pop();
-      if (!interno) throw new Error('pagina');
-      var externos = scripts.map(function (s) { return s.getAttribute('src'); }).filter(function (src) {
-        return src && !/supabase|portal\.js|menu\.js/.test(src) && !document.querySelector('script[src="' + src + '"]');
-      });
-      [].slice.call(document.head.querySelectorAll('style[data-aba]')).forEach(function (s) { s.remove(); });
-      [].slice.call(doc.head.querySelectorAll('style')).forEach(function (s) { var n = document.createElement('style'); n.setAttribute('data-aba', ''); n.textContent = s.textContent; document.head.appendChild(n); });
-      return externos.reduce(function (cadeia, src) {
-        return cadeia.then(function () { return new Promise(function (ok, erro) { var t = document.createElement('script'); t.src = src; t.onload = ok; t.onerror = erro; document.body.appendChild(t); }); });
-      }, Promise.resolve()).then(function () {
-        app.textContent = '';
-        document.title = doc.title;
-        try { history.replaceState(null, '', destino); } catch (e) { /* sem histórico */ }
-        window.scrollTo(0, 0);
-        var sc = document.createElement('script'); sc.textContent = interno.textContent; document.body.appendChild(sc);
-      });
-    }).catch(recarregar);
-  }
   /* setinha de aviso numa barra que rola */
   function seta(lado, pontos, rotulo) {
     var b = el('button', { type: 'button', class: 'barra-seta barra-seta-' + lado, 'aria-label': rotulo });
@@ -583,11 +546,10 @@
   }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
-    if (atual === 'estudos' || atual === 'producao') atual = 'projetos'; /* Estudos e Produção moram dentro dos Projetos */
-    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['horas', 'Horas', 'admin-agenda.html#v=horas'], ['todo', 'To do', 'admin-agenda.html#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
+    var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['horas', 'Horas', 'admin-agenda.html#v=horas'], ['todo', 'To do', 'admin-agenda.html#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* em ordem alfabética, para achar mais fácil */
     /* duas metades na mesma barra, sem divisa: primeiro o Falando de Astrologia, depois o Hellenic Daily (Agenda, Estudos, Produção, Projetos), cada uma em ordem alfabética */
-    var DAILY = { agenda: 1, horas: 1, projetos: 1, todo: 1 };
+    var DAILY = { agenda: 1, estudos: 1, horas: 1, producao: 1, projetos: 1, todo: 1 };
     itens.sort(function (a, b) { return ((DAILY[a[0]] ? 1 : 0) - (DAILY[b[0]] ? 1 : 0)) || a[1].localeCompare(b[1], 'pt'); });
     /* a ⚙ (configurações) fica NO MEIO da barra, entre as abas do Falando de Astrologia e as do Hellenic Daily: é dos dois (ao abrir, tem uma aba para cada lado) */
     var meio = itens.findIndex(function (i) { return DAILY[i[0]]; });
@@ -1497,7 +1459,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, abasProjetos: abasProjetos, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
