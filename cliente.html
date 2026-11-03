@@ -116,7 +116,7 @@
       var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico })]);
       if (e.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(e.data) }));
       var botoes = el('div', { class: 'portal-acoes' });
-      var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link);
+      var pdf = P.linkSeguro(e.pdf_link), gravacao = P.linkSeguro(e.gravacao_link), fatosLink = P.linkSeguro(e.fatos_link);
       var idPdf = pdf ? P.idArquivoDrive(pdf) : null;
       function abrirPdf(ev) {
         registrarBaixa(e.id, 'pdf', verId);
@@ -137,8 +137,9 @@
         aGrav.addEventListener('click', function () { registrarBaixa(e.id, 'gravacao', verId); });
         botoes.appendChild(aGrav);
       }
+      if (fatosLink) botoes.appendChild(el('a', { class: 'portal-btn', href: fatosLink, target: '_blank', rel: 'noopener', text: 'Preencher os fatos' }));
       var caixa = el('div', { class: 'portal-item', 'data-entrega': e.id });
-      if (gravacao || pdf) {
+      if (gravacao || pdf || fatosLink) {
         /* o arquivo abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
         caixa.appendChild(titulo);
         if (gravacao) caixa.appendChild(el('p', { style: 'margin:8px 0', text: 'Ao tocar em baixar, o arquivo vai abrir no seu Drive. Você deve tocar nos três pontos e ir na opção de baixar o arquivo.' }));
@@ -269,7 +270,7 @@
           el('h2', { text: 'Importante' }),
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
         ]));
-        P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,criado_em').eq('cliente_id', r.data.id)
+        P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,fatos_link,criado_em').eq('cliente_id', r.data.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (re) {
             var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Seus serviços' })]);
             app.appendChild(cartao);
