@@ -108,3 +108,4 @@ textarea.escrita-livre:focus{outline:none}
 .prod-seg.com-datas .prod-data-cel .data-caderno-texto i{padding:0 1px}
 .prod-seg.com-datas .prod-chip.prod-chip{border:1px solid #1F5FA3;margin-left:-1px;border-radius:0}
 .prod-seg.com-datas .prod-chip.on.on{border:1px solid #1F5FA3}
+.prod-seg.com-datas .prod-data-cel:first-child + .prod-chip.prod-chip{margin-left:0}
