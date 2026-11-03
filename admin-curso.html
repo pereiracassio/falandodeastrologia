@@ -55,7 +55,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=142"></script>
+  <script src="portal.js?v=143"></script>
   <script src="curso.js?v=1"></script>
   <script src="menu.js?v=56" defer></script>
   <script>
@@ -139,6 +139,7 @@
         C.from('curso_passos').update({ feito: cb.checked, feito_em: cb.checked ? new Date().toISOString() : null }).eq('id', p.id).then(function (r) { if (!falhou(r, recarregar)) recarregar(); });
       });
       var textos = [el('span', { class: 'proj-titulo', text: p.titulo })];
+      if (p.data_prevista) textos.push(el('span', { class: 'portal-item-data', text: p.data_prevista.split('-').reverse().join('/') }));
       if (p.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: p.nota }));
       var acoes = el('div', { class: 'proj-acoes' }, [minilink('Editar', function () { aoEditar(p); })]);
       var ap = P.botaoApagar('Apagar');
@@ -149,16 +150,16 @@
     function formPasso(D, recarregar, area, fase, mid, item) {
       area.textContent = '';
       var msg = el('p', { class: 'portal-msg' }), titulo = el('input', { type: 'text', id: 'pcTitulo', required: '' }), nota = el('textarea', { rows: '2', placeholder: 'Anotação (opcional)' });
-      if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; }
+      var dataP = el('input', { type: 'date' }); if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; dataP.value = item.data_prevista || ''; }
       var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Adicionar passo' }), cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
       cancelar.addEventListener('click', function () { area.textContent = ''; });
-      var f = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pcTitulo', text: 'Passo' }), titulo, nota, msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
+      var f = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pcTitulo', text: 'Passo' }), titulo, nota, P.colunaData(dataP, 'Data para fazer (opcional)'), msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
       f.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
         salvar.disabled = true;
         var ordem = D.passos.reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0) + 1;
-        var pedido = item ? C.from('curso_passos').update({ titulo: t, nota: nota.value.trim() || null }).eq('id', item.id) : C.from('curso_passos').insert({ curso_id: D.curso.id, modulo_id: mid || null, fase: mid ? 'modulo' : fase, titulo: t, nota: nota.value.trim() || null, ordem: ordem });
+        var pedido = item ? C.from('curso_passos').update({ titulo: t, nota: nota.value.trim() || null, data_prevista: dataP.value || null }).eq('id', item.id) : C.from('curso_passos').insert({ curso_id: D.curso.id, modulo_id: mid || null, fase: mid ? 'modulo' : fase, titulo: t, nota: nota.value.trim() || null, data_prevista: dataP.value || null, ordem: ordem });
         pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else recarregar(); });
       });
       area.appendChild(f); titulo.focus({ preventScroll: true });
@@ -431,7 +432,7 @@
           C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null, apostila_ok: apOk }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
         var cartao = el('div', { class: 'portal-cartao' }, [].concat(
-          [el('h2', { text: 'Módulo ' + m.ordem })], campo('Nome', tit),
+          [el('h2', { text: 'Módulo ' + m.ordem })], campo('Nome', tit), construindo ? [P.datasEtapas([['apostila', 'Apostila']], m.datas_etapas, function (o) { m.datas_etapas = o; C.from('curso_modulos').update({ datas_etapas: o }).eq('id', id); })] : [],
           [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
         if (construindo) {
           cartao.insertBefore(barra(contModulo(D, m)), cartao.children[1]);
@@ -530,6 +531,7 @@
         });
         var partes = [].concat([el('h2', { text: 'Aula ' + a.ordem })]);
         if (curso.construindo !== false) partes.push(etapasDaAula(a, curso, null, null));
+        if (curso.construindo !== false) partes.push(P.datasEtapas(ETAPAS.filter(function (e) { return etapasDe(curso).indexOf(e[0]) >= 0; }), a.datas_etapas, function (o) { a.datas_etapas = o; C.from('curso_aulas').update({ datas_etapas: o }).eq('id', id); }));
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
           partes, campo('Nome', tit), campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
