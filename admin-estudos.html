@@ -422,19 +422,19 @@
           cd.lastChild.style.borderBottom = '0';
           corpo.appendChild(cd);
         }
-        var botoes = [];
+        var imp = null, arq = null, sub = null, mover = null, msg = null, areaMover = null;
         if (!encerrado) {
-          var imp = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar aulas' });
-          var arq = el('input', { type: 'file', accept: '.json,application/json' }); arq.style.display = 'none';
+          imp = el('button', { type: 'button', class: 'portal-btn', text: 'Importar aulas' });
+          arq = el('input', { type: 'file', accept: '.json,application/json' }); arq.style.display = 'none';
           imp.addEventListener('click', function () { arq.click(); });
-          var msg = el('p', { class: 'portal-msg' });
+          msg = el('p', { class: 'portal-msg' });
           arq.addEventListener('change', function () {
             if (!arq.files || !arq.files[0]) return;
             imp.disabled = true; P.mensagem(msg, 'Importando...');
             arq.files[0].text().then(importar).then(function (n) { lista('Pronto! ' + n + (n === 1 ? ' aula importada.' : ' aulas importadas.')); })
               .catch(function (e) { imp.disabled = false; P.mensagem(msg, 'Não consegui importar: ' + (e && e.message ? e.message : e), 'erro'); });
           });
-          var sub = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Estudo menor' });
+          sub = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Estudo menor' });
           sub.addEventListener('click', function () {
             var nome = (prompt('Nome do estudo menor') || '').trim();
             if (!nome) return;
@@ -443,8 +443,8 @@
               aberto = r.data[0].id; window.scrollTo(0, 0); lista();
             });
           });
-          var mover = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar dentro de outro estudo' });
-          var areaMover = el('div', { class: 'barra-ocre' });
+          mover = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Colocar dentro de outro estudo' });
+          areaMover = el('div', { class: 'barra-ocre' });
           mover.addEventListener('click', function () {
             if (areaMover.firstChild) return;
             var proibidos = {}; arvoreDe(est).forEach(function (x) { proibidos[x.id] = true; });
@@ -466,19 +466,15 @@
             });
             areaMover.appendChild(fm);
           });
-          corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px;flex-wrap:wrap' }, [imp, arq, sub, mover]));
-          corpo.appendChild(areaMover);
-          corpo.appendChild(msg);
         }
         /* no fim das lições: gera o caderno em PDF e abre para ver */
-        var cad = el('button', { type: 'button', class: 'portal-btn', text: 'Gerar meu caderno' });
+        var cad = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Gerar meu caderno' });
         var msgCad = el('p', { class: 'portal-msg' });
         cad.addEventListener('click', function () { /* a aba do PDF precisa abrir já no toque: nada assíncrono antes */
           cad.disabled = true;
           window.cadernoEstudos.gerar(nomeCurto, function (t, tipo) { P.mensagem(msgCad, t, tipo); }, est).then(function () { cad.disabled = false; });
         });
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:' + (encerrado ? '18' : '28') + 'px' }, [cad]));
-        corpo.appendChild(msgCad);
+
         /* resultado para o Claude: copia o texto (é só colar na conversa); se o aparelho não deixar copiar, baixa como arquivo */
         var env = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Enviar resultado' });
         var msgEnv = el('p', { class: 'portal-msg' });
@@ -494,8 +490,7 @@
             else baixar();
           }).catch(function (e) { P.mensagem(msgEnv, 'Não consegui juntar o resultado: ' + (e && e.message ? e.message : e), 'erro'); }).then(function () { env.disabled = false; });
         });
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [env]));
-        corpo.appendChild(msgEnv);
+
         /* encerrar (ou reabrir) o estudo */
         var enc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: encerrado ? 'Reabrir estudo' : 'Encerrar estudo' });
         enc.addEventListener('click', function () {
@@ -507,7 +502,18 @@
             lista();
           });
         });
-        if (!est.estudo_pai_id) corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:28px' }, [enc]));
+        /* um bloco só: o que se usa sempre (Importar aulas) em destaque; o resto, em uma linha só, discreto */
+        if (imp) corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:24px' }, [imp, arq]));
+        var outros = [];
+        if (sub) outros.push(sub);
+        if (mover) outros.push(mover);
+        outros.push(cad, env);
+        if (!est.estudo_pai_id) outros.push(enc);
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:' + (imp ? '14' : '24') + 'px;flex-wrap:wrap;gap:6px 26px' }, outros));
+        if (areaMover) corpo.appendChild(areaMover);
+        if (msg) corpo.appendChild(msg);
+        corpo.appendChild(msgCad);
+        corpo.appendChild(msgEnv);
         var apagar = P.botaoApagar('Apagar este estudo');
         apagar.addEventListener('click', function () {
           if (!confirm('Apagar o estudo "' + est.nome + '" com todas as aulas, respostas e desenhos?' + (filhosDe(est.id).length ? ' Os estudos menores dentro dele ficam soltos.' : '') + ' Não dá para desfazer.')) return;
