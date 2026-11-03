@@ -328,3 +328,7 @@ html.fda-admin-tela .pagina-papiro #app>.portal-cartao:first-child{border-top:0!
 
 /* rótulos fixos da lista de um projeto (Próximo passo, Depois, Feitos): Cinzel e ocre (são do site, não escritos por ele) */
 .pagina-papiro .proj-grupo{color:#B5852F!important}
+
+/* REGRA DO SITE INTEIRO (03/11/2026, dele): botão que é só a palavra (azul) leva SUBLINHADO, senão não parece botão */
+html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*),
+html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){text-decoration:underline!important;text-decoration-thickness:2px!important;text-underline-offset:5px!important}
