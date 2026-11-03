@@ -771,13 +771,16 @@
     /* cada aula dos Estudos aparece no To do na data dela, até todas as questões estarem respondidas */
     function itensDeAulasEstudo() {
       var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
-      return Promise.all([pega('estudos', 'id,nome,encerrado'), pega('estudo_aulas', 'id,estudo_id,data,materia,titulo'), pega('estudo_questoes', 'id,aula_id,tipo'), pega('estudo_respostas', 'questao_id,opcao,texto')]).then(function (r) {
+      return Promise.all([pega('estudos', 'id,nome,encerrado,data_fim,estudo_pai_id'), pega('estudo_aulas', 'id,estudo_id,data,materia,titulo'), pega('estudo_questoes', 'id,aula_id,tipo'), pega('estudo_respostas', 'questao_id,opcao,texto')]).then(function (r) {
         var nomes = {}, resp = {}, falta = {}, saida = [];
-        r[0].forEach(function (e) { if (!e.encerrado) nomes[e.id] = e.nome; });
+        /* estudo SEM data final (ou dentro de um grande sem data final) é "no meu tempo": as aulas dele não entram no To do */
+        var porId = {}; r[0].forEach(function (e) { porId[e.id] = e; });
+        var temPrazo = function (e) { var n = 0; while (e && n++ < 20) { if (e.data_fim) return true; e = porId[e.estudo_pai_id]; } return false; };
+        r[0].forEach(function (e) { if (!e.encerrado && temPrazo(e)) nomes[e.id] = e.nome; });
         r[3].forEach(function (x) { resp[x.questao_id] = x; });
         r[2].forEach(function (q) { var x = resp[q.id], feita = q.tipo === 'multipla' ? !!(x && x.opcao != null) : !!(x && x.texto); if (!feita) falta[q.aula_id] = true; });
         r[1].forEach(function (a) {
-          if (!nomes[a.estudo_id] || !a.data || !falta[a.id]) return; /* só estudo aberto e aula com questão por responder */
+          if (!nomes[a.estudo_id] || !a.data || !falta[a.id]) return; /* só estudo aberto com prazo e aula com questão por responder */
           saida.push({ quando: doIso(String(a.data).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: a.materia + ' · ' + nomes[a.estudo_id], subOcre: true, url: 'admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(a.estudo_id), cor: '#1034A6' });
         });
         return saida;
