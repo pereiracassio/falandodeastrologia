@@ -341,7 +341,7 @@
       };
       Promise.all([
         P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
-        P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data').order('ordem').order('criado_em'),
+        P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data,link').order('ordem').order('criado_em'),
         P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,devolvida_em').eq('aluno_id', aluno.id)
       ]).then(function (rs) {
         raiz.textContent = '';
@@ -397,6 +397,8 @@
               texto.push(abrirAt); if (!at.enviada_em && !at.antiga && !at.somente_leitura) abrirLinha = function () { abrirAt.click(); };
             }
           }
+          var linkDoPasso = P.linkSeguro(x.link);
+          if (linkDoPasso) texto.push(el('a', { class: 'portal-btn', href: linkDoPasso, target: '_blank', rel: 'noopener', text: 'Preencher os fatos', style: 'margin-top:8px' }));
           var linhaEl = el('div', { style: 'padding:12px 2px;border-top:1px solid #1F5FA3' + (abrirLinha ? ';cursor:pointer' : '') }, [el('div', { style: 'min-width:0' }, texto)]);
           if (abrirLinha) linhaEl.addEventListener('click', function (ev) { if (ev.target.closest('button,a')) return; abrirLinha(); });
           return linhaEl;

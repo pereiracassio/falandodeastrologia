@@ -240,7 +240,7 @@
       function carregar() {
         Promise.all([
           P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
-          P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data').order('ordem').order('criado_em'),
+          P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data,link').order('ordem').order('criado_em'),
           P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em')
         ]).then(function (rs) {
           raiz.textContent = '';
@@ -348,6 +348,7 @@
         if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
         if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
         if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (at.antiga || at.somente_leitura ? 'já feita' : !at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
+        if (x.link) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'Link dos fatos · o aluno vê o botão Preencher os fatos' }));
         if (leitura) { if (x.data) texto.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) })); }
         else { /* data de conclusão do passo: grava sozinha; o aluno também vê, e o passo entra no To Do da Agenda */
           var dataP = el('input', { type: 'date' }); dataP.value = x.data || '';
@@ -377,6 +378,21 @@
             });
             areaLigar.appendChild(el('div', { style: 'margin-top:8px' }, [sel]));
           }
+          /* link dos fatos (retificação): opcional, em qualquer passo; salva sozinho e o aluno vê o botão "Preencher os fatos" */
+          function abrirLinkFatos() {
+            if (areaLigar.firstChild) { areaLigar.textContent = ''; return; }
+            var campo = el('input', { type: 'url', placeholder: 'https://astrohellenic.github.io/formulario.html?...' }); campo.value = x.link || '';
+            var msgL = el('p', { class: 'portal-msg' }), tm = null;
+            function gravar() {
+              var t = campo.value.trim(), seguro = t ? P.linkSeguro(t) : null;
+              if (t && !seguro) { P.mensagem(msgL, 'O link precisa começar com https://', 'erro'); return; }
+              P.client.from('aluno_trilha_passos').update({ link: seguro }).eq('id', x.id).then(function (r) { if (r.error) P.mensagem(msgL, P.traduzErro(r.error.message), 'erro'); else { x.link = seguro; P.mensagem(msgL, 'Salvo.', 'ok'); } });
+            }
+            campo.addEventListener('change', function () { clearTimeout(tm); tm = setTimeout(gravar, 300); });
+            campo.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(gravar, 1500); });
+            areaLigar.appendChild(el('div', { style: 'margin-top:8px' }, [campo, msgL]));
+          }
+          acoes.appendChild(mini(x.link ? 'Link dos fatos' : 'Colocar link dos fatos', abrirLinkFatos));
           acoes.appendChild(mini(x.tipo === 'material' ? 'Trocar material' : 'Ligar a um material', function () { abrirLigacao('material'); }));
           acoes.appendChild(mini(x.tipo === 'atividade' ? 'Trocar atividade' : 'Ligar a uma atividade', function () { abrirLigacao('atividade'); }));
           acoes.appendChild(mini(x.tipo === 'gravacao' ? 'Trocar gravação' : 'Ligar a uma gravação', function () { abrirLigacao('gravacao'); }));
