@@ -8,6 +8,7 @@ Todo estudo novo do astrólogo sai neste padrão: `.docx` A4 editável no Pages 
 - Do índice em diante: rodapé + número da página (a página 1 é a do título, o índice é a 2). Nunca o título da apostila no rodapé.
   - Estudos: rodapé "falando de astrologia helenística". Apostilas do curso: rodapé "fundamentos da astrologia natal" (gerar com `RODAPE='fundamentos da astrologia natal' node gerar.js x.docx`).
   - O texto do rodapé é sempre escrito TODO EM MINÚSCULAS: a Cinzel só tem maiúsculas, e com letras maiúsculas e minúsculas misturadas o rodapé fica com umas letras altas e outras baixas.
+- **Todo capítulo começa em página nova**, mesmo que sobre espaço na página anterior (`pageBreakBefore` no Heading 1, em `gerar.js`). Regra dele (03/11/2026): sem isso os capítulos ficam bagunçados.
 - Primeira frase de cada capítulo: negrito, um pouco maior (estilo `Abertura`), nunca gigante.
 - Estilos nomeados (Texto, Abertura, Heading 1-3, Índice 1...), tudo editável no Pages. Entregar `.docx` + PDF, uma vez, sem refazer arquivo sem ser pedido.
 

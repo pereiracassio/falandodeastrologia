@@ -69,7 +69,7 @@ let aposTitulo = false;
 for (const b of blocos.slice(1)) {
   if (b.k === 'h') { aposTitulo = true; }
   if (b.k === 'h') {
-    corpo.push(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: false, children: [new TextRun(b.runs.map(r => r.t).join(''))] }));
+    corpo.push(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: true, children: [new TextRun(b.runs.map(r => r.t).join(''))] }));
   } else if (b.k === 'p') {
     const todoNegrito = b.runs.length && b.runs.every(r => r.b);
     const abertura = aposTitulo; aposTitulo = false;

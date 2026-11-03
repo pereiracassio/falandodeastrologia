@@ -23,7 +23,7 @@ fundo próprio (nada de `rgba(255,250,232,...)`, branco, bege): quebra a experi�
 
 ## Estudos e apostilas: sempre no padrão `estudo-pages/` (17/10/2026)
 
-Todo estudo novo (Artefatos) sai como `.docx` A4 editável no Pages + PDF, no padrão de `estudo-pages/` (ler o `LEIA-ME.md` e usar `gerar.js`/`numeros.py`).
+Todo estudo novo (Artefatos) sai como `.docx` A4 editável no Pages + PDF, no padrão de `estudo-pages/` (ler o `LEIA-ME.md` e usar `gerar.js`/`numeros.py`). **Todo capítulo começa em página nova** (regra dele, 03/11/2026; já está no `gerar.js`).
 Regras do astrólogo: página 1 = título centralizado, sem rodapé; índice na página 2; rodapé "Falando de Astrologia Helenística" + número do índice em diante; frase de abertura do capítulo em negrito e não gigante; nunca refazer/mandar arquivo novo sem ele pedir.
 
 ## Caderno de estudos do aluno em PDF (18/10/2026)
