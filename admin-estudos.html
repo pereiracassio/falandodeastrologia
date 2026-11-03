@@ -40,7 +40,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="leitor.js?v=8"></script>
   <script src="caderno.js?v=11"></script>
-  <script src="caderno-estudos.js?v=2"></script>
+  <script src="caderno-estudos.js?v=3"></script>
   <script src="menu.js?v=56" defer></script>
   <script>
   (function () {
@@ -571,7 +571,13 @@
         if (re.error || !re.data || !re.data[0]) throw new Error('não consegui criar o estudo "' + pedido + '".');
         var est = re.data[0]; aberto = est.id; verEncerrado = null;
         var linhas = aulas.map(function (a) { return { estudo_id: est.id, codigo: a.codigo, data: a.data, materia: a.materia, titulo: a.titulo, explicacao: a.explicacao || null }; });
-        return importarLinhas(linhas, aulas);
+        return importarLinhas(linhas, aulas).then(function (n) {
+          /* aulas que o arquivo SUBSTITUI: saem do estudo, com as questões e respostas delas (nunca as que vêm no próprio arquivo) */
+          var novas = {}; aulas.forEach(function (x) { novas[x.codigo] = true; });
+          var apagar = (Array.isArray(d.apagar) ? d.apagar : []).filter(function (c) { return typeof c === 'string' && !novas[c]; });
+          if (!apagar.length) return n;
+          return C.from('estudo_aulas').delete().eq('estudo_id', est.id).in('codigo', apagar).then(function (rd) { if (rd.error) throw new Error(P.traduzErro(rd.error.message)); return n; });
+        });
       });
     }
     function importarLinhas(linhas, aulas) {
@@ -582,7 +588,7 @@
         aulas.forEach(function (a) {
           var id = idDe[a.codigo], n = (a.questoes || []).length;
           (a.questoes || []).forEach(function (q, k) {
-            qs.push({ aula_id: id, ordem: k, tipo: q.tipo, enunciado: q.enunciado, opcoes: q.tipo === 'multipla' ? q.opcoes : null, correta: q.tipo === 'multipla' ? q.correta : null, resolucao: q.resolucao || null, espaco_conta: !!q.espaco_conta });
+            qs.push({ aula_id: id, ordem: k, tipo: q.tipo, enunciado: q.enunciado, opcoes: q.tipo === 'multipla' ? q.opcoes : null, correta: q.tipo === 'multipla' ? q.correta : null, resolucao: q.resolucao || null, espaco_conta: !!q.espaco_conta, imagem: q.imagem || null });
           });
           limpezas.push(C.from('estudo_questoes').delete().eq('aula_id', id).gte('ordem', n)); /* sobrou questão antiga que saiu do arquivo */
         });
@@ -736,6 +742,7 @@
       var cartao = el('div', { class: 'portal-cartao' });
       var enun = el('p', { text: (i + 1) + '. ' + q.enunciado, class: 'portal-item-titulo' }); enun.style.whiteSpace = 'pre-line';
       cartao.appendChild(enun);
+      if (q.imagem) { var fig = el('img', { src: q.imagem, alt: 'Figura da questão' }); fig.style.cssText = 'display:block;max-width:100%;height:auto;margin:10px 0 12px;border:1px solid #1F5FA3'; cartao.appendChild(fig); }
       var resposta = r || { questao_id: q.id, opcao: null, texto: '' };
       if (q.espaco_conta) cartao.appendChild(quadroConta(q, resposta));
       var area = el('div'); cartao.appendChild(area);

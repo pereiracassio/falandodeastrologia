@@ -97,6 +97,10 @@
         cabe(doc.splitTextToSize(String(q.enunciado || ''), LARGURA - 20).length * 15.6 + 34);
         doc.setFont('Carlito', 'bold'); doc.setFontSize(12); cor(COR.azul); doc.text((n + 1) + '.', M, y + 10);
         texto(q.enunciado, { estilo: 'bold', recuo: 20, depois: 4 });
+        if (q.imagem && q.figDim) { /* figura da questão (prova) */
+          var fw = LARGURA - 20, fh = fw * q.figDim.h / q.figDim.w; if (fh > 300) { fw = fw * 300 / fh; fh = 300; }
+          cabe(fh + 8); doc.addImage(q.imagem, 'JPEG', M + 20, y, fw, fh); y += fh + 8;
+        }
         if (r.desenho && r.img) {
           texto('Conta feita à mão', { tam: 10.5, estilo: 'bold', cor: COR.azul, recuo: 20, depois: 2 });
           var iw = LARGURA - 20, ih = iw * r.img.h / r.img.w; if (ih > 360) { iw = iw * 360 / ih; ih = 360; }
@@ -148,8 +152,9 @@
       var blocos = r[0];
       return Promise.all(blocos.map(function (b) {
         return Promise.all(b.questoes.map(function (q) {
-          var x = b.respostas[q.id]; if (!x || !x.desenho) return null;
-          return tamanhoImagem(x.desenho).then(function (t) { x.img = t; });
+          var figura = q.imagem ? tamanhoImagem(q.imagem).then(function (t) { q.figDim = t; }) : null;
+          var x = b.respostas[q.id]; if (!x || !x.desenho) return figura;
+          return Promise.all([figura, tamanhoImagem(x.desenho).then(function (t) { x.img = t; })]);
         }));
       })).then(function () {
         var inicios = montarPdf(U.novoDoc(r[2]), blocos, r[1], null);
