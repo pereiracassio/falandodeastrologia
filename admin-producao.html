@@ -354,6 +354,14 @@
       clearTimeout(tempoAviso); tempoAviso = setTimeout(function () { a.style.display = 'none'; }, 2200);
     }
 
+    /* aviso com "Desfazer" (fica 6 s): para tirar na hora o que foi marcado sem querer */
+    function avisoDesfazer(texto, desfazer) {
+      avisoFlutuante(texto); var a = document.getElementById('prod-aviso');
+      var b = el('button', { type: 'button', text: ' desfazer', style: 'background:transparent;border:0;padding:0;margin-left:12px;font:inherit;color:#A03E25;text-decoration:underline;cursor:pointer' });
+      b.addEventListener('click', function () { a.style.display = 'none'; desfazer(); });
+      a.appendChild(b); clearTimeout(tempoAviso); tempoAviso = setTimeout(function () { a.style.display = 'none'; }, 6000);
+    }
+
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
     function topo(texto) { return P.navAdmin('producao', texto, sair); }
@@ -435,8 +443,10 @@
           var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
           if (novo) (ANTES_NO_CORTE[rd[0]] || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
           Object.keys(campos).forEach(function (k) { c[k] = campos[k]; });
+          var volta = {}; Object.keys(campos).forEach(function (k) { volta[k] = !campos[k]; });
           pintarCorte(c);
           gravar('prod_cortes', cortes, c, campos);
+          if (novo) avisoDesfazer('Marcado: ' + rd[1], function () { Object.keys(volta).forEach(function (k) { c[k] = volta[k]; }); pintarCorte(c); gravar('prod_cortes', cortes, c, volta); });
         }, { 'data-corte': c.id, 'data-campo': rd[0] });
         b.classList.add('prod-seg-item');
         return b;
@@ -484,7 +494,14 @@
       /* uma barra só dividida em passos: o passo marcado fica azul, com o nome vazado */
       return el('div', { class: 'prod-seg' }, ETAPAS.map(function (et) {
         var b = chip(et[1], !!v[et[0]], function () {
-          marcarEtapa(v, et[0], !v[et[0]]).then(function () { if (aoMudar) aoMudar(); });
+          var antes = Object.assign({}, v), ligando = !v[et[0]];
+          marcarEtapa(v, et[0], ligando).then(function () {
+            if (ligando) avisoDesfazer('Marcado: ' + et[1], function () {
+              var volta = {}; ETAPAS.forEach(function (x) { if (!!antes[x[0]] !== !!v[x[0]]) volta[x[0]] = !!antes[x[0]]; });
+              Object.keys(volta).forEach(function (k) { v[k] = volta[k]; }); pintarEtapas(v); gravar('prod_videos', videos, v, volta).then(function () { if (aoMudar) aoMudar(); });
+            });
+            if (aoMudar) aoMudar();
+          });
         }, { 'data-video': v.id, 'data-etapa': et[0] });
         b.classList.add('prod-seg-item');
         return b;
@@ -1143,11 +1160,11 @@
       });
       /* Membros e Público: NADA na tela muda enquanto o calendário está aberto (mudar o que está embaixo fechava o calendário no computador, antes de ele chegar nele).
          Ao escolher, só grava quieto; o horário de Júpiter, o aviso do SEO e o salvar completo vêm quando sai do campo. */
-      [[data, 'data_postar'], [dataPublico, 'data_publico']].forEach(function (p) {
+      [[data, 'data_postar'], [dataPublico, 'data_publico'], [dataGravar, 'data_gravar'], [dataCortes, 'data_cortes'], [dataBlog, 'data_blog']].forEach(function (p) {
         p[0].addEventListener('change', function () { var o = {}; o[p[1]] = p[0].value || null; gravar('prod_videos', videos, v, o); });
         p[0].addEventListener('blur', function () { atualizarJupiter(); marcarSeoSePronto(); agendarSalvar(); });
       });
-      [titulo, capaTexto, link, numero, temporada, dataGravar, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+      [titulo, capaTexto, link, numero, temporada, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
         c.addEventListener('change', agendarSalvar);
         c.addEventListener('input', marcarSeoSePronto);
@@ -1239,7 +1256,7 @@
         var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
         var escolhaC = function (i) { gravar('prod_cortes', cortes, c, { hora_jupiter: i }); };
         jupiterEscolha(jupC, c.data, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC);
-        d.addEventListener('change', function () { jupiterEscolha(jupC, d.value, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC); });
+        d.addEventListener('blur', function () { jupiterEscolha(jupC, d.value, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC); });
         /* link do vídeo deste corte no Google Fotos: mesmo campo de link padrão do site */
         var caixaFotosC = el('div', { style: 'margin:0 0 12px;display:flex;align-items:center;gap:14px' });
         var campoLC = el('input', { type: 'url', 'data-link-abre': '1', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });
@@ -1264,7 +1281,7 @@
         verSeoCorte();
         /* na lista de cortes: uma linha por corte; tocar abre esse corte */
         var nomeC = el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), dataC = el('span', { class: 'prod-data', style: 'display:block;color:#16233F', text: c.data ? comDia(c.data) : 'sem data' }); /* data em preto: menos cor, para ler logo que é a data */
-        d.addEventListener('change', function () { dataC.textContent = d.value ? comDia(d.value) : 'sem data'; });
+        d.addEventListener('blur', function () { dataC.textContent = d.value ? comDia(d.value) : 'sem data'; });
         t.addEventListener('change', function () { nomeC.textContent = t.value.trim() || 'Corte'; botCorte.textContent = nomeDoCorteAberto(); });
         var abrirC = function () { corteAberto = c.id; mostrarAbaVideo('corte'); window.scrollTo(0, 0); };
         var linhaC = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:160px' }, [nomeC, dataC,
