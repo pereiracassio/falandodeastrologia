@@ -600,8 +600,8 @@
       areaDataLeitura.style.display = 'none';
       function desenharModo() {
         modo.textContent = '';
-        var b1 = botaoOpcao('Atividade nova (o aluno vai responder)', !antiga && !leitura, function () { antiga = false; leitura = false; aplicarModo(); });
-        var b3 = botaoOpcao('Texto para leitura (sem perguntas)', leitura, function () { antiga = false; leitura = true; aplicarModo(); });
+        var b1 = botaoOpcao('Atividade', !antiga && !leitura, function () { antiga = false; leitura = false; aplicarModo(); }); b1.classList.add('botao-fixo');
+        var b3 = botaoOpcao('Texto para leitura', leitura, function () { antiga = false; leitura = true; aplicarModo(); }); b3.classList.add('botao-fixo');
         b1.style.margin = b3.style.margin = '0'; b1.style.width = b3.style.width = 'auto';
         modo.appendChild(b1); modo.appendChild(b3);
       }
