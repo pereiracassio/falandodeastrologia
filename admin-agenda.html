@@ -717,8 +717,9 @@
     var ETV = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
     var ETC = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
     function barrasDe(item, etapas, criado, fim) {
-      var dts = item.datas_etapas || {}, comData = etapas.some(function (e) { return dts[e[0]]; });
-      if (comData) { /* a data de cada etapa por cima dela (só leitura aqui; muda na Produção) */
+      var dts = Object.assign({}, item.datas_etapas); if (item.data_gravar) dts.gravado = item.data_gravar; if (item.data_cortes) dts.cortes_feitos = item.data_cortes; if (item.data_blog) dts.blog_ok = item.data_blog;
+      var comData = etapas.some(function (e) { return dts[e[0]]; });
+      if (comData) { /* a data de cada etapa por cima dela; tocar abre o item na Produção */
         var g = el('div', { style: 'display:grid;grid-auto-flow:column;grid-template-rows:auto auto;grid-auto-columns:minmax(max-content,1fr);margin:8px 0 0;overflow-x:auto;align-items:end' });
         etapas.forEach(function (e, i) {
           g.appendChild(el('span', { text: dts[e[0]] ? dts[e[0]].split('-').reverse().slice(0, 2).join('/') : '', style: 'text-align:center;font-size:11px;color:#16233F;padding:0 4px 2px' }));

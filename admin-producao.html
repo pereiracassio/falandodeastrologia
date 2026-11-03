@@ -491,7 +491,12 @@
         b.classList.add('prod-seg-item');
         return b;
       });
-      return P.barraComDatas(botoes, ETAPAS.map(function (x) { return x[0]; }), v.datas_etapas, function (o) { gravar('prod_videos', videos, v, { datas_etapas: o }); });
+      /* gravado, cortes feitos e no blog usam as datas que já existiam (data_gravar, data_cortes, data_blog): é o mesmo campo, só mudou de lugar */
+      var atual = Object.assign({}, v.datas_etapas); if (v.data_gravar) atual.gravado = v.data_gravar; if (v.data_cortes) atual.cortes_feitos = v.data_cortes; if (v.data_blog) atual.blog_ok = v.data_blog;
+      return P.barraComDatas(botoes, ETAPAS.map(function (x) { return x[0]; }), atual, function (o) {
+        var rest = Object.assign({}, o); delete rest.gravado; delete rest.cortes_feitos; delete rest.blog_ok;
+        gravar('prod_videos', videos, v, { datas_etapas: rest, data_gravar: o.gravado || null, data_cortes: o.cortes_feitos || null, data_blog: o.blog_ok || null });
+      });
     }
     function botao(texto, aoClicar, sec) {
       var b = el('button', { type: 'button', class: 'portal-btn' + (sec === false ? '' : ' portal-btn-sec'), text: texto });
@@ -943,27 +948,17 @@
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
       function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
       var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
-      var dataGravar = el('input', { type: 'date' }); dataGravar.value = v.data_gravar || '';
-      var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
-      var dataBlog = el('input', { type: 'date' }); dataBlog.value = v.data_blog || '';
-      [data, dataPublico, dataGravar, dataCortes, dataBlog].forEach(function (c) { c.style.cssText = 'width:160px;min-width:160px;margin:0 0 6px'; });
+      [data, dataPublico].forEach(function (c) { c.style.cssText = 'width:160px;min-width:160px;margin:0 0 6px'; });
       var blocoPublico = campo('Público', dataPublico);
       blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
-      var tirarGravar = P.botaoApagar('Tirar a data');
-      tirarGravar.addEventListener('click', function () { dataGravar.value = ''; dataGravar.dispatchEvent(new Event('change')); });
-      var tirarCortes = P.botaoApagar('Tirar a data'), tirarBlog = P.botaoApagar('Tirar a data');
-      tirarCortes.addEventListener('click', function () { dataCortes.value = ''; dataCortes.dispatchEvent(new Event('change')); });
-      tirarBlog.addEventListener('click', function () { dataBlog.value = ''; dataBlog.dispatchEvent(new Event('change')); });
       /* tudo na MESMA linha: público/membros, disponível para membros, fica público em e as duas datas limite (opcionais; sem data o vídeo fica no fim do To Do).
          No celular quebra em duas: as três primeiras em cima, as datas limite embaixo. O horário de Júpiter vem depois. */
       var linhaGrupo = function (filhos) { return el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 16px;align-items:flex-start' }, filhos); };
       cartao.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 28px;align-items:flex-start;margin:0 0 6px' }, [
         linhaGrupo([
           campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })),
-          campo('Gravação', el('div', {}, [dataGravar, tirarGravar])),
           campo('Membros', data), blocoPublico
         ]),
-        linhaGrupo([campo('Cortes', el('div', {}, [dataCortes, tirarCortes])), campo('Blog', el('div', {}, [dataBlog, tirarBlog]))])
       ]));
       cartao.appendChild(jupV);
       var capaUrl = v.capa_url || '', capaNova = null;
@@ -1129,7 +1124,7 @@
       var tempoSalvar = null;
       function salvarSozinho() {
         var lk = link.value.trim(), okLink = !lk || /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk);
-        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, temporada: temporada.value ? +temporada.value : 1, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, data_gravar: dataGravar.value || null, data_cortes: dataCortes.value || null, data_blog: dataBlog.value || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
+        var c = { capa_texto: capaTexto.value.trim() || null, numero: numero.value ? +numero.value : null, temporada: temporada.value ? +temporada.value : 1, data_postar: data.value || null, data_publico: (rotuloAcesso(v) === 'público' && dataPublico.value) || null, roteiro: roteiro.value, texto_postagem: texto.value, tags: tags.value.trim() || null, cards: cardsTxt.value };
         if (titulo.value.trim()) c.titulo = titulo.value.trim(); /* título é obrigatório no banco: vazio não apaga o que já estava */
         if (okLink) c.link_youtube = lk || null;
         if (usaBlocos) c.roteiro_blocos = rb;
@@ -1146,7 +1141,7 @@
       });
       /* Membros e Público: NADA na tela muda enquanto o calendário está aberto (mudar o que está embaixo fechava o calendário no computador, antes de ele chegar nele).
          Ao escolher, só grava quieto; o horário de Júpiter, o aviso do SEO e o salvar completo vêm quando sai do campo. */
-      [[data, 'data_postar'], [dataPublico, 'data_publico'], [dataGravar, 'data_gravar'], [dataCortes, 'data_cortes'], [dataBlog, 'data_blog']].forEach(function (p) {
+      [[data, 'data_postar'], [dataPublico, 'data_publico']].forEach(function (p) {
         p[0].addEventListener('change', function () { var o = {}; o[p[1]] = p[0].value || null; gravar('prod_videos', videos, v, o); });
         p[0].addEventListener('blur', function () { atualizarJupiter(); marcarSeoSePronto(); agendarSalvar(); });
       });
