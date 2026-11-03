@@ -718,7 +718,7 @@
     var ETC = [['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
     function barrasDe(item, etapas, criado, fim) {
       if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
-      var feita = function (k) { return k === 'capa' ? !!item.capa_url : !!item[k]; };
+      var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= new Date().toLocaleDateString('sv-SE')) : !!item[k]; };
       var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid #1F5FA3;margin:8px 0 0;overflow-x:auto' }, etapas.map(function (e, i) {
         return el('span', { text: e[1], style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid #1F5FA3;' : '') + (feita(e[0]) ? 'background:#1F5FA3;color:#F3E3B8' : 'color:#A03E25') });
       }));

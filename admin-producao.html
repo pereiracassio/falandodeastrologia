@@ -101,7 +101,8 @@
     var ETAPAS = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
     /* Público só existe no vídeo marcado como público; Capa se marca sozinha (tem foto = feita) */
     function etapasDoVideo(v) { return ETAPAS.filter(function (e) { return e[0] !== 'publico_ok' || (v.acesso || 'publico') !== 'membros'; }); }
-    function etapaDoVideoFeita(v, k) { return k === 'capa' ? !!v.capa_url : !!v[k]; }
+    /* Público se marca sozinho: já está para os membros (link do YouTube) e chegou o dia marcado para ficar público */
+    function etapaDoVideoFeita(v, k) { return k === 'capa' ? !!v.capa_url : k === 'publico_ok' ? !!(v.no_ar && v.data_publico && v.data_publico <= iso(new Date())) : !!v[k]; }
     /* a linha que separa a descrição dos capítulos no YouTube: 51 traços longos, do tamanho certinho da descrição */
     var LINHA_DESCRICAO = '———————————————————————————————————————————————————';
     /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
@@ -488,7 +489,7 @@
       var lista = etapasDoVideo(v);
       var botoes = lista.map(function (et) {
         var b = chip(et[1], etapaDoVideoFeita(v, et[0]), function () {
-          if (et[0] === 'capa' || et[0] === 'no_ar') return; /* a capa se marca sozinha (tem foto) e Membros também (tem o link do YouTube); tirar um deles desmarca */
+          if (et[0] === 'capa' || et[0] === 'no_ar' || et[0] === 'publico_ok') return; /* se marcam sozinhas: Capa (tem foto), Membros (tem o link do YouTube) e Público (chegou a data de ficar público) */
           marcarEtapa(v, et[0], !v[et[0]]).then(function () { if (aoMudar) aoMudar(); });
         }, { 'data-video': v.id, 'data-etapa': et[0] });
         b.classList.add('prod-seg-item');
