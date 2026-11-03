@@ -71,7 +71,7 @@
       var h = P.estado.ler(), doAviso = new URLSearchParams(location.search).get('cliente');   /* ?cliente=ID: veio de um aviso */
       if (doAviso) h.cliente = doAviso;
       if (!h.cliente) { listaDeClientes(user); return; }
-      Promise.all([P.client.from('clientes').select('id,nome,email,nascimento,whatsapp').eq('id', h.cliente).maybeSingle(),
+      Promise.all([P.client.from('clientes').select('id,nome,email,nascimento,whatsapp,fatos_link,fatos_entrega_id').eq('id', h.cliente).maybeSingle(),
                    P.client.from('cliente_codigos').select('codigo').eq('cliente_id', h.cliente).maybeSingle()]).then(function (r) {
         if (r[0].error || !r[0].data) { listaDeClientes(user); return; }
         var c = r[0].data; c.codigo = (r[1].data && r[1].data.codigo) || '';
@@ -144,7 +144,7 @@
       });
 
       Promise.all([
-        P.client.from('clientes').select('id,nome,email,nascimento,whatsapp,retificacao_fatos_em,retificacao_fatos_vistos_em').order('nome'),
+        P.client.from('clientes').select('id,nome,email,nascimento,whatsapp,fatos_link,fatos_entrega_id,retificacao_fatos_em,retificacao_fatos_vistos_em').order('nome'),
         P.client.from('cliente_codigos').select('cliente_id,codigo')
       ]).then(function (res) {
         var r = res[0], rc = res[1];
@@ -203,6 +203,35 @@
       P.voltarNoFim(app, function () { listaDeClientes(user); });
       abaServicos.appendChild(P.cartaoAtendimento(cliente.id, true, { nome: cliente.nome, whatsapp: cliente.whatsapp })); /* próximo atendimento e Meet, sem caçar o link */
       abaServicos.appendChild(P.avisos.cartaoEnviar('cliente', cliente.id, cliente.nome));
+
+      /* link dos fatos (retificação): é do cliente, salva sozinho; ligar a um serviço é opcional */
+      var msgFatos = el('p', { class: 'portal-msg' });
+      var fatosLink = el('input', { type: 'url', id: 'clienteFatosLink', placeholder: 'https://astrohellenic.github.io/formulario.html?...' });
+      fatosLink.value = cliente.fatos_link || '';
+      var fatosServico = el('select', { id: 'clienteFatosServico' }, [el('option', { value: '', text: 'Nenhum' })]);
+      P.client.from('entregas').select('id,servico,data').eq('cliente_id', cliente.id).order('data', { ascending: false, nullsFirst: false }).then(function (re) {
+        (re.data || []).forEach(function (e) { fatosServico.appendChild(el('option', { value: e.id, text: e.servico + (e.data ? ' · ' + P.dataBR(e.data) : '') })); });
+        fatosServico.value = cliente.fatos_entrega_id || '';
+      });
+      var fatosTimer = null;
+      function salvarFatos() {
+        var texto = fatosLink.value.trim(), seguro = texto ? P.linkSeguro(texto) : null;
+        if (texto && !seguro) { P.mensagem(msgFatos, 'O link precisa começar com https://', 'erro'); return; }
+        P.client.from('clientes').update({ fatos_link: seguro, fatos_entrega_id: seguro && fatosServico.value ? fatosServico.value : null }).eq('id', cliente.id).then(function (r) {
+          if (r.error) { P.mensagem(msgFatos, P.traduzErro(r.error.message), 'erro'); return; }
+          cliente.fatos_link = seguro; cliente.fatos_entrega_id = seguro && fatosServico.value ? fatosServico.value : null;
+          P.mensagem(msgFatos, 'Salvo.', 'ok');
+        });
+      }
+      function agendarFatos(ms) { clearTimeout(fatosTimer); fatosTimer = setTimeout(salvarFatos, ms); }
+      fatosLink.addEventListener('change', function () { agendarFatos(300); });
+      fatosLink.addEventListener('input', function () { agendarFatos(1500); });
+      fatosServico.addEventListener('change', function () { agendarFatos(300); });
+      abaServicos.appendChild(el('div', { class: 'portal-cartao' }, [
+        el('h2', { text: 'Link dos fatos' }),
+        el('label', { for: 'clienteFatosLink', text: 'Link' }), fatosLink,
+        el('label', { for: 'clienteFatosServico', text: 'Ligar a um serviço (opcional)', style: 'margin-top:20px;display:block' }), fatosServico, msgFatos
+      ]));
 
       /* dados do cliente: código, nome e pasta no Drive (o código só o administrador vê) */
       var msgCod = el('p', { class: 'portal-msg' });
@@ -299,7 +328,6 @@
       var data = el('input', { type: 'date', id: 'entData' });
       var pdf = el('input', { type: 'url', id: 'entPdf', placeholder: 'https://drive.google.com/...' });
       var gravacao = el('input', { type: 'url', id: 'entGravacao', placeholder: 'https://drive.google.com/...' });
-      var fatos = el('input', { type: 'url', id: 'entFatos', placeholder: 'https://astrohellenic.github.io/formulario.html?...' });
       var add = el('button', { type: 'submit', class: 'portal-btn', text: 'Adicionar' });
       var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar edição' });
       cancelar.style.display = 'none';
@@ -311,7 +339,7 @@
         el('label', { for: 'entData', text: 'Data do serviço (opcional)' }), data,
         el('label', { for: 'entPdf', text: 'Link do PDF (opcional)' }), P.botaoDrive(pdf, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id),
         el('label', { for: 'entGravacao', text: 'Link da gravação (opcional)', style: 'margin-top:34px;display:block' }), P.botaoDrive(gravacao, function (t, tipo) { P.mensagem(msg, t, tipo); }, cliente.email, 'cliente:' + cliente.id),
-        el('label', { for: 'entFatos', text: 'Link dos fatos (opcional)', style: 'margin-top:34px;display:block' }), fatos, msg,
+        msg,
         el('div', { class: 'portal-acoes' }, [add, cancelar])
       ]);
       function sairDaEdicao() { editandoId = null; editandoOrig = null; form.reset(); add.textContent = 'Adicionar'; cancelar.style.display = 'none'; P.mensagem(msg, ''); }
@@ -320,10 +348,9 @@
         ev.preventDefault();
         var seguroPdf = pdf.value.trim() ? P.linkSeguro(pdf.value) : null;
         var seguroGrav = gravacao.value.trim() ? P.linkSeguro(gravacao.value) : null;
-        var seguroFatos = fatos.value.trim() ? P.linkSeguro(fatos.value) : null;
-        if ((pdf.value.trim() && !seguroPdf) || (gravacao.value.trim() && !seguroGrav) || (fatos.value.trim() && !seguroFatos)) { P.mensagem(msg, 'Os links precisam começar com https://', 'erro'); return; }
+        if ((pdf.value.trim() && !seguroPdf) || (gravacao.value.trim() && !seguroGrav)) { P.mensagem(msg, 'Os links precisam começar com https://', 'erro'); return; }
         add.disabled = true;
-        var campos = { servico: servico.value.trim(), data: data.value || null, pdf_link: seguroPdf, gravacao_link: seguroGrav, fatos_link: seguroFatos };
+        var campos = { servico: servico.value.trim(), data: data.value || null, pdf_link: seguroPdf, gravacao_link: seguroGrav };
         var pedido = editandoId
           ? P.client.from('entregas').update(campos).eq('id', editandoId).select('id')
           : P.client.from('entregas').insert(Object.assign({ cliente_id: cliente.id }, campos)).select('id');
@@ -342,7 +369,7 @@
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'O que ' + cliente.nome + ' vê' })]);
       abaServicos.appendChild(cartao);
       var itensPorId = {};
-      P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,fatos_link').eq('cliente_id', cliente.id)
+      P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link').eq('cliente_id', cliente.id)
         .order('data', { ascending: false, nullsFirst: false }).then(function (r) {
           if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
           if (!r.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nada cadastrado ainda.' }));
@@ -350,7 +377,7 @@
             var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
             editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
             editar.addEventListener('click', function () {
-              editandoId = e.id; editandoOrig = e; servico.value = e.servico; data.value = e.data || ''; pdf.value = e.pdf_link || ''; gravacao.value = e.gravacao_link || ''; fatos.value = e.fatos_link || '';
+              editandoId = e.id; editandoOrig = e; servico.value = e.servico; data.value = e.data || ''; pdf.value = e.pdf_link || ''; gravacao.value = e.gravacao_link || '';
               add.textContent = 'Salvar alterações'; cancelar.style.display = ''; P.mensagem(msg, 'Editando: ' + e.servico, 'ok');
               form.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });

@@ -240,8 +240,8 @@
       var email = String(user.email || '').toLowerCase();
       var sairBtn = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Sair' });
       sairBtn.addEventListener('click', sair);
-      var busca = verId ? P.client.from('clientes').select('id,nome,email').eq('id', verId).maybeSingle()
-                        : P.client.from('clientes').select('id,nome').eq('email', email).maybeSingle();
+      var busca = verId ? P.client.from('clientes').select('id,nome,email,fatos_link,fatos_entrega_id').eq('id', verId).maybeSingle()
+                        : P.client.from('clientes').select('id,nome,fatos_link,fatos_entrega_id').eq('email', email).maybeSingle();
       /* aluno também usa o Seu espaço: ficha de aluno (se houver) traz a Mensalidade, Trocar senha e o resto do que é administrativo */
       var alunoBusca = verId ? Promise.resolve(null) : P.client.from('alunos').select('id,nome').eq('email', email).maybeSingle().then(function (ra) { return ra && !ra.error ? ra.data : null; }, function () { return null; });
       Promise.all([busca, alunoBusca]).then(function (par) {
@@ -266,17 +266,29 @@
         if (!verId && window.fdaEspaco) window.fdaEspaco.marcar('cliente', true);   /* o botão Cássio da barra de cima vira Seu espaço nas outras páginas (quem já é aluno continua indo para a página de aluno) */
         ligarAvisos(user, verId);
         carregarAtendimento(verId);
+        var fatosSolto = el('div');   /* o link dos fatos, quando não está ligado a um serviço; preenchido depois que os serviços chegam */
+        app.appendChild(fatosSolto);
         app.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
         ]));
-        P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,fatos_link,criado_em').eq('cliente_id', r.data.id)
+        P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,criado_em').eq('cliente_id', r.data.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (re) {
             var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Seus serviços' })]);
             app.appendChild(cartao);
             if (re.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus serviços agora.' })); return; }
             if (!re.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum serviço entregue ainda.' }));
-            re.data.forEach(function (e) { cartao.appendChild(itemEntrega(e, verId)); });
+            var fatosUrl = P.linkSeguro(r.data.fatos_link), ligado = false;
+            re.data.forEach(function (e) {
+              if (fatosUrl && r.data.fatos_entrega_id && String(r.data.fatos_entrega_id) === String(e.id)) { e.fatos_link = fatosUrl; ligado = true; }
+              cartao.appendChild(itemEntrega(e, verId));
+            });
+            if (fatosUrl && !ligado) {
+              fatosSolto.appendChild(el('div', { class: 'portal-cartao' }, [
+                el('h2', { text: 'Fatos da sua vida' }),
+                el('a', { class: 'portal-btn', href: fatosUrl, target: '_blank', rel: 'noopener', text: 'Preencher os fatos' })
+              ]));
+            }
             if (paraDestacar) destacarEntrega(paraDestacar);
             /* depois do atendimento (já há material entregue): convite para avaliar no Google */
             if (re.data.length) {
