@@ -22,6 +22,25 @@
   <link rel="stylesheet" href="portal.css?v=25">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=26">
+  <style>
+    .proj-passo{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid #1F5FA3}
+    .proj-passo:last-child{border-bottom:0}
+    .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid #1F5FA3;background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
+    .proj-passo input[type=checkbox]:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#A03E25;font-size:20px;font-weight:700;font-family:Arial,sans-serif}
+    .proj-passo.feito .proj-titulo{text-decoration:line-through;opacity:.6}
+    .proj-grupo{margin:22px 0 6px}
+    .proj-titulo{font-size:17px;line-height:1.4;color:#16233F;display:block;overflow-wrap:anywhere}
+    .proj-acoes{display:flex;gap:18px;align-items:center;margin-top:6px}
+    .proj-mini{background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline}
+    .prod-chip{background:transparent;border:1px solid #1F5FA3;border-radius:0;color:#1034A6;padding:6px 10px;font-size:12px;cursor:pointer;line-height:1.2}
+    .prod-seg{display:flex;flex-wrap:nowrap;border:1px solid #1F5FA3;margin:6px 0 6px;overflow-x:auto}
+    .prod-seg .prod-chip{flex:1 1 auto;white-space:nowrap;border:0;border-left:1px solid #1F5FA3;padding:6px 3px;font-size:9px;letter-spacing:0;text-align:center;color:#A03E25}
+    .prod-seg .prod-chip:first-child{border-left:0}
+    .prod-seg .prod-chip.on{background:#1F5FA3;color:#F3E3B8;font-weight:400}
+    .pc-aula{padding:12px 0;border-bottom:1px solid #1F5FA3}
+    .pc-aula:last-child{border-bottom:0}
+    .selo-construcao{display:inline-block;margin-left:10px;font-size:12px;white-space:nowrap}
+  </style>
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -36,13 +55,17 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=140"></script>
+  <script src="portal.js?v=141"></script>
   <script src="curso.js?v=1"></script>
   <script src="menu.js?v=55" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
     var nomeAdmin = '';
+    var ETAPAS = [['gravacao', 'Gravação'], ['edicao_grossa', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['upload', 'Upload']];
+    var PASSOS_IDEIA = ['Definir o tema e o público', 'Definir a quantidade de módulos'];
+    var PASSOS_FINAL = ['Escolher onde as aulas ficam hospedadas', 'Definir os preços', 'Definir como vender', 'Encaixar o curso na estrutura do site'];
+    var SELO = '🚧 Under construction';
 
     function limpar() { app.textContent = ''; }
     function sair() { C.auth.signOut().then(mostrarLogin); }
@@ -52,6 +75,10 @@
     function texto(t) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: t }); if (t.length === 1) b.style.fontSize = '20px'; return b; }
     function msgErro(caixa, e) { P.mensagem(caixa, P.traduzErro((e && e.message) || ''), 'erro'); }
     function voltarAcima(fn) { app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(fn)])); P.voltarNoFim(app, fn); }
+    function falhou(r, recarregar) { if (r && r.error) { alert('Não foi possível salvar (' + P.traduzErro(r.error.message) + ').'); if (recarregar) recarregar(); return true; } return false; }
+    function grupo(t) { return el('p', { class: 'proj-grupo', text: t }); }
+    function minilink(t, aoClicar) { var b = el('button', { type: 'button', class: 'proj-mini', text: t }); b.addEventListener('click', aoClicar); return b; }
+    function selo() { return el('span', { class: 'rotulo-fixo selo-construcao', text: SELO }); }
 
     function iniciar(user) {
       limpar();
@@ -72,6 +99,104 @@
       });
     }
 
+    /* ---------- contas da construção ---------- */
+    function etapasDe(c) { var chaves = ETAPAS.map(function (e) { return e[0]; }); var l = c && Array.isArray(c.etapas) ? c.etapas : null; return (l && l.length ? l : chaves).filter(function (k) { return chaves.indexOf(k) >= 0; }); }
+    /* Upload não se marca à mão: está feito quando a aula tem vídeo */
+    function etapaFeita(a, k) { return k === 'upload' ? !!a.video_codigo : !!a[k]; }
+    function aulasDoModulo(D, mid) { return D.aulas.filter(function (a) { return a.modulo_id === mid; }); }
+    /* módulo = apostila + "definir as aulas" (conta quando existe ao menos uma) + as etapas de cada aula + passos soltos do módulo */
+    function contModulo(D, m) {
+      var et = etapasDe(D.curso), as = aulasDoModulo(D, m.id), ps = D.passos.filter(function (p) { return p.modulo_id === m.id; });
+      var t = 2 + as.length * et.length + ps.length;
+      var f = (m.apostila_ok ? 1 : 0) + (as.length ? 1 : 0) + as.reduce(function (n, a) { return n + et.filter(function (k) { return etapaFeita(a, k); }).length; }, 0) + ps.filter(function (p) { return p.feito; }).length;
+      return { t: t, f: f };
+    }
+    function contCurso(D) {
+      var ps = D.passos.filter(function (p) { return !p.modulo_id; }), t = ps.length, f = ps.filter(function (p) { return p.feito; }).length;
+      D.mods.forEach(function (m) { var k = contModulo(D, m); t += k.t; f += k.f; });
+      return { t: t, f: f };
+    }
+    function barra(k) { return P.barraLinha(k.t ? Math.floor(k.f * 100 / k.t) : 0, null, k.f + '/' + k.t); }
+    function dadosCurso(id) {
+      return Promise.all([
+        C.from('cursos').select('*').eq('id', id).maybeSingle(),
+        C.from('curso_modulos').select('*').eq('curso_id', id).order('ordem'),
+        C.from('curso_passos').select('*').eq('curso_id', id).order('ordem')
+      ]).then(function (rs) {
+        var erro = rs[0].error || rs[1].error || rs[2].error;
+        if (erro) throw erro;
+        if (!rs[0].data) throw { message: 'Curso não encontrado.' };
+        var mods = rs[1].data || [], D = { curso: rs[0].data, mods: mods, aulas: [], passos: rs[2].data || [] };
+        if (!mods.length) return D;
+        return C.from('curso_aulas').select('*').in('modulo_id', mods.map(function (m) { return m.id; })).order('ordem').then(function (ra) { if (ra.error) throw ra.error; D.aulas = ra.data || []; return D; });
+      });
+    }
+
+    /* ---------- peças de passos e etapas ---------- */
+    function linhaPasso(p, aoEditar, recarregar) {
+      var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito' }); cb.checked = !!p.feito;
+      cb.addEventListener('change', function () {
+        C.from('curso_passos').update({ feito: cb.checked, feito_em: cb.checked ? new Date().toISOString() : null }).eq('id', p.id).then(function (r) { if (!falhou(r, recarregar)) recarregar(); });
+      });
+      var textos = [el('span', { class: 'proj-titulo', text: p.titulo })];
+      if (p.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: p.nota }));
+      var acoes = el('div', { class: 'proj-acoes' }, [minilink('Editar', function () { aoEditar(p); })]);
+      var ap = P.botaoApagar('Apagar');
+      ap.addEventListener('click', function () { if (!confirm('Apagar o passo "' + p.titulo + '"?')) return; C.from('curso_passos').delete().eq('id', p.id).then(function (r) { if (!falhou(r, recarregar)) recarregar(); }); });
+      acoes.appendChild(ap); textos.push(acoes);
+      return el('div', { class: 'proj-passo' + (p.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]);
+    }
+    function formPasso(D, recarregar, area, fase, mid, item) {
+      area.textContent = '';
+      var msg = el('p', { class: 'portal-msg' }), titulo = el('input', { type: 'text', id: 'pcTitulo', required: '' }), nota = el('textarea', { rows: '2', placeholder: 'Anotação (opcional)' });
+      if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; }
+      var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Adicionar passo' }), cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+      cancelar.addEventListener('click', function () { area.textContent = ''; });
+      var f = el('form', { class: 'portal-cartao' }, [el('label', { for: 'pcTitulo', text: 'Passo' }), titulo, nota, msg, el('div', { class: 'portal-acoes' }, [salvar, cancelar])]);
+      f.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
+        salvar.disabled = true;
+        var ordem = D.passos.reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0) + 1;
+        var pedido = item ? C.from('curso_passos').update({ titulo: t, nota: nota.value.trim() || null }).eq('id', item.id) : C.from('curso_passos').insert({ curso_id: D.curso.id, modulo_id: mid || null, fase: mid ? 'modulo' : fase, titulo: t, nota: nota.value.trim() || null, ordem: ordem });
+        pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else recarregar(); });
+      });
+      area.appendChild(f); titulo.focus({ preventScroll: true });
+    }
+    function passosDe(D, fase, mid) { return D.passos.filter(function (p) { return mid ? p.modulo_id === mid : (!p.modulo_id && p.fase === fase); }).sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); }); }
+    function blocoPassos(D, recarregar, fase, mid) {
+      var caixa = el('div'), lista = el('div', { style: 'border-top:1px solid #1F5FA3' }), area = el('div', { class: 'barra-ocre' });
+      var itens = passosDe(D, fase, mid).filter(function (p) { return !p.feito; });
+      itens.forEach(function (p) { lista.appendChild(linhaPasso(p, function (x) { formPasso(D, recarregar, area, fase, mid, x); }, recarregar)); });
+      if (itens.length) caixa.appendChild(lista);
+      caixa.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:8px' }, [minilink('+ Adicionar passo', function () { if (!area.firstChild) formPasso(D, recarregar, area, fase, mid, null); })]));
+      caixa.appendChild(area);
+      return caixa;
+    }
+    function listaFeitos(D, recarregar, mid) {
+      var itens = D.passos.filter(function (p) { return p.feito && (mid ? p.modulo_id === mid : !p.modulo_id); }).sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); });
+      var caixa = el('div'), area = el('div', { class: 'barra-ocre' });
+      if (!itens.length) return caixa;
+      caixa.appendChild(grupo('Feitos'));
+      var lista = el('div', { style: 'border-top:1px solid #1F5FA3' });
+      itens.forEach(function (p) { lista.appendChild(linhaPasso(p, function (x) { formPasso(D, recarregar, area, x.fase, mid, x); }, recarregar)); });
+      caixa.appendChild(lista); caixa.appendChild(area);
+      return caixa;
+    }
+    /* barra de etapas da aula (como na Produção); o Upload se marca sozinho quando a aula tem vídeo */
+    function etapasDaAula(a, curso, aoMudar, aoTocarUpload) {
+      var et = etapasDe(curso);
+      return el('div', { class: 'prod-seg' }, ETAPAS.filter(function (e) { return et.indexOf(e[0]) >= 0; }).map(function (e) {
+        var b = el('button', { type: 'button', class: 'prod-chip prod-fixo' + (etapaFeita(a, e[0]) ? ' on' : ''), text: e[1], 'aria-pressed': etapaFeita(a, e[0]) ? 'true' : 'false' });
+        b.addEventListener('click', function () {
+          if (e[0] === 'upload') { if (aoTocarUpload) aoTocarUpload(); return; }
+          a[e[0]] = !a[e[0]]; b.classList.toggle('on', !!a[e[0]]); b.setAttribute('aria-pressed', a[e[0]] ? 'true' : 'false');
+          var o = {}; o[e[0]] = a[e[0]]; C.from('curso_aulas').update(o).eq('id', a.id).then(function (r) { if (!falhou(r)) { if (aoMudar) aoMudar(); } });
+        });
+        return b;
+      }));
+    }
+
     /* ---------- cursos ---------- */
     function lista() {
       limpar(); P.estado.gravar({});
@@ -81,23 +206,38 @@
       novo.addEventListener('click', function () {
         var t = (window.prompt('Nome do curso') || '').trim();
         if (!t) return;
-        C.from('cursos').insert({ titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msg, r.error); else abrirCurso(r.data.id); });
+        C.from('cursos').insert({ titulo: t, data_inicio: new Date().toLocaleDateString('sv-SE') }).select().single().then(function (r) {
+          if (r.error) { msgErro(msg, r.error); return; }
+          var id = r.data.id, n = 0;
+          var lote = PASSOS_IDEIA.map(function (x) { return { curso_id: id, fase: 'ideia', titulo: x, ordem: ++n }; }).concat(PASSOS_FINAL.map(function (x) { return { curso_id: id, fase: 'final', titulo: x, ordem: ++n }; }));
+          C.from('curso_passos').insert(lote).then(function () { window.scrollTo(0, 0); abrirCurso(id); });
+        });
       });
       app.appendChild(el('div', { class: 'portal-acoes' }, [novo])); app.appendChild(msg);
       var caixa = el('div', { class: 'portal-cartao' }, [el('p', { text: 'Carregando...' })]); app.appendChild(caixa);
-      C.from('cursos').select('id,titulo').order('criado_em').then(function (r) {
+      Promise.all([C.from('cursos').select('*').order('criado_em'), C.from('curso_modulos').select('*').order('ordem'), C.from('curso_aulas').select('*'), C.from('curso_passos').select('*')]).then(function (rs) {
         caixa.textContent = '';
-        if (r.error) { caixa.appendChild(el('p', { text: P.traduzErro(r.error.message) })); return; }
-        if (!r.data.length) { caixa.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum curso ainda.' })); return; }
-        r.data.forEach(function (c) {
-          var l = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('span', { class: 'prod-titulo', style: 'display:block', text: c.titulo })]);
+        var erro = rs.filter(function (x) { return x.error; })[0];
+        if (erro) { caixa.appendChild(el('p', { text: P.traduzErro(erro.error.message) })); return; }
+        var cursos = rs[0].data || [];
+        if (!cursos.length) { caixa.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum curso ainda.' })); return; }
+        cursos.forEach(function (c) {
+          var nome = el('span', { class: 'prod-titulo', style: 'display:block', text: c.titulo });
+          if (c.construindo !== false) nome.appendChild(selo());
+          var l = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [nome]);
+          if (c.construindo !== false) {
+            var mods = (rs[1].data || []).filter(function (m) { return m.curso_id === c.id; }), ids = mods.map(function (m) { return m.id; });
+            var D = { curso: c, mods: mods, aulas: (rs[2].data || []).filter(function (a) { return ids.indexOf(a.modulo_id) >= 0; }), passos: (rs[3].data || []).filter(function (p) { return p.curso_id === c.id; }) };
+            l.appendChild(barra(contCurso(D)));
+            if (c.data_fim) { var t = P.barraTempoDias(c.data_inicio, c.data_fim); if (t) l.appendChild(t); }
+          }
           l.addEventListener('click', function () { abrirCurso(c.id); });
           caixa.appendChild(l);
         });
       });
     }
 
-    /* ---------- um curso: módulos e matrículas ---------- */
+    /* ---------- um curso: construção, módulos e matrículas ---------- */
     function trocar(tabela, a, b) {
       return Promise.all([C.from(tabela).update({ ordem: b.ordem }).eq('id', a.id), C.from(tabela).update({ ordem: a.ordem }).eq('id', b.id)]);
     }
@@ -105,17 +245,12 @@
       limpar(); P.estado.gravar({ curso: id });
       app.appendChild(topo(nomeAdmin));
       voltarAcima(lista);
+      var recarregar = function () { abrirCurso(id); };
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
-      Promise.all([
-        C.from('cursos').select('id,titulo').eq('id', id).maybeSingle(),
-        C.from('curso_modulos').select('id,ordem,titulo,apostila_nome').eq('curso_id', id).order('ordem'),
-        C.from('curso_aulas').select('id,modulo_id'),
-        C.from('curso_matriculas').select('id,email,nome,modulo_liberado').eq('curso_id', id).order('criado_em')
-      ]).then(function (rs) {
+      Promise.all([dadosCurso(id), C.from('curso_matriculas').select('id,email,nome,modulo_liberado').eq('curso_id', id).order('criado_em')]).then(function (rs) {
         corpo.textContent = '';
-        var erro = rs[0].error || rs[1].error || rs[2].error || rs[3].error;
-        if (erro || !rs[0].data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: erro ? P.traduzErro(erro.message) : 'Curso não encontrado.' })); return; }
-        var curso = rs[0].data, mods = rs[1].data || [], aulas = rs[2].data || [], mats = rs[3].data || [];
+        if (rs[1].error) throw rs[1].error;
+        var D = rs[0], curso = D.curso, mods = D.mods, mats = rs[1].data || [], construindo = curso.construindo !== false;
         var tit = el('input', { type: 'text', value: curso.titulo });
         var msgT = el('p', { class: 'portal-msg', style: 'margin:0' });
         var salvarT = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar nome' });
@@ -123,20 +258,52 @@
           if (!tit.value.trim()) return;
           C.from('cursos').update({ titulo: tit.value.trim() }).eq('id', id).then(function (r) { if (r.error) msgErro(msgT, r.error); else P.mensagem(msgT, 'Salvo.', 'ok'); });
         });
-        corpo.appendChild(el('div', { class: 'portal-cartao', style: 'padding-bottom:0!important;margin-bottom:0!important' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes', style: 'display:none' }, [salvarT])]))); P.salvarSozinho(salvarT); /* o botão fica escondido (salva sozinho): a caixa dele não pode sobrar como espaço vazio */
+        var cab = el('div', { class: 'portal-cartao', style: 'padding-bottom:0!important;margin-bottom:0!important' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes', style: 'display:none' }, [salvarT])]));
+        if (construindo) {
+          cab.insertBefore(el('div', {}, [selo()]), cab.firstChild);
+          cab.appendChild(barra(contCurso(D)));
+          if (curso.data_fim) { var tt = P.barraTempoDias(curso.data_inicio, curso.data_fim); if (tt) cab.appendChild(tt); }
+        }
+        corpo.appendChild(cab); P.salvarSozinho(salvarT); /* o botão fica escondido (salva sozinho) */
 
-        var caixaM = el('div', { class: 'portal-cartao', style: 'border-top:0!important;padding-top:12px!important' }, [el('h2', { text: 'Módulos' })]); /* sem a segunda barra: o nome do curso e os módulos são uma seção só */
+        /* ----- só enquanto está em construção: datas, ideia e planejamento ----- */
+        if (construindo) {
+          var ini = el('input', { type: 'date', style: 'width:auto' }), fim = el('input', { type: 'date', style: 'width:auto' }), sujo = false;
+          ini.value = curso.data_inicio || ''; fim.value = curso.data_fim || '';
+          var grava = function (campoD, v) { var o = {}; o[campoD] = v || null; C.from('cursos').update(o).eq('id', id).then(function (r) { if (!falhou(r)) { curso[campoD] = v || null; sujo = true; } }); };
+          ini.addEventListener('change', function () { if (ini.value) grava('data_inicio', ini.value); }); fim.addEventListener('change', function () { grava('data_fim', fim.value); });
+          [ini, fim].forEach(function (x) { x.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; recarregar(); } }, 300); }); });
+          var tirar = null; if (curso.data_fim) { tirar = P.botaoApagar('Tirar a data'); tirar.addEventListener('click', function () { C.from('cursos').update({ data_fim: null }).eq('id', id).then(recarregar); }); }
+          cab.appendChild(P.linhaDatas([P.colunaData(ini, 'Início'), P.colunaData(fim, 'Data final (opcional)', tirar)]));
+
+          cab.appendChild(grupo('Ideia'));
+          var ideia = el('textarea', { rows: '6', id: 'pcIdeia', 'aria-label': 'Ideia do curso' }), msgIdeia = el('p', { class: 'portal-msg' }), espera = null;
+          ideia.value = curso.ideia || '';
+          var gravaIdeia = function () {
+            C.from('cursos').update({ ideia: ideia.value }).eq('id', id).then(function (r) {
+              if (r.error) P.mensagem(msgIdeia, 'Não foi possível salvar a ideia (' + P.traduzErro(r.error.message) + ').', 'erro');
+              else { curso.ideia = ideia.value; P.mensagem(msgIdeia, 'Salvo.', 'ok'); }
+            });
+          };
+          ideia.addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(gravaIdeia, 1200); });
+          ideia.addEventListener('blur', function () { clearTimeout(espera); if (ideia.value !== (curso.ideia || '')) gravaIdeia(); });
+          cab.appendChild(ideia); cab.appendChild(msgIdeia);
+          cab.appendChild(grupo('Planejamento')); cab.appendChild(blocoPassos(D, recarregar, 'ideia', null));
+        }
+
+        var caixaM = el('div', { class: 'portal-cartao', style: construindo ? '' : 'border-top:0!important;padding-top:12px!important' }, [el('h2', { text: 'Módulos' })]);
         if (!mods.length) caixaM.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }));
         mods.forEach(function (m, i) {
-          var qtd = aulas.filter(function (a) { return a.modulo_id === m.id; }).length;
+          var qtd = aulasDoModulo(D, m.id).length;
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
             el('span', { class: 'prod-titulo', style: 'display:block', text: 'Módulo ' + m.ordem + ' · ' + m.titulo }),
             el('span', { class: 'prod-sub', style: 'display:block', text: qtd + (qtd === 1 ? ' aula' : ' aulas') + (m.apostila_nome ? ' · apostila' : '') })
           ]);
+          if (construindo) abrir.appendChild(barra(contModulo(D, m)));
           abrir.addEventListener('click', function () { abrirModulo(m.id); });
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
-          if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_modulos', m, mods[i - 1]).then(function () { abrirCurso(id); }); }); linha.appendChild(sobe); }
-          if (i < mods.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { trocar('curso_modulos', m, mods[i + 1]).then(function () { abrirCurso(id); }); }); linha.appendChild(desce); }
+          if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_modulos', m, mods[i - 1]).then(recarregar); }); linha.appendChild(sobe); }
+          if (i < mods.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { trocar('curso_modulos', m, mods[i + 1]).then(recarregar); }); linha.appendChild(desce); }
           caixaM.appendChild(linha);
         });
         var msgM = el('p', { class: 'portal-msg' });
@@ -147,45 +314,33 @@
           C.from('curso_modulos').insert({ curso_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgM, r.error); else abrirModulo(r.data.id); });
         });
         caixaM.appendChild(msgM); caixaM.appendChild(el('div', { class: 'portal-acoes' }, [novoM]));
-        /* trazer módulos e aulas do projeto de fazer o curso (aba Cursos dos Projetos): cria o que falta, sem apagar nem repetir */
-        var selPc = el('select', { 'aria-label': 'Projeto de curso' }), trazer = el('button', { type: 'button', class: 'portal-btn', text: 'Trazer módulos e aulas' }), msgPc = el('p', { class: 'portal-msg' });
-        selPc.appendChild(el('option', { value: '', text: 'Projeto de curso' }));
-        C.from('pc_cursos').select('id,nome').order('criado_em').then(function (r) { (r.data || []).forEach(function (c) { selPc.appendChild(el('option', { value: c.id, text: c.nome })); }); });
-        trazer.addEventListener('click', function () {
-          if (!selPc.value) { P.mensagem(msgPc, 'Escolha o projeto de curso.', 'erro'); return; }
-          trazer.disabled = true; P.mensagem(msgPc, 'Trazendo...', 'ok');
-          /* o número já aparece sozinho ("Módulo 1 ·", "1. "): tira o que ele escreveu no começo do nome lá no projeto */
-          var semNumMod = function (t) { return String(t || '').replace(/^\s*m[óo]dulo\s*\d+\s*[-–—.:)]*\s*/i, '').trim(); };
-          var semNumAula = function (t) { return String(t || '').replace(/^\s*(aula\s*)?\d+\s*[-–—.:)]*\s*/i, '').trim(); };
-          var falha = function (e) { trazer.disabled = false; msgErro(msgPc, e && e.message ? e : { message: String(e) }); };
-          Promise.all([C.from('pc_modulos').select('id,nome,ordem').eq('curso_id', selPc.value).order('ordem'), C.from('curso_modulos').select('id,ordem,titulo').eq('curso_id', id)]).then(function (rs) {
-            if (rs[0].error || rs[1].error) throw (rs[0].error || rs[1].error);
-            var origem = rs[0].data || [], destino = rs[1].data || [];
-            if (!origem.length) { trazer.disabled = false; P.mensagem(msgPc, 'Esse projeto ainda não tem módulos.', 'erro'); return; }
-            return C.from('pc_aulas').select('modulo_id,numero,titulo').in('modulo_id', origem.map(function (m) { return m.id; })).then(function (ra) {
-              if (ra.error) throw ra.error;
-              var proxima = destino.reduce(function (mx, m) { return Math.max(mx, m.ordem || 0); }, 0), novos = 0, aulasNovas = 0, seq = Promise.resolve();
-              origem.forEach(function (om) {
-                seq = seq.then(function () {
-                  var igual = destino.filter(function (d) { return semNumMod(d.titulo).toLowerCase() === semNumMod(om.nome).toLowerCase(); })[0];
-                  var pegar = igual ? Promise.resolve(igual) : C.from('curso_modulos').insert({ curso_id: id, ordem: ++proxima, titulo: semNumMod(om.nome) || om.nome }).select().single().then(function (r) { if (r.error) throw r.error; novos++; return r.data; });
-                  return pegar.then(function (dm) {
-                    return C.from('curso_aulas').select('ordem').eq('modulo_id', dm.id).then(function (re) {
-                      if (re.error) throw re.error;
-                      var tem = (re.data || []).map(function (a) { return a.ordem; });
-                      var linhas = (ra.data || []).filter(function (a) { return a.modulo_id === om.id && tem.indexOf(a.numero) < 0; }).map(function (a) { return { modulo_id: dm.id, ordem: a.numero, titulo: semNumAula(a.titulo) || 'Aula' }; });
-                      if (!linhas.length) return;
-                      return C.from('curso_aulas').insert(linhas).then(function (ri) { if (ri.error) throw ri.error; aulasNovas += linhas.length; });
-                    });
-                  });
-                });
-              });
-              return seq.then(function () { abrirCurso(id); });
-            });
-          }).then(null, falha);
-        });
-        caixaM.appendChild(el('div', { style: 'margin-top:14px' }, [selPc, el('div', { class: 'portal-acoes' }, [trazer]), msgPc]));
         corpo.appendChild(caixaM);
+
+        /* ----- só enquanto está em construção: depois de pronto, etapas das aulas, feitos e Publicar ----- */
+        if (construindo) {
+          var cx = el('div', { class: 'portal-cartao' });
+          cx.appendChild(grupo('Depois de pronto')); cx.appendChild(blocoPassos(D, recarregar, 'final', null));
+          cx.appendChild(grupo('Etapas de cada aula'));
+          var ativas = etapasDe(curso), fila = el('div', { style: 'display:flex;flex-wrap:wrap;gap:16px' });
+          ETAPAS.forEach(function (e) {
+            var ck = el('input', { type: 'checkbox', class: 'caixinha', id: 'pcEt' + e[0] }); ck.checked = ativas.indexOf(e[0]) >= 0;
+            ck.addEventListener('change', function () {
+              var nova = ETAPAS.map(function (x) { return x[0]; }).filter(function (k) { return k === e[0] ? ck.checked : ativas.indexOf(k) >= 0; });
+              if (!nova.length) { ck.checked = true; return; }
+              C.from('cursos').update({ etapas: nova }).eq('id', id).then(function (r) { if (!falhou(r)) recarregar(); });
+            });
+            fila.appendChild(el('label', { for: 'pcEt' + e[0], style: 'display:flex;align-items:center;gap:8px;cursor:pointer' }, [ck, el('span', { text: e[1] })]));
+          });
+          cx.appendChild(fila);
+          cx.appendChild(listaFeitos(D, recarregar, null));
+          var publicar = el('button', { type: 'button', class: 'portal-btn', text: 'Publicar curso' });
+          publicar.addEventListener('click', function () {
+            if (!window.confirm('Publicar "' + curso.titulo + '"? A parte de construção some (os dados ficam guardados).')) return;
+            C.from('cursos').update({ construindo: false }).eq('id', id).then(function (r) { if (!falhou(r)) recarregar(); });
+          });
+          cx.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [publicar]));
+          corpo.appendChild(cx);
+        }
 
         var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos do curso' })]);
         if (!mats.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum aluno ainda.' }));
@@ -196,15 +351,15 @@
             el('span', { class: 'prod-sub', style: 'display:block', text: (a.nome ? a.email + ' · ' : '') + 'módulo ' + a.modulo_liberado + ' liberado' })
           ]);
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px' }, [nome]);
-          function mudar(n) { C.from('curso_matriculas').update({ modulo_liberado: n }).eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else abrirCurso(id); }); }
+          function mudar(n) { C.from('curso_matriculas').update({ modulo_liberado: n }).eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else recarregar(); }); }
           if (a.modulo_liberado > 1) { var menos = texto('Trancar o último'); menos.addEventListener('click', function () { mudar(a.modulo_liberado - 1); }); linha.appendChild(menos); }
           if (a.modulo_liberado < mods.length) { var mais = texto('Liberar o próximo'); mais.addEventListener('click', function () { mudar(a.modulo_liberado + 1); }); linha.appendChild(mais); }
-          var tirar = P.botaoApagar('Tirar');
-          tirar.addEventListener('click', function () {
+          var tirarA = P.botaoApagar('Tirar');
+          tirarA.addEventListener('click', function () {
             if (!window.confirm('Tirar ' + (a.nome || a.email) + ' do curso? Não dá para desfazer.')) return;
-            C.from('curso_matriculas').delete().eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else abrirCurso(id); });
+            C.from('curso_matriculas').delete().eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else recarregar(); });
           });
-          linha.appendChild(tirar);
+          linha.appendChild(tirarA);
           caixaA.appendChild(linha);
         });
         var email = el('input', { type: 'email', placeholder: 'E-mail do aluno', autocomplete: 'off' });
@@ -212,7 +367,7 @@
         add.addEventListener('click', function () {
           var e = email.value.trim().toLowerCase(); if (!e) return;
           C.from('alunos').select('nome').eq('email', e).maybeSingle().then(function (ra) {
-            C.from('curso_matriculas').insert({ curso_id: id, email: e, nome: ra.data ? ra.data.nome : null, modulo_liberado: 1 }).then(function (r) { if (r.error) msgErro(msgA, r.error); else abrirCurso(id); });
+            C.from('curso_matriculas').insert({ curso_id: id, email: e, nome: ra.data ? ra.data.nome : null, modulo_liberado: 1 }).then(function (r) { if (r.error) msgErro(msgA, r.error); else recarregar(); });
           });
         });
         caixaA.appendChild(msgA);
@@ -220,13 +375,19 @@
         caixaA.appendChild(el('div', { class: 'portal-acoes' }, [add]));
         corpo.appendChild(caixaA);
 
+        if (!construindo) {
+          var reabrir = minilink('Reabrir construção', function () {
+            C.from('cursos').update({ construindo: true }).eq('id', id).then(function (r) { if (!falhou(r)) recarregar(); });
+          });
+          corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [reabrir]));
+        }
         var apagar = P.botaoApagar('Apagar este curso');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar o curso "' + curso.titulo + '" com todos os módulos e aulas? Não dá para desfazer.')) return;
           C.from('cursos').delete().eq('id', id).then(function (r) { if (r.error) msgErro(msgM, r.error); else lista(); });
         });
         P.apagarNoFim(app, apagar);
-      });
+      }).then(null, function (e) { corpo.textContent = ''; corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro((e && e.message) || '') })); });
     }
 
     /* ---------- um módulo: nome, apostila e aulas ---------- */
@@ -234,18 +395,21 @@
       limpar(); P.estado.gravar({ modulo: id });
       app.appendChild(topo(nomeAdmin));
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
-      Promise.all([
-        C.from('curso_modulos').select('id,curso_id,ordem,titulo,apostila_drive_id,apostila_nome').eq('id', id).maybeSingle(),
-        C.from('curso_aulas').select('id,ordem,titulo,video_codigo,video_teste').eq('modulo_id', id).order('ordem')
-      ]).then(function (rs) {
-        var erro = rs[0].error || rs[1].error;
+      var recarregar = function () { abrirModulo(id); };
+      C.from('curso_modulos').select('curso_id').eq('id', id).maybeSingle().then(function (rm) {
+        if (rm.error || !rm.data) throw rm.error || { message: 'Módulo não encontrado.' };
+        return dadosCurso(rm.data.curso_id);
+      }).then(function (D) {
         corpo.textContent = '';
-        if (erro || !rs[0].data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: erro ? P.traduzErro(erro.message) : 'Módulo não encontrado.' })); return; }
-        var m = rs[0].data, aulas = rs[1].data || [], voltar = function () { abrirCurso(m.curso_id); };
+        var m = D.mods.filter(function (x) { return x.id === id; })[0];
+        if (!m) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Módulo não encontrado.' })); return; }
+        var curso = D.curso, construindo = curso.construindo !== false;
+        var aulas = aulasDoModulo(D, id).sort(function (x, y) { return x.ordem - y.ordem; });
+        var voltar = function () { abrirCurso(m.curso_id); };
         var vt = el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]); corpo.parentNode.insertBefore(vt, corpo);
         P.voltarNoFim(app, voltar);
         var tit = el('input', { type: 'text', value: m.titulo });
-        var apNome = m.apostila_nome, apId = m.apostila_drive_id;
+        var apNome = m.apostila_nome, apId = m.apostila_drive_id, apOk = !!m.apostila_ok;
         var apTxt = el('span', { text: apNome || 'Nenhuma' });
         var escolher = texto('Escolher o PDF no Drive');
         var msgAp = el('p', { class: 'portal-msg' });
@@ -255,20 +419,27 @@
               .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
               .then(function (f) {
                 if (f.mimeType !== 'application/pdf') { P.mensagem(msgAp, 'Esse arquivo não é um PDF.', 'erro'); return; }
-                apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apTxt.textContent = apNome; salvar.click();
+                apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click(); setTimeout(recarregar, 600);
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false);
         });
-        var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apTxt.textContent = 'Nenhuma'; salvar.click(); });
+        var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apOk = false; apTxt.textContent = 'Nenhuma'; salvar.click(); setTimeout(recarregar, 600); });
         var msg = el('p', { class: 'portal-msg' });
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome do módulo.', 'erro'); return; }
-          C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
+          C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null, apostila_ok: apOk }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
-        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
+        var cartao = el('div', { class: 'portal-cartao' }, [].concat(
           [el('h2', { text: 'Módulo ' + m.ordem })], campo('Nome', tit),
-          [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
+          [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
+        if (construindo) {
+          cartao.insertBefore(barra(contModulo(D, m)), cartao.children[1]);
+          var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = apOk;
+          cb.addEventListener('change', function () { apOk = cb.checked; salvar.click(); setTimeout(recarregar, 600); });
+          cartao.insertBefore(el('div', { class: 'proj-passo' + (apOk ? ' feito' : ''), style: 'border-top:1px solid #1F5FA3' }, [cb, el('div', { style: 'flex:1' }, [el('span', { class: 'proj-titulo', text: 'Apostila pronta' })])]), msgAp);
+        }
+        corpo.appendChild(cartao); P.salvarSozinho(salvar);
 
         var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aulas' })]);
         if (!aulas.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }));
@@ -279,9 +450,11 @@
           ]);
           abrir.addEventListener('click', function () { abrirAula(a.id); });
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
-          if (i > 0) { var sobe = texto('\u2191'); sobe.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i - 1]).then(function () { abrirModulo(id); }); }); linha.appendChild(sobe); }
-          if (i < aulas.length - 1) { var desce = texto('\u2193'); desce.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i + 1]).then(function () { abrirModulo(id); }); }); linha.appendChild(desce); }
-          caixaA.appendChild(linha);
+          if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i - 1]).then(recarregar); }); linha.appendChild(sobe); }
+          if (i < aulas.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i + 1]).then(recarregar); }); linha.appendChild(desce); }
+          var bloco = el('div', { style: 'margin:0 0 10px' }, [linha]);
+          if (construindo) { var seg = etapasDaAula(a, curso, recarregar, function () { abrirAula(a.id); }); seg.style.marginTop = '-4px'; bloco.appendChild(seg); }
+          caixaA.appendChild(bloco);
         });
         var msgN = el('p', { class: 'portal-msg' });
         var nova = el('button', { type: 'button', class: 'portal-btn', text: '+ Aula' });
@@ -290,8 +463,26 @@
           var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
-        caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, [nova]));
+        var acoesN = [nova];
+        if (construindo) {
+          var varias = texto('Criar várias aulas');
+          varias.addEventListener('click', function () {
+            var n = parseInt(window.prompt('Quantas aulas?') || '', 10); if (!(n > 0 && n <= 60)) return;
+            var prox = aulas.length ? aulas[aulas.length - 1].ordem : 0, lote = [];
+            for (var k = 1; k <= n; k++) lote.push({ modulo_id: id, ordem: prox + k, titulo: 'Aula ' + (prox + k) });
+            C.from('curso_aulas').insert(lote).then(function (r) { if (r.error) msgErro(msgN, r.error); else recarregar(); });
+          });
+          acoesN.push(varias);
+        }
+        caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
         corpo.appendChild(caixaA);
+
+        if (construindo) {
+          var cx = el('div', { class: 'portal-cartao' });
+          cx.appendChild(grupo('Outros passos')); cx.appendChild(blocoPassos(D, recarregar, 'modulo', id));
+          cx.appendChild(listaFeitos(D, recarregar, id));
+          corpo.appendChild(cx);
+        }
 
         var apagar = P.botaoApagar('Apagar este módulo');
         apagar.addEventListener('click', function () {
@@ -299,7 +490,7 @@
           C.from('curso_modulos').delete().eq('id', id).then(function (r) { if (r.error) msgErro(msgN, r.error); else voltar(); });
         });
         P.apagarNoFim(app, apagar);
-      });
+      }).then(null, function (e) { corpo.textContent = ''; corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro((e && e.message) || '') })); });
     }
 
     /* ---------- uma aula ---------- */
@@ -307,10 +498,11 @@
       limpar(); P.estado.gravar({ aula: id });
       app.appendChild(topo(nomeAdmin));
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
-      C.from('curso_aulas').select('id,modulo_id,ordem,titulo,video_origem,video_codigo,video_teste').eq('id', id).maybeSingle().then(function (r) {
+      C.from('curso_aulas').select('*, curso_modulos(curso_id, cursos(construindo, etapas))').eq('id', id).maybeSingle().then(function (r) {
         corpo.textContent = '';
         if (r.error || !r.data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: r.error ? P.traduzErro(r.error.message) : 'Aula não encontrada.' })); return; }
         var a = r.data, voltar = function () { abrirModulo(a.modulo_id); };
+        var curso = a.curso_modulos && a.curso_modulos.cursos ? a.curso_modulos.cursos : { construindo: false };
         corpo.parentNode.insertBefore(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]), corpo);
         P.voltarNoFim(app, voltar);
         var tit = el('input', { type: 'text', value: a.titulo });
@@ -336,8 +528,10 @@
           C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origem.value, video_codigo: cod.value.trim() || null, video_teste: teste.checked }).eq('id', id)
             .then(function (x) { if (x.error) msgErro(msg, x.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
+        var partes = [].concat([el('h2', { text: 'Aula ' + a.ordem })]);
+        if (curso.construindo !== false) partes.push(etapasDaAula(a, curso, null, null));
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          [el('h2', { text: 'Aula ' + a.ordem })], campo('Nome', tit), campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
+          partes, campo('Nome', tit), campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
