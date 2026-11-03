@@ -502,6 +502,9 @@
         return C.from('estudo_respostas').select('*').in('questao_id', qs.length ? qs.map(function (q) { return q.id; }) : ['00000000-0000-0000-0000-000000000000']).then(function (rr) {
           var resp = {}; (rr.data || []).forEach(function (x) { resp[x.questao_id] = x; });
           var cab = el('div', { class: 'portal-cartao' }, [el('h2', { text: a.titulo }), el('p', { class: 'portal-item-data', text: diaCurto(a.data) + ' · ' + a.materia })]);
+          var dAula = el('input', { type: 'date' }); dAula.value = String(a.data || '').slice(0, 10);
+          dAula.addEventListener('change', function () { if (dAula.value) C.from('estudo_aulas').update({ data: dAula.value }).eq('id', id).then(function (r) { if (r.error) alert('Não consegui salvar a data.'); }); }); /* só grava; a data decide quando a aula aparece no To do */
+          cab.appendChild(P.colunaData(dAula, 'Fazer em'));
           if (a.explicacao) cab.appendChild(textoFormatado(a.explicacao));
           corpo.appendChild(cab);
           qs.forEach(function (q, i) { corpo.appendChild(cartaoQuestao(q, i, resp[q.id])); });

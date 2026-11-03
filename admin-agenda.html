@@ -768,6 +768,21 @@
         return saida;
       }, function () { return []; });
     }
+    /* cada aula dos Estudos aparece no To do na data dela, até todas as questões estarem respondidas */
+    function itensDeAulasEstudo() {
+      var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega('estudos', 'id,nome,encerrado'), pega('estudo_aulas', 'id,estudo_id,data,materia,titulo'), pega('estudo_questoes', 'id,aula_id,tipo'), pega('estudo_respostas', 'questao_id,opcao,texto')]).then(function (r) {
+        var nomes = {}, resp = {}, falta = {}, saida = [];
+        r[0].forEach(function (e) { if (!e.encerrado) nomes[e.id] = e.nome; });
+        r[3].forEach(function (x) { resp[x.questao_id] = x; });
+        r[2].forEach(function (q) { var x = resp[q.id], feita = q.tipo === 'multipla' ? !!(x && x.opcao != null) : !!(x && x.texto); if (!feita) falta[q.aula_id] = true; });
+        r[1].forEach(function (a) {
+          if (!nomes[a.estudo_id] || !a.data || !falta[a.id]) return; /* só estudo aberto e aula com questão por responder */
+          saida.push({ quando: doIso(String(a.data).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: a.materia + ' · ' + nomes[a.estudo_id], subOcre: true, url: 'admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(a.estudo_id), cor: '#1034A6' });
+        });
+        return saida;
+      }, function () { return []; });
+    }
     /* o que a tarefa pode ligar: série, vídeo, corte, projeto ou estudo (tocar na tarefa abre lá) */
     function opcoesDeLigacao() {
       var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
@@ -970,7 +985,7 @@
           desenhar(); mostrouGuardado = true;
         } catch (e) { dados.fora = []; dados.tarefas = []; dados.feitos = {}; dados.falhas = []; lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
       }
-      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), itensDeProjetosEEstudos(), itensDePassos(), C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; })]).then(function (r) {
+      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), Promise.all([itensDeProjetosEEstudos(), itensDeAulasEstudo()]).then(function (x) { return x[0].concat(x[1]); }), itensDePassos(), C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; })]).then(function (r) {
         if (!vivo()) return;
         dados.fora = []; dados.feitos = r[1] || {}; dados.falhas = r[0].falhas || []; dados.tarefas = r[5];
         r[0].concat(aniversariosEntre(de, ate)).forEach(function (e) {
