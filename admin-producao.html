@@ -939,7 +939,6 @@
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
       function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
-      data.addEventListener('change', atualizarJupiter);
       var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
       var dataGravar = el('input', { type: 'date' }); dataGravar.value = v.data_gravar || '';
       var dataCortes = el('input', { type: 'date' }); dataCortes.value = v.data_cortes || '';
@@ -1097,7 +1096,6 @@
         jupiterEscolha(jupFim, d, v.hora_jupiter == null ? null : v.hora_jupiter, '', function (i) { gravar('prod_videos', videos, v, { hora_jupiter: i }); });
       }
       pintarJupFim();
-      dataPublico.addEventListener('change', atualizarJupiter);
       cartao.appendChild(jupFim);
       cartao.appendChild(estadoSalvo);
       /* a foto vai para o servidor e fica guardada assim que é escolhida (sem botão Salvar) */
@@ -1143,7 +1141,13 @@
           marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
         }
       });
-      [titulo, capaTexto, link, numero, temporada, data, dataPublico, dataGravar, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
+      /* Membros e Público: NADA na tela muda enquanto o calendário está aberto (mudar o que está embaixo fechava o calendário no computador, antes de ele chegar nele).
+         Ao escolher, só grava quieto; o horário de Júpiter, o aviso do SEO e o salvar completo vêm quando sai do campo. */
+      [[data, 'data_postar'], [dataPublico, 'data_publico']].forEach(function (p) {
+        p[0].addEventListener('change', function () { var o = {}; o[p[1]] = p[0].value || null; gravar('prod_videos', videos, v, o); });
+        p[0].addEventListener('blur', function () { atualizarJupiter(); marcarSeoSePronto(); agendarSalvar(); });
+      });
+      [titulo, capaTexto, link, numero, temporada, dataGravar, dataCortes, dataBlog, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
         c.addEventListener('change', agendarSalvar);
         c.addEventListener('input', marcarSeoSePronto);
