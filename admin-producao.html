@@ -479,7 +479,6 @@
         if (falta.length) { avisoFlutuante('Falta preencher: ' + falta.join(', '), true); pintarEtapas(v); return Promise.resolve({ error: null }); }
       }
       if ((campo === 'no_ar' || campo === 'publico_ok') && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
-      if (campo === 'publico_ok' && valor && !v.no_ar) campos.no_ar = true;
       Object.keys(campos).forEach(function (k) { v[k] = campos[k]; });
       pintarEtapas(v);
       return gravar('prod_videos', videos, v, campos);
@@ -489,7 +488,7 @@
       var lista = etapasDoVideo(v);
       var botoes = lista.map(function (et) {
         var b = chip(et[1], etapaDoVideoFeita(v, et[0]), function () {
-          if (et[0] === 'capa') return; /* a capa se marca sozinha: tem foto = feita; tirar a foto desmarca */
+          if (et[0] === 'capa' || et[0] === 'no_ar') return; /* a capa se marca sozinha (tem foto) e Membros também (tem o link do YouTube); tirar um deles desmarca */
           marcarEtapa(v, et[0], !v[et[0]]).then(function () { if (aoMudar) aoMudar(); });
         }, { 'data-video': v.id, 'data-etapa': et[0] });
         b.classList.add('prod-seg-item');
@@ -1140,6 +1139,7 @@
         if (/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk) && !v.no_ar) {
           marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: membros'); });
         }
+        else if (!lk && v.no_ar) marcarEtapa(v, 'no_ar', false); /* sem o link, Membros desmarca */
       });
       /* Membros e Público: NADA na tela muda enquanto o calendário está aberto (mudar o que está embaixo fechava o calendário no computador, antes de ele chegar nele).
          Ao escolher, só grava quieto; o horário de Júpiter, o aviso do SEO e o salvar completo vêm quando sai do campo. */
