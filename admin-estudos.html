@@ -492,7 +492,7 @@
         });
 
         /* encerrar (ou reabrir) o estudo */
-        var enc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: encerrado ? 'Reabrir estudo' : 'Encerrar estudo' });
+        var enc = P.botaoApagar(encerrado ? 'Reabrir estudo' : 'Encerrar estudo');
         enc.addEventListener('click', function () {
           if (!encerrado && !confirm('Encerrar o estudo "' + est.nome + '"? Ele vai para Encerrados e dá para reabrir.')) return;
           var o = encerrado ? { encerrado: false, encerrado_em: null } : { encerrado: true, encerrado_em: hojeISO() };
@@ -508,8 +508,8 @@
         if (sub) outros.push(sub);
         if (mover) outros.push(mover);
         outros.push(cad, env);
-        if (!est.estudo_pai_id) outros.push(enc);
-        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:' + (imp ? '14' : '24') + 'px;flex-wrap:wrap;gap:6px 26px' }, outros));
+        outros.forEach(function (b) { b.style.textDecoration = 'underline'; b.style.textUnderlineOffset = '5px'; b.style.textDecorationThickness = '2px'; });
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:' + (imp ? '14' : '24') + 'px;flex-wrap:wrap;gap:10px 28px' }, outros));
         if (areaMover) corpo.appendChild(areaMover);
         if (msg) corpo.appendChild(msg);
         corpo.appendChild(msgCad);
@@ -520,6 +520,7 @@
           C.from('estudos').delete().eq('id', est.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = est.estudo_pai_id || null; verEncerrado = encerrado ? (est.estudo_pai_id || null) : null; lista(); } });
         });
         if (est.estudo_pai_id && !encerrado) P.voltarNoFim(corpo, voltarPai);
+        if (!est.estudo_pai_id) { var fe = el('div', { style: 'text-align:center;margin-top:70px' }, [enc]); corpo.appendChild(fe); }
         P.apagarNoFim(corpo, apagar);
       });
     }
