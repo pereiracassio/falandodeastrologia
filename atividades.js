@@ -216,7 +216,7 @@
       lista.forEach(function (c) {
         var caixa = el('div', { class: 'portal-item' }, [el('span', { class: 'portal-item-titulo', text: nomeDe(c) }),
           el('span', { class: 'portal-item-data', text: dataHoraBR(c.criado_em) }), el('p', { class: 'portal-descricao', text: c.texto })]);
-        if (!souAluno) { /* o administrador pode apagar qualquer comentário (o aluno não apaga) */
+        if (!souAluno && c.autor === 'admin') { /* o administrador só apaga os comentários DELE; o que o aluno escreveu não se apaga */
           var apagar = P.botaoApagar('Apagar');
           apagar.style.marginTop = '8px';
           apagar.addEventListener('click', function () {
