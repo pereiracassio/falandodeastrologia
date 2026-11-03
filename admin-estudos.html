@@ -236,6 +236,25 @@
         });
       });
     }
+    /* a pasta "Estudos" no Drive: na primeira vez acha (ou cria) e guarda em drive_pastas ('base_estudos'); depois o seletor já abre dentro dela */
+    function garantirPastaEstudos() {
+      return C.from('drive_pastas').select('pasta_id').eq('chave', 'base_estudos').maybeSingle().then(function (r) {
+        if (r.data && r.data.pasta_id) return r.data.pasta_id;
+        return P.tokenGoogle().then(function (token) {
+          var cab = { 'Authorization': 'Bearer ' + token };
+          var q = "name='Estudos' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false";
+          return fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true', { headers: cab })
+            .then(function (x) { return x.ok ? x.json() : { files: [] }; })
+            .then(function (j) {
+              if (j.files && j.files[0]) return j.files[0].id;
+              return fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Estudos', mimeType: 'application/vnd.google-apps.folder' }) })
+                .then(function (x) { if (!x.ok) throw new Error('criar'); return x.json(); }).then(function (p) { return p.id; });
+            });
+        }).then(function (id) {
+          return C.from('drive_pastas').upsert({ chave: 'base_estudos', pasta_id: id }, { onConflict: 'chave' }).then(function () { return id; });
+        });
+      });
+    }
     function linhaApostila(est, encerrado) {
       var caixa = el('div', { style: 'display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:10px 0 4px' });
       var aviso = el('p', { class: 'portal-msg', style: 'margin:0' });
@@ -244,7 +263,7 @@
         caixa.appendChild(el('span', { class: 'rotulo-fixo', text: 'Apostila' }));
         var mini = function (t, aoClicar) { var b = el('button', { type: 'button', class: 'proj-mini botao-fixo', text: t }); b.style.cssText = 'background:transparent;border:0;padding:2px 4px;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline'; b.addEventListener('click', aoClicar); return b; };
         var escolher = function () {
-          P.escolherDoDrive(function (url, id, token) {
+          garantirPastaEstudos().catch(function () { return null; }).then(function () { P.escolherDoDrive(function (url, id, token) {
             if (/\/folders\//.test(url)) { P.mensagem(aviso, 'Escolha um arquivo PDF, não uma pasta.', 'erro'); return; }
             fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?fields=name,mimeType&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
               .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
@@ -256,7 +275,7 @@
                   est.apostila_drive_id = id; est.apostila_nome = nome; aviso.textContent = ''; desenhar();
                 });
               }).catch(function (e) { P.mensagem(aviso, e && e.message === 'drive' ? 'Não consegui ler esse arquivo no Drive.' : P.traduzErro((e && e.message) || ''), 'erro'); });
-          }, function (t) { P.mensagem(aviso, t, 'erro'); }, false);
+          }, function (t) { P.mensagem(aviso, t, 'erro'); }, false, 'base_estudos'); });
         };
         if (est.apostila_drive_id) {
           var abrir = el('button', { type: 'button', class: 'prod-titulo', text: est.apostila_nome || 'Apostila' });
