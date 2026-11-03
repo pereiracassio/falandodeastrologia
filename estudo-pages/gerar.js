@@ -129,7 +129,7 @@ const doc = new Document({
     footers: { default: new Footer({ children: [new Paragraph({ style: 'Rodape',
         border: { top: { style: BorderStyle.SINGLE, size: 6, color: COR.ocre, space: 6 } },
         tabStops: [{ type: TabStopType.RIGHT, position: LARGURA }],
-        children: [new TextRun('Falando de Astrologia Helenística'), new TextRun('\t'), new TextRun({ children: [PageNumber.CURRENT] })] })] }) },
+        children: [new TextRun(process.env.RODAPE || 'falando de astrologia helenística'), new TextRun('\t'), new TextRun({ children: [PageNumber.CURRENT] })] })] }) },
     children: [
       new Paragraph({ style: 'TituloIndice', children: [new TextRun('Índice')] }),
       ...indice,

@@ -5,7 +5,9 @@ Todo estudo novo do astrólogo sai neste padrão: `.docx` A4 editável no Pages 
 **Visual:** Cinzel (títulos, terracota `A03E25`; subtítulos azul `1F5FA3`) e Calibri (texto, azul-noite `16233F`), margens 2,5 cm.
 - Página 1: só o título da apostila, centralizado na página (parágrafos vazios acima, nunca espaçamento grande), SEM rodapé e SEM número.
 - Página 2: Índice (linha pontilhada + número da página de cada capítulo).
-- Do índice em diante: rodapé "Falando de Astrologia Helenística" + número da página (a página 1 é a do título, o índice é a 2). Nunca o título da apostila no rodapé.
+- Do índice em diante: rodapé + número da página (a página 1 é a do título, o índice é a 2). Nunca o título da apostila no rodapé.
+  - Estudos: rodapé "falando de astrologia helenística". Apostilas do curso: rodapé "fundamentos da astrologia natal" (gerar com `RODAPE='fundamentos da astrologia natal' node gerar.js x.docx`).
+  - O texto do rodapé é sempre escrito TODO EM MINÚSCULAS: a Cinzel só tem maiúsculas, e com letras maiúsculas e minúsculas misturadas o rodapé fica com umas letras altas e outras baixas.
 - Primeira frase de cada capítulo: negrito, um pouco maior (estilo `Abertura`), nunca gigante.
 - Estilos nomeados (Texto, Abertura, Heading 1-3, Índice 1...), tudo editável no Pages. Entregar `.docx` + PDF, uma vez, sem refazer arquivo sem ser pedido.
 
