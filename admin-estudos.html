@@ -37,6 +37,8 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=145"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="leitor.js?v=8"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=2"></script>
   <script src="menu.js?v=56" defer></script>
@@ -44,6 +46,7 @@
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
     var nomeAdmin = '', nomeCurto = '';
+    if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
     function limpar() { app.textContent = ''; }
@@ -191,6 +194,93 @@
     }
 
     /* o estudo aberto: nome, barra da semana, barra do tempo (se tiver data final), datas, aulas e os botões do fim */
+    /* ---------- apostila do estudo: PDF do Drive, aberto no leitor (as marcações e a página ficam em leitor_livros, as mesmas da aba Leitor) ---------- */
+    function abrirApostila(est, aviso) {
+      C.from('leitor_livros').upsert({ drive_id: est.apostila_drive_id, nome: est.apostila_nome || 'Apostila' }, { onConflict: 'drive_id' }).select().single().then(function (x) {
+        if (x.error) { P.mensagem(aviso, P.traduzErro(x.error.message), 'erro'); return; }
+        var livro = x.data;
+        Leitor.abrir({
+          nome: livro.nome,
+          pagina: livro.pagina || 1,
+          voltar: function () {},
+          obterPdf: function (progresso) {
+            return P.tokenGoogle().then(function (token) {
+              return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(livro.drive_id) + '?alt=media&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } });
+            }).then(function (r) {
+              if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'drive');
+              var total = Number(r.headers.get('Content-Length')) || 0;
+              if (!r.body || !r.body.getReader) return r.arrayBuffer();
+              var leitor = r.body.getReader(), partes = [], lido = 0;
+              return (function passo() {
+                return leitor.read().then(function (y) {
+                  if (y.done) { var tudo = new Uint8Array(lido), o = 0; partes.forEach(function (p) { tudo.set(p, o); o += p.length; }); return tudo.buffer; }
+                  partes.push(y.value); lido += y.value.length;
+                  progresso(total ? Math.round(lido / total * 100) + '%' : Math.round(lido / 1048576) + ' MB');
+                  return passo();
+                });
+              })();
+            });
+          },
+          carregarTracos: function (pg) {
+            return C.from('leitor_tracos').select('tracos').eq('livro_id', livro.id).eq('pagina', pg).maybeSingle().then(function (r) { return r.data ? (r.data.tracos || []) : null; });
+          },
+          salvarTracos: function (pg, tracos) {
+            var q = tracos.length
+              ? C.from('leitor_tracos').upsert({ livro_id: livro.id, pagina: pg, tracos: tracos, atualizado_em: new Date().toISOString() }, { onConflict: 'livro_id,pagina' })
+              : C.from('leitor_tracos').delete().eq('livro_id', livro.id).eq('pagina', pg);
+            return q.then(function (r) { if (r.error) throw r.error; });
+          },
+          salvarPagina: function (pg, total) {
+            C.from('leitor_livros').update({ pagina: pg, total: total, atualizado_em: new Date().toISOString() }).eq('id', livro.id).then(function () {});
+          }
+        });
+      });
+    }
+    function linhaApostila(est, encerrado) {
+      var caixa = el('div', { style: 'display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:10px 0 4px' });
+      var aviso = el('p', { class: 'portal-msg', style: 'margin:0' });
+      var desenhar = function () {
+        caixa.textContent = '';
+        caixa.appendChild(el('span', { class: 'rotulo-fixo', text: 'Apostila' }));
+        var mini = function (t, aoClicar) { var b = el('button', { type: 'button', class: 'proj-mini botao-fixo', text: t }); b.style.cssText = 'background:transparent;border:0;padding:2px 4px;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline'; b.addEventListener('click', aoClicar); return b; };
+        var escolher = function () {
+          P.escolherDoDrive(function (url, id, token) {
+            if (/\/folders\//.test(url)) { P.mensagem(aviso, 'Escolha um arquivo PDF, não uma pasta.', 'erro'); return; }
+            fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?fields=name,mimeType&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
+              .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
+              .then(function (f) {
+                if (f.mimeType !== 'application/pdf') { P.mensagem(aviso, 'Esse arquivo não é um PDF.', 'erro'); return; }
+                var nome = String(f.name).replace(/\.pdf$/i, '');
+                return C.from('estudos').update({ apostila_drive_id: id, apostila_nome: nome }).eq('id', est.id).then(function (r) {
+                  if (r.error) throw r.error;
+                  est.apostila_drive_id = id; est.apostila_nome = nome; aviso.textContent = ''; desenhar();
+                });
+              }).catch(function (e) { P.mensagem(aviso, e && e.message === 'drive' ? 'Não consegui ler esse arquivo no Drive.' : P.traduzErro((e && e.message) || ''), 'erro'); });
+          }, function (t) { P.mensagem(aviso, t, 'erro'); }, false);
+        };
+        if (est.apostila_drive_id) {
+          var abrir = el('button', { type: 'button', class: 'prod-titulo', text: est.apostila_nome || 'Apostila' });
+          abrir.style.cssText = 'background:transparent;border:0;padding:0;margin:0;font:inherit;font-size:17px;color:#A03E25;cursor:pointer;text-align:left;text-decoration:underline';
+          abrir.addEventListener('click', function () { abrirApostila(est, aviso); });
+          caixa.appendChild(abrir);
+          if (!encerrado) {
+            caixa.appendChild(mini('Trocar', escolher));
+            var tirar = P.botaoApagar('Tirar');
+            tirar.addEventListener('click', function () {
+              C.from('estudos').update({ apostila_drive_id: null, apostila_nome: null }).eq('id', est.id).then(function (r) {
+                if (r.error) { P.mensagem(aviso, P.traduzErro(r.error.message), 'erro'); return; }
+                est.apostila_drive_id = null; est.apostila_nome = null; desenhar();
+              });
+            });
+            caixa.appendChild(tirar);
+          }
+        } else if (!encerrado) caixa.appendChild(mini('Escolher no Drive', escolher));
+        caixa.appendChild(aviso);
+      };
+      desenhar();
+      return caixa;
+    }
+
     function mostrarEstudo(est, corpo, encerrado) {
       corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       var arv = arvoreDe(est).map(function (x) { return x.id; });
@@ -239,6 +329,7 @@
           C.from('estudos').update({ nome: n }).eq('id', est.id).then(function (r) { if (r.error) alert('Não foi possível salvar.'); else lista(); });
         });
         cartao.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: est.nome, style: 'margin:0' }), renomear]));
+        cartao.appendChild(linhaApostila(est, encerrado));
         var base = new Date(hoje + 'T12:00:00'), dow = base.getDay();
         base.setDate(base.getDate() + (dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow));
         var iso = function (d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
