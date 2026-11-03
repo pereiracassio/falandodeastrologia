@@ -348,6 +348,11 @@
         if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a trilha agora.' })); return; }
         var trilhas = rs[0].data, ids = trilhas.map(function (t) { return t.id; });
         var passos = rs[1].data.filter(function (x) { return ids.indexOf(x.trilha_id) >= 0; });
+        /* passo com link dos fatos: se o cliente já enviou, o passo fica feito sozinho (e a tela se refaz) */
+        var fatosPend = previa ? [] : passos.filter(function (x) { return x.link && !x.feito; });
+        if (fatosPend.length) Promise.all(fatosPend.map(function (x) {
+          return fatosEnviadosDoLink(x.link).then(function (ok) { return ok ? P.client.rpc('marcar_fatos_enviado', { p_passo: String(x.id) }).then(function (r) { return r.error ? false : true; }) : false; });
+        })).then(function (rr) { if (rr.some(Boolean)) { abaAoVoltar = 'trilha'; desenharPaginaDoAluno(userAtual, aluno, previa); } });
         var ativs = (rs[2] && rs[2].data) || [];
         var meus = function (t) { return passos.filter(function (x) { return x.trilha_id === t.id; }); };
         var ativDe = function (x) { return x.atividade_id ? ativs.filter(function (a) { return a.id === x.atividade_id; })[0] : null; };
@@ -580,7 +585,19 @@
 
     /* a página do aluno em si. previa = o administrador vendo como o aluno vê (nada é salvo nem enviado) */
     var userAtual = null;
-    function desenharPaginaDoAluno(user, aluno, previa) {
+      /* O formulário dos fatos fica no banco do Astro Hellenic. Pergunta lá (função pública, só com o link do passo: u, m e t) se o cliente já enviou. */
+  function fatosEnviadosDoLink(link) {
+    try {
+      var u = new URL(link), uid = u.searchParams.get('u'), m = u.searchParams.get('m'), t = u.searchParams.get('t');
+      if (!uid || !m || !t) return Promise.resolve(false);
+      return fetch('https://ndgjenvddkmztmdixjhc.supabase.co/rest/v1/rpc/status_fatos_retificacao', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_VTjldgs8Hv1RODaMg7T57Q_ISzbnm5C' },
+        body: JSON.stringify({ p_user: uid, p_mapa: m, p_token: t })
+      }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { return !!(j && j.enviado); }, function () { return false; });
+    } catch (e) { return Promise.resolve(false); }
+  }
+
+function desenharPaginaDoAluno(user, aluno, previa) {
         userAtual = user;
         irParaAvisos = function () { telaDeAvisos(user, aluno, previa); };
         limpar();
