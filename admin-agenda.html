@@ -725,13 +725,16 @@
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }
     function itensDaProducao() {
-      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok,datas_etapas'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
         var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
         videos.forEach(function (v) {
-          /* data limite para GRAVAR: o vídeo aparece no To do até ser marcado como gravado */
-          if (v.data_gravar && !v.gravado && !v.no_ar) saida.push({ ord: v.numero || 0, quando: doIso(v.data_gravar), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: 'gravar', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, v.data_gravar] });
-          if (v.data_gravar && !v.gravado && !v.no_ar) return; /* enquanto falta gravar, só o "gravar"; depois de marcado como gravado, vem o da próxima data (membros ou público, a primeira que tiver) até estar no YouTube */
+          /* cada etapa pode ter a sua data; o vídeo aparece na data da PRIMEIRA etapa que ainda falta e tem data (roteiro, gravar, edições, SEO). Só depois de feita ela, vem a próxima */
+          if (!v.no_ar) {
+            var dtv = v.datas_etapas || {}, pend = [['roteiro_ok', 'fazer o roteiro', dtv.roteiro_ok], ['gravado', 'gravar', v.data_gravar], ['editado', 'edição grossa', dtv.editado], ['edicao_fina', 'edição fina', dtv.edicao_fina], ['seo_ok', 'fazer o SEO', dtv.seo_ok]]
+              .filter(function (e) { return !v[e[0]] && e[2]; })[0];
+            if (pend) { saida.push({ ord: v.numero || 0, quando: doIso(pend[2]), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: pend[1], subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, pend[2]] }); return; }
+          }
           /* já no YouTube, mas ainda falta fazer os cortes e depois colocar no blog: fica na lista, sem data enquanto ele não puser a data limite */
           if (v.no_ar && !(v.cortes_feitos && v.blog_ok)) {
             var faltaCortes = !v.cortes_feitos, dl = (faltaCortes ? v.data_cortes : v.data_blog) || '';
