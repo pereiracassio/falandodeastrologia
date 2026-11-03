@@ -151,6 +151,7 @@
 
     var series = [], videos = [], cortes = [];
     var rolarParaFimDaLista = false; /* ao voltar de um vídeo, a lista abre no fim (onde ficam os vídeos mais novos) */
+    var forcarAbaSerie = null; /* pedido direto de "abrir a lista de vídeos" (barra do vídeo): vale na próxima tela da série, sem depender de mais nada */
     var abaSerie = 'serie', abaSerieDe = null; /* dentro da série: 'serie' (informações) ou 'videos' (lista de vídeos), e de qual série */
     var corteAberto = null; /* corte que está aberto para editar (começa no último) */
     var abaVideo = 'video', abaVideoDe = null; /* dentro do vídeo: 'video' ou 'cortes' (e de qual vídeo) */
@@ -711,7 +712,7 @@
           el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
         ]);
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo])]);
-        linha.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') { abaSerieDe = null; irPara('series', s.id); } });
+        linha.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') { abaSerieDe = null; forcarAbaSerie = null; irPara('series', s.id); } });
         cartao.appendChild(linha);
       });
       var soltos = videos.filter(function (v) { return !v.serie_id; });
@@ -735,11 +736,11 @@
       var lista = videos.filter(function (v) { return (v.serie_id || null) === (s ? s.id : null); }).sort(function (a, b) { return (a.temporada || 1) - (b.temporada || 1) || (a.numero || 0) - (b.numero || 0); });
       var temporadaAtual = lista.reduce(function (m, v) { return Math.max(m, v.temporada || 1); }, 1), temporadasDaSerie = {}; lista.forEach(function (v) { temporadasDaSerie[v.temporada || 1] = 1; });
       /* na mesma linha do ← Voltar: "Série" (as informações) e "Vídeos" (a lista); depois do vídeo, volta já na lista */
-      var abaS = s ? (abaSerieDe === id ? abaSerie : 'serie') : 'videos';
+      var abaS = forcarAbaSerie || (s ? (String(abaSerieDe) === String(id) ? abaSerie : 'serie') : 'videos');
       var botSerie = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: nomeCurto(s ? s.nome : 'Série') });
       var botVideos = el('button', { type: 'button', role: 'tab', class: 'portal-aba', text: 'Vídeos' });
       function mostrarAbaSerie(q) {
-        abaS = q;
+        abaS = q; forcarAbaSerie = null;
         if (s) { abaSerie = q; abaSerieDe = id; }
         botSerie.className = 'portal-aba' + (q === 'serie' ? ' ativa' : ''); botVideos.className = 'portal-aba' + (q === 'videos' ? ' ativa' : '');
         cab.style.display = blocoApagarSerie.style.display = q === 'serie' ? '' : 'none';
@@ -911,7 +912,7 @@
       botCortes.addEventListener('click', function () { mostrarAbaVideo('cortes'); });
       function salvarEIr(fn) { clearTimeout(tempoSalvar); salvarSozinho(); fn(); }
       /* a linha corre para o lado, então leva os nomes: séries · nome da série · vídeos · nome do vídeo · cortes · nome do corte (o aberto em ocre) */
-      var irSerie = function (aba) { return function () { salvarEIr(function () { rolarParaFimDaLista = aba === 'videos'; abaSerie = aba; abaSerieDe = serieAberta; irPara('series', serieAberta); }); }; };
+      var irSerie = function (aba) { return function () { salvarEIr(function () { forcarAbaSerie = aba; rolarParaFimDaLista = aba === 'videos'; var dest = s ? s.id : (serieAberta || 'soltos'); abaSerie = aba; abaSerieDe = dest; irPara('series', dest); }); }; };
       var irSeries = { nome: 'Séries', ir: function () { salvarEIr(function () { irPara('series'); }); } };
       area.appendChild(barraNivel(null, s
         ? [irSeries, { nome: nomeCurto(s.nome), ir: irSerie('serie') }, { nome: 'Vídeos', ir: irSerie('videos') }]
@@ -1155,7 +1156,7 @@
         c.addEventListener('change', marcarSeoSePronto);
       });
       cardsTxt.addEventListener('input', desenharCards); /* registrado depois do salvar sozinho, mas o salvar só roda 1,2 s depois, já com o limite aplicado */
-      voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; abaSerie = 'videos'; abaSerieDe = serieAberta; irPara('series', serieAberta); };
+      voltarDoVideo = function () { clearTimeout(tempoSalvar); salvarSozinho(); rolarParaFimDaLista = true; forcarAbaSerie = 'videos'; var dest = s ? s.id : (serieAberta || 'soltos'); abaSerie = 'videos'; abaSerieDe = dest; irPara('series', dest); };
       var voltar = botaoVoltar();
       /* discreto de propósito: texto pequeno no fim da tela, longe dos outros botões */
       var apagar = P.botaoApagar('Excluir este vídeo');
