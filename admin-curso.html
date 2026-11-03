@@ -117,15 +117,15 @@
         if (erro || !rs[0].data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: erro ? P.traduzErro(erro.message) : 'Curso não encontrado.' })); return; }
         var curso = rs[0].data, mods = rs[1].data || [], aulas = rs[2].data || [], mats = rs[3].data || [];
         var tit = el('input', { type: 'text', value: curso.titulo });
-        var msgT = el('p', { class: 'portal-msg' });
+        var msgT = el('p', { class: 'portal-msg', style: 'margin:0' });
         var salvarT = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar nome' });
         salvarT.addEventListener('click', function () {
           if (!tit.value.trim()) return;
           C.from('cursos').update({ titulo: tit.value.trim() }).eq('id', id).then(function (r) { if (r.error) msgErro(msgT, r.error); else P.mensagem(msgT, 'Salvo.', 'ok'); });
         });
-        corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes', style: 'display:none' }, [salvarT])]))); P.salvarSozinho(salvarT); /* o botão fica escondido (salva sozinho): a caixa dele não pode sobrar como espaço vazio */
+        corpo.appendChild(el('div', { class: 'portal-cartao', style: 'padding-bottom:0!important;margin-bottom:0!important' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes', style: 'display:none' }, [salvarT])]))); P.salvarSozinho(salvarT); /* o botão fica escondido (salva sozinho): a caixa dele não pode sobrar como espaço vazio */
 
-        var caixaM = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Módulos' })]);
+        var caixaM = el('div', { class: 'portal-cartao', style: 'border-top:0!important;padding-top:12px!important' }, [el('h2', { text: 'Módulos' })]); /* sem a segunda barra: o nome do curso e os módulos são uma seção só */
         if (!mods.length) caixaM.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }));
         mods.forEach(function (m, i) {
           var qtd = aulas.filter(function (a) { return a.modulo_id === m.id; }).length;
