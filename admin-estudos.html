@@ -520,8 +520,7 @@
           C.from('estudos').delete().eq('id', est.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { aberto = est.estudo_pai_id || null; verEncerrado = encerrado ? (est.estudo_pai_id || null) : null; lista(); } });
         });
         if (est.estudo_pai_id && !encerrado) P.voltarNoFim(corpo, voltarPai);
-        if (!est.estudo_pai_id) { var fe = el('div', { style: 'text-align:center;margin-top:70px' }, [enc]); corpo.appendChild(fe); }
-        P.apagarNoFim(corpo, apagar);
+        corpo.appendChild(el('div', { style: 'margin:56px 0 8px;display:flex;justify-content:center;gap:40px;flex-wrap:wrap' }, est.estudo_pai_id ? [apagar] : [enc, apagar]));
       });
     }
 
