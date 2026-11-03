@@ -52,7 +52,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=144"></script>
+  <script src="portal.js?v=145"></script>
   <script src="menu.js?v=56" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
@@ -714,26 +714,28 @@
       return js[0].ini;
     }
     /* as mesmas duas barras da Produção (etapas feitas em azul com o nome vazado + o tempo até a data); montadas na hora de desenhar, para o To do poder ser guardado pronto */
-    var ETV = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
+    var ETV = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
     var ETC = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
     function barrasDe(item, etapas, criado, fim) {
-      var dts = Object.assign({}, item.datas_etapas); if (item.data_gravar) dts.gravado = item.data_gravar; if (item.data_cortes) dts.cortes_feitos = item.data_cortes; if (item.data_blog) dts.blog_ok = item.data_blog;
+      if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
+      var feita = function (k) { return k === 'capa' ? !!item.capa_url : !!item[k]; };
+      var dts = Object.assign({}, item.datas_etapas); if (item.data_gravar) dts.gravado = item.data_gravar; if (item.data_cortes) dts.cortes_feitos = item.data_cortes; if (item.data_blog) dts.blog_ok = item.data_blog; if (item.data_postar) dts.no_ar = item.data_postar; if (item.data_publico) dts.publico_ok = item.data_publico;
       var comData = etapas.some(function (e) { return dts[e[0]]; });
       if (comData) { /* a data de cada etapa por cima dela; tocar abre o item na Produção */
         var g = el('div', { style: 'display:grid;grid-auto-flow:column;grid-template-rows:auto auto;grid-auto-columns:minmax(max-content,1fr);margin:8px 0 0;overflow-x:auto;align-items:end' });
         etapas.forEach(function (e, i) {
           g.appendChild(el('span', { text: dts[e[0]] ? dts[e[0]].split('-').reverse().slice(0, 2).join('/') : '', style: 'text-align:center;font-size:11px;color:#16233F;padding:0 4px 2px' }));
-          g.appendChild(el('span', { text: e[1], style: 'white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;margin-left:-1px;border:1px solid #1F5FA3;' + (item[e[0]] ? 'background:#1F5FA3;color:#F3E3B8' : 'color:#A03E25') }));
+          g.appendChild(el('span', { text: e[1], style: 'white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;margin-left:-1px;border:1px solid #1F5FA3;' + (feita(e[0]) ? 'background:#1F5FA3;color:#F3E3B8' : 'color:#A03E25') }));
         });
         return [g, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
       }
       var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid #1F5FA3;margin:8px 0 0;overflow-x:auto' }, etapas.map(function (e, i) {
-        return el('span', { text: e[1], style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid #1F5FA3;' : '') + (item[e[0]] ? 'background:#1F5FA3;color:#F3E3B8' : 'color:#A03E25') });
+        return el('span', { text: e[1], style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid #1F5FA3;' : '') + (feita(e[0]) ? 'background:#1F5FA3;color:#F3E3B8' : 'color:#A03E25') });
       }));
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }
     function itensDaProducao() {
-      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,datas_etapas'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok,datas_etapas')]).then(function (r) {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok,datas_etapas'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok,datas_etapas')]).then(function (r) {
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
         var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
         videos.forEach(function (v) {

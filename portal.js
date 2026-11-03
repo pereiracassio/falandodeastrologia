@@ -1178,11 +1178,12 @@
   /* BARRA DE ETAPAS COM DATAS (opcionais): acima de CADA etapa fica um campo de data, sem nada escrito (é a data em que aquela etapa deve estar pronta).
      botoes = os botões de etapa já montados; chaves = a chave de cada etapa (mesma ordem); datas = {chave: 'aaaa-mm-dd'}; salvar(objeto) só grava (nada é redesenhado: o calendário não fecha).
      Vale para toda barra de etapas do software (Produção: vídeo e corte; Curso: aulas). */
-  function barraComDatas(botoes, chaves, datas, salvar) {
+  function barraComDatas(botoes, chaves, datas, salvar, aoSair) {
     var obj = Object.assign({}, datas || {}), caixa = el('div', { class: 'prod-seg com-datas' });
     botoes.forEach(function (b, i) {
       var inp = el('input', { type: 'date', 'aria-label': 'Data para fazer' }); inp.value = obj[chaves[i]] || '';
       inp.addEventListener('change', function () { if (inp.value) obj[chaves[i]] = inp.value; else delete obj[chaves[i]]; salvar(Object.assign({}, obj)); });
+      if (aoSair) inp.addEventListener('blur', aoSair);
       var cel = el('div', { class: 'prod-data-cel' }, [inp]);
       cel.addEventListener('click', function (e) { e.stopPropagation(); }); /* mexer na data nunca abre a linha */
       caixa.appendChild(cel); caixa.appendChild(b);

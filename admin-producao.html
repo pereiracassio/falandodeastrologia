@@ -89,7 +89,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=144"></script>
+  <script src="portal.js?v=145"></script>
   <script src="menu.js?v=56" defer></script>
   <script>
   (function () {
@@ -98,7 +98,10 @@
     var DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     var DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    var ETAPAS = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube'], ['cortes_feitos', 'Cortes feitos'], ['blog_ok', 'No blog']];
+    var ETAPAS = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
+    /* Público só existe no vídeo marcado como público; Capa se marca sozinha (tem foto = feita) */
+    function etapasDoVideo(v) { return ETAPAS.filter(function (e) { return e[0] !== 'publico_ok' || (v.acesso || 'publico') !== 'membros'; }); }
+    function etapaDoVideoFeita(v, k) { return k === 'capa' ? !!v.capa_url : !!v[k]; }
     /* a linha que separa a descrição dos capítulos no YouTube: 51 traços longos, do tamanho certinho da descrição */
     var LINHA_DESCRICAO = '———————————————————————————————————————————————————';
     /* parte fixa de todo vídeo (atendimentos e apoio ao canal), a linha, Capítulos e o 00:00. Em cima fica o espaço para o texto do vídeo. */
@@ -453,7 +456,6 @@
       if (vazio(v.capa_texto)) falta.push('texto da capa');
       if (!v.numero) falta.push('número na série');
       if (!v.data_postar) falta.push('data para membros');
-      if (vazio(v.capa_url)) falta.push('foto da capa');
       if (!temRoteiro) falta.push('roteiro');
       if (!corpo) falta.push('texto que vai junto');
       if (vazio(v.tags)) falta.push('tags');
@@ -462,7 +464,7 @@
     /* repinta todos os botões de etapa deste vídeo que estiverem na tela (o do roteiro lá embaixo e os de cima) */
     function pintarEtapas(v) {
       [].forEach.call(document.querySelectorAll('[data-video="' + v.id + '"][data-etapa]'), function (b) {
-        var on = !!v[b.getAttribute('data-etapa')];
+        var on = etapaDoVideoFeita(v, b.getAttribute('data-etapa'));
         b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
     }
@@ -477,26 +479,30 @@
       }
       /* Cortes feitos marca "Corte" em todos os cortes deste vídeo */
       if (campo === 'cortes_feitos' && valor) cortesDe(v.id).forEach(function (c) { if (!c.corte_ok) { c.corte_ok = true; pintarCorte(c); gravar('prod_cortes', cortes, c, { corte_ok: true }); } });
-      if (campo === 'no_ar' && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
+      if ((campo === 'no_ar' || campo === 'publico_ok') && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
+      if (campo === 'publico_ok' && valor && !v.no_ar) campos.no_ar = true;
       Object.keys(campos).forEach(function (k) { v[k] = campos[k]; });
       pintarEtapas(v);
       return gravar('prod_videos', videos, v, campos);
     }
-    function chipsDaEtapa(v, aoMudar) {
-      /* uma barra só dividida em passos: o passo marcado fica azul, com o nome vazado */
-      var botoes = ETAPAS.map(function (et) {
-        var b = chip(et[1], !!v[et[0]], function () {
+    function chipsDaEtapa(v, aoMudar, aoSairData) {
+      /* uma barra só dividida em passos: o passo marcado fica azul, com o nome vazado; acima de cada etapa, a data (opcional) */
+      var lista = etapasDoVideo(v);
+      var botoes = lista.map(function (et) {
+        var b = chip(et[1], etapaDoVideoFeita(v, et[0]), function () {
+          if (et[0] === 'capa') return; /* a capa se marca sozinha: tem foto = feita; tirar a foto desmarca */
           marcarEtapa(v, et[0], !v[et[0]]).then(function () { if (aoMudar) aoMudar(); });
         }, { 'data-video': v.id, 'data-etapa': et[0] });
         b.classList.add('prod-seg-item');
         return b;
       });
-      /* gravado, cortes feitos e no blog usam as datas que já existiam (data_gravar, data_cortes, data_blog): é o mesmo campo, só mudou de lugar */
-      var atual = Object.assign({}, v.datas_etapas); if (v.data_gravar) atual.gravado = v.data_gravar; if (v.data_cortes) atual.cortes_feitos = v.data_cortes; if (v.data_blog) atual.blog_ok = v.data_blog;
-      return P.barraComDatas(botoes, ETAPAS.map(function (x) { return x[0]; }), atual, function (o) {
-        var rest = Object.assign({}, o); delete rest.gravado; delete rest.cortes_feitos; delete rest.blog_ok;
-        gravar('prod_videos', videos, v, { datas_etapas: rest, data_gravar: o.gravado || null, data_cortes: o.cortes_feitos || null, data_blog: o.blog_ok || null });
-      });
+      /* as datas que já existiam são as mesmas, só mudaram de lugar: gravado = data_gravar, membros = data_postar, público = data_publico, cortes = data_cortes, blog = data_blog */
+      var atual = Object.assign({}, v.datas_etapas);
+      if (v.data_gravar) atual.gravado = v.data_gravar; if (v.data_postar) atual.no_ar = v.data_postar; if (v.data_publico) atual.publico_ok = v.data_publico; if (v.data_cortes) atual.cortes_feitos = v.data_cortes; if (v.data_blog) atual.blog_ok = v.data_blog;
+      return P.barraComDatas(botoes, lista.map(function (x) { return x[0]; }), atual, function (o) {
+        var rest = Object.assign({}, o); ['gravado', 'no_ar', 'publico_ok', 'cortes_feitos', 'blog_ok'].forEach(function (k) { delete rest[k]; });
+        gravar('prod_videos', videos, v, { datas_etapas: rest, data_gravar: o.gravado || null, data_postar: o.no_ar || null, data_publico: o.publico_ok || null, data_cortes: o.cortes_feitos || null, data_blog: o.blog_ok || null });
+      }, aoSairData);
     }
     function botao(texto, aoClicar, sec) {
       var b = el('button', { type: 'button', class: 'portal-btn' + (sec === false ? '' : ' portal-btn-sec'), text: texto });
@@ -932,7 +938,7 @@
       var capaTexto = el('input', { type: 'text', maxlength: '160', placeholder: 'O que está escrito na capa do vídeo' }); capaTexto.value = v.capa_texto || '';
       var numero = el('input', { type: 'number', min: '1' }); numero.value = v.numero || '';
       var temporada = el('input', { type: 'number', min: '1' }); temporada.value = v.temporada || 1;
-      var data = el('input', { type: 'date' }); data.value = v.data_postar || '';
+      var data = { get value() { return v.data_postar || ''; } }; /* a data de membros e a de público agora são as da barra de etapas; aqui só leem o vídeo */
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
       var roteiro = el('textarea', { rows: '12', placeholder: 'Roteiro do vídeo' }); roteiro.value = v.roteiro || ''; roteiro.style.minHeight = '220px';
       var texto = el('textarea', { rows: '10', placeholder: 'Texto que vai junto com o vídeo: descrição, capítulos e hashtags, do jeito que vai para o YouTube' }); texto.value = v.texto_postagem || fimDescricao(); /* vídeo sem texto ainda já nasce com a linha e a palavra Capítulos */
@@ -947,17 +953,13 @@
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
       function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
-      var dataPublico = el('input', { type: 'date' }); dataPublico.value = v.data_publico || '';
-      [data, dataPublico].forEach(function (c) { c.style.cssText = 'width:160px;min-width:160px;margin:0 0 6px'; });
-      var blocoPublico = campo('Público', dataPublico);
-      blocoPublico.style.display = rotuloAcesso(v) === 'público' ? '' : 'none';
+      var dataPublico = { get value() { return v.data_publico || ''; } };
       /* tudo na MESMA linha: público/membros, disponível para membros, fica público em e as duas datas limite (opcionais; sem data o vídeo fica no fim do To Do).
          No celular quebra em duas: as três primeiras em cima, as datas limite embaixo. O horário de Júpiter vem depois. */
       var linhaGrupo = function (filhos) { return el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 16px;align-items:flex-start' }, filhos); };
       cartao.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:0 28px;align-items:flex-start;margin:0 0 6px' }, [
         linhaGrupo([
-          campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { blocoPublico.style.display = a === 'publico' ? '' : 'none'; v.acesso = a; atualizarJupiter(); gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) avisoFlutuante('Salvo'); }); })),
-          campo('Membros', data), blocoPublico
+          campo('Vídeo público ou de membros', escolhaAcesso(v.acesso, function (a) { v.acesso = a; gravar('prod_videos', videos, v, { acesso: a }).then(function (r) { if (!r.error) { avisoFlutuante('Salvo'); clearTimeout(tempoSalvar); salvarSozinho(); tela(); } }); })),
         ]),
       ]));
       cartao.appendChild(jupV);
@@ -972,7 +974,7 @@
         botTirar.style.display = capaUrl ? '' : 'none';
       }
       botImg.addEventListener('click', function () { escolher.click(); });
-      botTirar.addEventListener('click', function () { capaUrl = ''; capaNova = null; mostrarCapa(); gravar('prod_videos', videos, v, { capa_url: null }).then(function () { marcarSeoSePronto(); }); });
+      botTirar.addEventListener('click', function () { capaUrl = ''; capaNova = null; mostrarCapa(); gravar('prod_videos', videos, v, { capa_url: null }).then(function () { pintarEtapas(v); marcarSeoSePronto(); }); });
       escolher.addEventListener('change', function () {
         var arq = escolher.files && escolher.files[0]; escolher.value = '';
         if (!arq) return;
@@ -985,7 +987,7 @@
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px;align-items:center;gap:22px' }, [botImg, botTirar, escolher]));
       mostrarCapa();
       cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Etapas' }));
-      cartao.appendChild(chipsDaEtapa(v));
+      cartao.appendChild(chipsDaEtapa(v, null, function () { atualizarJupiter(); marcarSeoSePronto(); agendarSalvar(); }));
       var tempoV = barraTempo(v.criado_em, fimDoVideo(v), v.no_ar); if (tempoV) cartao.appendChild(tempoV);
       var faltaSeoLinha = el('p', { class: 'prod-sub', style: 'margin:-4px 0 12px;color:#A03E25' });
       cartao.appendChild(faltaSeoLinha);
@@ -1105,7 +1107,7 @@
           if (r.error) throw r.error;
           capaUrl = C.storage.from('site').getPublicUrl(caminho).data.publicUrl; if (capaNova === blob) capaNova = null;
           mostrarCapa();
-          return gravar('prod_videos', videos, v, { capa_url: capaUrl });
+          return gravar('prod_videos', videos, v, { capa_url: capaUrl }).then(function (x) { pintarEtapas(v); return x; });
         }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Foto salva.', 'ok'); avisoFlutuante('Salvo'); marcarSeoSePronto(); } })
           .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto (' + (e && e.message ? e.message : 'erro') + ')', 'erro'); });
       }
@@ -1136,15 +1138,11 @@
       link.addEventListener('change', function () {
         var lk = link.value.trim();
         if (/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(lk) && !v.no_ar) {
-          marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: no YouTube'); });
+          marcarEtapa(v, 'no_ar', true).then(function () { avisoFlutuante('Marcado: membros'); });
         }
       });
       /* Membros e Público: NADA na tela muda enquanto o calendário está aberto (mudar o que está embaixo fechava o calendário no computador, antes de ele chegar nele).
          Ao escolher, só grava quieto; o horário de Júpiter, o aviso do SEO e o salvar completo vêm quando sai do campo. */
-      [[data, 'data_postar'], [dataPublico, 'data_publico']].forEach(function (p) {
-        p[0].addEventListener('change', function () { var o = {}; o[p[1]] = p[0].value || null; gravar('prod_videos', videos, v, o); });
-        p[0].addEventListener('blur', function () { atualizarJupiter(); marcarSeoSePronto(); agendarSalvar(); });
-      });
       [titulo, capaTexto, link, numero, temporada, roteiro, texto, tags, cardsTxt].forEach(function (c) {
         c.addEventListener('input', agendarSalvar);
         c.addEventListener('change', agendarSalvar);
