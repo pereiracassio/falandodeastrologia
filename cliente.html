@@ -112,6 +112,20 @@
       try { P.client.from('entrega_baixas').insert({ entrega_id: entregaId, tipo: tipo }).then(function () {}, function () {}); } catch (e) { /* o link abre do mesmo jeito */ }
     }
 
+    /* O link dos fatos colado pelo administrador é o do Astro Hellenic; para o cliente ele abre DENTRO do site (formulario.html daqui, que embute o formulário
+       com o papiro e o cabeçalho), sem agenda. Link de outro lugar fica como está. */
+    function linkDosFatos(url) {
+      try {
+        var u = new URL(url);
+        if (!/(^|\.)astrohellenic\.(github\.io|com)$/i.test(u.hostname) || !/formulario\.html$/i.test(u.pathname)) return url;
+        var f = new URLSearchParams();
+        ['u', 'm', 't', 'p', 'servico', 'nome', 'email'].forEach(function (k) { if (u.searchParams.get(k)) f.set(k, u.searchParams.get(k)); });
+        if (!f.get('servico')) f.set('servico', 'Retificação');
+        f.set('agenda', '0');
+        return 'formulario.html?' + f.toString();
+      } catch (e) { return url; }
+    }
+
     function itemEntrega(e, verId) {
       var titulo = el('div', {}, [el('span', { class: 'portal-item-titulo', text: e.servico })]);
       if (e.data) titulo.appendChild(el('span', { class: 'portal-item-data', text: P.dataBR(e.data) }));
@@ -137,7 +151,7 @@
         aGrav.addEventListener('click', function () { registrarBaixa(e.id, 'gravacao', verId); });
         botoes.appendChild(aGrav);
       }
-      if (fatosLink) botoes.appendChild(el('a', { class: 'portal-btn', href: fatosLink, target: '_blank', rel: 'noopener', text: 'Preencher os fatos' }));
+      if (fatosLink) botoes.appendChild(el('a', { class: 'portal-btn', href: linkDosFatos(fatosLink), target: '_blank', rel: 'noopener', text: 'Preencher os fatos' }));
       var caixa = el('div', { class: 'portal-item', 'data-entrega': e.id });
       if (gravacao || pdf || fatosLink) {
         /* o arquivo abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
@@ -286,7 +300,7 @@
             if (fatosUrl && !ligado) {
               fatosSolto.appendChild(el('div', { class: 'portal-cartao' }, [
                 el('h2', { text: 'Fatos da sua vida' }),
-                el('a', { class: 'portal-btn', href: fatosUrl, target: '_blank', rel: 'noopener', text: 'Preencher os fatos' })
+                el('a', { class: 'portal-btn', href: linkDosFatos(fatosUrl), target: '_blank', rel: 'noopener', text: 'Preencher os fatos' })
               ]));
             }
             if (paraDestacar) destacarEntrega(paraDestacar);

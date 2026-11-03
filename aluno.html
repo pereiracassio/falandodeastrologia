@@ -403,7 +403,7 @@
             }
           }
           var linkDoPasso = P.linkSeguro(x.link);
-          if (linkDoPasso) texto.push(el('a', { class: 'portal-btn', href: linkDoPasso, target: '_blank', rel: 'noopener', text: 'Preencher os fatos', style: 'margin-top:8px' }));
+          if (linkDoPasso) texto.push(el('a', { class: 'portal-btn', href: linkDosFatos(linkDoPasso), target: '_blank', rel: 'noopener', text: 'Preencher os fatos', style: 'margin-top:8px' }));
           var linhaEl = el('div', { style: 'padding:12px 2px;border-top:1px solid #1F5FA3' + (abrirLinha ? ';cursor:pointer' : '') }, [el('div', { style: 'min-width:0' }, texto)]);
           if (abrirLinha) linhaEl.addEventListener('click', function (ev) { if (ev.target.closest('button,a')) return; abrirLinha(); });
           return linhaEl;
@@ -596,6 +596,20 @@
       }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { return !!(j && j.enviado); }, function () { return false; });
     } catch (e) { return Promise.resolve(false); }
   }
+
+    /* O link dos fatos colado pelo administrador é o do Astro Hellenic; para o cliente ele abre DENTRO do site (formulario.html daqui, que embute o formulário
+   com o papiro e o cabeçalho), sem agenda. Link de outro lugar fica como está. */
+function linkDosFatos(url) {
+  try {
+    var u = new URL(url);
+    if (!/(^|\.)astrohellenic\.(github\.io|com)$/i.test(u.hostname) || !/formulario\.html$/i.test(u.pathname)) return url;
+    var f = new URLSearchParams();
+    ['u', 'm', 't', 'p', 'servico', 'nome', 'email'].forEach(function (k) { if (u.searchParams.get(k)) f.set(k, u.searchParams.get(k)); });
+    if (!f.get('servico')) f.set('servico', 'Retificação');
+    f.set('agenda', '0');
+    return 'formulario.html?' + f.toString();
+  } catch (e) { return url; }
+}
 
 function desenharPaginaDoAluno(user, aluno, previa) {
         userAtual = user;
