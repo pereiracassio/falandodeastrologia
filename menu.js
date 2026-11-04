@@ -149,6 +149,13 @@
       if (!link.aoTocar) a.setAttribute("data-href", link.href);
       if (link.atual || (!link.aoTocar && link.href === currentPage)) a.classList.add("is-current");
       if (link.aoTocar) a.addEventListener("click", function (ev) { ev.preventDefault(); closeMenu(); link.aoTocar(); });
+      /* já estando na Agenda, Horas e To do só trocam de aba (a página não recarrega): fecha o menu e troca na hora */
+      if (!link.aoTocar && /^admin-agenda\.html/.test(link.href) && currentPage === "admin-agenda.html") a.addEventListener("click", function (ev) {
+        if (!window.fdaAgendaIr) return;
+        ev.preventDefault(); closeMenu();
+        window.fdaAgendaIr((/#v=(\w+)/.exec(link.href) || [])[1] || "agenda");
+        setTimeout(marcarAtualDaAgenda, 0);
+      });
       nav.appendChild(a);
     });
     if (nav.lastChild) nav.lastChild.classList.add("sem-linha");
