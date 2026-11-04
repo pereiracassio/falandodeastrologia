@@ -146,6 +146,7 @@
       a.textContent = link.label;
       if (link.carrinho && contarCarrinho() > 0) a.textContent += " (" + contarCarrinho() + ")";
       if (link.sep) { a.classList.add("is-sep"); if (nav.lastChild) nav.lastChild.classList.add("sem-linha"); } /* onde entra a linha ocre, a linha fina de cima sai */
+      if (!link.aoTocar) a.setAttribute("data-href", link.href);
       if (link.atual || (!link.aoTocar && link.href === currentPage)) a.classList.add("is-current");
       if (link.aoTocar) a.addEventListener("click", function (ev) { ev.preventDefault(); closeMenu(); link.aoTocar(); });
       nav.appendChild(a);
@@ -153,6 +154,15 @@
     if (nav.lastChild) nav.lastChild.classList.add("sem-linha");
   }
   montarNav(links);
+  /* Agenda, Horas e To do são a mesma página (admin-agenda.html) com #v=horas / #v=todo: o item marcado acompanha a aba em que a pessoa está (a aba é trocada sem recarregar, então confere de novo ao abrir o menu) */
+  function marcarAtualDaAgenda() {
+    if (currentPage !== "admin-agenda.html") return;
+    var v = (/[#&]v=(\w+)/.exec(window.location.hash) || [])[1];
+    var alvo = v === "horas" ? "admin-agenda.html#v=horas" : v === "todo" ? "admin-agenda.html#v=todo" : "admin-agenda.html";
+    [].forEach.call(nav.querySelectorAll("a[data-href^='admin-agenda.html']"), function (a) { a.classList.toggle("is-current", a.getAttribute("data-href") === alvo); });
+  }
+  marcarAtualDaAgenda();
+  window.addEventListener("hashchange", marcarAtualDaAgenda);
   /* aluno logado (aluno.html): o menu traz as abas dele; sem lista, volta o menu do site */
   window.fdaMenuAluno = function (lista) { montarNav(lista && lista.length ? lista : links); };
 
@@ -225,6 +235,7 @@
   window.addEventListener("resize", ajustarEspaco);
 
   function openMenu() {
+    marcarAtualDaAgenda();
     ajustarEspaco();
     overlay.classList.add("is-open");
     panel.classList.add("is-open");
