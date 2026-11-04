@@ -37,7 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="hora-planetaria.js"></script>
-  <script src="portal.js?v=147"></script>
+  <script src="portal.js?v=148"></script>
   <script src="menu.js?v=57" defer></script>
   <script>
   (function () {
@@ -67,7 +67,8 @@
       /* aniversariantes de hoje: ficam fixos no topo, antes de qualquer outro aviso */
       var fixos = el('div', {});
       cartao.appendChild(fixos);
-      P.aniversariosHoje().then(function (lista) {
+      var daily = P.appDaPagina() === 'daily';
+      (daily ? Promise.resolve([]) : P.aniversariosHoje()).then(function (lista) {
         P.marcarAnivVisto();
         lista.forEach(function (p) {
           var dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
@@ -85,7 +86,7 @@
       /* Produção: o que está chegando e ainda não foi concluído (cortes mostram a hora de Júpiter do dia) */
       var producao = el('div', {});
       cartao.appendChild(producao);
-      C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) { try { return JSON.parse(r.data.valor); } catch (e) { return null; } }, function () { return null; }).then(function (lugar) {
+      if (daily) C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle().then(function (r) { try { return JSON.parse(r.data.valor); } catch (e) { return null; } }, function () { return null; }).then(function (lugar) {
         var LAT = lugar && typeof lugar.lat === 'number' ? lugar.lat : -23.3053, LON = lugar && typeof lugar.lon === 'number' ? lugar.lon : -45.9658;
         var hh = function (ms) { var d = new Date(ms + window.horaPlanetaria.FUSO); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
         var jupiterDe = function (iso) {
@@ -107,7 +108,8 @@
         });
       });
       app.appendChild(P.botaoVoltar(voltar));
-      C.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(50).then(function (r) {
+      C.from('avisos_recebidos').select('id,titulo,corpo,url,lido,criado_em').order('criado_em', { ascending: false }).limit(200).then(function (r) {
+        if (!r.error) r.data = r.data.filter(function (a) { return P.avisoDoApp(a.url); }).slice(0, 50);   /* só os avisos deste app */
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os avisos agora.' })); return; }
         if (!r.data.length) { cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum aviso por enquanto.' })); P.sinoAdmin(0); return; }
         var naoLidos = r.data.filter(function (a) { return !a.lido; }).length;
@@ -120,7 +122,7 @@
           ]);
           linha.addEventListener('click', function (ev) {
             ev.preventDefault();
-            var ir = function () { location.href = /^\/admin-[a-z]+\.html/.test(a.url || '') ? a.url : 'admin-alunos.html'; };
+            var ir = function () { location.href = /^\/admin-[a-z]+\.html/.test(a.url || '') ? a.url : (daily ? 'admin-agenda.html' : 'admin-alunos.html'); };
             if (a.lido) { ir(); return; }
             C.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(ir, ir);
           });

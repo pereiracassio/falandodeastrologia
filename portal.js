@@ -525,9 +525,9 @@
     pintar(0);
     /* o número do sino = avisos não lidos + aniversariantes de hoje (até você abrir a tela de Avisos no dia); confere de novo a cada minuto e quando o app volta para a frente */
     var contar = function () { Promise.all([
-      client.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) { return r && !r.error && r.count ? r.count : 0; }, function () { return 0; }),
-      aniversariosHoje().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; }),
-      lembretesProducao().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; })
+      client.from('avisos_recebidos').select('url').eq('lido', false).limit(200).then(function (r) { return r && !r.error && r.data ? r.data.filter(function (a) { return avisoDoApp(a.url); }).length : 0; }, function () { return 0; }),
+      appDaPagina() === 'daily' ? Promise.resolve(0) : aniversariosHoje().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; }),
+      appDaPagina() !== 'daily' ? Promise.resolve(0) : lembretesProducao().then(function (l) { return anivVisto() ? 0 : l.length; }, function () { return 0; })
     ]).then(function (v) { pintar(v[0] + v[1] + v[2]); }); };
     contar();
     setInterval(function () { if (document.visibilityState === 'visible') contar(); }, 60000);
@@ -562,6 +562,11 @@
     return 'falando';
   }
   try { if (PAGINAS_DAILY.test(location.pathname)) { sessionStorage.setItem('fda_app', 'daily'); localStorage.setItem('fda_app_ultimo', 'daily'); } } catch (e) { /* sem armazenamento */ }
+  /* cada app mostra só os avisos dele: aviso que leva a uma tela do Hellenic Daily (inclui o pagamento recebido, que vai ao Financeiro) é do Daily; o resto é do Falando de Astrologia */
+  function avisoDoApp(url) {
+    var doDaily = PAGINAS_DAILY.test(String(url || '').split(/[?#]/)[0]);
+    return (appDaPagina() === 'daily') === doDaily;
+  }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
     var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['horas', 'Horas', 'admin-agenda.html#v=horas'], ['todo', 'To do', 'admin-agenda.html#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
@@ -1492,7 +1497,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
