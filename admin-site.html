@@ -37,7 +37,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=146"></script>
+  <script src="portal.js?v=147"></script>
   <script src="menu.js?v=57" defer></script>
   <script>
   (function () {
@@ -453,41 +453,26 @@
 
       cartao.appendChild(foto); cartao.appendChild(msg); cartao.appendChild(acoes);
       cartao.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:14px', text: 'A foto é cortada em quadrado, pelo centro, e aparece redonda na página Sobre. Escolha uma em que o rosto fique no meio.' }));
-      var abaSite = el('div'), abaDaily = el('div');
-      abaSite.appendChild(cartao);
-      /* o que antes ficava no Painel dos Alunos e em Clientes: pasta de cada um no Drive, conexão com o Google e avisos no celular */
-      abaSite.appendChild(P.cartaoPastaBase('alunos'));
-      abaSite.appendChild(P.cartaoPastaBase('clientes'));
-      var conexaoDrive = P.cartaoConexaoDrive();
-      
-      abaSite.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
-      abaSite.appendChild(cartaoImportarClientes());
-      abaSite.appendChild(cartaoAreas); abaSite.appendChild(cartaoServicos);
-      /* configurações do Hellenic Daily: o que serve à agenda e às horas, separado das do site (a engrenagem é uma só, no meio da barra) */
-      if (conexaoDrive) abaDaily.appendChild(conexaoDrive); /* conexão Google (Drive e Agenda): uma só, na aba do Hellenic Daily */
-      abaDaily.appendChild(cartaoLugar());
-      abaDaily.appendChild(cartaoTextoFixo()); /* texto fixo da Produção: Produção é do Hellenic Daily */
-      abaDaily.appendChild(cartaoAgendas());
-      var ABAS_CFG = [{ chave: 'site', nome: 'Falando de Astrologia', el: abaSite }, { chave: 'daily', nome: 'Hellenic Daily', el: abaDaily }];
-      var barraAbas = el('div', { class: 'portal-abas', role: 'tablist' }), conteudoAba = el('div'), botoesAbas = {};
-      function mostrarAba(chave) {
-        ABAS_CFG.forEach(function (ab) {
-          var ativa = ab.chave === chave;
-          botoesAbas[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
-          botoesAbas[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
-          ab.el.style.display = ativa ? '' : 'none';
-        });
-        P.estado.mesclar({ aba: chave });
+      /* dois apps: cada um mostra só as configurações dele (sem abas). Avisos no celular existem nos dois: cada app instalado cadastra o próprio aparelho. */
+      var daily = P.appDaPagina() === 'daily', pagina = el('div');
+      if (!daily) {
+        /* Falando de Astrologia: foto do Sobre, pasta dos alunos e clientes, avisos, importar clientes */
+        pagina.appendChild(cartao);
+        pagina.appendChild(P.cartaoPastaBase('alunos'));
+        pagina.appendChild(P.cartaoPastaBase('clientes'));
+        pagina.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
+        pagina.appendChild(cartaoImportarClientes());
+      } else {
+        /* Hellenic Daily: conexão Google (Drive e Agenda), lugar das horas, texto fixo da Produção, agendas que aparecem, avisos, e as Áreas e Serviços do Financeiro */
+        var conexaoDrive = P.cartaoConexaoDrive();
+        if (conexaoDrive) pagina.appendChild(conexaoDrive);
+        pagina.appendChild(cartaoLugar());
+        pagina.appendChild(cartaoTextoFixo());
+        pagina.appendChild(cartaoAgendas());
+        pagina.appendChild(P.avisos.cartao('admin'));
+        pagina.appendChild(cartaoAreas); pagina.appendChild(cartaoServicos);
       }
-      ABAS_CFG.forEach(function (ab) {
-        var b = el('button', { type: 'button', role: 'tab', text: ab.nome });
-        b.addEventListener('click', function () { mostrarAba(ab.chave); });
-        botoesAbas[ab.chave] = b; barraAbas.appendChild(b); conteudoAba.appendChild(ab.el);
-      });
-      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barraAbas])));
-      app.appendChild(conteudoAba);
-      var abaInicial = (P.estado.ler && P.estado.ler().aba) || 'site';
-      mostrarAba(botoesAbas[abaInicial] ? abaInicial : 'site');
+      app.appendChild(pagina);
       carregarFin();
       /* no fim da lista: Trocar senha e, abaixo, o Sair (botão cheio, terracota) */
       var areaSenha = el('div', { style: 'width:100%' });

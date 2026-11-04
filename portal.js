@@ -571,6 +571,7 @@
     itens = itens.filter(function (i) { return appAtual === 'daily' ? DAILY[i[0]] : !DAILY[i[0]]; });
     itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
     itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
+    if (appAtual === 'daily') { var logo = document.querySelector('.cab-logo img'); if (logo && /logo-menu\.svg/.test(logo.getAttribute('src'))) { logo.setAttribute('src', '/img/logo-menu-daily.svg?v=1'); logo.setAttribute('alt', 'Hellenic Daily'); } } /* telas compartilhadas (⚙ e Avisos) mostram o logo do app em que você está */
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
       if (i[0] === 'agenda' || i[0] === 'horas' || i[0] === 'todo') a.addEventListener('click', function (ev) { if (window.fdaAgendaIr) { ev.preventDefault(); window.fdaAgendaIr(i[0]); } }); /* já estando na Agenda, troca de aba sem recarregar */
