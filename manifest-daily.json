@@ -9,7 +9,7 @@
   "background_color": "#e6d3a0",
   "theme_color": "#e6d3a0",
   "icons": [
-    { "src": "/favicon.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "/img/favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "/img/icone-daily-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/img/icone-daily-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }
