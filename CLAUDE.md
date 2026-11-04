@@ -427,3 +427,10 @@ Ele reclamou com raiva da semana 2: os assuntos eram suposição do Claude (nunc
 
 ## Botão só de palavra (azul) SEMPRE sublinhado, no site inteiro (03/11/2026) — regra dele
 Botão secundário que é só a palavra leva **sublinhado** (senão "tem que adivinhar que é botão"). Está em `page.css` (fim do arquivo: `.portal-btn-sec` e botões de linha de lista). Nunca fazer numa tela só: é regra global (Frankenstein). Abas/barra de navegação ficam sem sublinhado. Botão NUNCA muda no hover (cor, fonte, tamanho, forma: ordem dele, 03/11/2026; "apagar" discreto é Cinzel também com o cursor em cima). Encerrar e Apagar o estudo ficam lado a lado, discretos, centralizados no fim.
+
+## PUBLICAR NA `main`: SÓ COM "PODE PUBLICAR" EXPLÍCITO, E TUDO DE UMA VEZ (04/11/2026) — regra dele, vale acima de qualquer outra
+
+**Só publicar (`git push ... :main`) quando o astrólogo disser, com todas as letras, "pode publicar".** Nenhuma outra frase vale como ordem: "rodei o SQL", "ficou bom", "gostei", "pode ficar assim", "tá ótimo", resposta a um teste ou a uma pergunta minha. Já houve publicação por interpretar uma dessas como "sim", e ele ficou (com razão) bravo.
+- **Publicar tudo de uma vez.** Ele quer fazer tudo o que tem para ser feito e só então publicar; nunca publicar "de picado", uma coisa por vez, nem toda vez que uma coisa fica pronta. Terminou uma parte? Commit e push da BRANCH (nunca da `main`), e seguir para o que falta.
+- Cada "pode publicar" vale só para o que estava pronto naquela hora; coisa nova depois precisa de outra ordem.
+- Não repetir SQL que ele já disse que rodou (nem se der erro: dizer só o que está errado, ex.: projeto do Supabase errado; o do Astro Hellenic NÃO é o do Falando de Astrologia).
