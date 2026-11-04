@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <script>/* Ícone do app Hellenic Daily: abre aqui e vai direto para a última tela em que você estava (guardada por portal.js em fda_ultima_pagina_daily). Não carrega mais nada. */
+  (function () { try {
+    var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (!app) return;
+    var u = localStorage.getItem('fda_ultima_pagina_daily');
+    var destino = u && /^\/admin-(agenda|estudos|producao|projetos|financeiro|leitor|site|avisos)\.html/.test(u) ? u : '/admin-agenda.html';
+    location.replace(destino);
+  } catch (e) { location.replace('/admin-agenda.html'); } })();</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e6d3a0">
+  <meta name="robots" content="noindex">
+  <link rel="manifest" href="manifest-daily.json">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=3">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Daily">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Hellenic Daily</title>
+  <style>html,body{margin:0;height:100%;background:#e6d3a0}</style>
+</head>
+<body></body>
+</html>

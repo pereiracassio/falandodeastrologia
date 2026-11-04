@@ -532,6 +532,7 @@
     contar();
     setInterval(function () { if (document.visibilityState === 'visible') contar(); }, 60000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contar(); });
+    if (appDaPagina() === 'daily') return;   /* mensagens de alunos são do Falando de Astrologia */
     /* o Hermes ao lado do sino: abre a caixa de mensagens dos alunos; o número = mensagens de alunos ainda não lidas */
     var pintarHermes = function (q) {
       var cfg = { n: q, aoTocar: function () { location.href = 'admin-mensagens.html'; } };
@@ -544,16 +545,32 @@
     setInterval(function () { if (document.visibilityState === 'visible') contarMensagens(); }, 30000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') contarMensagens(); });
   }
+  /* Dois apps no mesmo site: Hellenic Daily (agenda, horas, to do, estudos, produção, projetos, financeiro, leitor) e Falando de Astrologia (o resto).
+     As telas compartilhadas (⚙ Configurações e Avisos) ficam no app em que a pessoa estava (guardado na sessão, com reserva no aparelho). */
+  var PAGINAS_DAILY = /\/admin-(agenda|estudos|producao|projetos|financeiro|leitor)\.html$/;
+  function appDaPagina() {
+    var caminho = location.pathname;
+    if (PAGINAS_DAILY.test(caminho)) return 'daily';
+    var compartilhada = /\/admin-(site|avisos)\.html$/.test(caminho);
+    try {
+      if (!compartilhada && /\/(admin-[a-z]+|capa)\.html$/.test(caminho)) {
+        sessionStorage.setItem('fda_app', 'falando'); localStorage.setItem('fda_app_ultimo', 'falando');
+        return 'falando';
+      }
+      if (compartilhada) return sessionStorage.getItem('fda_app') || localStorage.getItem('fda_app_ultimo') || 'falando';
+    } catch (e) { /* sem armazenamento */ }
+    return 'falando';
+  }
+  try { if (PAGINAS_DAILY.test(location.pathname)) { sessionStorage.setItem('fda_app', 'daily'); localStorage.setItem('fda_app_ultimo', 'daily'); } } catch (e) { /* sem armazenamento */ }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
     var itens = [['agenda', 'Agenda', 'admin-agenda.html'], ['horas', 'Horas', 'admin-agenda.html#v=horas'], ['todo', 'To do', 'admin-agenda.html#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
-    /* em ordem alfabética, para achar mais fácil */
-    /* duas metades na mesma barra, sem divisa: primeiro o Falando de Astrologia, depois o Hellenic Daily (Agenda, Estudos, Produção, Projetos), cada uma em ordem alfabética */
-    var DAILY = { agenda: 1, estudos: 1, horas: 1, producao: 1, projetos: 1, todo: 1 };
-    itens.sort(function (a, b) { return ((DAILY[a[0]] ? 1 : 0) - (DAILY[b[0]] ? 1 : 0)) || a[1].localeCompare(b[1], 'pt'); });
-    /* a ⚙ (configurações) fica NO MEIO da barra, entre as abas do Falando de Astrologia e as do Hellenic Daily: é dos dois (ao abrir, tem uma aba para cada lado) */
-    var meio = itens.findIndex(function (i) { return DAILY[i[0]]; });
-    itens.splice(meio < 0 ? itens.length : meio, 0, ['site', '\u2699\uFE0E', 'admin-site.html']);
+    /* cada app mostra só as abas dele, em ordem alfabética; a ⚙ (configurações) fica no fim */
+    var DAILY = { agenda: 1, estudos: 1, financeiro: 1, horas: 1, leitor: 1, producao: 1, projetos: 1, todo: 1 };
+    var appAtual = appDaPagina();
+    itens = itens.filter(function (i) { return appAtual === 'daily' ? DAILY[i[0]] : !DAILY[i[0]]; });
+    itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
+    itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
       if (i[0] === 'agenda' || i[0] === 'horas' || i[0] === 'todo') a.addEventListener('click', function (ev) { if (window.fdaAgendaIr) { ev.preventDefault(); window.fdaAgendaIr(i[0]); } }); /* já estando na Agenda, troca de aba sem recarregar */
@@ -628,7 +645,7 @@
       if (!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches))) return; /* só o app da tela de início guarda o último lugar: navegador e app nunca se misturam */
       if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname)) return;
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
-      localStorage.setItem('fda_ultima_pagina', location.pathname + location.search + location.hash);
+      localStorage.setItem(appDaPagina() === 'daily' ? 'fda_ultima_pagina_daily' : 'fda_ultima_pagina', location.pathname + location.search + location.hash);
     } catch (e) { /* sem armazenamento */ }
   }
   lembrarOndeParou();
@@ -1474,7 +1491,7 @@
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias

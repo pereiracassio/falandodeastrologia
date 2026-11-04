@@ -1,7 +1,7 @@
 {
-  "name": "Produção · Falando de Astrologia",
-  "short_name": "Produção",
-  "description": "Séries, vídeos, cortes e horários de Júpiter",
+  "name": "Falando de Astrologia",
+  "short_name": "Astrologia",
+  "description": "Painel do Falando de Astrologia",
   "lang": "pt-BR",
   "start_url": "/abrir.html",
   "scope": "/",

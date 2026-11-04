@@ -40,15 +40,14 @@
       { label: "Psicanálise", href: "https://pereiracassio.com.br/admin.html" },
       { label: "Ver o site", href: "index.html", sep: true }
     ];
-    /* em ordem alfabética (o "Ver o site", que é o último, fica de fora) */
+    /* cada app mostra só as abas dele, em ordem alfabética (o "Ver o site", que é o último, fica de fora); Configurações no fim */
     var verSite = links.pop();
-    /* duas metades, sem divisa: Falando de Astrologia primeiro, Hellenic Daily (Agenda, Estudos, Produção, Projetos) depois */
-    var DAILY = { "Agenda": 1, "Estudos": 1, "Horas": 1, "Produção": 1, "Projetos": 1, "To do": 1 };
-    links.sort(function (a, b) { return ((DAILY[a.label] ? 1 : 0) - (DAILY[b.label] ? 1 : 0)) || a.label.localeCompare(b.label, "pt"); });
-    links.push(verSite);
-    /* Configurações fica NO MEIO, entre o Falando de Astrologia e o Hellenic Daily (é dos dois) */
-    var meioMenu = links.findIndex(function (l) { return DAILY[l.label]; });
-    links.splice(meioMenu < 0 ? links.length - 1 : meioMenu, 0, { label: "Configurações", href: "admin-site.html" });
+    var DAILY = { "Agenda": 1, "Estudos": 1, "Financeiro": 1, "Horas": 1, "Leitor": 1, "Produção": 1, "Projetos": 1, "To do": 1 };
+    var appAtual = (window.portal && window.portal.appDaPagina) ? window.portal.appDaPagina() : "falando";
+    links = links.filter(function (l) { return appAtual === "daily" ? DAILY[l.label] : !DAILY[l.label]; });
+    links.sort(function (a, b) { return a.label.localeCompare(b.label, "pt"); });
+    links.push({ label: "Configurações", href: "admin-site.html" });
+    if (appAtual !== "daily") links.push(verSite);
   }
 
   /* aluno ou cliente logado (sinal guardado por aluno.html/cliente.html ao entrar/sair; é só conveniência de tela, não é segurança): o botão "Cássio" da barra de cima vira "Seu espaço" */
