@@ -307,16 +307,17 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
-        var abaServicos = el('div'), abaMensal = el('div', { class: 'portal-cartao' });
-        montarAbas(aluno ? [{ chave: 'servicos', nome: 'Serviços', corpo: abaServicos }, { chave: 'mensalidade', nome: 'Mensalidade', corpo: abaMensal }]
-                         : [{ chave: 'servicos', nome: 'Serviços', corpo: abaServicos }]);
+        var abaImportante = el('div'), abaServicos = el('div'), abaMensal = el('div', { class: 'portal-cartao' });
+        var abasLista = [{ chave: 'importante', nome: 'Importante', corpo: abaImportante }, { chave: 'servicos', nome: 'Serviços', corpo: abaServicos }];
+        if (aluno) abasLista.push({ chave: 'mensalidade', nome: 'Mensalidade', corpo: abaMensal });
+        montarAbas(abasLista);
         if (aluno) blocosDoAluno(user, aluno, abaMensal);
         if (!verId && window.fdaEspaco) window.fdaEspaco.marcar('cliente', true);   /* o botão Cássio da barra de cima vira Seu espaço nas outras páginas (quem já é aluno continua indo para a página de aluno) */
         ligarAvisos(user, verId);
         carregarAtendimento(verId, abaServicos);
         var fatosSolto = el('div');   /* o link dos fatos, quando não está ligado a um serviço; preenchido depois que os serviços chegam */
         abaServicos.appendChild(fatosSolto);
-        abaServicos.appendChild(el('div', { class: 'portal-cartao' }, [
+        abaImportante.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
         ]));
@@ -340,7 +341,7 @@
             if (paraDestacar) destacarEntrega(paraDestacar);
             /* depois do atendimento (já há material entregue): convite para avaliar no Google */
             if (re.data.length) {
-              abaServicos.appendChild(el('div', { class: 'portal-cartao' }, [
+              abaImportante.appendChild(el('div', { class: 'portal-cartao' }, [
                 el('h2', { text: 'Sua opinião' }),
                 el('p', { text: 'Se o atendimento fez bem para você, conte como foi. A sua avaliação no Google ajuda outras pessoas a me encontrarem.' }),
                 el('a', { class: 'portal-btn portal-btn-sec', href: 'https://g.page/r/CcWP1ZarYgigEBM/review', target: '_blank', rel: 'noopener', text: 'Deixar minha avaliação no Google' })
@@ -349,7 +350,7 @@
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20cliente%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
             ]);
-            abaServicos.appendChild(el('div', { class: 'portal-whats' }, [whats]));
+            abaImportante.appendChild(el('div', { class: 'portal-whats' }, [whats]));
           });
       });
     }
