@@ -1285,7 +1285,12 @@
       });
     }).then(function (sub) {
       var j = sub.toJSON();
-      return client.rpc('registrar_aparelho', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_aparelho: navigator.userAgent.slice(0, 160) }).then(function (r) { if (r.error) throw new Error('servidor'); });
+      var dados = { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_aparelho: navigator.userAgent.slice(0, 160) };
+      /* cada app (Hellenic Daily / Falando de Astrologia) cadastra o aparelho com o nome do app, para receber só os avisos dele */
+      return client.rpc('registrar_aparelho', Object.assign({ p_app: appDaPagina() }, dados)).then(function (r) {
+        if (!r.error) return;
+        return client.rpc('registrar_aparelho', dados).then(function (r2) { if (r2.error) throw new Error('servidor'); });   /* banco ainda sem a coluna do app */
+      });
     });
   }
   function desativarAvisos() {

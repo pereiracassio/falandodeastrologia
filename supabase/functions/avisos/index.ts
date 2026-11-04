@@ -38,8 +38,11 @@ async function enviarAviso(id: string) {
   if (!r || !r[0]) return { ok: true, motivo: "já enviado ou não existe" };
   const a = r[0];
   const email = String(a.email || "").toLowerCase();
-  const naoLidos = ((await supa("/rest/v1/avisos_recebidos?select=id&lido=eq.false&email=eq." + encodeURIComponent(email))) || []).length;
-  const aparelhos = (await supa("/rest/v1/push_inscricoes?select=endpoint,p256dh,auth&email=eq." + encodeURIComponent(email))) || [];
+  // dois apps no mesmo site: o aviso que leva a uma tela do Hellenic Daily só vai para os aparelhos desse app; o resto, para os do Falando de Astrologia
+  const doApp = (u: unknown) => /^\/admin-(agenda|estudos|producao|projetos|financeiro|leitor)\.html/.test(String(u || "")) ? "daily" : "falando";
+  const app = doApp(a.url);
+  const naoLidos = ((await supa("/rest/v1/avisos_recebidos?select=url&lido=eq.false&email=eq." + encodeURIComponent(email))) || []).filter((x: any) => doApp(x.url) === app).length;
+  const aparelhos = (await supa("/rest/v1/push_inscricoes?select=endpoint,p256dh,auth&app=eq." + app + "&email=eq." + encodeURIComponent(email))) || [];
   let enviados = 0, removidos = 0, falhas = 0, erro = "";
   if (aparelhos.length) {
     const k = await chaves();
