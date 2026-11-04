@@ -18,7 +18,8 @@
   var ehAdmin = false;
   try { ehAdmin = localStorage.getItem("fda_admin") === "1"; } catch (e) { /* sem armazenamento */ }
   /* só dentro das telas do painel; no site em si fica o menu do site */
-  if (ehAdmin && /\/(admin-[a-z]+|capa)\.html$/.test(location.pathname)) {
+  /* nas telas do painel o menu é sempre o do painel (o sinal fda_admin só nasce depois do login, e o app novo abre sem ele) */
+  if (/\/(admin-[a-z]+|capa)\.html$/.test(location.pathname)) {
     links = [
       { label: "Agenda", href: "admin-agenda.html" },
       { label: "Horas", href: "admin-agenda.html#v=horas" },
@@ -45,7 +46,10 @@
     var DAILY = { "Agenda": 1, "Estudos": 1, "Financeiro": 1, "Horas": 1, "Leitor": 1, "Produção": 1, "Projetos": 1, "To do": 1 };
     var appAtual = (window.portal && window.portal.appDaPagina) ? window.portal.appDaPagina() : "falando";
     links = links.filter(function (l) { return appAtual === "daily" ? DAILY[l.label] : !DAILY[l.label]; });
-    links.sort(function (a, b) { return a.label.localeCompare(b.label, "pt"); });
+    /* Falando de Astrologia em ordem alfabética; Hellenic Daily na ordem escolhida pelo astrólogo */
+    var ORDEM_DAILY = ["To do", "Agenda", "Produção", "Projetos", "Estudos", "Financeiro", "Horas", "Leitor"];
+    if (appAtual === "daily") links.sort(function (a, b) { return ORDEM_DAILY.indexOf(a.label) - ORDEM_DAILY.indexOf(b.label); });
+    else links.sort(function (a, b) { return a.label.localeCompare(b.label, "pt"); });
     links.push({ label: "Configurações", href: "admin-site.html" });
     if (appAtual !== "daily") links.push(verSite);
   }

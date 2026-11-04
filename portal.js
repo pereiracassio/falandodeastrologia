@@ -574,7 +574,10 @@
     var DAILY = { agenda: 1, estudos: 1, financeiro: 1, horas: 1, leitor: 1, producao: 1, projetos: 1, todo: 1 };
     var appAtual = appDaPagina();
     itens = itens.filter(function (i) { return appAtual === 'daily' ? DAILY[i[0]] : !DAILY[i[0]]; });
-    itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
+    /* Falando de Astrologia em ordem alfabética; Hellenic Daily na ordem que o astrólogo escolheu */
+    var ORDEM_DAILY = ['todo', 'agenda', 'producao', 'projetos', 'estudos', 'financeiro', 'horas', 'leitor'];
+    if (appAtual === 'daily') itens.sort(function (a, b) { return ORDEM_DAILY.indexOf(a[0]) - ORDEM_DAILY.indexOf(b[0]); });
+    else itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
     itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
     if (appAtual === 'daily') { var logo = document.querySelector('.cab-logo img'); if (logo && /logo-menu\.svg/.test(logo.getAttribute('src'))) { logo.setAttribute('src', '/img/logo-menu-daily.svg?v=1'); logo.setAttribute('alt', 'Hellenic Daily'); } } /* telas compartilhadas (⚙ e Avisos) mostram o logo do app em que você está */
     var botoes = itens.map(function (i) {
