@@ -194,8 +194,10 @@
     var paraDestacar = (/[?&]e=([0-9a-f-]{36})/i.exec(location.search) || [])[1] || null;
     function destacarEntrega(id) {
       var alvo = id && document.querySelector('[data-entrega="' + id + '"]');
+      if (alvo && abrirAba) abrirAba('servicos');   /* a aba Serviços precisa estar à vista para o destaque aparecer */
       if (alvo) { paraDestacar = null; P.destacar(alvo); } else paraDestacar = id;
     }
+    var abrirAba = null;   /* troca de aba, definida quando as abas são montadas */
     var naoLidos = 0, abrirAvisos = function () {}, abrirAvisosNaEntrada = /[?&]aviso=1/.test(location.search) && !paraDestacar;
     function pintarSino() {
       P.numeroNoIcone(naoLidos);
@@ -228,16 +230,40 @@
     }
 
     /* próximo atendimento (horário e Google Meet), buscado na agenda pelo servidor; sem atendimento marcado, o cartão nem aparece */
-    function carregarAtendimento(verId) {
-      app.appendChild(P.cartaoAtendimento(verId || null, false));
+    function carregarAtendimento(verId, destino) {
+      destino.appendChild(P.cartaoAtendimento(verId || null, false));
     }
 
     /* o que é só do aluno e fica aqui (e não na página dele): Mensalidade e Trocar senha */
-    function blocosDoAluno(user, aluno) {
-      app.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Mensalidade' }), window.mensalidade.tela(aluno, false)]));
+    function blocosDoAluno(user, aluno, destino) {
+      destino.appendChild(window.mensalidade.tela(aluno, false));
       var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trocar senha' });
       trocar.addEventListener('click', function () { trocarSenha(user); });
-      app.appendChild(el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes' }, [trocar])]));
+      destino.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [trocar]));
+    }
+    /* abas do Seu espaço: Serviços (cliente) e Mensalidade (aluno). Cada aba é um bloco que só aparece quando é a escolhida */
+    function montarAbas(lista) {
+      var barra = el('div', { class: 'portal-abas', role: 'tablist' }), botoes = {}, corpos = {};
+      var conteudo = el('div');
+      lista.forEach(function (ab) {
+        var b = el('button', { type: 'button', role: 'tab', text: ab.nome });
+        b.addEventListener('click', function () { abrirAba(ab.chave); });
+        botoes[ab.chave] = b; corpos[ab.chave] = ab.corpo;
+        barra.appendChild(b); conteudo.appendChild(ab.corpo);
+      });
+      abrirAba = function (chave) {
+        if (!botoes[chave]) return;
+        lista.forEach(function (ab) {
+          var ativa = ab.chave === chave;
+          botoes[ab.chave].className = 'portal-aba' + (ativa ? ' ativa' : '');
+          botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
+          corpos[ab.chave].style.display = ativa ? '' : 'none';
+        });
+      };
+      app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barra])));
+      app.appendChild(conteudo);
+      var daUrl = (/[?&]aba=(\w+)/.exec(location.search) || [])[1];
+      abrirAba(daUrl && botoes[daUrl] ? daUrl : lista[0].chave);
     }
     function trocarSenha(user) {
       limpar();
@@ -272,24 +298,32 @@
         if (r.error) { app.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar agora. Tente de novo em instantes.' })); return; }
         if (!r.data) {
           /* aluno sem serviço de cliente: vê só o que é dele; quem não é aluno nem cliente vê o aviso de "nada disponível" */
-          if (aluno) { blocosDoAluno(user, aluno); return; }
+          if (aluno) {
+            var soMensal = el('div', { class: 'portal-cartao' });
+            montarAbas([{ chave: 'mensalidade', nome: 'Mensalidade', corpo: soMensal }]);
+            blocosDoAluno(user, aluno, soMensal);
+            return;
+          }
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Ainda não há nada disponível para o e-mail ' + email + '. Assim que o seu resultado for entregue, ele aparece aqui. Se você usou outro Gmail na contratação, saia e entre com ele.' })]));
           return;
         }
-        if (aluno) blocosDoAluno(user, aluno);
+        var abaServicos = el('div'), abaMensal = el('div', { class: 'portal-cartao' });
+        montarAbas(aluno ? [{ chave: 'servicos', nome: 'Serviços', corpo: abaServicos }, { chave: 'mensalidade', nome: 'Mensalidade', corpo: abaMensal }]
+                         : [{ chave: 'servicos', nome: 'Serviços', corpo: abaServicos }]);
+        if (aluno) blocosDoAluno(user, aluno, abaMensal);
         if (!verId && window.fdaEspaco) window.fdaEspaco.marcar('cliente', true);   /* o botão Cássio da barra de cima vira Seu espaço nas outras páginas (quem já é aluno continua indo para a página de aluno) */
         ligarAvisos(user, verId);
-        carregarAtendimento(verId);
+        carregarAtendimento(verId, abaServicos);
         var fatosSolto = el('div');   /* o link dos fatos, quando não está ligado a um serviço; preenchido depois que os serviços chegam */
-        app.appendChild(fatosSolto);
-        app.appendChild(el('div', { class: 'portal-cartao' }, [
+        abaServicos.appendChild(fatosSolto);
+        abaServicos.appendChild(el('div', { class: 'portal-cartao' }, [
           el('h2', { text: 'Importante' }),
           el('p', { text: 'Baixe e guarde os seus arquivos. Eles podem ser removidos daqui a qualquer momento, para liberar espaço.' }),
         ]));
         P.client.from('entregas').select('id,servico,data,pdf_link,gravacao_link,criado_em').eq('cliente_id', r.data.id)
           .order('data', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }).then(function (re) {
             var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Seus serviços' })]);
-            app.appendChild(cartao);
+            abaServicos.appendChild(cartao);
             if (re.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar os seus serviços agora.' })); return; }
             if (!re.data.length) cartao.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum serviço entregue ainda.' }));
             var fatosUrl = P.linkSeguro(r.data.fatos_link), ligado = false;
@@ -306,7 +340,7 @@
             if (paraDestacar) destacarEntrega(paraDestacar);
             /* depois do atendimento (já há material entregue): convite para avaliar no Google */
             if (re.data.length) {
-              app.appendChild(el('div', { class: 'portal-cartao' }, [
+              abaServicos.appendChild(el('div', { class: 'portal-cartao' }, [
                 el('h2', { text: 'Sua opinião' }),
                 el('p', { text: 'Se o atendimento fez bem para você, conte como foi. A sua avaliação no Google ajuda outras pessoas a me encontrarem.' }),
                 el('a', { class: 'portal-btn portal-btn-sec', href: 'https://g.page/r/CcWP1ZarYgigEBM/review', target: '_blank', rel: 'noopener', text: 'Deixar minha avaliação no Google' })
@@ -315,7 +349,7 @@
             var whats = el('a', { href: 'https://wa.me/5511970404508?text=Oi%20C%C3%A1ssio!%20Estou%20na%20%C3%A1rea%20do%20cliente%20e%20queria%20tirar%20uma%20d%C3%BAvida.', target: '_blank', rel: 'noopener', title: 'WhatsApp', 'aria-label': 'Falar pelo WhatsApp' }, [
               el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '44', height: '44' })
             ]);
-            app.appendChild(el('div', { class: 'portal-whats' }, [whats]));
+            abaServicos.appendChild(el('div', { class: 'portal-whats' }, [whats]));
           });
       });
     }
