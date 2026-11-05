@@ -378,7 +378,9 @@
         if (leitura) { if (x.data) texto.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) })); }
         else { /* data de conclusão do passo: grava sozinha; o aluno também vê, e o passo entra no To Do da Agenda */
           var dataP = el('input', { type: 'date' }); dataP.value = x.data || '';
-          dataP.addEventListener('change', function () { P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else x.data = dataP.value || null; }); });
+          var dataSuja = false; /* salva ao escolher; a lista só se reordena quando o campo perde o foco (redesenhar antes fecha o calendário do iPad) */
+          dataP.addEventListener('change', function () { P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { x.data = dataP.value || null; dataSuja = true; } }); });
+          dataP.addEventListener('blur', function () { setTimeout(function () { if (dataSuja) { dataSuja = false; carregar(); } }, 300); });
           texto.push(P.colunaData(dataP, 'Até quando (opcional)'));
         }
         if (!leitura) {
@@ -867,7 +869,7 @@
       /* as seis abas, como na tela do aluno */
       var ABAS_ADMIN = [
         { chave: 'acompanhamento', nome: 'Acompanhamento', el: abaAcomp },
-        { chave: 'trilha', nome: 'Trilha', el: painelTrilhas(aluno) },
+        { chave: 'trilha', nome: 'Trilha', el: function () { return painelTrilhas(aluno); } }, /* montada de novo a cada vez que a aba abre: pega datas e gravações mexidas nas outras abas */
         { chave: 'atividades', nome: 'Atividades', el: el('div', { class: 'portal-cartao' }, [window.atividades.painelAdmin(aluno, atividadeAberta)]) },
         { chave: 'materiais', nome: 'Materiais', el: painelMateriais },
         { chave: 'gravacoes', nome: 'Gravações', el: painelGravacoes },
