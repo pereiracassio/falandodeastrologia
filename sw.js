@@ -23,7 +23,9 @@ self.addEventListener('notificationclick', function (event) {
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (janelas) {
     for (var i = 0; i < janelas.length; i++) {
       if (janelas[i].url.indexOf(self.location.origin) === 0 && 'focus' in janelas[i]) {
-        return (janelas[i].navigate ? janelas[i].navigate(destino) : Promise.resolve()).then(function () { return janelas[i].focus(); }).catch(function () { return janelas[i].focus(); });
+        /* o app já está aberto: manda o endereço para a própria página abrir (o navigate() do service worker falha no Android e deixava o app na tela errada) */
+        janelas[i].postMessage({ fdaAbrir: destino });
+        return janelas[i].focus().catch(function () { /* ok */ });
       }
     }
     return self.clients.openWindow(destino);

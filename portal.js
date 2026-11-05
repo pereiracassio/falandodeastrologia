@@ -661,6 +661,11 @@
   try { sessionStorage.setItem('fda_app_aberto', '1'); } catch (e) { /* sem armazenamento */ } /* qualquer página aberta conta como "app já aberto": só a abertura do zero volta ao último lugar */
   var gravarEstado = estado.gravar;
   estado.gravar = function (o) { gravarEstado(o); lembrarOndeParou(); };
+  /* tocou num aviso com o app já aberto: o service worker manda o endereço e a página vai até ele */
+  try { if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function (ev) {
+    var d = ev.data; if (!d || typeof d.fdaAbrir !== 'string') return;
+    try { var u = new URL(d.fdaAbrir, location.origin); if (u.origin === location.origin) location.href = u.href; } catch (e) { /* endereço inválido */ }
+  }); } catch (e) { /* sem service worker */ }
   window.addEventListener('pagehide', lembrarOndeParou);
   setInterval(function () { if (document.visibilityState === 'visible') try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } }, 4000);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') lembrarOndeParou(); });
