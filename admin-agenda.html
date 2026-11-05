@@ -840,6 +840,16 @@
         return saida;
       });
     }
+    /* código (sem zeros à esquerda) -> cliente ou aluno dono dele, com o endereço da ficha */
+    function codigosDosAtendimentos() {
+      var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega('cliente_codigos', 'cliente_id,codigo'), pega('aluno_codigos', 'aluno_id,codigo')]).then(function (r) {
+        var mapa = {};
+        r[0].forEach(function (c) { if (c.codigo) mapa[String(parseInt(c.codigo, 10))] = { url: 'admin-clientes.html#cliente=' + encodeURIComponent(c.cliente_id) + '&aba=servicos' }; });
+        r[1].forEach(function (c) { if (c.codigo) mapa[String(parseInt(c.codigo, 10))] = { url: 'admin-alunos.html#aluno=' + encodeURIComponent(c.aluno_id) + '&aba=gravacoes' }; });
+        return mapa;
+      });
+    }
     function vistaTodo(vista, vivo) {
       vista.textContent = '';
       var agora = Date.now(), de = meiaNoiteDe(agora) - TODO_DIAS_ATRAS * DIA, ate = meiaNoiteDe(agora) + (TODO_DIAS_FRENTE + 1) * DIA;
@@ -993,11 +1003,16 @@
           desenhar(); mostrouGuardado = true;
         } catch (e) { dados.fora = []; dados.tarefas = []; dados.feitos = {}; dados.falhas = []; lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
       }
-      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), Promise.all([itensDeProjetosEEstudos(), itensDeAulasEstudo()]).then(function (x) { return x[0].concat(x[1]); }), itensDePassos(), C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; })]).then(function (r) {
+      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), Promise.all([itensDeProjetosEEstudos(), itensDeAulasEstudo()]).then(function (x) { return x[0].concat(x[1]); }), itensDePassos(), C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), codigosDosAtendimentos()]).then(function (r) {
         if (!vivo()) return;
         dados.fora = []; dados.feitos = r[1] || {}; dados.falhas = r[0].falhas || []; dados.tarefas = r[5];
         r[0].concat(aniversariosEntre(de, ate)).forEach(function (e) {
           if (/holiday|addressbook#contacts/.test(e.calId || '')) return; /* feriados não entram; aniversários vêm da lista de clientes e alunos */
+          var mg = !e.aniversario && !e.diaTodo && e.fim <= agora && /^\s*(\d{3,6})(?!\d)/.exec(e.titulo || ''), dono = mg && r[6][String(parseInt(mg[1], 10))];
+          if (dono) { /* atendimento de cliente ou encontro de aluno que já terminou: falta disponibilizar a gravação (vale também se o compromisso está como "livre") */
+            dados.fora.push({ quando: e.ini, diaTodo: false, titulo: 'Disponibilizar a gravação', sub: String(e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + e.id + '|' + e.ini, url: dono.url, cor: '#1034A6' });
+            return;
+          }
           if (e.livre && !e.aniversario) return; /* compromisso que deixa a agenda livre não entra no To do: só os que deixam ocupada */
           if (!e.aniversario && e.fim <= agora) return; /* compromisso que já terminou sai sozinho; só o que ele precisa resolver fica atrasado */
           dados.fora.push({ quando: e.ini, diaTodo: e.diaTodo, titulo: e.titulo, sub: e.aniversario ? 'aniversário · mandar a mensagem' : e.calNome, chave: e.aniversario ? 'a|' + e.id + '|' + e.ini : '', /* só aniversário tem caixinha; compromisso sai sozinho quando o horário acaba */ evento: e, cor: e.aniversario ? '#A03E25' : preenche(e) });
