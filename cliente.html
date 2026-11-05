@@ -134,6 +134,7 @@
       var idPdf = pdf ? P.idArquivoDrive(pdf) : null;
       function abrirPdf(ev) {
         registrarBaixa(e.id, 'pdf', verId);
+        P.estado.mesclar({ aba: 'servicos', servico: e.id });   /* onde ele estava, para voltar exatamente aqui */
         if (!idPdf || !window.Leitor || !window.pdfjsLib) return;
         if (ev) ev.preventDefault();
         Leitor.abrirDoServidor({ nome: e.servico, id: idPdf, baixar: pdf, voltar: function () {} });
@@ -152,6 +153,7 @@
         botoes.appendChild(aGrav);
       }
       if (fatosLink) botoes.appendChild(el('a', { class: 'portal-btn', href: linkDosFatos(fatosLink), target: '_blank', rel: 'noopener', text: 'Preencher os fatos' }));
+      botoes.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('a')) P.estado.mesclar({ aba: 'servicos', servico: e.id }); });   /* sair para o Drive: ao voltar, é neste serviço */
       var caixa = el('div', { class: 'portal-item', 'data-entrega': e.id });
       if (gravacao || pdf || fatosLink) {
         /* o arquivo abre no Drive do cliente; o download é pelo menu do próprio Drive (o link de download direto dava erro do Google em arquivo grande) */
@@ -259,10 +261,11 @@
           botoes[ab.chave].setAttribute('aria-selected', ativa ? 'true' : 'false');
           corpos[ab.chave].style.display = ativa ? '' : 'none';
         });
+        P.estado.mesclar({ aba: chave });   /* a aba fica no endereço: se o aparelho recarregar a página (comum depois de abrir um PDF), volta nela */
       };
       app.appendChild(P.comSetas(el('div', { class: 'portal-abas-rola' }, [barra])));
       app.appendChild(conteudo);
-      var daUrl = (/[?&]aba=(\w+)/.exec(location.search) || [])[1];
+      var daUrl = (/[?&]aba=(\w+)/.exec(location.search) || [])[1] || P.estado.ler().aba;
       abrirAba(daUrl && botoes[daUrl] ? daUrl : lista[0].chave);
     }
     function trocarSenha(user) {
@@ -339,6 +342,11 @@
               ]));
             }
             if (paraDestacar) destacarEntrega(paraDestacar);
+            else {
+              /* a página foi recarregada com um serviço aberto (PDF, gravação): volta a mostrar esse serviço, sem destacar */
+              var antes = P.estado.ler().servico, alvoAntes = antes && document.querySelector('[data-entrega="' + antes + '"]');
+              if (alvoAntes) setTimeout(function () { alvoAntes.scrollIntoView({ block: 'center' }); }, 50);
+            }
             /* depois do atendimento (já há material entregue): convite para avaliar no Google */
             if (re.data.length) {
               abaImportante.appendChild(el('div', { class: 'portal-cartao' }, [
