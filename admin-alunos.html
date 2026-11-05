@@ -382,6 +382,19 @@
           var areaLigar = el('div');
           function abrirLigacao(tipo) {
             if (areaLigar.firstChild) { areaLigar.textContent = ''; return; }
+            areaLigar.appendChild(el('p', { class: 'portal-item-data', text: 'Carregando...' }));
+            /* sempre busca a lista de novo na hora: o que você acabou de criar nas outras abas tem que aparecer */
+            var pedido = tipo === 'atividade'
+              ? P.client.from('atividades').select('id,titulo,data_atividade').eq('aluno_id', aluno.id).order('criado_em')
+              : P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em');
+            pedido.then(function (rr) {
+              areaLigar.textContent = '';
+              if (rr.error) { areaLigar.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
+              if (tipo === 'atividade') { rr.data.forEach(function (n) { if (!ativsAluno.some(function (o) { return o.id === n.id; })) ativsAluno.push(n); }); }
+              else itensAluno = rr.data;
+              montarSeletor();
+            });
+            function montarSeletor() {
             var campoId = tipo === 'atividade' ? 'atividade_id' : 'item_id';
             var usados = passos.filter(function (y) { return y[campoId] && y.id !== x.id; }).map(function (y) { return y[campoId]; });
             var fonte = tipo === 'atividade' ? ativsAluno : itensAluno.filter(function (i) { return tipo === 'gravacao' ? i.bloco === 'gravacoes' : i.bloco !== 'gravacoes'; });
@@ -394,6 +407,7 @@
               P.client.from('aluno_trilha_passos').update(campos).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível ligar.'); else carregar(); });
             });
             areaLigar.appendChild(el('div', { style: 'margin-top:8px' }, [sel]));
+            }
           }
           /* link dos fatos (retificação): opcional, em qualquer passo; salva sozinho e o aluno vê o botão "Preencher os fatos" */
           function abrirLinkFatos() {
