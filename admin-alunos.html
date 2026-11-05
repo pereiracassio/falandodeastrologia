@@ -305,7 +305,7 @@
       var minhaParte = function (x) {
         if (x.tipo === 'material' || x.tipo === 'gravacao') return !!(x.item_id && tituloDoItem(x.item_id)) || pontos(x) >= 1;
         if (x.tipo === 'atividade') { var a = ativDoPasso(x); return !!a && (!!(a.antiga || a.somente_leitura) || !a.enviada_em || !!a.corrigida_em); }
-        return !!x.feito;
+        return !!x.feito || !!x.link; /* passo com link (ex.: dos fatos da vida) já passado: a parte dele acabou, o resto é do aluno */
       };
       var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
       var inicioDe = function (t) { return t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE'); };
@@ -365,7 +365,7 @@
       function linhaPasso(x, grupo, i, leitura) {
         var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade' || x.tipo === 'gravacao';
         var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito', style: 'flex:none;margin-top:4px' });
-        cb.checked = (ehMaterial || ehAtividade) ? minhaParte(x) : !!x.feito; cb.disabled = !!leitura || ehMaterial || ehAtividade; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
+        cb.checked = (ehMaterial || ehAtividade) ? minhaParte(x) : (!!x.feito || !!x.link); cb.disabled = !!leitura || ehMaterial || ehAtividade || !!x.link; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
           x.feito = cb.checked; desenhar();
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
@@ -432,6 +432,7 @@
               P.client.from('aluno_trilha_passos').update({ link: seguro }).eq('id', x.id).then(function (r) { if (r.error) P.mensagem(msgL, P.traduzErro(r.error.message), 'erro'); else { x.link = seguro; P.mensagem(msgL, 'Salvo.', 'ok'); } });
             }
             campo.addEventListener('change', function () { clearTimeout(tm); tm = setTimeout(gravar, 300); });
+            campo.addEventListener('blur', function () { setTimeout(function () { if (!!x.link !== !!(campo.value.trim())) return; carregar(); }, 800); }); /* ao sair do campo a lista se refaz: passo com link vai para Feitos */
             campo.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(gravar, 1500); });
             areaLigar.appendChild(el('div', { style: 'margin-top:8px' }, [campo, msgL]));
           }
