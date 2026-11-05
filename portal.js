@@ -203,13 +203,13 @@
   var PASTA_MIME = 'application/vnd.google-apps.folder';
 
   /* abre a lista; soPastas: só deixa escolher pasta */
-  function abrirListaDoDrive(token, soPastas, aoEscolher, inicial) {
+  function abrirListaDoDrive(token, soPastas, aoEscolher, inicial, tipo) {
     var fundo = el('div');
     fundo.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:100000;background:rgba(10,19,48,.7);display:flex;align-items:center;justify-content:center;padding:12px';
     var painel = el('div');
     painel.style.cssText = 'background:var(--papiro-fundo);border:1px solid #1F5FA3;border-radius:12px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;color:#16233F;font-family:system-ui,-apple-system,sans-serif';
     var topo = el('div'); topo.style.cssText = 'padding:14px 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
-    var titulo = el('strong', { text: soPastas ? 'Escolha a pasta' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
+    var titulo = el('strong', { text: soPastas ? 'Escolha a pasta' : tipo === 'pdf' ? 'Escolha o PDF' : tipo === 'video' ? 'Escolha o vídeo' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
     var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
     topo.appendChild(titulo); topo.appendChild(fechar);
     var caminho = el('div'); caminho.style.cssText = 'padding:0 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
@@ -275,6 +275,8 @@
       else if (atual.id === 'compartilhados') consulta = 'sharedWithMe=true and trashed=false';
       else consulta = "'" + aspas(atual.id) + "' in parents and trashed=false";
       if (soPastas) consulta += " and mimeType='" + PASTA_MIME + "'";
+      else if (tipo === 'pdf') consulta += " and (mimeType='" + PASTA_MIME + "' or mimeType='application/pdf')";
+      else if (tipo === 'video') consulta += " and (mimeType='" + PASTA_MIME + "' or mimeType contains 'video/')";
       driveGet(token, consulta, pagina).then(function (r) {
         if (meu !== pedido) return;
         carregouAlguma = true;
@@ -307,7 +309,7 @@
   }
 
   /* escolherDoDrive(function (url, id, token) { ... }, function (textoDeErro) { ... }, soPastas) */
-  function escolherDoDrive(aoEscolher, aoErrar, soPastas, chavePasta) {
+  function escolherDoDrive(aoEscolher, aoErrar, soPastas, chavePasta, tipo) {
     tokenDoDrive().then(function (token) {
       // se a pessoa (aluno/cliente) já tem pasta ligada, abre a lista direto dentro dela
       var inicial = chavePasta ? client.from('drive_pastas').select('pasta_id').eq('chave', chavePasta).maybeSingle().then(function (r) {
@@ -316,7 +318,7 @@
         return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?fields=name&supportsAllDrives=true', { headers: { 'Authorization': 'Bearer ' + token } })
           .then(function (x) { return x.ok ? x.json() : { name: 'Pasta' }; }).then(function (f) { return { id: id, nome: f.name || 'Pasta' }; });
       }).catch(function () { return null; }) : Promise.resolve(null);
-      return inicial.then(function (ini) { abrirListaDoDrive(token, soPastas, aoEscolher, ini); });
+      return inicial.then(function (ini) { abrirListaDoDrive(token, soPastas, aoEscolher, ini, tipo); });
     }).catch(function (e) {
       if (aoErrar && e.message === 'desconectado') aoErrar('O Google Drive ainda não está conectado. Toque em "Conectar o Google Drive", no cartão "Google Drive" da lista.');
       else if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível entrar no Google Drive. Tente de novo.');
@@ -332,7 +334,7 @@
   }
   /* botão "Escolher do Drive": preenche o campo de link e, se vier o e-mail, já compartilha o arquivo com a pessoa.
      aviso(texto, 'ok' | 'erro') mostra a mensagem na tela */
-  function botaoDrive(campo, aviso, email, chavePasta) {
+  function botaoDrive(campo, aviso, email, chavePasta, tipo) {
     /* o ícone do Drive fica ANTES do campo do link (devolve a linha com os dois); tocar nele escolhe o arquivo */
     var b = el('button', { type: 'button', title: 'Escolher do Drive', 'aria-label': 'Escolher do Drive', style: 'flex:none;background:none;border:0;padding:0;margin:0;width:50px;height:46px;min-height:0;cursor:pointer;display:flex;align-items:center;justify-content:center' }, [
       el('img', { src: 'img/drive.svg', alt: '', width: '44', height: '44', style: 'display:block' })
@@ -349,7 +351,7 @@
         }).catch(function () {
           aviso('Link preenchido, mas não consegui compartilhar com ' + email + ' (o e-mail precisa ser uma conta Google). Compartilhe no Drive.', 'erro');
         });
-      }, function (t) { aviso(t, 'erro'); }, false, chavePasta);
+      }, function (t) { aviso(t, 'erro'); }, false, chavePasta, tipo);
     });
     return linha;
   }
