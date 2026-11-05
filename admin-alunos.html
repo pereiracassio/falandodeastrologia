@@ -298,6 +298,13 @@
       };
       var ativDoPasso = function (x) { return x.atividade_id ? ativsAluno.filter(function (a) { return a.id === x.atividade_id; })[0] : null; };
       var tituloDoItem = function (id) { var i = itensAluno.filter(function (y) { return y.id === id; })[0]; return i ? i.titulo : ''; };
+      /* a parte DELE: o que cabe ao astrólogo já foi feito (material ou gravação ligados, atividade criada e, se o aluno enviou, já corrigida).
+         O que falta o aluno fazer (ler, responder) não pesa na lista dele; a barra e o que o aluno vê continuam pelos pontos. */
+      var minhaParte = function (x) {
+        if (x.tipo === 'material' || x.tipo === 'gravacao') return !!(x.item_id && tituloDoItem(x.item_id)) || pontos(x) >= 1;
+        if (x.tipo === 'atividade') { var a = ativDoPasso(x); return !!a && (!!(a.antiga || a.somente_leitura) || !a.enviada_em || !!a.corrigida_em); }
+        return !!x.feito;
+      };
       var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
       var inicioDe = function (t) { return t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE'); };
       /* campo de data da trilha: grava sozinho, e só redesenha quando perde o foco (para não fechar o calendário) */
@@ -356,12 +363,12 @@
       function linhaPasso(x, grupo, i, leitura) {
         var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade' || x.tipo === 'gravacao';
         var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito', style: 'flex:none;margin-top:4px' });
-        cb.checked = ehMaterial ? !!x.lido_em : ehAtividade ? pontos(x) >= 1 : !!x.feito; cb.disabled = !!leitura || ehMaterial || ehAtividade; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
+        cb.checked = (ehMaterial || ehAtividade) ? minhaParte(x) : !!x.feito; cb.disabled = !!leitura || ehMaterial || ehAtividade; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
           x.feito = cb.checked; desenhar();
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
-        var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (pontos(x) >= 1 ? 'text-decoration:line-through;opacity:.6' : '') })];
+        var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (minhaParte(x) ? 'text-decoration:line-through;opacity:.6' : '') })];
         if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
         if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
         if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (at.antiga || at.somente_leitura ? 'já feita' : !at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
@@ -443,7 +450,7 @@
       }
       var trilhasAbertas = []; /* trilhas abertas (sanfona); fica aqui para não fechar quando a tela se refaz */
       function cartaoDaTrilha(t) {
-        var m = meus(t), feitos = m.filter(function (x) { return pontos(x) >= 1; }), pend = m.filter(function (x) { return pontos(x) < 1; }).sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
+        var m = meus(t), feitos = m.filter(minhaParte), pend = m.filter(function (x) { return !minhaParte(x); }).sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
           if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
           if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
         });
@@ -455,7 +462,7 @@
         var renomear = mini('Renomear', function () { var n = (prompt('Assunto da trilha', t.nome) || '').trim(); if (n && n !== t.nome) P.client.from('aluno_trilhas').update({ nome: n }).eq('id', t.id).then(carregar); });
         cabeca.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), sinalT]));
         c.appendChild(el('div', { style: 'margin-bottom:6px' }, [renomear]));
-        cabeca.appendChild(P.barraLinha(pct, null, feitos.length + '/' + m.length));
+        cabeca.appendChild(P.barraLinha(pct, null, m.filter(function (x) { return pontos(x) >= 1; }).length + '/' + m.length));
         /* prazo opcional: com data final aparece a barra do tempo logo embaixo, no mesmo desenho */
         if (t.data_fim) cabeca.appendChild(P.barraTempoDias(inicioDe(t), t.data_fim));
         c.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio', true), campoDataTrilha('Data final prevista (opcional)', t, 'data_fim')]));
