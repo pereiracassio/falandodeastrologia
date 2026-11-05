@@ -153,6 +153,7 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 .pagina-papiro .folha-pagina div[style*="background-color: white"]{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:transparent!important;border:1.5px solid #1034A6!important;border-radius:0!important;color:#A03E25!important}
 .duvida-whats{margin:0 0 10px;color:#16233F;font-size:15px;text-align:center}
+.horarios-atendimento{margin:24px 0 20px;color:#16233F;font-size:15px;text-align:justify;hyphens:none}
 .icone-whats{display:inline-block;transition:transform .2s ease}
 .icone-whats:hover{transform:translateY(-3px)}
 .icone-whats img{display:block;width:44px;height:44px}
