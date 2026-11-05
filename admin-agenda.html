@@ -1025,7 +1025,9 @@
           var lista = (r[6].gravs[a.dono.chave] || []).slice().sort(function (p, q) { return p.t - q.t; }), dia0 = isoDia(a.e.ini), achou = -1;
           for (var k = 0; k < lista.length; k++) { if (!usadas[a.dono.chave + k] && (lista[k].t >= a.e.ini || (lista[k].dia && lista[k].dia >= dia0))) { achou = k; break; } }
           if (achou >= 0) { usadas[a.dono.chave + achou] = 1; return; }
-          dados.fora.push({ quando: a.e.ini, diaTodo: false, titulo: 'Disponibilizar a gravação', sub: String(a.e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + a.e.id + '|' + a.e.ini, url: a.dono.url, cor: '#1034A6' });
+          var diaSeguinte = meiaNoiteDe(a.e.fim - 1) + DIA; /* o Google demora horas para entregar a gravação (e ele promete em até 3 dias): só aparece a partir do dia seguinte ao encontro, e nesse dia ainda não é atraso */
+          if (agora < diaSeguinte) return;
+          dados.fora.push({ quando: diaSeguinte, diaTodo: true, titulo: 'Disponibilizar a gravação', sub: String(a.e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + a.e.id + '|' + a.e.ini, url: a.dono.url, cor: '#1034A6' });
         });
         dados.fora = dados.fora.concat(r[2], r[3], r[4]);
         var novoGuardado = { fora: dados.fora, tarefas: dados.tarefas, feitos: dados.feitos }, antigoTexto = guardado ? JSON.stringify({ fora: guardado.fora, tarefas: guardado.tarefas, feitos: guardado.feitos }) : '';
