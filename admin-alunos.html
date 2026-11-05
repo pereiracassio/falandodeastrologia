@@ -253,7 +253,7 @@
         Promise.all([
           P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
           P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data,link').order('ordem').order('criado_em'),
-          P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em')
+          P.client.from('itens').select('id,titulo,bloco,data').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em')
         ]).then(function (rs) {
           raiz.textContent = '';
           itensAluno = (rs[2] && rs[2].data) || [];
@@ -300,6 +300,8 @@
       var tituloDoItem = function (id) { var i = itensAluno.filter(function (y) { return y.id === id; })[0]; return i ? i.titulo : ''; };
       /* a parte DELE: o que cabe ao astrólogo já foi feito (material ou gravação ligados, atividade criada e, se o aluno enviou, já corrigida).
          O que falta o aluno fazer (ler, responder) não pesa na lista dele; a barra e o que o aluno vê continuam pelos pontos. */
+      /* data do passo para ordenar: a dele; se não tiver, a do material/gravação ligado */
+      var dataDe = function (x) { if (x.data) return String(x.data).slice(0, 10); var i = x.item_id ? itensAluno.filter(function (y) { return y.id === x.item_id; })[0] : null; return i && i.data ? String(i.data).slice(0, 10) : ''; };
       var minhaParte = function (x) {
         if (x.tipo === 'material' || x.tipo === 'gravacao') return !!(x.item_id && tituloDoItem(x.item_id)) || pontos(x) >= 1;
         if (x.tipo === 'atividade') { var a = ativDoPasso(x); return !!a && (!!(a.antiga || a.somente_leitura) || !a.enviada_em || !!a.corrigida_em); }
@@ -393,7 +395,7 @@
             /* sempre busca a lista de novo na hora: o que você acabou de criar nas outras abas tem que aparecer */
             var pedido = tipo === 'atividade'
               ? P.client.from('atividades').select('id,titulo,data_atividade').eq('aluno_id', aluno.id).order('criado_em')
-              : P.client.from('itens').select('id,titulo,bloco').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em');
+              : P.client.from('itens').select('id,titulo,bloco,data').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em');
             pedido.then(function (rr) {
               areaLigar.textContent = '';
               if (rr.error) { areaLigar.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a lista.' })); return; }
@@ -450,7 +452,7 @@
       }
       var trilhasAbertas = []; /* trilhas abertas (sanfona); fica aqui para não fechar quando a tela se refaz */
       function cartaoDaTrilha(t) {
-        var m = meus(t), feitos = m.filter(minhaParte), pend = m.filter(function (x) { return !minhaParte(x); }).sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
+        var m = meus(t), feitos = m.filter(minhaParte).sort(function (a, b) { var da = dataDe(a), db = dataDe(b); if (da && db) return da < db ? -1 : da > db ? 1 : (a.ordem || 0) - (b.ordem || 0); if (da) return -1; if (db) return 1; return (a.ordem || 0) - (b.ordem || 0); }), pend = m.filter(function (x) { return !minhaParte(x); }).sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
           if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
           if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
         });
