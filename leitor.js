@@ -374,8 +374,15 @@
     function aoEsconder() { if (document.visibilityState === 'hidden') gravarAgora(); }
     document.addEventListener('visibilitychange', aoEsconder);
 
+    /* o "voltar" do celular (Android) só fecha o leitor: sem isto ele voltava uma página no histórico, para fora do lugar onde a pessoa estava */
+    var empurrou = false;
+    try { history.pushState({ fdaLeitor: 1 }, ''); empurrou = true; } catch (e) { /* sem histórico */ }
+    function aoVoltarDoCelular() { if (!fechado) { empurrou = false; fechar(); } }
+    window.addEventListener('popstate', aoVoltarDoCelular);
     function fechar() {
       fechado = true; clearTimeout(esperaRender);
+      window.removeEventListener('popstate', aoVoltarDoCelular);
+      if (empurrou) { empurrou = false; try { history.back(); } catch (e) { /* ok */ } }   /* fechou pelo botão: tira a entrada que o leitor pôs no histórico */
       gravarAgora().then(function () {}, function () {});
       document.removeEventListener('keydown', teclado); window.removeEventListener('resize', aoRedimensionar); window.removeEventListener('orientationchange', aoRedimensionar); document.removeEventListener('visibilitychange', aoEsconder);
       document.body.style.overflow = overflowAntes; tela.remove();
