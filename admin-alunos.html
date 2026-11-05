@@ -399,7 +399,8 @@
             var usados = passos.filter(function (y) { return y[campoId] && y.id !== x.id; }).map(function (y) { return y[campoId]; });
             var fonte = tipo === 'atividade' ? ativsAluno : itensAluno.filter(function (i) { return tipo === 'gravacao' ? i.bloco === 'gravacoes' : i.bloco !== 'gravacoes'; });
             var sel = el('select', { style: 'max-width:100%' }, [el('option', { value: '', text: tipo === 'material' ? 'Escolha o material' : tipo === 'gravacao' ? 'Escolha a gravação' : 'Escolha a atividade' }), el('option', { value: '__prep', text: 'Ainda não criado (em preparação)' })].concat(
-              fonte.filter(function (i) { return usados.indexOf(i.id) < 0; }).map(function (i) { return el('option', { value: i.id, text: i.titulo + (tipo === 'atividade' && i.data_atividade ? ' · ' + P.dataBR(String(i.data_atividade).slice(0, 10)) : '') }); })));
+              fonte.slice().reverse().map(function (i) { return el('option', { value: i.id, text: i.titulo + (tipo === 'atividade' && i.data_atividade ? ' · ' + P.dataBR(String(i.data_atividade).slice(0, 10)) : '') + (usados.indexOf(i.id) >= 0 ? ' · já ligada a outro passo' : '') }); })));
+            if (!fonte.length) areaLigar.appendChild(el('p', { class: 'portal-msg erro', text: tipo === 'atividade' ? 'Este aluno não tem nenhuma atividade cadastrada.' : tipo === 'gravacao' ? 'Este aluno não tem nenhuma gravação na aba Gravações.' : 'Este aluno não tem nenhum material na aba Materiais.' }));
             sel.addEventListener('change', function () {
               if (!sel.value) return;
               var campos = { tipo: tipo, item_id: null, atividade_id: null, lido_em: null, feito: false, feito_em: null };
