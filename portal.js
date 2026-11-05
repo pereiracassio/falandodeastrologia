@@ -1051,6 +1051,19 @@
   })();
 
   /* "← Voltar" em terracota: o botão de voltar padrão das telas do painel (em cima e embaixo de cada tela) */
+  /* Veio da Agenda/To do do Hellenic Daily (a Agenda guarda de onde saiu)? Então o ← Voltar da ficha leva de volta pra lá.
+     chave = 'cliente' ou 'aluno'; id = quem está aberto. Devolve true se já navegou. */
+  function voltarAoOrigem(chave, id) {
+    try {
+      var o = JSON.parse(sessionStorage.getItem('fda_voltar_origem') || 'null');
+      if (!o || !o.url || !o.volta) return false;
+      var q = new URLSearchParams((o.url.split('#')[1] || ''));
+      if (q.get(chave) !== String(id)) return false;
+      sessionStorage.removeItem('fda_voltar_origem');
+      location.href = o.volta;
+      return true;
+    } catch (e) { return false; }
+  }
   function botaoVoltar(aoClicar) {
     var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
     b.style.cssText = 'color:#A03E25!important;font-weight:700';
@@ -1515,7 +1528,7 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
   };
 
   /* A TELA NÃO PULA (regra dele): quase toda ação redesenha a área #app (esvazia e monta de novo) e o navegador joga a rolagem para o topo. Aqui, uma vez para o site todo:

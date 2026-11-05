@@ -39,7 +39,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=152"></script>
+  <script src="portal.js?v=153"></script>
   <script src="conversa.js?v=7"></script>
   <script src="atividades.js?v=40"></script>
   <script>
@@ -599,10 +599,11 @@
       var abaAcomp = el('div'); /* primeira aba: avisos, encontro e acompanhamento */
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var voltar = P.botaoVoltar(function () { listaDeAlunos(user); });
+      var voltarDaFicha = function () { if (!P.voltarAoOrigem('aluno', aluno.id)) listaDeAlunos(user); };
+      var voltar = P.botaoVoltar(voltarDaFicha);
       var verComoAluno = el('a', { class: 'portal-btn', href: 'aluno.html?ver=' + encodeURIComponent(aluno.id), text: 'Ver como aluno' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoAluno]));
-      P.voltarNoFim(app, function () { listaDeAlunos(user); });
+      P.voltarNoFim(app, voltarDaFicha);
 
       /* entrar no encontro e dia do próximo, sem procurar o link */
       var meetAdmin = P.linkSeguro(aluno.meet_link);

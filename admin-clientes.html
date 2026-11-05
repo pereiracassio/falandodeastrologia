@@ -39,7 +39,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=152"></script>
+  <script src="portal.js?v=153"></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -197,10 +197,11 @@
       var abaServicos = el('div'); /* primeira aba: atendimento, avisos e os serviços */
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var voltar = P.botaoVoltar(function () { listaDeClientes(user); });
+      var voltarDaFicha = function () { if (!P.voltarAoOrigem('cliente', cliente.id)) listaDeClientes(user); };
+      var voltar = P.botaoVoltar(voltarDaFicha);
       var verComoCliente = el('a', { class: 'portal-btn', href: 'cliente.html?ver=' + encodeURIComponent(cliente.id), target: '_blank', rel: 'noopener', text: 'Ver como cliente' });
       app.appendChild(el('div', { class: 'portal-topo' }, [voltar, verComoCliente]));
-      P.voltarNoFim(app, function () { listaDeClientes(user); });
+      P.voltarNoFim(app, voltarDaFicha);
       abaServicos.appendChild(P.cartaoAtendimento(cliente.id, true, { nome: cliente.nome, whatsapp: cliente.whatsapp })); /* próximo atendimento e Meet, sem caçar o link */
       abaServicos.appendChild(P.avisos.cartaoEnviar('cliente', cliente.id, cliente.nome));
 

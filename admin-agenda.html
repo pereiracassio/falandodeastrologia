@@ -52,7 +52,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=152"></script>
+  <script src="portal.js?v=153"></script>
   <script src="menu.js?v=60" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
@@ -979,7 +979,7 @@
           var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:#1034A6' })]);
           var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:#B5852F;font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
           var aberto = el('div', { class: 'barra-ocre' });
-          texto.addEventListener('click', function () { if (x.url) { location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
+          texto.addEventListener('click', function () { if (x.url) { try { sessionStorage.setItem('fda_voltar_origem', JSON.stringify({ url: x.url, volta: 'admin-agenda.html' + location.hash })); } catch (e) { /* sem armazenamento */ } location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
           linha.appendChild(barra);
           if (x.capa) { /* a capinha do vídeo fica EM CIMA, do tamanho da coluna, e o texto escreve embaixo dela (no celular não espreme o texto) */
             texto.style.flex = 'none'; texto.style.width = '100%';
