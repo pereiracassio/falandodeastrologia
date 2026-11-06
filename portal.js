@@ -209,7 +209,7 @@
     var painel = el('div');
     painel.style.cssText = 'background:var(--papiro-fundo);border:1px solid #1F5FA3;border-radius:12px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;color:#16233F;font-family:system-ui,-apple-system,sans-serif';
     var topo = el('div'); topo.style.cssText = 'padding:14px 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
-    var titulo = el('strong', { text: soPastas ? 'Escolha a pasta' : tipo === 'pdf' ? 'Escolha o PDF' : tipo === 'video' ? 'Escolha o vídeo' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
+    var titulo = el('strong', { class: 'nome-coisa', text: soPastas ? 'Escolha a pasta' : tipo === 'pdf' ? 'Escolha o PDF' : tipo === 'video' ? 'Escolha o vídeo' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
     var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
     topo.appendChild(titulo); topo.appendChild(fechar);
     var caminho = el('div'); caminho.style.cssText = 'padding:0 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
@@ -251,7 +251,7 @@
     }
     function itemDaLista(f) {
       var ePasta = f.mimeType === PASTA_MIME;
-      var nome = el('button', { type: 'button', text: (ePasta ? '📁 ' : '📄 ') + f.name });
+      var nome = el('button', { type: 'button', class: 'nome-coisa', text: (ePasta ? '📁 ' : '📄 ') + f.name });
       nome.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F;flex:1;word-break:break-word';
       var botao = null;
       if (ePasta) {
@@ -283,7 +283,7 @@
         if (!anexar) lista.textContent = '';
         else { var mais = lista.querySelector('[data-mais]'); if (mais) lista.removeChild(mais); }
         if (!anexar && !termo && atual.id === 'root') {
-          var comp = el('button', { type: 'button', text: '👥 Compartilhados comigo' });
+          var comp = el('button', { type: 'button', class: 'nome-coisa', text: '👥 Compartilhados comigo' });
           comp.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F';
           comp.addEventListener('click', function () { pilha.push({ id: 'compartilhados', nome: 'Compartilhados comigo' }); carregar(); });
           lista.appendChild(linha(comp));

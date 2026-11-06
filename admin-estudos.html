@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="page.css?v=82">
   <link rel="stylesheet" href="portal.css?v=27">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=34">
+  <link rel="stylesheet" href="tipografia.css?v=35">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -36,7 +36,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=153"></script>
+  <script src="portal.js?v=154"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="leitor.js?v=9"></script>
   <script src="caderno.js?v=11"></script>
@@ -176,7 +176,7 @@
         if (aberto === 'encerrados') {
           var cx = el('div', { class: 'portal-cartao' });
           enc.forEach(function (e) {
-            var l = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [el('div', {}, [el('strong', { text: e.nome }),
+            var l = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [el('div', {}, [el('strong', { class: 'portal-item-titulo', text: e.nome }),
               el('div', { class: 'portal-item-data', text: P.dataBR(e.data_inicio) + (e.encerrado_em ? ' a ' + P.dataBR(e.encerrado_em) : '') })])]);
             l.style.cssText = 'padding:12px 0;border-bottom:1px solid rgba(31,95,163,.7);cursor:pointer;-webkit-tap-highlight-color:transparent';
             var abrir = function () { verEncerrado = e.id; lista(); };
@@ -329,7 +329,7 @@
           var info = p.total ? p.feitas + ' de ' + p.total + ' respondidas' + (p.multiplas ? ' · ' + p.certas + ' certas' : '') : 'sem questões';
           /* a linha inteira abre a aula: nada de botão no canto */
           var l = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [
-            el('div', {}, [el('strong', { text: a.titulo }), el('div', { class: 'portal-item-data', text: diaCurto(a.data) + ' · ' + a.materia + ' · ' + info })])]);
+            el('div', {}, [el('strong', { class: 'portal-item-titulo', text: a.titulo }), el('div', { class: 'portal-item-data', text: diaCurto(a.data) + ' · ' + a.materia + ' · ' + info })])]);
           l.style.cssText = 'padding:12px 0;border-bottom:1px solid rgba(31,95,163,.7);cursor:pointer;-webkit-tap-highlight-color:transparent';
           l.addEventListener('click', function () { aula(a.id); });
           l.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aula(a.id); } });
@@ -395,7 +395,7 @@
           var cm = el('div', { class: 'portal-cartao' });
           menores.forEach(function (m) {
             var ar = arvoreDe(m).map(function (x) { return x.id; }), aulasM = tudo.filter(function (a) { return ar.indexOf(a.estudo_id) >= 0; });
-            var ok = aulasM.filter(concluida).length, linhaM = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [el('strong', { text: m.nome }), P.barraLinha(aulasM.length ? Math.round(ok * 100 / aulasM.length) : 0, null, ok + '/' + aulasM.length)]);
+            var ok = aulasM.filter(concluida).length, linhaM = el('div', { class: 'portal-item', role: 'button', tabindex: '0' }, [el('strong', { class: 'portal-item-titulo', text: m.nome }), P.barraLinha(aulasM.length ? Math.round(ok * 100 / aulasM.length) : 0, null, ok + '/' + aulasM.length)]);
             if (m.data_fim) { var tm = P.barraTempoDias(m.data_inicio, m.data_fim); if (tm) linhaM.appendChild(tm); }
             linhaM.style.cssText = 'padding:12px 0;border-bottom:1px solid rgba(31,95,163,.7);cursor:pointer;-webkit-tap-highlight-color:transparent';
             var abrirM = function () { if (encerrado) verEncerrado = m.id; else aberto = m.id; lista(); window.scrollTo(0, 0); };

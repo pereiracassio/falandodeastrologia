@@ -79,3 +79,6 @@ html body .pagina-papiro .prod-seg .prod-chip{font-family:var(--fonte-mao)!impor
 
 /* RÓTULO DE GRUPO (cabeçalho de uma lista: "Atrasados", "sexta, 6 de novembro", "Trilhas"...): Cinzel terracota. Antes cada página repetia isso com font-family solto no estilo; agora é SÓ esta classe. */
 html body:not(#_) .rotulo-grupo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important;font-weight:700;color:#A03E25;letter-spacing:.04em}
+
+/* NOME DE COISA (título de linha de lista, nome de arquivo/pasta, título de janela): Architects Daughter MAIÚSCULA. Vale em qualquer lugar (inclusive janelas fora da folha). Um <strong> que abre uma linha de lista também é título. */
+html body:not(#_) :is(.nome-coisa,.portal-item>strong,.portal-item>div>strong:first-child){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
