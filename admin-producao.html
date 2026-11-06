@@ -379,7 +379,7 @@
         });
       });
     }
-    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo !== 'video' ? abaVideo : '', st: serieAberta && abaSerieDe === serieAberta && abaSerie === 'videos' ? 'videos' : '' }); }
+    function guardarEstado() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo !== 'video' ? abaVideo : '', corte: videoAberto && abaVideoDe === videoAberto && abaVideo === 'corte' && corteAberto ? corteAberto : '', st: serieAberta && abaSerieDe === serieAberta && abaSerie === 'videos' ? 'videos' : '' }); }
 
     function carregar() {
       Promise.all([
