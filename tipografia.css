@@ -1,7 +1,8 @@
 /* TIPOGRAFIA ÚNICA DO SITE (regra do astrólogo, 22/10/2026) — vale para TODA página e peça nova.
    REGRA ATUAL (06/11/2026): NÃO existe mais "o que ele escreve = à mão, o que é fixo = Cinzel".
-   • Cinzel (caixa baixa): títulos, subtítulos, nomes de item de lista, rótulos, botões, abas, menus, cabeçalhos de tabela, legendas.
-   • Architects Daughter: só CORPO DE TEXTO (parágrafo, descrição, anotação), inclusive o que ele escreve, e o que se digita nos campos. */
+   • Cinzel (caixa baixa): título da página, rótulos, botões, abas, menus, cabeçalhos de tabela, legendas.
+   • Architects Daughter MAIÚSCULA: nome das coisas (nome do projeto, título de passo, item de lista).
+   • Architects Daughter normal: corpo de texto (parágrafo, descrição, anotação) e o que se digita nos campos. */
 /* Ícones de planetas, lotes, signos, lunação, nodos e ângulos (33 caracteres U+E000 a U+E020, só desenham esses; o resto do texto segue a fonte normal) */
 @font-face{font-family:'AstroIcones';src:url(fonts/astro-icones.woff2) format('woff2');unicode-range:U+E000-E020;font-display:swap}
 :root{--fonte-titulo:'AstroIcones','Cinzel',serif;--fonte-mao:'AstroIcones','Architects Daughter','Segoe Print','Comic Sans MS',cursive}
@@ -11,8 +12,10 @@
 .blog-home-conteudo p,.blog-card p,.blog-card .blog-data,.pagina-papiro :is(p,li,label,input,textarea,select,td,th,span,strong,em,small){font-family:var(--fonte-mao)!important;letter-spacing:0}
 .pagina-papiro :is(p,li,label,td,th,small){color:#16233F}
 .pagina-papiro .portal-item-data,.pagina-papiro .portal-msg,.pagina-papiro .portal-descricao{font-family:var(--fonte-mao)!important}
-/* nome de item de lista (título de passo, de projeto, de atividade...) é título: Cinzel */
-.pagina-papiro .portal-item-titulo,.pagina-papiro .proj-titulo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important;letter-spacing:.03em}
+/* nome das COISAS (nome do projeto, título do passo, item de lista): Architects Daughter em MAIÚSCULA; rótulos, botões, abas e título da página seguem Cinzel; o corpo do texto fica à mão em minúscula normal */
+html body .pagina-papiro .folha-pagina :is(.portal-item-titulo,.proj-titulo,.prod-titulo),html body .pagina-papiro .folha-pagina .portal :is(h2,h3){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
+/* título de cartão/sanfona funciona como botão: continua Cinzel */
+html body .pagina-papiro .folha-pagina .portal .portal-cartao :is(h2,h3){font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
 
 /* subtítulos */
 .pagina-papiro h2,.pagina-papiro h3,.pagina-papiro .folha-pagina h2,.pagina-papiro .folha-pagina h3,.pagina-papiro .folha-pagina h2[style],.pagina-papiro .folha-pagina h3[style],.portal-sub,.portal-subtitulo,.portal-texto-sub,.blog-h2{
