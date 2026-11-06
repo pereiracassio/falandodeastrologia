@@ -434,3 +434,11 @@ Botão secundário que é só a palavra leva **sublinhado** (senão "tem que adi
 - **Publicar tudo de uma vez.** Ele quer fazer tudo o que tem para ser feito e só então publicar; nunca publicar "de picado", uma coisa por vez, nem toda vez que uma coisa fica pronta. Terminou uma parte? Commit e push da BRANCH (nunca da `main`), e seguir para o que falta.
 - Cada "pode publicar" vale só para o que estava pronto naquela hora; coisa nova depois precisa de outra ordem.
 - Não repetir SQL que ele já disse que rodou (nem se der erro: dizer só o que está errado, ex.: projeto do Supabase errado; o do Astro Hellenic NÃO é o do Falando de Astrologia).
+
+## Curso AO VIVO além do gravado: planejamento (06/11/2026), turma em março/2027 — nada construído ainda
+O astrólogo quer abrir uma turma em **março** com aulas semanais ao vivo pelo Google Meet, e o site passa a ter dois tipos de curso: **Gravado** (como está hoje) e **Ao vivo**. (Live no YouTube é outro assunto, sem relação com o curso: não misturar. Aula da turma paga NUNCA no YouTube, nem não listada.)
+- **Tipo escolhido ao criar o curso** (Gravado ou Ao vivo).
+- **No ao vivo, cada aula tem data, hora e link do Meet.** O aluno vê **"Próxima aula"** e o botão **"Entrar na aula"** (nunca "encontro"; Meet em ocre, `.portal-btn-meet`). Depois da aula ele cola a gravação (YouTube/Drive, como já existe) na mesma linha, para quem faltou.
+- **Presença: marcada por ELE, na mão**, numa lista da turma com caixinha por aula (decisão dele, 06/11/2026). Presença pelo toque no botão foi descartada ("complicado": entra cedo demais etc.). O plano do Meet dele (Google One 2 TB, chamadas de até 24 h) NÃO tem relatório de presença (conferido por ele nas configurações da reunião). O painel mostra a % de presença de cada aluno.
+- Ainda em aberto: liberar aula por data ou na mão; aviso no celular antes da aula (fica para depois, como já combinado); como vira avaliação/nota no ao vivo.
+- Continua valendo: matrícula por e-mail, módulos, apostila, pagamento ainda a escolher. SQL sempre num bloco só, e só publicar com "pode publicar".
