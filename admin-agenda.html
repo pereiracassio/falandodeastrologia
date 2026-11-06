@@ -691,7 +691,7 @@
         doDiaL.sort(function (p, q) { return (p.diaTodo ? 0 : 1) - (q.diaTodo ? 0 : 1) || p.ini - q.ini; }).forEach(function (e) {
           var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid #16233F;background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
           linha.appendChild(el('span', { text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
-          var nome = el('span', { style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
+          var nome = el('span', { class: 'proj-titulo', style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
           linha.appendChild(nome); var plL = planetaDoEvento(e, 28, true); if (plL) linha.appendChild(plL); /* no canto direito, do tamanho da linha, como no Dia */
           var aberto = el('div', { class: 'barra-ocre' }); /* o cartão abre aqui embaixo, sem sair de onde você está */
           linha.addEventListener('click', function () { if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, e); });
@@ -978,7 +978,7 @@
           var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
           var plT = !x.semData && isFinite(x.quando) ? (x.diaTodo ? planetaDoDia(x.quando, 28, false) : planetaDoInstante(x.quando, 28, false)) : null;
           var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:#1034A6' })]);
-          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:#B5852F;font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
+          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:#B5852F;font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
           var aberto = el('div', { class: 'barra-ocre' });
           texto.addEventListener('click', function () { if (x.url) { try { sessionStorage.setItem('fda_voltar_origem', JSON.stringify({ url: x.url, volta: 'admin-agenda.html' + location.hash })); } catch (e) { /* sem armazenamento */ } location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
           linha.appendChild(barra);
