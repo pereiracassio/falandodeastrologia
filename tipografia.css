@@ -15,7 +15,7 @@
 .pagina-papiro :is(p,li,label,td,th,small){color:#16233F}
 .pagina-papiro .portal-item-data,.pagina-papiro .portal-msg,.pagina-papiro .portal-descricao{font-family:var(--fonte-mao)!important}
 /* nome das COISAS (nome do projeto, título do passo, item de lista): Architects Daughter em MAIÚSCULA; rótulos, botões, abas e título da página seguem Cinzel; o corpo do texto fica à mão em minúscula normal */
-html body .pagina-papiro .folha-pagina :is(.portal-item-titulo,.proj-titulo,.prod-titulo),html body .pagina-papiro .folha-pagina .portal :is(h2,h3){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
+html body .pagina-papiro .folha-pagina :is(.portal-item-titulo,.proj-titulo,.prod-titulo,.prod-nome,.fin-nome,.curso-titulo),html body .pagina-papiro .folha-pagina .portal :is(h2,h3){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
 /* título de cartão/sanfona funciona como botão: continua Cinzel */
 html body .pagina-papiro .folha-pagina .portal .portal-cartao :is(h2,h3){font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
 
