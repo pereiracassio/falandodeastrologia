@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="page.css?v=82">
   <link rel="stylesheet" href="portal.css?v=27">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=33">
+  <link rel="stylesheet" href="tipografia.css?v=34">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -334,7 +334,7 @@
     function telaTrilha(aluno, itens, previa) {
       var raiz = el('div', {});
       raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
-      var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
+      var rotulo = function (t) { return el('p', { text: t, class: 'rotulo-grupo', style: "font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
       var corDoTempo = function (f) {
         var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, k = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
         return 'rgb(' + de.map(function (c, i) { return Math.round(c + (para[i] - c) * k); }).join(',') + ')';
@@ -445,7 +445,7 @@
           if (cumpridos.length) grupos.push(['Feitos', cumpridos]);
           grupos.forEach(function (g) {
             if (!g[1].length) return;
-            corpo.appendChild(el('div', { text: g[0], style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
+            corpo.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
             var caixa = el('div', {});
             g[1].forEach(function (x, i) { var l = linha(x); if (i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
             corpo.appendChild(caixa);

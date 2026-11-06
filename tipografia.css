@@ -76,3 +76,6 @@ html body :is(
 /* TODO BOTÃO (de qualquer estilo), barra de abas e menu ficam em CINZEL. Os rótulos ocre (Próximo passo, Depois, Início...) são Architects Daughter maiúscula, na mesma cor. */
 /* BARRA DE PROGRESSÃO (etapas escritas dentro da barra: Produção, Curso, To do): Architects Daughter em MINÚSCULA, mesmo sendo botão */
 html body .pagina-papiro .prod-seg .prod-chip{font-family:var(--fonte-mao)!important;text-transform:none!important;letter-spacing:0}
+
+/* RÓTULO DE GRUPO (cabeçalho de uma lista: "Atrasados", "sexta, 6 de novembro", "Trilhas"...): Cinzel terracota. Antes cada página repetia isso com font-family solto no estilo; agora é SÓ esta classe. */
+html body:not(#_) .rotulo-grupo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important;font-weight:700;color:#A03E25;letter-spacing:.04em}

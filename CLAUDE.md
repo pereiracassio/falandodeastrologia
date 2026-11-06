@@ -434,3 +434,10 @@ Botão secundário que é só a palavra leva **sublinhado** (senão "tem que adi
 - **Publicar tudo de uma vez.** Ele quer fazer tudo o que tem para ser feito e só então publicar; nunca publicar "de picado", uma coisa por vez, nem toda vez que uma coisa fica pronta. Terminou uma parte? Commit e push da BRANCH (nunca da `main`), e seguir para o que falta.
 - Cada "pode publicar" vale só para o que estava pronto naquela hora; coisa nova depois precisa de outra ordem.
 - Não repetir SQL que ele já disse que rodou (nem se der erro: dizer só o que está errado, ex.: projeto do Supabase errado; o do Astro Hellenic NÃO é o do Falando de Astrologia).
+
+## Tipografia: UMA regra só, em tipografia.css, nada solto (06/11/2026) — decisão dele, vale para TODA tela e peça nova
+- **Cinzel (caixa baixa):** título da página (1ª coisa da página de serviço), "Investimento e condições" e o valor, TODOS os botões (qualquer estilo), barra de abas e menus, rótulo de grupo (`.rotulo-grupo`: "Atrasados", dias do To do).
+- **Architects Daughter MAIÚSCULA:** subtítulos (h2/h3), nome das coisas (projeto, passo, item, cliente, módulo: classes `portal-item-titulo`, `proj-titulo`, `prod-titulo`, `prod-nome`, `fin-nome`, `curso-titulo`) e os rótulos ocre (nomes de campo, "Próximo passo", "Depois").
+- **Architects Daughter normal:** corpo de texto e o que se digita. **Etapas escritas dentro de uma barra de progressão** (`.prod-seg .prod-chip`, To do) = Architects Daughter minúscula, mesmo sendo botão.
+- **NUNCA `font-family`/`font:` com Cinzel ou Architects no estilo de uma página ou script.** Peça nova usa a CLASSE do papel. `node verificar-tipografia.js` falha se achar fonte solta (lista de exceções no próprio script, cada uma com o motivo). Rodar antes de entregar.
+- Não repetir erro de 06/11: corrigir só as telas que ele citou deixou o resto solto. Papel novo ou título sem classe = o problema é a classe que falta, não a tela.

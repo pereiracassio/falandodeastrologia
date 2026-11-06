@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="page.css?v=82">
   <link rel="stylesheet" href="portal.css?v=27">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=33">
+  <link rel="stylesheet" href="tipografia.css?v=34">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -236,7 +236,7 @@
       var trilhas = [], passos = [], itensAluno = [], ativsAluno = [], abertaConcl = null;
       var barra = function (pct) { return el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:#1F5FA3;width:' + pct + '%' })]); };
       var mini = function (txt, aoClicar, desligado) { var b = el('button', { type: 'button', text: txt, style: 'background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:' + (desligado ? '.2' : '.6') + ';cursor:pointer;text-decoration:underline' }); b.disabled = !!desligado; b.addEventListener('click', aoClicar); return b; };
-      var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
+      var rotulo = function (t) { return el('p', { text: t, class: 'rotulo-grupo', style: "font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
       /* O formulário dos fatos fica no banco do Astro Hellenic. Pergunta lá (função pública, só com o link do passo: u, m e t) se o cliente já enviou. */
       function fatosEnviadosDoLink(link) {
         try {
@@ -481,7 +481,7 @@
         if (semT.length) gruposT.push(['Sem data', semT]);
         if (feitos.length) gruposT.push(['Feitos', feitos]);
         gruposT.forEach(function (g) {
-          c.appendChild(el('div', { text: g[0], style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
+          c.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
           var cx = el('div', {});
           g[1].forEach(function (x, k) { var l = linhaPasso(x, g[1], k, false); if (k === 0) l.style.borderTop = '0'; cx.appendChild(l); });
           c.appendChild(cx);
