@@ -1,8 +1,8 @@
-/* TIPOGRAFIA ÚNICA DO SITE (regra do astrólogo, 22/10/2026) — vale para TODA página e peça nova.
-   REGRA ATUAL (06/11/2026): NÃO existe mais "o que ele escreve = à mão, o que é fixo = Cinzel".
-   • Cinzel (caixa baixa): título da página, rótulos, botões, abas, menus, cabeçalhos de tabela, legendas.
-   • Architects Daughter MAIÚSCULA: nome das coisas (nome do projeto, título de passo, item de lista).
-   • Architects Daughter normal: corpo de texto (parágrafo, descrição, anotação) e o que se digita nos campos. */
+/* TIPOGRAFIA ÚNICA DO SITE — REGRA ATUAL (06/11/2026, do astrólogo), vale para TODA página e peça nova:
+   • CINZEL (caixa baixa): SÓ RÓTULOS — título da página (a 1ª coisa da página de serviço), "Investimento e condições" e o valor, nome de campo, "Próximo passo/Depois".
+   • ARCHITECTS DAUGHTER EM MAIÚSCULA: subtítulos, nome das coisas (projeto, passo, item), botões, abas e menus.
+   • ARCHITECTS DAUGHTER NORMAL (minúscula): corpo de texto e o que se digita nos campos.
+   O bloco "REGRA ATUAL" no FIM deste arquivo vale sobre tudo que está acima. */
 /* Ícones de planetas, lotes, signos, lunação, nodos e ângulos (33 caracteres U+E000 a U+E020, só desenham esses; o resto do texto segue a fonte normal) */
 @font-face{font-family:'AstroIcones';src:url(fonts/astro-icones.woff2) format('woff2');unicode-range:U+E000-E020;font-display:swap}
 :root{--fonte-titulo:'AstroIcones','Cinzel',serif;--fonte-mao:'AstroIcones','Architects Daughter','Segoe Print','Comic Sans MS',cursive}
@@ -63,3 +63,13 @@ html body .pagina-papiro .rotulo-fixo:not(.impresso){font-size:13px}
 html body .pagina-papiro label:not(.impresso) :is(span,strong,em,small,b,i){font-family:inherit!important;color:inherit!important;text-transform:inherit!important;letter-spacing:inherit;font-size:inherit!important;font-weight:inherit!important}
 /* classes antigas de texto fixo (spans perdiam para a regra geral de span) e botões discretos (Editar, Apagar, Renomear, Tirar a data): botão é Cinzel */
 html body .pagina-papiro :is(.prod-fixo,.fin-fixo,.portal-apagar,.proj-mini,.botao-fixo){font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
+
+/* ===== REGRA ATUAL (06/11/2026): Cinzel só em rótulo; subtítulo, nome de coisa, botão, aba e menu = Architects Daughter MAIÚSCULA ===== */
+html body :is(
+  .pagina-papiro :is(h2,h3):not(.impresso):not(.titulo-pagina),.portal-sub,.portal-subtitulo,.portal-texto-sub,.blog-h2,.blog-card h2,
+  .cab-nav,.cab-nav a,.portal-btn,.portal-aba,.portal-grupo>*,.blog-botao,.btn-pay,.btn-google,.pagina-papiro a[href*="carrinho.html"],.sidemenu-nav a,.nav-menu a,
+  .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao :is(h2,h3),
+  .pagina-papiro button.portal-link,.pagina-papiro .blog-voltar,.pagina-papiro :is(.portal-apagar,.proj-mini,.botao-fixo),
+  .pagina-papiro .folha-pagina :is(.portal-item-titulo,.proj-titulo,.prod-titulo),.pagina-papiro .folha-pagina .portal :is(h2,h3):not(.impresso)
+){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
+html body body.checkout .pagina-papiro .card :is(button,.btn-pay,.btn-google,a[href*="carrinho"]){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
