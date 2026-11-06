@@ -3,6 +3,7 @@
    • ARCHITECTS DAUGHTER EM MAIÚSCULA: subtítulos, nome das coisas (projeto, passo, item) e os rótulos ocre (Próximo passo, Depois, nomes de campo).
    • CINZEL: título da página, valor/Investimento, TODOS os botões (qualquer estilo), barra de abas e menus.
    • ARCHITECTS DAUGHTER NORMAL (minúscula): corpo de texto e o que se digita nos campos.
+   • BARRA DE PROGRESSÃO: o que vai escrito dentro das etapas fica em Architects Daughter minúscula (mesmo sendo botão).
    O bloco "REGRA ATUAL" no FIM deste arquivo vale sobre tudo que está acima. */
 /* Ícones de planetas, lotes, signos, lunação, nodos e ângulos (33 caracteres U+E000 a U+E020, só desenham esses; o resto do texto segue a fonte normal) */
 @font-face{font-family:'AstroIcones';src:url(fonts/astro-icones.woff2) format('woff2');unicode-range:U+E000-E020;font-display:swap}
@@ -73,3 +74,5 @@ html body :is(
   .pagina-papiro .folha-pagina :is(.portal-item-titulo,.proj-titulo,.prod-titulo),.pagina-papiro .folha-pagina .portal :is(h2,h3):not(.impresso)
 ){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
 /* TODO BOTÃO (de qualquer estilo), barra de abas e menu ficam em CINZEL. Os rótulos ocre (Próximo passo, Depois, Início...) são Architects Daughter maiúscula, na mesma cor. */
+/* BARRA DE PROGRESSÃO (etapas escritas dentro da barra: Produção, Curso, To do): Architects Daughter em MINÚSCULA, mesmo sendo botão */
+html body .pagina-papiro .prod-seg .prod-chip{font-family:var(--fonte-mao)!important;text-transform:none!important;letter-spacing:0}
