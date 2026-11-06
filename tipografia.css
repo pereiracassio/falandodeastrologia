@@ -1,7 +1,7 @@
 /* TIPOGRAFIA ÚNICA DO SITE — REGRA ATUAL (06/11/2026, do astrólogo), vale para TODA página e peça nova:
-   • CINZEL (caixa baixa): SÓ RÓTULOS — título da página (a 1ª coisa da página de serviço), "Investimento e condições" e o valor, nome de campo, "Próximo passo/Depois".
-   • ARCHITECTS DAUGHTER EM MAIÚSCULA: subtítulos, nome das coisas (projeto, passo, item) e botões de contorno/só palavra (Editar, Apagar, Voltar...).
-   • CINZEL também: barra de abas, menus e os botões PREENCHIDOS de terracota (rótulo).
+   • CINZEL (caixa baixa): título da página (a 1ª coisa da página de serviço), "Investimento e condições" e o valor, todos os botões, abas e menus.
+   • ARCHITECTS DAUGHTER EM MAIÚSCULA: subtítulos, nome das coisas (projeto, passo, item) e os rótulos ocre (Próximo passo, Depois, nomes de campo).
+   • CINZEL: título da página, valor/Investimento, TODOS os botões (qualquer estilo), barra de abas e menus.
    • ARCHITECTS DAUGHTER NORMAL (minúscula): corpo de texto e o que se digita nos campos.
    O bloco "REGRA ATUAL" no FIM deste arquivo vale sobre tudo que está acima. */
 /* Ícones de planetas, lotes, signos, lunação, nodos e ângulos (33 caracteres U+E000 a U+E020, só desenham esses; o resto do texto segue a fonte normal) */
@@ -65,12 +65,11 @@ html body .pagina-papiro label:not(.impresso) :is(span,strong,em,small,b,i){font
 /* classes antigas de texto fixo (spans perdiam para a regra geral de span) e botões discretos (Editar, Apagar, Renomear, Tirar a data): botão é Cinzel */
 html body .pagina-papiro :is(.prod-fixo,.fin-fixo,.portal-apagar,.proj-mini,.botao-fixo){font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
 
-/* ===== REGRA ATUAL (06/11/2026): Cinzel em rótulo, abas, menus e botões terracota; subtítulo, nome de coisa e botão sem preenchimento = Architects Daughter MAIÚSCULA ===== */
+/* ===== REGRA ATUAL (06/11/2026): Cinzel em botão, aba e menu; subtítulo, nome de coisa e rótulo ocre = Architects Daughter MAIÚSCULA ===== */
 html body :is(
   .pagina-papiro :is(h2,h3):not(.impresso):not(.titulo-pagina),.portal-sub,.portal-subtitulo,.portal-texto-sub,.blog-h2,.blog-card h2,
-  .portal-btn.portal-btn-sec,.blog-botao:not(.cheio),.btn-google,
   .pagina-papiro button[aria-expanded]>span:first-child,.pagina-papiro .folha-pagina .portal-cartao :is(h2,h3),
-  .pagina-papiro button.portal-link,.pagina-papiro .blog-voltar,.pagina-papiro :is(.portal-apagar,.proj-mini,.botao-fixo),
+  .pagina-papiro :is(label,.rotulo-fixo,.data-legenda-nome,.proj-grupo,.prod-rotulo,.fin-rotulo,.prod-grupo,.fin-escopo-rotulo):not(.impresso),
   .pagina-papiro .folha-pagina :is(.portal-item-titulo,.proj-titulo,.prod-titulo),.pagina-papiro .folha-pagina .portal :is(h2,h3):not(.impresso)
 ){font-family:var(--fonte-mao)!important;text-transform:uppercase!important;letter-spacing:.03em}
-/* ficam em CINZEL (rótulo): barra de abas, menu e os botões PREENCHIDOS de terracota (Adicionar ao Carrinho, Salvar, Entrar...) */
+/* TODO BOTÃO (de qualquer estilo), barra de abas e menu ficam em CINZEL. Os rótulos ocre (Próximo passo, Depois, Início...) são Architects Daughter maiúscula, na mesma cor. */
