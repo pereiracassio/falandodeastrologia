@@ -66,7 +66,9 @@
     .prod-seg .prod-chip.on:hover{color:var(--vazado,#F3E3B8)}
     .prod-fila{display:grid;gap:0 14px}
     .prod-fila :is(input,select){height:46px}
-    @media(max-width:560px){.prod-fila{grid-template-columns:1fr!important}}
+    @media(max-width:560px){.prod-fila:not(.prod-fila-fixa){grid-template-columns:1fr!important}}
+    .prod-fila-fixa{gap:0 10px;align-items:end}
+    .prod-fila-fixa input[type=number]{text-align:center;padding-left:0;padding-right:0}
     .prod-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px}
     .prod-corte{border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 70%,transparent);padding:10px 0}
     .prod-corte input{margin-bottom:8px}
@@ -513,8 +515,8 @@
       b.addEventListener('click', aoClicar); return b;
     }
     /* uma fileira de campos que nunca quebra para a linha de baixo (só no celular bem estreito): cols = largura relativa de cada um */
-    function fila(cols, campos) {
-      var f = el('div', { class: 'prod-fila' }, campos);
+    function fila(cols, campos, fixa) {
+      var f = el('div', { class: 'prod-fila' + (fixa ? ' prod-fila-fixa' : '') }, campos);
       f.style.gridTemplateColumns = cols.map(function (c) { return 'minmax(0,' + c + 'fr)'; }).join(' ');
       return f;
     }
@@ -948,7 +950,9 @@
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
       cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo, function () { return titulo.value.trim(); }), campo('Texto da capa', capaTexto, function () { return capaTexto.value.trim(); })]));
-      cartao.appendChild(fila([0.7, 0.7, 2], [campo('Número na série', numero), campo('Temporada', temporada), campo('Link do YouTube', link)]));
+      /* T (temporada), N (número) e Link numa linha só, também no celular; o link vira o ícone depois de colado */
+      numero.setAttribute('max', '99'); temporada.setAttribute('max', '99'); link.placeholder = 'Colar o link';
+      cartao.appendChild(fila([0.45, 0.45, 2], [campo('T', temporada), campo('N', numero), campo('Link', link)], true));
       /* horário de Júpiter é para o dia em que o vídeo fica PÚBLICO; vídeo só de membros (ou sem data pública) usa a data dos membros */
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
       var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
