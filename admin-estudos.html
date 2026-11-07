@@ -745,7 +745,7 @@
 
     function cartaoQuestao(q, i, r) {
       var cartao = el('div', { class: 'portal-cartao' });
-      var enun = el('p', { text: (i + 1) + '. ' + q.enunciado, class: 'portal-item-titulo' }); enun.style.whiteSpace = 'pre-line';
+      var enun = el('p', { text: (i + 1) + '. ' + q.enunciado }); enun.style.cssText = 'white-space:pre-line;font-weight:700;color:#16233F';
       cartao.appendChild(enun);
       if (q.imagem) { var fig = el('img', { src: q.imagem, alt: 'Figura da questão' }); fig.style.cssText = 'display:block;max-width:100%;height:auto;margin:10px 0 12px;border:1px solid #1F5FA3'; cartao.appendChild(fig); }
       var resposta = r || { questao_id: q.id, opcao: null, texto: '' };
