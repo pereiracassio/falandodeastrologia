@@ -8,7 +8,7 @@
    Aviso de mensagem (url com aba=conversa) não aparece como cartão: a mensagem já está ali. */
 (function () {
   var P = window.portal, el = P.el, C = P.client;
-  var AZUL = '#1F5FA3', AZUL_ESCURO = '#1034A6', OCRE = '#B5852F', TERRACOTA = '#A03E25';
+  var AZUL = FdaTema.cor('azul-egipcio-claro'), AZUL_ESCURO = FdaTema.cor('azul-egipcio-escuro'), OCRE = FdaTema.cor('ocre'), TERRACOTA = FdaTema.cor('terracota');
 
   /* balão só de contorno, como no WhatsApp (único lugar do site com canto arredondado, pedido dele; por isso o !important contra a regra de canto reto): o canto de cima do lado de quem fala é reto e leva um bico desenhado (nada de preenchimento no papiro) */
   function estilosDosBaloes() {
@@ -189,7 +189,7 @@
     function montarBarra() {
       var campo = el('textarea', { rows: '1', placeholder: 'Escreva a sua mensagem', 'aria-label': 'Mensagem', 'data-icones': '1' });
       campo.classList.add('escrita-livre');   /* já marcado, para o site não aplicar a escrita livre grande nem a paleta de ícones aqui */
-      var estilo = { border: '1px solid ' + AZUL, 'border-radius': '0', padding: '9px 10px', margin: '0', background: 'transparent', color: '#16233F', 'min-height': '44px', 'max-height': '40vh',
+      var estilo = { border: '1px solid ' + AZUL, 'border-radius': '0', padding: '9px 10px', margin: '0', background: 'transparent', color: FdaTema.cor('preto-tinta'), 'min-height': '44px', 'max-height': '40vh',
         'font-size': '17px', 'font-family': '"Architects Daughter", cursive', 'line-height': '1.4', resize: 'none', 'overflow-y': 'auto', flex: '1 1 auto', width: '100%', display: 'block', 'box-sizing': 'border-box' };
       Object.keys(estilo).forEach(function (k) { campo.style.setProperty(k, estilo[k], 'important'); });
       var enviar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar' });

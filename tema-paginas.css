@@ -13,3 +13,5 @@
 :root.tema-escuro { color-scheme: dark; }
 /* os nomes antigos de cor do site seguem o tema */
 :root.tema-claro, :root.tema-escuro, :root.tema-sulfite { --azul: var(--azul-egipcio-claro); --ouro: var(--ocre); }
+/* texto "vazado" (sobre peça preenchida de azul): é a cor do fundo da página, como se o texto fosse um buraco na peça */
+:root.tema-claro, :root.tema-escuro, :root.tema-sulfite { --vazado: var(--fundo-creme); }

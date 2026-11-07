@@ -6,7 +6,7 @@
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/icone-daily-180.png?v=1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=1"></script>
+  <script src="tema.js?v=2"></script>
   <link rel="manifest" href="manifest-daily.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="temas.css?v=1">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=84">
-  <link rel="stylesheet" href="portal.css?v=28">
-  <link rel="stylesheet" href="tema-paginas.css?v=3">
+  <link rel="stylesheet" href="page.css?v=85">
+  <link rel="stylesheet" href="portal.css?v=29">
+  <link rel="stylesheet" href="tema-paginas.css?v=4">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=36">
   <style>
@@ -58,8 +58,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=155"></script>
-  <script src="menu.js?v=60" defer></script>
+  <script src="portal.js?v=156"></script>
+  <script src="menu.js?v=61" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
   (function () {
@@ -135,8 +135,8 @@
     var CORES_EVENTO = { 1: '#7986cb', 2: '#33b679', 3: '#8e24aa', 4: '#e67c73', 5: '#f6bf26', 6: '#f4511e', 7: '#039be5', 8: '#616161', 9: '#3f51b5', 10: '#0b8043', 11: '#d50000' };
     var NOMES_COR = { 1: 'Lavanda', 2: 'Sálvia', 3: 'Uva', 4: 'Flamingo', 5: 'Banana', 6: 'Tangerina', 7: 'Pavão', 8: 'Grafite', 9: 'Mirtilo', 10: 'Manjericão', 11: 'Tomate' };
     /* compromisso PREENCHIDO: ocre, ou a cor que ele escolheu; o texto escuro ou claro conforme a cor, para ler bem por cima da grade */
-    function preenche(e) { return e.cor || e.calCor || '#B5852F'; }
-    function textoSobre(hex) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 120 ? '#16233F' : '#FFFFFF'; }
+    function preenche(e) { return e.cor || e.calCor || FdaTema.cor('ocre'); }
+    function textoSobre(hex) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 120 ? FdaTema.cor('preto-tinta') : '#FFFFFF'; }
     function normalizar(e, cal) {
       if (e.status === 'cancelled') return null;
       var diaTodo = !!(e.start && e.start.date);
@@ -176,7 +176,7 @@
         for (var y = a0; y <= a1; y++) {
           var bi = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0, dd = (m === 2 && d === 29 && !bi) ? 28 : d, iso = y + '-' + p2(m) + '-' + p2(dd), ini = doIso(iso);
           if (ini < de || ini >= ate) continue;
-          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome, curto: (p.codigo ? p.codigo + ' · ' : '') + p.nome, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#A03E25', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
+          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome, curto: (p.codigo ? p.codigo + ' · ' : '') + p.nome, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: FdaTema.cor('terracota'), calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
         }
       });
       return saida;
@@ -200,7 +200,7 @@
         var h = escolha != null ? hs[Math.min(escolha, hs.length - 1)] : ehVideo ? hs.slice().sort(function (x, y) { return Math.abs(x.ini - (d0 + 16 * 3600000)) - Math.abs(y.ini - (d0 + 16 * 3600000)); })[0] : hs[0];
         if (h.fim <= de || h.ini >= ate) return;
         var ini = h.ini, fim = h.fim;
-        saida.push({ id: idBase, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: fim, diaTodo: false, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#1F5FA3', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } });
+        saida.push({ id: idBase, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: fim, diaTodo: false, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: FdaTema.cor('azul-egipcio-claro'), calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } });
       }
       producao.videos.forEach(function (v) {
         var iso = (v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar; if (!iso) return;
@@ -390,7 +390,7 @@
           var dia = isoDia(e.ini), hora = hhmm(e.ini).replace(':00', 'h').replace(':', 'h');
           var quandoTxt = dia === isoDia(Date.now()) ? 'hoje' : dia === isoDia(Date.now() + DIA) ? 'amanhã' : 'no dia ' + curto(dia);
           var sino = el('button', { type: 'button', title: 'Avisar no aplicativo', 'aria-label': 'Avisar no aplicativo', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer' });
-          sino.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A03E25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
+          sino.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--terracota)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
           sino.addEventListener('click', function () {
             sino.disabled = true;
             P.avisos.manual(f.para, f.p.id, 'Oi, ' + primeiro + '! Passando para lembrar do seu ' + (f.para === 'aluno' ? 'encontro' : 'atendimento') + ' ' + quandoTxt + ', às ' + hora + '.').then(function (x) {
@@ -578,7 +578,7 @@
     var ORDEM_ICONES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno'];
     function iconePlaneta(nome, px, cor) {
       return el('span', { text: String.fromCharCode(0xE000 + ORDEM_ICONES.indexOf(nome)), title: nome, 'aria-label': nome,
-        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + (cor || '#1F5FA3') + ';vertical-align:middle;flex:none' });
+        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + (cor || FdaTema.cor('azul-egipcio-claro')) + ';vertical-align:middle;flex:none' });
     }
     /* as horas planetárias de um dia civil, cortadas na meia-noite: cada uma vira uma linha da grade */
     function segmentosDoDia(iso) {
@@ -597,10 +597,10 @@
     }
     function planetaDoInstante(ms, px, comFundo) {
       var s = horaDoInstante(ms); if (!s) return null;
-      return comPecaClara(iconePlaneta(s.planeta, px, s.noite ? '#1F5FA3' : '#B5852F'), comFundo);
+      return comPecaClara(iconePlaneta(s.planeta, px, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')), comFundo);
     }
     var REGENTE_DO_DIA = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno']; /* domingo a sábado */
-    function planetaDoDia(ms, px, comFundo) { return comPecaClara(iconePlaneta(REGENTE_DO_DIA[diaSem(isoDia(ms))], px, '#A03E25'), comFundo); } /* o planeta do DIA é terracota */
+    function planetaDoDia(ms, px, comFundo) { return comPecaClara(iconePlaneta(REGENTE_DO_DIA[diaSem(isoDia(ms))], px, FdaTema.cor('terracota')), comFundo); } /* o planeta do DIA é terracota */
     /* evento com hora = planeta da hora em que começa; evento de dia todo = planeta do dia */
     function planetaDoEvento(e, px, comFundo) { return e.diaTodo ? planetaDoDia(e.ini, px, comFundo) : planetaDoInstante(e.ini, px, comFundo); }
     function yDe(segs, t, H) { /* onde, na coluna, fica um instante: dentro da linha da hora planetária em que ele cai */
@@ -644,7 +644,7 @@
         var gut = el('div', { style: 'position:relative;height:' + altura + 'px' });
         todos[0].forEach(function (s, k) {
           var l = el('div', { style: 'position:absolute;left:0;right:4px;top:' + (k * H) + 'px;height:' + H + 'px;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:5px;border-top:' + linhaFina + ';font-size:11px;color:var(--preto-tinta)' });
-          l.appendChild(el('span', { text: hhmm(s.ini), style: 'opacity:.75' })); l.appendChild(iconePlaneta(s.planeta, 22, s.noite ? '#1F5FA3' : '#B5852F'));
+          l.appendChild(el('span', { text: hhmm(s.ini), style: 'opacity:.75' })); l.appendChild(iconePlaneta(s.planeta, 22, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')));
           gut.appendChild(l);
         });
         corpo.appendChild(gut);
@@ -654,7 +654,7 @@
         var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + H + 'px)' });
         if (!unico) segs.forEach(function (s, k) { /* na semana cada coluna tem o seu ícone e hora, no cantinho da linha */
           var m = el('div', { style: 'position:absolute;left:2px;top:' + (k * H + 2) + 'px;display:flex;align-items:center;gap:2px;font-size:9px;color:var(--preto-tinta);opacity:.7;pointer-events:none' });
-          m.appendChild(iconePlaneta(s.planeta, 13, s.noite ? '#1F5FA3' : '#B5852F')); m.appendChild(el('span', { text: hhmm(s.ini) }));
+          m.appendChild(iconePlaneta(s.planeta, 13, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))); m.appendChild(el('span', { text: hhmm(s.ini) }));
           col.appendChild(m);
         });
         col.addEventListener('click', function (ev) {
@@ -732,7 +732,7 @@
       if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
       var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= new Date().toLocaleDateString('sv-SE')) : !!item[k]; };
       var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid var(--azul-egipcio-claro);margin:8px 0 0;overflow-x:auto' }, etapas.map(function (e, i) {
-        return el('span', { text: e[1], style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:#F3E3B8' : 'color:var(--terracota)') });
+        return el('span', { text: e[1], style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:var(--vazado,#F3E3B8)' : 'color:var(--terracota)') });
       }));
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }
@@ -745,22 +745,22 @@
           if (!v.no_ar) {
             var dtv = v.datas_etapas || {}, pend = [['roteiro_ok', 'fazer o roteiro', dtv.roteiro_ok], ['gravado', 'gravar', v.data_gravar], ['editado', 'edição grossa', dtv.editado], ['edicao_fina', 'edição fina', dtv.edicao_fina], ['seo_ok', 'fazer o SEO', dtv.seo_ok]]
               .filter(function (e) { return !v[e[0]] && e[2]; })[0];
-            if (pend) { saida.push({ ord: v.numero || 0, quando: doIso(pend[2]), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: pend[1], subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, pend[2]] }); return; }
+            if (pend) { saida.push({ ord: v.numero || 0, quando: doIso(pend[2]), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: pend[1], subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, pend[2]] }); return; }
           }
           /* já no YouTube, mas ainda falta fazer os cortes e depois colocar no blog: fica na lista, sem data enquanto ele não puser a data limite */
           if (v.no_ar && !(v.cortes_feitos && v.blog_ok)) {
             var faltaCortes = !v.cortes_feitos, dl = (faltaCortes ? v.data_cortes : v.data_blog) || '';
-            saida.push({ ord: v.numero || 0, quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, dl] });
+            saida.push({ ord: v.numero || 0, quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, dl] });
             return;
           }
           var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
           var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título');
-          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
+          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
         });
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
           var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
-          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · Júpiter', subOcre: true, url: link(v, c.id), cor: '#1034A6', bsp: ['c', c, c.criado_em, c.data] });
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · Júpiter', subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data] });
         });
         return saida;
       }, function () { return []; });
@@ -771,11 +771,11 @@
         (r[0].data || []).forEach(function (p) {
           var meus = passos.filter(function (x) { return x.projeto_id === p.id; }), feitos = meus.filter(function (x) { return x.feito; }).length;
           if (meus.length && feitos === meus.length) return;
-          saida.push({ quando: doIso(p.data_fim), diaTodo: true, titulo: p.nome, sub: 'projeto · ' + feitos + '/' + meus.length + ' passos', url: 'admin-projetos.html', cor: '#A03E25' });
+          saida.push({ quando: doIso(p.data_fim), diaTodo: true, titulo: p.nome, sub: 'projeto · ' + feitos + '/' + meus.length + ' passos', url: 'admin-projetos.html', cor: FdaTema.cor('terracota') });
         });
         (r[2].data || []).forEach(function (e) {
           if (e.encerrado) return;
-          saida.push({ quando: doIso(e.data_fim), diaTodo: true, titulo: e.nome, sub: 'estudo · data final', url: 'admin-estudos.html', cor: '#A03E25' });
+          saida.push({ quando: doIso(e.data_fim), diaTodo: true, titulo: e.nome, sub: 'estudo · data final', url: 'admin-estudos.html', cor: FdaTema.cor('terracota') });
         });
         return saida;
       }, function () { return []; });
@@ -793,7 +793,7 @@
         r[2].forEach(function (q) { var x = resp[q.id], feita = q.tipo === 'multipla' ? !!(x && x.opcao != null) : !!(x && x.texto); if (!feita) falta[q.aula_id] = true; });
         r[1].forEach(function (a) {
           if (!nomes[a.estudo_id] || !a.data || !falta[a.id]) return; /* só estudo aberto com prazo e aula com questão por responder */
-          saida.push({ quando: doIso(String(a.data).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: a.materia + ' · ' + nomes[a.estudo_id], subOcre: true, url: 'admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(a.estudo_id), cor: '#1034A6' });
+          saida.push({ quando: doIso(String(a.data).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: a.materia + ' · ' + nomes[a.estudo_id], subOcre: true, url: 'admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(a.estudo_id), cor: FdaTema.cor('azul-egipcio-escuro') });
         });
         return saida;
       }, function () { return []; });
@@ -831,7 +831,7 @@
         C.from('atividades').select('id,corrigida_em,enviada_em,antiga,somente_leitura,rascunho').then(function (r) { return r.error ? C.from('atividades').select('id,corrigida_em,enviada_em,antiga').then(function (r2) { return r2.error ? [] : (r2.data || []); }) : (r.data || []); }, function () { return []; })
       ]).then(function (r) {
         var saida = [], porId = function (l, id) { return l.filter(function (x) { return x.id === id; })[0]; };
-        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: '#A03E25' }); });
+        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: FdaTema.cor('terracota') }); });
         r[2].forEach(function (x) {
           /* a parte DELE acabou quando o item foi ligado (material, gravação ou atividade disponível para o aluno) */
           if ((x.tipo === 'material' || x.tipo === 'gravacao') && (x.item_id || x.lido_em)) return;
@@ -843,7 +843,7 @@
           }
           if (!quandoPasso) return;
           var t = porId(r[3], x.trilha_id); if (!t) return; var al = porId(r[4], t.aluno_id), c = r[5].filter(function (y) { return y.aluno_id === t.aluno_id; })[0];
-          saida.push({ quando: doIso(quandoPasso), diaTodo: true, titulo: tituloPasso, sub: 'trilha ' + t.nome + ' · ' + (c && c.codigo ? c.codigo + ' · ' : '') + (al ? al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(t.aluno_id) + '&aba=trilha', cor: '#A03E25' });
+          saida.push({ quando: doIso(quandoPasso), diaTodo: true, titulo: tituloPasso, sub: 'trilha ' + t.nome + ' · ' + (c && c.codigo ? c.codigo + ' · ' : '') + (al ? al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(t.aluno_id) + '&aba=trilha', cor: FdaTema.cor('terracota') });
         });
         return saida;
       });
@@ -968,7 +968,7 @@
         try { var cs = lerCache(); cs.todo = { fora: dados.fora, tarefas: dados.tarefas, feitos: dados.feitos }; gravarCache(cs); } catch (e) { /* só fica sem o guardado */ } /* a cada desenho o guardado acompanha (marcou como feito = não volta ao reabrir) */
         var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
         dados.tarefas.forEach(function (t) {
-          itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data });
+          itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: FdaTema.cor('ocre'), semData: !t.data });
         });
         itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; }); /* no mesmo dia/horário, vídeos em ordem crescente de número */
         if (dados.falhas.length) lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + dados.falhas.join(', ') + '.' }));
@@ -1035,7 +1035,7 @@
           if (achou >= 0) { usadas[a.dono.chave + achou] = 1; return; }
           var diaSeguinte = meiaNoiteDe(a.e.fim - 1) + DIA; /* o Google demora horas para entregar a gravação (e ele promete em até 3 dias): só aparece a partir do dia seguinte ao encontro, e nesse dia ainda não é atraso */
           if (agora < diaSeguinte) return;
-          dados.fora.push({ quando: diaSeguinte, diaTodo: true, titulo: 'Disponibilizar a gravação', sub: String(a.e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + a.e.id + '|' + a.e.ini, url: a.dono.url, cor: '#1034A6' });
+          dados.fora.push({ quando: diaSeguinte, diaTodo: true, titulo: 'Disponibilizar a gravação', sub: String(a.e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + a.e.id + '|' + a.e.ini, url: a.dono.url, cor: FdaTema.cor('azul-egipcio-escuro') });
         });
         dados.fora = dados.fora.concat(r[2], r[3], r[4]);
         var novoGuardado = { fora: dados.fora, tarefas: dados.tarefas, feitos: dados.feitos }, antigoTexto = guardado ? JSON.stringify({ fora: guardado.fora, tarefas: guardado.tarefas, feitos: guardado.feitos }) : '';
@@ -1128,7 +1128,7 @@
       var botoesDia = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
       ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
         var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
-        var pinta = function () { var on = marcados.indexOf(DIAS_RRULE[k]) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+        var pinta = function () { var on = marcados.indexOf(DIAS_RRULE[k]) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')) + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
         pinta();
         b.addEventListener('click', function () { var i = marcados.indexOf(DIAS_RRULE[k]); if (i >= 0) { if (marcados.length > 1) marcados.splice(i, 1); } else marcados.push(DIAS_RRULE[k]); [].forEach.call(botoesDia.children, function (x) { x.dispatchEvent(new Event('pinta')); }); pinta(); });
         b.addEventListener('pinta', pinta);
@@ -1388,8 +1388,8 @@
         }
         caixa.appendChild(el('div', { style: G ? 'display:flex;flex-direction:column;align-items:stretch;gap:14px' : 'display:flex;align-items:center;gap:14px' }, [
           el('div', { style: 'flex:none;display:flex;align-items:flex-end;gap:' + (G ? 34 : 10) + 'px;text-align:center' + (G ? ';justify-content:center' : '') }, [
-            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, G ? 76 : 50, '#A03E25')]),
-            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, G ? 54 : 36, h.noite ? '#1F5FA3' : '#B5852F')]) : null]),
+            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, G ? 76 : 50, FdaTema.cor('terracota'))]),
+            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, G ? 54 : 36, h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))]) : null]),
           direita]));
       }
       caixa.pintar = pintar;
@@ -1406,12 +1406,12 @@
         var cab = function (t, estilo) { return el('span', { class: 'rotulo-fixo', text: t, style: (estilo || '') }); };
         box.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:' + linhaFina }, [cab('', 'flex:none;width:30px'), cab('', 'flex:none;width:24px'), cab('Regente', 'flex:none;width:56px'), cab('Início', 'flex:1;text-align:center'), cab('Término', 'flex:1;text-align:center')]));
         hs.forEach(function (h, i) {
-          var atual = agora >= h.ini && agora < h.fim, cor = atual ? '#A03E25' : '#16233F';
-          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? '#1F5FA3' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
+          var atual = agora >= h.ini && agora < h.fim, cor = atual ? FdaTema.cor('terracota') : FdaTema.cor('preto-tinta');
+          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('terracota')) }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
           var linha = el('div', { style: 'padding:6px 0 8px;border-bottom:' + linhaFina + ';cursor:pointer;' + (atual ? 'border-left:3px solid var(--terracota);padding-left:6px;' : '') }, [
             el('div', { style: 'display:flex;align-items:center;gap:10px;color:' + cor }, [
               el('span', { text: (i % 12 + 1) + 'ª', style: 'flex:none;width:30px;font-weight:700' }), per,
-              el('span', { style: 'flex:none;width:56px' }, [iconePlaneta(h.planeta, 26, h.noite ? '#1F5FA3' : '#B5852F')]),
+              el('span', { style: 'flex:none;width:56px' }, [iconePlaneta(h.planeta, 26, h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))]),
               el('span', { text: hhmm(h.ini), style: 'flex:1;text-align:center;font-weight:700' }), el('span', { text: hhmm(h.fim), style: 'flex:1;text-align:center;font-weight:700' })]),
             el('div', { style: 'margin-top:4px' }, [barraDe(h.ini, h.fim, agora, 'minutos', true)])]);
           linha.addEventListener('click', function () { /* tocar na hora do planeta abre o encaixe, já com o planeta e o horário dela */
@@ -1443,7 +1443,7 @@
       var dow = pre.dow || [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
       ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
         var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
-        var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+        var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')) + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
         pinta();
         b.addEventListener('click', function () { var i = dow.indexOf(k); if (i >= 0) dow.splice(i, 1); else dow.push(k); pinta(); });
         blocoDias.appendChild(b);
@@ -1484,7 +1484,7 @@
           if (!p.slot) { res.appendChild(el('p', { class: 'portal-item-data', style: 'color:var(--preto-tinta);opacity:.6;margin:10px 0 0', text: rotuloDia(p.iso) + ' · sem horário livre' })); return; }
           var it = itens.filter(function (x) { return x.iso === p.iso; })[0];
           var cx = caixinha(rotuloDia(p.iso) + ', ' + hhmm(it.ini) + ' às ' + hhmm(it.fim), true, function (m) { it.marcado = m; atualizaBotao(); });
-          var det = el('div', { class: 'portal-item-data', style: 'margin:-6px 0 4px 38px' }, [iconePlaneta(o.planeta, 14, it.hora.noite ? '#1F5FA3' : '#B5852F'), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })]);
+          var det = el('div', { class: 'portal-item-data', style: 'margin:-6px 0 4px 38px' }, [iconePlaneta(o.planeta, 14, it.hora.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })]);
           res.appendChild(cx.el); res.appendChild(det);
         });
         if (!itens.length) return;

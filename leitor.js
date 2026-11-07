@@ -67,7 +67,7 @@
     var holder = el('div'); holder.style.cssText = 'position:absolute;left:0;top:0;background:#fff';
     function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;' + (css || ''); holder.appendChild(c); return c; }
     var cvPdf = lona(), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();
-    var status = el('div', { text: 'Abrindo...' }); status.style.cssText = 'position:absolute;left:0;right:0;top:40%;text-align:center;color:#16233F;font-size:16px;padding:0 20px';
+    var status = el('div', { text: 'Abrindo...' }); status.style.cssText = 'position:absolute;left:0;right:0;top:40%;text-align:center;color:var(--preto-tinta,#16233F);font-size:16px;padding:0 20px';
     area.appendChild(holder); area.appendChild(status); tela.appendChild(area);
     holder.style.display = 'none';
 
@@ -75,8 +75,8 @@
     var bAnt = btn('‹', function () { ir(n - 1); }), bProx = btn('›', function () { ir(n + 1); });
     bAnt.style.fontSize = bProx.style.fontSize = '22px';
     var campo = el('input', { type: 'number', min: '1', value: String(o.pagina || 1) });
-    campo.style.cssText = 'width:56px;text-align:center;background:transparent;border:0;border-bottom:1px solid #1F5FA3;font:inherit;font-size:15px;color:#16233F;border-radius:0;padding:4px;flex:none';
-    var totalTxt = el('span', { text: '' }); totalTxt.style.cssText = 'font-size:14px;color:#16233F;margin-right:4px;white-space:nowrap;flex:none';
+    campo.style.cssText = 'width:56px;text-align:center;background:transparent;border:0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);font:inherit;font-size:15px;color:var(--preto-tinta,#16233F);border-radius:0;padding:4px;flex:none';
+    var totalTxt = el('span', { text: '' }); totalTxt.style.cssText = 'font-size:14px;color:var(--preto-tinta,#16233F);margin-right:4px;white-space:nowrap;flex:none';
     campo.addEventListener('change', function () { ir(parseInt(campo.value, 10) || n); });
     campo.addEventListener('keydown', function (e) { e.stopPropagation(); });
     var bMenos = btn('−', function () { zoomPor(1 / 1.3); }), bMais = btn('+', function () { zoomPor(1.3); });
@@ -167,7 +167,7 @@
       if (!pdf) return;
       marcar(bPaginas, true);
       painelPag = el('div');
-      painelPag.style.cssText = 'position:absolute;left:0;right:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#d9c78f;border-left:6px solid #B5852F;box-sizing:border-box;'
+      painelPag.style.cssText = 'position:absolute;left:0;right:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#d9c78f;border-left:6px solid var(--ocre,#B5852F);box-sizing:border-box;'
         + 'top:' + barraTopo.offsetHeight + 'px;bottom:' + barraBaixo.offsetHeight + 'px';
       var grade = el('div'); grade.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px 12px;padding:14px';
       painelPag.appendChild(grade); tela.appendChild(painelPag);
@@ -198,7 +198,7 @@
         var moldura = el('div'); moldura.style.cssText = 'background:#fff;aspect-ratio:0.707;display:flex';
         var c = el('canvas'); c.style.cssText = 'width:100%;height:auto;display:block';
         moldura.appendChild(c); cel.appendChild(moldura);
-        var num = el('div', { text: String(i) }); num.style.cssText = 'margin-top:4px;font-size:13px;color:#16233F';
+        var num = el('div', { text: String(i) }); num.style.cssText = 'margin-top:4px;font-size:13px;color:var(--preto-tinta,#16233F)';
         if (i === n) { num.style.cssText += ';color:' + COR + ';font-weight:700;text-decoration:underline'; atual = cel; }
         cel.appendChild(num);
         cel.addEventListener('click', function () { alternarPaginas(); ir(i); });

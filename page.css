@@ -17,7 +17,7 @@ body{display:flow-root}
 /* cabeçalho fica no céu, acima do papiro (igual à home) */
 body>header{max-width:860px;margin:0 auto!important;padding:18px 44px 14px!important;border-bottom:2px solid rgba(181,133,47,.75)!important}
 body>header a{color:#efe3c2!important}
-body>header a:first-child{color:#f6e7b4!important}
+body>header a:first-child{color:var(--vazado,#f6e7b4)!important}
 .pagina{margin-top:26px}
 @media(max-width:700px){
   body>header{padding:18px 62px 12px!important;flex-direction:column;text-align:center;justify-content:center}
@@ -34,7 +34,7 @@ body>header a:first-child{color:#f6e7b4!important}
 .folha-pagina .portal-subtitle{color:var(--azul-egipcio-claro,#1F5FA3)}
 .folha-pagina .portal-card{background:rgba(255,250,232,.5);border-color:rgba(120,85,40,.35)}
 .folha-pagina .portal-card p{color:#2b1d12}
-.folha-pagina .btn-classroom{background:var(--azul-egipcio-claro,#1F5FA3);color:#f6e7b4}
+.folha-pagina .btn-classroom{background:var(--azul-egipcio-claro,#1F5FA3);color:var(--vazado,#f6e7b4)}
 .folha-pagina .btn-classroom:hover{background:#0b2a52}
 
 /* Checkout: mesma identidade, mais calma e focada */

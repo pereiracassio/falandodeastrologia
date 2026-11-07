@@ -1,6 +1,8 @@
 /* Portal do Aluno — peças comuns à página do aluno (aluno.html) e ao painel da administrador (admin-alunos.html).
    Projeto Supabase PRÓPRIO do Falando de Astrologia (separado do Astro Hellenic). A chave "publishable" é pública
    por natureza: quem protege os dados são as regras de acesso (RLS) de docs/portal-aluno.sql. */
+/* páginas sem tema.js (carrinho, mentoria): as cores de sempre */
+if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipcio-escuro': '#1034A6', 'azul-egipcio-claro': '#1F5FA3', terracota: '#A03E25', ocre: '#B5852F', 'preto-tinta': '#16233F' }[n]; } };
 (function () {
   var SUPABASE_URL = 'https://wqkgsotfwkzjwaowenrb.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt';
@@ -1206,7 +1208,7 @@
   function barraLinha(pct, cor, fim) {
     return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
       el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
-      el('div', { style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || '#1F5FA3') })]),
+      el('div', { style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || FdaTema.cor('azul-egipcio-claro')) })]),
       el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
     ]);
   }
@@ -1389,7 +1391,7 @@
     }
     /* o botão é só o reloginho azul (sem quadrado): conta quanto falta e avisa */
     var quanto = el('button', { type: 'button', title: 'Avisar quanto falta', 'aria-label': 'Avisar quanto falta', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer;min-height:0' });
-    quanto.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1034A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+    quanto.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--azul-egipcio-escuro)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
     quanto.addEventListener('click', function () {
       quanto.disabled = true; mensagem(msg, 'Vendo o horário na agenda...');
       inicioDoCompromisso().then(function (inicio) {
@@ -1404,7 +1406,7 @@
     mandar.addEventListener('click', function () { enviar(texto.value, false); });
     /* no lugar do título escrito, o sininho vermelho (o mesmo da Agenda) */
     var sininho = el('span', { title: 'Enviar aviso', 'aria-label': 'Enviar aviso', style: 'display:inline-block;line-height:0' });
-    sininho.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A03E25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
+    sininho.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--terracota)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
     return el('div', { class: 'portal-cartao' }, [
       el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px;margin:0 0 10px' }, [sininho].concat(prontos)),
       texto,

@@ -19,6 +19,12 @@
     r.classList.toggle('tema-papiro', t === 'papiro');
   }
   function gravar(a, t) { try { localStorage.setItem(chave(a), t); } catch (e) { /* sem armazenamento */ } if (a === app()) aplicar(t); }
+  var PADRAO = { 'azul-egipcio-escuro': '#1034A6', 'azul-egipcio-claro': '#1F5FA3', terracota: '#A03E25', ocre: '#B5852F', 'preto-tinta': '#16233F', 'fundo-creme': '#FFFDF5' };
+  /* a cor de agora do tema, pra quem precisa do valor em si (desenho, cálculo de contraste) e não de var() */
+  function cor(nome) {
+    try { var v = getComputedStyle(document.documentElement).getPropertyValue('--' + nome).trim(); if (v) return v; } catch (e) { /* sem estilo */ }
+    return PADRAO[nome];
+  }
   aplicar(ler());
-  window.FdaTema = { TEMAS: TEMAS, app: app, ler: ler, gravar: gravar, aplicar: aplicar };
+  window.FdaTema = { cor: cor, TEMAS: TEMAS, app: app, ler: ler, gravar: gravar, aplicar: aplicar };
 })();
