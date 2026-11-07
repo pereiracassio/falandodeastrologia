@@ -18,6 +18,26 @@ const q = (v) => encodeURIComponent(v);
 const num = (v) => { const n = Number(v); return isFinite(n) ? n : null; };
 /* dia de hoje no fuso de Brasília (toISOString daria o dia seguinte à noite) */
 const hojeBR = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+/* Cartão: o dinheiro só cai na conta no PRÓXIMO DIA ÚTIL (fim de semana e feriado nacional não contam). Soma dias a uma data AAAA-MM-DD sem mexer com fuso. */
+const somaDia = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+function feriadosNacionais(ano) {
+  /* Páscoa (algoritmo de Meeus/Jones/Butcher) para Carnaval, Sexta-feira Santa e Corpus Christi */
+  const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+  const pascoa = ano + '-' + String(mes).padStart(2, '0') + '-' + String(dia).padStart(2, '0');
+  const fixos = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'].map((x) => ano + '-' + x);
+  return fixos.concat([somaDia(pascoa, -48), somaDia(pascoa, -47), somaDia(pascoa, -2), somaDia(pascoa, 60)]);
+}
+function proximoDiaUtil(iso) {
+  let d = somaDia(iso, 1);
+  for (let n = 0; n < 15; n++) {
+    const dow = new Date(d + 'T12:00:00Z').getUTCDay();
+    if (dow !== 0 && dow !== 6 && feriadosNacionais(Number(d.slice(0, 4))).indexOf(d) < 0) return d;
+    d = somaDia(d, 1);
+  }
+  return d;
+}
 const FORMAS = { credit_card: 'Cartão de crédito', pix: 'Pix', debit_card: 'Cartão de débito', boleto: 'Outro' };
 
 module.exports = async (req, res) => {
@@ -48,6 +68,13 @@ module.exports = async (req, res) => {
     const centavos = num(dadosConf.paid_amount != null ? dadosConf.paid_amount : dadosConf.amount);
     if (!idExterno || centavos == null || centavos <= 0) { await resultado('sem entrada: faltou identificador ou valor'); res.status(200).json({ ok: true, entrada: false }); return; }
     if (dadosConf.capture_method && !corpo.capture_method) corpo.capture_method = dadosConf.capture_method;
+    /* CARTÃO: o InfinitePay informa o valor BRUTO (o cliente paga a taxa). O que entra na conta é o preço do serviço mais 1 centavo, e só no próximo dia útil.
+       Pix: o valor que veio já é o certo e cai na hora. O preço do serviço é o "amount" que o próprio InfinitePay confirma (nunca o do aviso). */
+    const cartao = /credit_card|debit_card/i.test(String(corpo.capture_method || ''));
+    const somaItens = (Array.isArray(corpo.items) ? corpo.items : []).reduce((t, i) => t + (num(i.price) || 0) * (num(i.quantity) || 1), 0);
+    const precoServico = num(dadosConf.amount) || (somaItens > 0 ? somaItens : null);
+    const lancar = cartao && precoServico != null && precoServico > 0 ? precoServico + 1 : centavos;
+    const dataLancamento = cartao ? proximoDiaUtil(hojeBR()) : hojeBR();
 
     const itens = Array.isArray(corpo.items) ? corpo.items : [];
     const produto = itens.map((i) => String(i.description || '').trim()).filter(Boolean).join(' + ') || null;
@@ -91,15 +118,15 @@ module.exports = async (req, res) => {
     const areaAstro = (areas.filter((a) => /astrolog/i.test(a.nome))[0] || {}).id || null;
     const areaDe = (nomeServico) => { const a = servs.filter((s) => String(s.nome).trim().toLowerCase() === String(nomeServico || '').toLowerCase())[0]; return a ? a.area_id : areaAstro; };
     const pagos = itens.map((i) => ({ desc: String(i.description || '').trim(), preco: (num(i.price) || 0) * (num(i.quantity) || 1) })).filter((i) => i.desc);
-    let partes = [{ desc: produto, centavos: Math.round(centavos) }];
+    let partes = [{ desc: produto, centavos: Math.round(lancar) }];
     if (pagos.length > 1 && pagos.every((i) => i.preco > 0)) {
       const soma = pagos.reduce((t, i) => t + i.preco, 0);
-      partes = pagos.map((i) => ({ desc: i.desc, centavos: Math.round(centavos * i.preco / soma) }));
-      partes[partes.length - 1].centavos += Math.round(centavos) - partes.reduce((t, p) => t + p.centavos, 0);
+      partes = pagos.map((i) => ({ desc: i.desc, centavos: Math.round(lancar * i.preco / soma) }));
+      partes[partes.length - 1].centavos += Math.round(lancar) - partes.reduce((t, p) => t + p.centavos, 0);
     }
     await supa('/rest/v1/fin_entradas?on_conflict=id_externo', {
       method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-      body: JSON.stringify(partes.map((p, n) => ({ data: hojeBR(), cliente_nome: nome, produto: p.desc, valor: p.centavos / 100, area_id: areaDe(p.desc), forma_pagamento: forma, observacao, origem: 'infinitepay', id_externo: 'infinitepay-' + idExterno + (partes.length > 1 ? '-' + (n + 1) : '') })))
+      body: JSON.stringify(partes.map((p, n) => ({ data: dataLancamento, cliente_nome: nome, produto: p.desc, valor: p.centavos / 100, area_id: areaDe(p.desc), forma_pagamento: forma, observacao, origem: 'infinitepay', id_externo: 'infinitepay-' + idExterno + (partes.length > 1 ? '-' + (n + 1) : '') })))
     });
     /* compra nova: o administrador recebe o aviso no celular (nunca deixa de lançar a entrada por causa disso) */
     try {
