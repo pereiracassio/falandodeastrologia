@@ -1208,7 +1208,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   function barraLinha(pct, cor, fim) {
     return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
       el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
-      el('div', { style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || FdaTema.cor('azul-egipcio-claro')) })]),
+      el('div', { style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('i', { class: 'preench', style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || FdaTema.cor('azul-egipcio-claro')) })]),
       el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
     ]);
   }

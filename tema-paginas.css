@@ -15,3 +15,16 @@
 :root.tema-claro, :root.tema-escuro, :root.tema-sulfite { --azul: var(--azul-egipcio-claro); --ouro: var(--ocre); }
 /* texto "vazado" (sobre peça preenchida de azul): é a cor do fundo da página, como se o texto fosse um buraco na peça */
 :root.tema-claro, :root.tema-escuro, :root.tema-sulfite { --vazado: var(--fundo-creme); }
+
+/* SULFITE = caneta no papel: onde há PREENCHIMENTO (botões importantes, barras de tempo e de passos) a tinta tem pequenos vãos, como quando se pinta com caneta.
+   É uma textura por cima da cor (só no fundo: o texto do botão não é afetado). Linha fina e texto ficam sem efeito. */
+:root.tema-sulfite {
+  --tinta-vaos: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16 0.85' numOctaves='2' seed='7' stitchTiles='stitch' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -16 5.8'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url%28%23f%29'/%3E%3C/svg%3E");
+}
+:root.tema-sulfite .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn),
+:root.tema-sulfite .pagina-papiro .folha-pagina a[href*="carrinho.html"],
+:root.tema-sulfite .checkout .btn-pay,
+:root.tema-sulfite .prod-seg .prod-chip.on,
+:root.tema-sulfite i.preench {
+  background-image: var(--tinta-vaos) !important; background-size: 200px 200px;
+}
