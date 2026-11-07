@@ -652,6 +652,7 @@
       isos.forEach(function (iso, di) {
         var d0 = doIso(iso), d1 = d0 + DIA, segs = todos[di];
         var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + H + 'px)' });
+        if (di === isos.length - 1) col.style.borderRight = linhaFina; /* a última coluna fecha a grade do lado direito */
         if (!unico) segs.forEach(function (s, k) { /* na semana cada coluna tem o seu ícone e hora, no cantinho da linha */
           var m = el('div', { style: 'position:absolute;left:2px;top:' + (k * H + 2) + 'px;display:flex;align-items:center;gap:2px;font-size:9px;color:var(--preto-tinta);opacity:.7;pointer-events:none' });
           m.appendChild(iconePlaneta(s.planeta, 13, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))); m.appendChild(el('span', { text: hhmm(s.ini) }));
