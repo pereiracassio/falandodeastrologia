@@ -517,7 +517,7 @@
         P.estado.gravar({ v: visao, d: ancora });
         guardarVisaoCal(visao);
         var modo = modoDe(visao), h1x = document.querySelector('h1.portal-titulo');
-        document.body.classList.toggle('sem-trava', modo === 'todo');
+        document.body.classList.toggle('sem-trava', modo === 'todo' || modo === 'horas');
         if (h1x) h1x.textContent = ROTULO[modo]; document.title = ROTULO[modo] + ' - Falando de Astrologia';
         VISOES.forEach(function (v) { botoes[v[0]].style.display = CALV.indexOf(v[0]) >= 0 && modo === 'agenda' ? '' : 'none'; }); /* Horas e To do saíram desta barra: são abas da barra de cima */
         novo.style.display = modo === 'horas' ? 'none' : ''; /* nas Horas só se encaixa: o + de compromisso normal é da Agenda */
