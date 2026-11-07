@@ -6,7 +6,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=2"></script>
+  <script src="tema.js?v=3"></script>
   <link rel="manifest" href="manifest-producao.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -100,7 +100,7 @@
     var TEXTO_FIXO_PADRAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
     /* Tema do app (por aparelho; cada app com o seu): Papiro, Claro, Escuro, Sulfite */
     function cartaoTema(app) {
-      var NOMES = { papiro: 'Papiro', claro: 'Claro', escuro: 'Escuro', sulfite: 'Sulfite' };
+      var NOMES = { papiro: 'Papiro', claro: 'Claro', escuro: 'Escuro', sulfite: 'Sulfite', automatico: 'Autom\u00e1tico' };
       var cartao = el('div', { class: 'portal-cartao' }), linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:6px' });
       cartao.appendChild(el('h2', { text: 'Tema' }));
       function desenhar() {
