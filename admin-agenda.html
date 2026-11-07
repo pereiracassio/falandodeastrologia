@@ -59,7 +59,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=162"></script>
+  <script src="portal.js?v=163"></script>
   <script src="menu.js?v=63" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
@@ -984,7 +984,7 @@
             lista.appendChild(bloco1);
           }
           var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:' + linhaFina });
-          var barra = el('span', { class: 'preench', style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
+          var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
           var plT = !x.semData && isFinite(x.quando) ? (x.diaTodo ? planetaDoDia(x.quando, 28, false) : planetaDoInstante(x.quando, 28, false)) : null;
           var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:var(--azul-egipcio-escuro)' })]);
           var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:var(--ocre);font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
@@ -1372,7 +1372,7 @@
       var passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
       if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade, true);
       return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:34px;font-weight:700' }),
-        el('div', { class: 'tempo-trilho', style: 'flex:1;height:4px;border:1px solid transparent' }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, class: 'tempo-fim', style: 'flex:none;white-space:nowrap' })]);
+        el('div', { class: 'tempo-trilho', style: 'flex:1;height:4px;border:1px solid transparent' }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct, true)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, class: 'tempo-fim', style: 'flex:none;white-space:nowrap' })]);
     }
     function cabecalhoHoras() {
       var caixa = el('div', { class: 'cab-horas' });

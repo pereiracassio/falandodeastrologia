@@ -93,7 +93,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=162"></script>
+  <script src="portal.js?v=163"></script>
   <script src="menu.js?v=63" defer></script>
   <script>
   (function () {
@@ -726,7 +726,7 @@
           el('span', { class: 'prod-nome', text: s.nome }),
           periodo ? el('span', { class: 'prod-data', style: 'display:block', text: periodo }) : null,
           el('span', { class: 'prod-info', style: 'display:block', text: rotuloAcesso(s) + ' · ' + resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
-          el('div', { class: 'prod-barra' }, [el('i', { class: 'preench', style: 'width:' + pct + '%' })])
+          el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
         ]);
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo])]);
         linha.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') { abaSerieDe = null; forcarAbaSerie = null; irPara('series', s.id); } });

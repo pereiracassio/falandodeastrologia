@@ -1206,8 +1206,8 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   if (document.body) ligarLinks(); else document.addEventListener('DOMContentLoaded', ligarLinks);
   /* barras de progresso e de tempo, SEMPRE neste desenho: "62% [barra] 12/23 dias" (o tanto de passos ou de dias no fim da linha) */
   /* barra de TEMPO: o degradê azul → ocre → terracota (cores do tema) fica FIXO na barra inteira e o preenchimento só o revela até onde o tempo chegou */
-  function tempoNoPreenchimento(i, pct) {
-    i.classList.add('preench', 'tempo'); i.style.setProperty('--tw', (pct > 0 ? 10000 / pct : 100).toFixed(2) + '%');
+  function tempoNoPreenchimento(i, pct, linha) { /* linha = barra fininha: só o degradê, sem o efeito de caneta */
+    i.classList.add('tempo'); if (!linha) i.classList.add('preench'); i.style.setProperty('--tw', (pct > 0 ? 10000 / pct : 100).toFixed(2) + '%');
     i.style.background = 'var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25)) 0 0 / var(--tw) 100% no-repeat';
     return i;
   }
