@@ -54,7 +54,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=161"></script>
+  <script src="portal.js?v=162"></script>
   <script src="menu.js?v=63" defer></script>
   <script>
   (function () {
@@ -172,7 +172,7 @@
     /* uma linha da lista: bolinha e nome; embaixo "14% [barra] 1/7" e, se tem prazo, "50% [barra] 12 dias" */
     function linhaDeBarra(pct, cor, fim, tempo) {
       var barra = el('div', { class: 'proj-barra' + (tempo ? ' tempo-trilho' : ''), style: 'flex:1;margin:0' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
-      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta);font-size:15px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, class: 'tempo-fim', style: 'flex:none;min-width:84px;text-align:right' })]);
+      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta);font-size:15px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, class: tempo ? 'tempo-fim' : 'tempo-pct', style: 'flex:none;min-width:84px;text-align:right' })]);
     }
     /* o tempo do prazo: dias que já passaram sobre o total de dias, com a barra azul, ocre no meio e terracota no fim */
     function tempoDoProjeto(p) {
