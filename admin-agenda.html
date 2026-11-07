@@ -631,7 +631,7 @@
         isos.forEach(function (iso) {
           var c = el('div', { style: 'padding:2px;min-width:0' });
           doDia(iso, evs).filter(function (e) { return e.diaTodo; }).forEach(function (e) {
-            var t = el('div', { style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.3;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;cursor:pointer;color:' + textoSobre(preenche(e)) });
+            var t = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.3;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;cursor:pointer;color:' + textoSobre(preenche(e)) });
             t.appendChild(el('span', { text: e.curto || e.titulo, style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' }));
             var plD = planetaDoEvento(e, 10, true); if (plD) t.appendChild(plD);
             t.addEventListener('click', function () { abrirEvento(e); }); c.appendChild(t);
@@ -669,7 +669,7 @@
         var itens = doDia(iso, evs).filter(function (e) { return !e.diaTodo; }).map(function (e) { return { e: e, i: Math.max(e.ini, d0), f: Math.min(e.fim, d1) }; }).sort(function (p, q) { return p.i - q.i; });
         colunas(itens).forEach(function (x) {
           var top = yDe(segs, x.i, H), alt = Math.max(16, yDe(segs, x.f, H) - top - 1);
-          var b = el('div', { style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid var(--preto-tinta);background:' + preenche(x.e) + ';padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:' + textoSobre(preenche(x.e)) + ';cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
+          var b = el('div', { class: 'preench', style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid var(--preto-tinta);background:' + preenche(x.e) + ';padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:' + textoSobre(preenche(x.e)) + ';cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
           var tt = el('div', { style: 'font-weight:700' }); if (x.e.meet) tt.appendChild(marcaMeet(unico ? 16 : 12)); tt.appendChild(document.createTextNode(x.e.titulo)); b.appendChild(tt);
           var tam = unico ? Math.max(14, Math.min(34, alt - 8)) : 11, pl = planetaDoEvento(x.e, tam, true); /* no Dia o ícone acompanha a altura do evento (até 34px) */
           if (pl && unico) { pl.style.position = 'absolute'; pl.style.right = '2px'; pl.style.top = '2px'; tt.style.paddingRight = (tam + 12) + 'px'; b.appendChild(pl); }
@@ -698,7 +698,7 @@
         if (!doDiaL.length) continue;
         var bloco1 = el('div', { style: 'margin:0 0 14px' }, [el('div', { text: rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);padding:6px 0;border-bottom:' + linhaFina })]);
         doDiaL.sort(function (p, q) { return (p.diaTodo ? 0 : 1) - (q.diaTodo ? 0 : 1) || p.ini - q.ini; }).forEach(function (e) {
-          var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
+          var linha = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
           linha.appendChild(el('span', { text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
           var nome = el('span', { class: 'proj-titulo', style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
           linha.appendChild(nome); var plL = planetaDoEvento(e, 28, true); if (plL) linha.appendChild(plL); /* no canto direito, do tamanho da linha, como no Dia */
@@ -984,7 +984,7 @@
             lista.appendChild(bloco1);
           }
           var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:' + linhaFina });
-          var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
+          var barra = el('span', { class: 'preench', style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
           var plT = !x.semData && isFinite(x.quando) ? (x.diaTodo ? planetaDoDia(x.quando, 28, false) : planetaDoInstante(x.quando, 28, false)) : null;
           var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:var(--azul-egipcio-escuro)' })]);
           var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:var(--ocre);font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
@@ -1061,7 +1061,7 @@
           c.appendChild(n);
           var lista = doDia(iso, evs);
           lista.slice(0, 3).forEach(function (e) {
-            var ch = el('div', { style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.35;overflow:hidden;background:' + preenche(e) + ';padding:0 2px;margin-top:2px;color:' + textoSobre(preenche(e)) });
+            var ch = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.35;overflow:hidden;background:' + preenche(e) + ';padding:0 2px;margin-top:2px;color:' + textoSobre(preenche(e)) });
             var tx = el('span', { style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' });
             if (e.meet) tx.appendChild(marcaMeet(10));
             if (!e.diaTodo) tx.appendChild(el('span', { text: hhmm(e.ini) + ' ' }));
