@@ -1213,9 +1213,9 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   }
   function barraLinha(pct, cor, fim, tempo) {
     return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
-      el('span', { text: pct + '%', class: tempo ? 'tempo-pct' : '', style: 'flex:none;min-width:38px' }),
+      el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:38px' }),
       el('div', { class: tempo ? 'tempo-trilho' : '', style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [tempo ? tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || FdaTema.cor('azul-egipcio-claro')) })]),
-      el('span', { text: fim, class: tempo ? 'tempo-fim' : '', style: 'flex:none;min-width:84px;text-align:right' })
+      el('span', { text: fim, class: 'tempo-fim', style: 'flex:none;min-width:84px;text-align:right' })
     ]);
   }
   /* o tempo de um prazo: dias que já passaram sobre o total de dias (datas AAAA-MM-DD); a cor vai de azul a ocre e terracota */
