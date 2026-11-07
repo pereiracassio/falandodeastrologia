@@ -1254,7 +1254,7 @@
         });
         caixaFotosC.appendChild(campoLC);
         var editor = el('div', { class: 'prod-corte' }, [
-          el('div', { class: 'prod-corte-topo' }, [campo('Título', t, function () { return t.value.trim(); }), P.colunaData(d, 'Data do corte')]),
+          el('div', { class: 'prod-corte-topo' }, [campo('Título', t, function () { return t.value.trim(); }), P.colunaData(d, 'Data')]),
           barraTempo(c.criado_em, c.data, cortePostado(c)),
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c, true), tirar]),
           faltaSeoCorte,
