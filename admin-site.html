@@ -6,6 +6,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=1"></script>
   <link rel="manifest" href="manifest-producao.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -16,12 +17,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="temas.css?v=1">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=83">
   <link rel="stylesheet" href="portal.css?v=28">
+  <link rel="stylesheet" href="tema-paginas.css?v=1">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=35">
+  <link rel="stylesheet" href="tipografia.css?v=36">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -95,6 +98,26 @@
     ];
     /* texto que vem em todo vídeo, em cima da linha e dos Capítulos (a Produção lê daqui; sem nada salvo vale o texto de sempre) */
     var TEXTO_FIXO_PADRAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
+    /* Tema do app (por aparelho; cada app com o seu): Papiro, Claro, Escuro, Sulfite */
+    function cartaoTema(app) {
+      var NOMES = { papiro: 'Papiro', claro: 'Claro', escuro: 'Escuro', sulfite: 'Sulfite' };
+      var cartao = el('div', { class: 'portal-cartao' }), linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:6px' });
+      cartao.appendChild(el('h2', { text: 'Tema' }));
+      function desenhar() {
+        linha.textContent = '';
+        var atual = window.FdaTema.ler(app);
+        window.FdaTema.TEMAS.forEach(function (t) {
+          var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: (t === atual ? '\u2713 ' : '') + NOMES[t] });
+          if (t === atual) b.style.setProperty('color', 'var(--terracota)', 'important');
+          b.setAttribute('aria-pressed', t === atual ? 'true' : 'false');
+          b.addEventListener('click', function () { window.FdaTema.gravar(app, t); desenhar(); });
+          linha.appendChild(b);
+        });
+      }
+      desenhar(); cartao.appendChild(linha);
+      return cartao;
+    }
+
     function cartaoTextoFixo() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Texto fixo dos vídeos' })]);
       var area = el('textarea', { rows: '10' }), msg = el('p', { class: 'portal-msg' }), salvo = false, t = null;
@@ -457,6 +480,7 @@
       var daily = P.appDaPagina() === 'daily', pagina = el('div');
       if (!daily) {
         /* Falando de Astrologia: foto do Sobre, pasta dos alunos e clientes, avisos, importar clientes */
+        pagina.appendChild(cartaoTema('falando'));
         pagina.appendChild(cartao);
         pagina.appendChild(P.cartaoPastaBase('alunos'));
         pagina.appendChild(P.cartaoPastaBase('clientes'));
@@ -464,6 +488,7 @@
         pagina.appendChild(cartaoImportarClientes());
       } else {
         /* Hellenic Daily: conexão Google (Drive e Agenda), lugar das horas, texto fixo da Produção, agendas que aparecem, avisos, e as Áreas e Serviços do Financeiro */
+        pagina.appendChild(cartaoTema('daily'));
         var conexaoDrive = P.cartaoConexaoDrive();
         if (conexaoDrive) pagina.appendChild(conexaoDrive);
         pagina.appendChild(cartaoLugar());
