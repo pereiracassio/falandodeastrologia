@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=86">
-  <link rel="stylesheet" href="portal.css?v=31">
+  <link rel="stylesheet" href="portal.css?v=32">
   <link rel="stylesheet" href="tema-paginas.css?v=6">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
@@ -54,7 +54,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=159"></script>
+  <script src="portal.js?v=160"></script>
   <script src="menu.js?v=63" defer></script>
   <script>
   (function () {
@@ -171,8 +171,8 @@
     /* projeto concluído (todos os passos feitos) sai das abas e vai para "Concluídos"; "Reabrir" desmarca o último passo feito e ele volta para as abas */
     /* uma linha da lista: bolinha e nome; embaixo "14% [barra] 1/7" e, se tem prazo, "50% [barra] 12 dias" */
     function linhaDeBarra(pct, cor, fim, tempo) {
-      var barra = el('div', { class: 'proj-barra', style: 'flex:1;margin:0' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
-      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta);font-size:15px' }, [el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })]);
+      var barra = el('div', { class: 'proj-barra' + (tempo ? ' tempo-trilho' : ''), style: 'flex:1;margin:0' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
+      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta);font-size:15px' }, [el('span', { text: pct + '%', class: tempo ? 'tempo-pct' : '', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, class: tempo ? 'tempo-fim' : '', style: 'flex:none;min-width:84px;text-align:right' })]);
     }
     /* o tempo do prazo: dias que já passaram sobre o total de dias, com a barra azul, ocre no meio e terracota no fim */
     function tempoDoProjeto(p) {

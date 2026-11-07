@@ -109,3 +109,8 @@ textarea.escrita-livre:focus{outline:none}
 .prod-seg.com-datas .prod-chip.prod-chip{border:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-left:-1px;border-radius:0}
 .prod-seg.com-datas .prod-chip.on.on{border:1px solid var(--azul-egipcio-claro,#1F5FA3)}
 .prod-seg.com-datas .prod-data-cel:first-child + .prod-chip.prod-chip{margin-left:0}
+
+/* BARRA DE TEMPO: o contorno acompanha o degradê (azul → ocre → terracota, cores do tema); o % antes é azul e o tanto/tanto depois é terracota */
+.tempo-trilho { border-style: solid; border-width: 1px; border-image: var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25)) 1 !important; }
+.tempo-pct { color: var(--azul-egipcio-claro, #1F5FA3) !important; }
+.tempo-fim { color: var(--terracota, #A03E25) !important; }

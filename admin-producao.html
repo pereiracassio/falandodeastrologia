@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=86">
-  <link rel="stylesheet" href="portal.css?v=31">
+  <link rel="stylesheet" href="portal.css?v=32">
   <link rel="stylesheet" href="tema-paginas.css?v=6">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
@@ -93,7 +93,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=159"></script>
+  <script src="portal.js?v=160"></script>
   <script src="menu.js?v=63" defer></script>
   <script>
   (function () {
@@ -640,9 +640,9 @@
        Por data (a mais perto primeiro); sem data, depois, do mais pronto para o menos pronto. Tocar na linha abre o lugar certo. */
     function barraProx(pct, cor, fim, tempo) {
       return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
-        el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
-        el('div', { class: 'prox-barra', style: 'flex:1' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]),
-        el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
+        el('span', { text: pct + '%', class: tempo ? 'tempo-pct' : '', style: 'flex:none;min-width:38px' }),
+        el('div', { class: 'prox-barra' + (tempo ? ' tempo-trilho' : ''), style: 'flex:1' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]),
+        el('span', { text: fim, class: tempo ? 'tempo-fim' : '', style: 'flex:none;min-width:84px;text-align:right' })
       ]);
     }
     function tempoProx(criado, fimISO) {
