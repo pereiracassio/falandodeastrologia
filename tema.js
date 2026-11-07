@@ -28,10 +28,10 @@
   }
 
   /* imagens com cor própria (logo do cabeçalho e Hermes dos avisos): uma versão por tema, como no Astro Hellenic */
-  var IMG = /(logo-menu(?:-daily)?|hermes-aviso)(?:-escuro|-sulfite)?\.(svg|png)/;
+  var IMG = /(logo-menu(?:-daily)?|hermes-aviso|rede-whatsapp|rede-meet)(?:-escuro|-sulfite)?\.(svg|png)/;
   function imagens() {
     var e = efetivo(atual), suf = e === 'escuro' || e === 'sulfite' ? '-' + e : '';
-    var lista = document.querySelectorAll('img[src*="logo-menu"], img[src*="hermes-aviso"]');
+    var lista = document.querySelectorAll('img[src*="logo-menu"], img[src*="hermes-aviso"], img[src*="rede-whatsapp"], img[src*="rede-meet"]');
     for (var i = 0; i < lista.length; i++) {
       var s = lista[i].getAttribute('src'), n = s.replace(IMG, function (m, base, ext) { return base + suf + '.' + ext; });
       if (n !== s) lista[i].setAttribute('src', n);
