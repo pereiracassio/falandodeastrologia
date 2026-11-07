@@ -47,7 +47,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       if (campo) campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); fechar(campo.value); } });
       if (nao) nao.addEventListener('click', function () { fechar(false); });
       fundo.addEventListener('click', function (ev) { if (ev.target === fundo && comCancelar) fechar(false); });
-      setTimeout(function () { (campo || nao || ok).focus(); }, 0);
+      setTimeout(function () { (campo || nao || ok).focus({ preventScroll: true }); }, 0);
     }
     window.confirm = function (texto) {
       var t = String(texto);
@@ -1544,7 +1544,11 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   (function naoPular() {
     var app = document.getElementById('app'); if (!app || !window.MutationObserver) return;
     var y = window.scrollY || 0;
-    var guarda = function () { y = window.scrollY || 0; };
+    var guarda = function () {
+      var maximo = Math.max(0, document.documentElement.scrollHeight - window.innerHeight), atual = window.scrollY || 0;
+      if (y > maximo + 2 && atual <= maximo + 1) return; /* a página encolheu (a tela foi esvaziada esperando os dados): o navegador subiu sozinho, não foi ele rolando; guarda o lugar de antes */
+      y = atual;
+    };
     window.addEventListener('scroll', guarda, { passive: true });
     ['scrollTo', 'scrollBy'].forEach(function (nome) {
       var original = window[nome];
