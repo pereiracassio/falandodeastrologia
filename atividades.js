@@ -376,7 +376,7 @@
       corpo.appendChild(cab);
 
       d.perguntas.forEach(function (p, i) {
-        var cartao = el('div', { class: 'portal-cartao' }, [el('p', { text: (i + 1) + '. ' + p.enunciado, class: 'portal-item-titulo' })]);
+        var cartao = el('div', { class: 'portal-cartao' }, [el('p', { text: (i + 1) + '. ' + p.enunciado, style: 'font-weight:700;color:#16233F' })]);
         var r = respostas[p.id] = respostas[p.id] || { texto: '', opcao: null };
         if (p.tipo === 'multipla') {
           var caixaOpcoes = el('div');
@@ -872,7 +872,7 @@
         d.perguntas.forEach(function (p, i) {
           var r = d.respostas[p.id] || {};
           var c = d.correcoes[p.id] || {};
-          var cx = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: (i + 1) + '. ' + p.enunciado })]);
+          var cx = el('div', { class: 'portal-cartao' }, [el('p', { style: 'font-weight:700;color:#16233F', text: (i + 1) + '. ' + p.enunciado })]);
           if (p.tipo === 'multipla') {
             var certa = d.gabarito[p.id] ? d.gabarito[p.id].correta : null;
             (p.opcoes || []).forEach(function (op, k) {
