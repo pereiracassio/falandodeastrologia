@@ -50,7 +50,7 @@
     var ORDEM_DAILY = ["To do", "Agenda", "Produção", "Projetos", "Estudos", "Financeiro", "Horas", "Leitor"];
     if (appAtual === "daily") links.sort(function (a, b) { return ORDEM_DAILY.indexOf(a.label) - ORDEM_DAILY.indexOf(b.label); });
     else links.sort(function (a, b) { return a.label.localeCompare(b.label, "pt"); });
-    links.push({ label: "Configurações", href: "admin-site.html" });
+    links.push({ label: "Configurações", href: "admin-site.html?app=" + appAtual });
     if (appAtual !== "daily") links.push(verSite);
   }
 

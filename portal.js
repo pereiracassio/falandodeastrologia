@@ -519,7 +519,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   var sinoAdminLigado = false;
   function sinoAdmin(n) {
     var pintar = function (q) {
-      var cfg = { n: q, aoTocar: function () { try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } location.href = 'admin-avisos.html'; } }; /* o carimbo de uso novo evita que a página de destino ache que o app abriu do zero e volte para a última tela */
+      var cfg = { n: q, aoTocar: function () { try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } location.href = 'admin-avisos.html?app=' + appDaPagina(); } }; /* o carimbo de uso novo evita que a página de destino ache que o app abriu do zero e volte para a última tela */
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
       numeroNoIcone(q);
     };
@@ -561,7 +561,11 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
         sessionStorage.setItem('fda_app', 'falando'); localStorage.setItem('fda_app_ultimo', 'falando');
         return 'falando';
       }
-      if (compartilhada) return sessionStorage.getItem('fda_app') || localStorage.getItem('fda_app_ultimo') || 'falando';
+      if (compartilhada) {
+        var qa = new URLSearchParams(location.search).get('app'); /* o link que abriu a tela diz de qual app a pessoa saiu */
+        if (qa === 'falando' || qa === 'daily') { sessionStorage.setItem('fda_app', qa); return qa; }
+        return sessionStorage.getItem('fda_app') || localStorage.getItem('fda_app_ultimo') || 'falando';
+      }
     } catch (e) { /* sem armazenamento */ }
     return 'falando';
   }
@@ -582,7 +586,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     var ORDEM_DAILY = ['todo', 'agenda', 'producao', 'projetos', 'estudos', 'financeiro', 'horas', 'leitor'];
     if (appAtual === 'daily') itens.sort(function (a, b) { return ORDEM_DAILY.indexOf(a[0]) - ORDEM_DAILY.indexOf(b[0]); });
     else itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
-    itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
+    itens.push(['site', '\u2699\uFE0E', 'admin-site.html?app=' + appAtual]);
     if (appAtual === 'daily') { var logo = document.querySelector('.cab-logo img'); if (logo && /logo-menu\.svg/.test(logo.getAttribute('src'))) { logo.setAttribute('src', '/img/logo-menu-daily.svg?v=1'); logo.setAttribute('alt', 'Hellenic Daily'); } } /* telas compartilhadas (⚙ e Avisos) mostram o logo do app em que você está */
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
