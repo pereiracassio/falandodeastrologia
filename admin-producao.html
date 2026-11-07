@@ -307,8 +307,8 @@
       var nomeTxt = el('span', { text: '' });
       area.appendChild(corpo);
       function pintar() {
-        tela.style.background = escuro ? '#0d1220' : '#F3E3B8'; tela.style.color = escuro ? '#F3E3B8' : FdaTema.cor('preto-tinta');
-        barra.style.background = escuro ? '#0d1220' : '#F3E3B8';
+        tela.style.background = escuro ? '#0d1220' : 'var(--vazado,#F3E3B8)'; tela.style.color = escuro ? '#F3E3B8' : FdaTema.cor('preto-tinta');
+        barra.style.background = escuro ? '#0d1220' : 'var(--vazado,#F3E3B8)';
         corpo.style.fontSize = tam + 'px';
         play.textContent = rodando ? 'Pausar' : 'Rolar sozinho';
         velTxt.textContent = 'velocidade ' + vel;
@@ -357,7 +357,7 @@
     function avisoFlutuante(texto, erro) {
       var a = document.getElementById('prod-aviso');
       if (!a) { a = el('div', { id: 'prod-aviso' }); document.body.appendChild(a); }
-      a.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99998;padding:12px 22px;border:3px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:0;background:#F3E3B8;color:' + (erro ? FdaTema.cor('terracota') : FdaTema.cor('preto-tinta')) + ';font-family:var(--fonte-titulo);text-transform:lowercase;font-size:16px;font-weight:700';
+      a.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99998;padding:12px 22px;border:3px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:0;background:var(--vazado,#F3E3B8);color:' + (erro ? FdaTema.cor('terracota') : FdaTema.cor('preto-tinta')) + ';font-family:var(--fonte-titulo);text-transform:lowercase;font-size:16px;font-weight:700';
       a.textContent = texto; a.style.display = 'block';
       clearTimeout(tempoAviso); tempoAviso = setTimeout(function () { a.style.display = 'none'; }, 2200);
     }

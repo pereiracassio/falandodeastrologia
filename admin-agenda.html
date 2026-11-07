@@ -593,7 +593,7 @@
       return null;
     }
     function comPecaClara(ic, comFundo) { /* peça clarinha atrás, para ler em cima da cor de qualquer agenda */
-      return comFundo ? el('span', { style: 'display:inline-flex;flex:none;align-items:center;justify-content:center;background:#F3E3B8;padding:1px 2px;line-height:1' }, [ic]) : ic;
+      return comFundo ? el('span', { style: 'display:inline-flex;flex:none;align-items:center;justify-content:center;background:var(--vazado,#F3E3B8);padding:1px 2px;line-height:1' }, [ic]) : ic;
     }
     function planetaDoInstante(ms, px, comFundo) {
       var s = horaDoInstante(ms); if (!s) return null;
