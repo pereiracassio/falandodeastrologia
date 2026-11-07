@@ -18,12 +18,12 @@
       var st = document.createElement('style'); st.id = 'janela-site-css';
       st.textContent = '.janela-fundo{position:fixed;inset:0;z-index:100000;background:rgba(22,35,63,.55);display:flex;align-items:center;justify-content:center;padding:20px}' +
         '.janela-caixa{position:relative;width:100%;max-width:440px;background:var(--papiro-fundo-simples);padding:var(--moldura-pv) var(--moldura-ph);box-sizing:border-box;text-align:center;border-radius:0}' +
-        '.janela-texto{margin:0 0 18px;font:400 17px/1.5 "Architects Daughter",cursive;color:#16233F;white-space:pre-line;overflow-wrap:anywhere;hyphens:none}' +
+        '.janela-texto{margin:0 0 18px;font:400 17px/1.5 "Architects Daughter",cursive;color:var(--preto-tinta,#16233F);white-space:pre-line;overflow-wrap:anywhere;hyphens:none}' +
         '.janela-acoes{display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap}' +
         '.janela-acoes button{font:700 14px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;border-radius:0;cursor:pointer;white-space:nowrap;min-height:0}' +
-        '.janela-ok{background:#A03E25;color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:#7d2f1a}' +
-        '.janela-nao{background:transparent;color:#1034A6;border:0;padding:10px 6px}.janela-nao:hover{color:#16233F}' +
-        '.janela-campo{display:block;width:100%;box-sizing:border-box;margin:0 0 18px;padding:9px 10px;border:1px solid #1F5FA3!important;border-radius:0!important;background:transparent!important;color:#16233F;font:400 17px "Architects Daughter",cursive;min-height:0;outline:none;box-shadow:none}.janela-campo:focus{outline:none;border-width:2px!important;padding:8px 9px}';
+        '.janela-ok{background:var(--terracota,#A03E25);color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:#7d2f1a}' +
+        '.janela-nao{background:transparent;color:var(--azul-egipcio-escuro,#1034A6);border:0;padding:10px 6px}.janela-nao:hover{color:var(--preto-tinta,#16233F)}' +
+        '.janela-campo{display:block;width:100%;box-sizing:border-box;margin:0 0 18px;padding:9px 10px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)!important;border-radius:0!important;background:transparent!important;color:var(--preto-tinta,#16233F);font:400 17px "Architects Daughter",cursive;min-height:0;outline:none;box-shadow:none}.janela-campo:focus{outline:none;border-width:2px!important;padding:8px 9px}';
       document.head.appendChild(st);
     }
     function abrir(texto, comCancelar, aoFechar, campoInicial) {
@@ -207,13 +207,13 @@
     var fundo = el('div');
     fundo.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:100000;background:rgba(10,19,48,.7);display:flex;align-items:center;justify-content:center;padding:12px';
     var painel = el('div');
-    painel.style.cssText = 'background:var(--papiro-fundo);border:1px solid #1F5FA3;border-radius:12px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;color:#16233F;font-family:system-ui,-apple-system,sans-serif';
+    painel.style.cssText = 'background:var(--papiro-fundo);border:1px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:12px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;color:var(--preto-tinta,#16233F);font-family:system-ui,-apple-system,sans-serif';
     var topo = el('div'); topo.style.cssText = 'padding:14px 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
     var titulo = el('strong', { class: 'nome-coisa', text: soPastas ? 'Escolha a pasta' : tipo === 'pdf' ? 'Escolha o PDF' : tipo === 'video' ? 'Escolha o vídeo' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
     var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
     topo.appendChild(titulo); topo.appendChild(fechar);
     var caminho = el('div'); caminho.style.cssText = 'padding:0 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
-    var busca = el('input', { type: 'search', placeholder: 'Buscar pelo nome' }); busca.style.cssText = 'margin:0 16px 8px;width:calc(100% - 32px);background:transparent;border:1px solid #1F5FA3;border-radius:8px;padding:10px 12px;font:inherit;color:#16233F;-webkit-appearance:none;appearance:none';
+    var busca = el('input', { type: 'search', placeholder: 'Buscar pelo nome' }); busca.style.cssText = 'margin:0 16px 8px;width:calc(100% - 32px);background:transparent;border:1px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:8px;padding:10px 12px;font:inherit;color:var(--preto-tinta,#16233F);-webkit-appearance:none;appearance:none';
     var lista = el('div'); lista.style.cssText = 'overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 14px;flex:1;min-height:120px';
     painel.appendChild(topo); painel.appendChild(caminho); painel.appendChild(busca); painel.appendChild(lista);
     fundo.appendChild(painel); document.body.appendChild(fundo);
@@ -252,7 +252,7 @@
     function itemDaLista(f) {
       var ePasta = f.mimeType === PASTA_MIME;
       var nome = el('button', { type: 'button', class: 'nome-coisa', text: (ePasta ? '📁 ' : '📄 ') + f.name });
-      nome.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F;flex:1;word-break:break-word';
+      nome.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:var(--preto-tinta,#16233F);flex:1;word-break:break-word';
       var botao = null;
       if (ePasta) {
         nome.addEventListener('click', function () { pilha.push({ id: f.id, nome: f.name }); busca.value = ''; carregar(); });
@@ -284,7 +284,7 @@
         else { var mais = lista.querySelector('[data-mais]'); if (mais) lista.removeChild(mais); }
         if (!anexar && !termo && atual.id === 'root') {
           var comp = el('button', { type: 'button', class: 'nome-coisa', text: '👥 Compartilhados comigo' });
-          comp.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F';
+          comp.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:var(--preto-tinta,#16233F)';
           comp.addEventListener('click', function () { pilha.push({ id: 'compartilhados', nome: 'Compartilhados comigo' }); carregar(); });
           lista.appendChild(linha(comp));
         }
@@ -409,7 +409,7 @@
       area.textContent = '';
       assistir.textContent = aberto ? 'Fechar o vídeo' : 'Assistir';
       if (!aberto) return;
-      var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;margin-top:12px;border:1px solid #1F5FA3;overflow:hidden' });
+      var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;margin-top:12px;border:1px solid var(--azul-egipcio-claro,#1F5FA3);overflow:hidden' });
       caixa.appendChild(el('iframe', { src: 'https://drive.google.com/file/d/' + id + '/preview', allow: 'autoplay; fullscreen', allowfullscreen: '',
         style: 'position:absolute;inset:0;width:100%;height:100%;border:0', title: 'Gravação' }));
       area.appendChild(caixa);
@@ -506,7 +506,7 @@
     if (!elemento) return;
     try { elemento.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { elemento.scrollIntoView(); }
     var antes = elemento.style.outline;
-    elemento.style.outline = '3px solid #1034A6'; elemento.style.outlineOffset = '4px';
+    elemento.style.outline = '3px solid var(--azul-egipcio-escuro,#1034A6)'; elemento.style.outlineOffset = '4px';
     setTimeout(function () { elemento.style.outline = antes; elemento.style.outlineOffset = ''; }, 6000);
   }
   /* número no ícone do app (iPhone/iPad com o app instalado): a quantidade de avisos não lidos; sem suporte, nada acontece */
@@ -586,7 +586,7 @@
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
       if (i[0] === 'agenda' || i[0] === 'horas' || i[0] === 'todo') a.addEventListener('click', function (ev) { if (window.fdaAgendaIr) { ev.preventDefault(); window.fdaAgendaIr(i[0]); } }); /* já estando na Agenda, troca de aba sem recarregar */
       if (i[0] === 'site') { a.setAttribute('aria-label', 'Configurações'); a.title = 'Configurações'; a.appendChild(el('span', { class: 'engrenagem', text: i[1] })); } /* a engrenagem é maior que a letra, para ficar do tamanho dos botões escritos */
-      if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid #1F5FA3;padding:10px 22px;color:#A03E25'; }
+      if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid var(--azul-egipcio-claro,#1F5FA3);padding:10px 22px;color:var(--terracota,#A03E25)'; }
       return a;
     });
     /* o Sair não é mais uma aba: fica no fim do ⚙ (admin-site.html), com o Trocar senha acima dele */
@@ -679,9 +679,9 @@
     var sinal = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif' });
     var barra = el('button', { type: 'button' }, [el('span', { text: titulo }), sinal]);
     /* sem quadro: uma linha em cima e outra embaixo; aberta, a de baixo desce para o fim do conteúdo e fecha a seção */
-    var caixa = el('div', { class: 'sanfona', style: 'border-top:2px solid #1F5FA3;border-bottom:2px solid #1F5FA3;margin:0' }, [barra, corpo]);
+    var caixa = el('div', { class: 'sanfona', style: 'border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:0' }, [barra, corpo]);
     barra.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;background:transparent;border:0;border-radius:0;cursor:pointer;padding:14px 2px;' +
-      'font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:#A03E25;margin:0';
+      'font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:var(--terracota,#A03E25);margin:0';
     function pintar() {
       var aberta = abertas.indexOf(chave) >= 0;
       corpo.style.display = aberta ? '' : 'none';
@@ -1066,7 +1066,7 @@
   }
   function botaoVoltar(aoClicar) {
     var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
-    b.style.cssText = 'color:#A03E25!important;font-weight:700';
+    b.style.cssText = 'color:var(--terracota,#A03E25)!important;font-weight:700';
     b.addEventListener('click', aoClicar);
     return b;
   }
@@ -1074,7 +1074,7 @@
   /* Campo com lista de escolha, o mesmo do Financeiro: campo comum onde se digita, apaga e escreve o que quiser; embaixo abre uma lista só de texto com o que combina.
      itens() devolve [{ valor, rotulo, busca }]; aoEscolher(item) roda quando toca num item; mostrarTudoNoFoco abre a lista já ao tocar no campo. Devolve [campo, lista]. */
   function combo(input, itens, aoEscolher, mostrarTudoNoFoco) {
-    var lista = el('div', { style: 'display:none;margin:-8px 0 14px;border-top:2px solid #1F5FA3' });
+    var lista = el('div', { style: 'display:none;margin:-8px 0 14px;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
     function fechar() { lista.style.display = 'none'; lista.textContent = ''; }
     function abrir() {
       var t = input.value.trim().toLowerCase();
@@ -1162,7 +1162,7 @@
     if (inp.classList.contains('link-copiavel-input') || !inp.parentNode) return inp;
     inp.classList.add('link-copiavel-input');
     var editando = false;
-    var icone = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:#1034A6;cursor:pointer;flex:none' });
+    var icone = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:var(--azul-egipcio-escuro,#1034A6);cursor:pointer;flex:none' });
     icone.innerHTML = SVG_ELO;
     if (inp.hasAttribute('data-link-abre')) { icone.title = 'Abrir o link'; icone.setAttribute('aria-label', 'Abrir o link'); }
     var ed = el('span', { text: 'Editar', role: 'button', tabindex: '0', style: 'font-size:12px;opacity:.6;text-decoration:underline;cursor:pointer;font-family:var(--fonte-mao)' });
@@ -1191,7 +1191,7 @@
   }
   /* só o ícone de elo que copia (para link fixo, que não se edita) */
   function iconeLink(u) {
-    var b = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:#1034A6;cursor:pointer;flex:none' });
+    var b = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:var(--azul-egipcio-escuro,#1034A6);cursor:pointer;flex:none' });
     b.innerHTML = SVG_ELO;
     b.addEventListener('click', function () { copiarParaAreaDeTransferencia(u).then(function () { b.innerHTML = SVG_ELO_OK; setTimeout(function () { b.innerHTML = SVG_ELO; }, 1500); }, function () { window.prompt('Copie o link:', u); }); });
     return b;
@@ -1204,9 +1204,9 @@
   if (document.body) ligarLinks(); else document.addEventListener('DOMContentLoaded', ligarLinks);
   /* barras de progresso e de tempo, SEMPRE neste desenho: "62% [barra] 12/23 dias" (o tanto de passos ou de dias no fim da linha) */
   function barraLinha(pct, cor, fim) {
-    return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [
+    return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
       el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
-      el('div', { style: 'flex:1;height:14px;border:1px solid #1F5FA3' }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || '#1F5FA3') })]),
+      el('div', { style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || '#1F5FA3') })]),
       el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
     ]);
   }
@@ -1419,7 +1419,7 @@
       if (r.error || !r.data || !r.data.length) return;
       r.data.forEach(function (a) {
         var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
-          el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:#A03E25', text: a.titulo }),
+          el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:var(--terracota,#A03E25)', text: a.titulo }),
           el('span', { class: 'portal-item-data', text: dataBR(String(a.criado_em).slice(0, 10)) }),
           el('p', { style: 'margin:4px 0 0' + (a.lido ? '' : ';font-weight:700'), text: a.corpo })
         ]);
@@ -1430,7 +1430,7 @@
         });
         caixa.appendChild(linha);
       });
-      caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+      caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 14px' }));
     });
     return caixa;
   }

@@ -50,11 +50,11 @@
       modulos.forEach(function (mo) {
         var aberto = mo.ordem <= m.modulo_liberado;
         var tit = el('p', { class: 'proj-titulo', style: 'margin:0 0 6px;font-weight:700;color:' + (aberto ? '#A03E25' : '#16233F;opacity:.55'), text: (aberto ? '' : '🔒 ') + 'Módulo ' + mo.ordem + ' · ' + mo.titulo });
-        var bloco = el('div', { style: 'margin:0 0 18px;padding:0 0 12px;border-bottom:2px solid #1F5FA3' }, [tit]);
+        var bloco = el('div', { style: 'margin:0 0 18px;padding:0 0 12px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' }, [tit]);
         if (aberto) {
           if (mo.apostila_nome) bloco.appendChild(el('p', { style: 'margin:0 0 8px', text: 'Apostila: ' + mo.apostila_nome }));
           aulas.filter(function (a) { return a.modulo_id === mo.id; }).forEach(function (a) {
-            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#1034A6;text-decoration:none', text: a.ordem + '. ' + a.titulo });
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:var(--azul-egipcio-escuro,#1034A6);text-decoration:none', text: a.ordem + '. ' + a.titulo });
             l.addEventListener('click', function (ev) { ev.preventDefault(); telaDaAula(app, a, voltarParaAba); });
             bloco.appendChild(l);
           });

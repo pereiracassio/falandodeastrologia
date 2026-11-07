@@ -30,11 +30,11 @@ body>header a:first-child{color:#f6e7b4!important}
 
 /* Portal do Aluno: cartão escuro vira parte do papiro */
 .folha-pagina .portal-aluno-container{background:none;border:none;box-shadow:none;margin:0 auto;padding:10px 0 6px}
-.folha-pagina .portal-title{color:#1F5FA3}
-.folha-pagina .portal-subtitle{color:#1F5FA3}
+.folha-pagina .portal-title{color:var(--azul-egipcio-claro,#1F5FA3)}
+.folha-pagina .portal-subtitle{color:var(--azul-egipcio-claro,#1F5FA3)}
 .folha-pagina .portal-card{background:rgba(255,250,232,.5);border-color:rgba(120,85,40,.35)}
 .folha-pagina .portal-card p{color:#2b1d12}
-.folha-pagina .btn-classroom{background:#1F5FA3;color:#f6e7b4}
+.folha-pagina .btn-classroom{background:var(--azul-egipcio-claro,#1F5FA3);color:#f6e7b4}
 .folha-pagina .btn-classroom:hover{background:#0b2a52}
 
 /* Checkout: mesma identidade, mais calma e focada */
@@ -45,12 +45,12 @@ body>header a:first-child{color:#f6e7b4!important}
 .pagina-estreita{max-width:540px}
 
 .checkout .card{background:none;border:none;box-shadow:none;padding:0;max-width:none}
-.checkout h2{color:#1F5FA3}
+.checkout h2{color:var(--azul-egipcio-claro,#1F5FA3)}
 .checkout .price-box{background:rgba(255,250,232,.6);border:1px solid rgba(120,85,40,.4)}
 .checkout .price-title{color:#6b5a3a}
 .checkout .step-text{color:#2b1d12}
 .checkout .highlight{background:rgba(255,248,214,.85);color:#7a4a0a}
-.checkout .btn-pay{background:#A03E25;color:#F3E3B8;padding:16px;box-shadow:none}
+.checkout .btn-pay{background:var(--terracota,#A03E25);color:#F3E3B8;padding:16px;box-shadow:none}
 .checkout .btn-pay:hover{background:#7d2f1a}
 @media(max-width:700px){.checkout{padding:14px 8px}}
 
@@ -74,14 +74,14 @@ body>header a:first-child{color:#f6e7b4!important}
 .pagina-servico .folha-pagina div[style*="background-color: white"]{background:transparent!important;border:1px solid var(--azul)!important;box-shadow:none!important}
 
 /* Mesmas mudanças do resto: azul vira terracota, texto em azul-noite, campos claros viram só linha azul */
-.folha-pagina .portal-title{color:#A03E25}
-.folha-pagina .portal-card{background:transparent;border:1px solid #1F5FA3}
-.folha-pagina .portal-card p{color:#16233F}
-.checkout h2,.checkout .price-value{color:#A03E25}
-.checkout .price-box{background:transparent;border:1px solid #1F5FA3}
-.checkout .price-title,.checkout .step-text{color:#16233F}
-.checkout .step-text strong{color:#16233F}
-.checkout .highlight{background:transparent;color:#A03E25;border:1px solid #1F5FA3;padding:1px 6px}
+.folha-pagina .portal-title{color:var(--terracota,#A03E25)}
+.folha-pagina .portal-card{background:transparent;border:1px solid var(--azul-egipcio-claro,#1F5FA3)}
+.folha-pagina .portal-card p{color:var(--preto-tinta,#16233F)}
+.checkout h2,.checkout .price-value{color:var(--terracota,#A03E25)}
+.checkout .price-box{background:transparent;border:1px solid var(--azul-egipcio-claro,#1F5FA3)}
+.checkout .price-title,.checkout .step-text{color:var(--preto-tinta,#16233F)}
+.checkout .step-text strong{color:var(--preto-tinta,#16233F)}
+.checkout .highlight{background:transparent;color:var(--terracota,#A03E25);border:1px solid var(--azul-egipcio-claro,#1F5FA3);padding:1px 6px}
 
 
 /* ===== Páginas de serviço: o papiro é a página inteira (sem céu) e o cabeçalho mora dentro dele ===== */
@@ -100,16 +100,16 @@ body:has(.pagina-papiro)::before,body:has(.pagina-papiro)::after{display:none}
 .pagina-papiro .folha-pagina:has(.cab-logo-menor){padding-top:calc(130px*var(--moldura-m) - 1px)}
 .cab-nav{display:flex;border:0;margin:16px 0 0;font:700 13px 'Cinzel',serif;letter-spacing:.03em}
 .cab-nav a{flex:1;padding:9px 0;color:var(--terracota,#A03E25);text-decoration:none}
-.cab-nav a+a{border-left:2px solid #1F5FA3}
-.cab-nav a.atual{color:#B5852F}
-.cab-linha{border:0;height:2px;background:#1F5FA3;margin:16px 0 6px}
+.cab-nav a+a{border-left:2px solid var(--azul-egipcio-claro,#1F5FA3)}
+.cab-nav a.atual{color:var(--ocre,#B5852F)}
+.cab-linha{border:0;height:2px;background:var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 6px}
 /* menu e carrinho: peças pequenas de papiro, dentro da moldura, sem canto arredondado */
 html body:has(.pagina-papiro) .sidemenu-toggle,html body:has(.pagina-papiro) .cart-toggle{
   top:calc(130px*var(--moldura-m))!important;width:34px!important;height:34px!important;border-radius:0!important;background:none!important;
-  border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;color:#B5852F!important}
+  border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;color:var(--ocre,#B5852F)!important}
 html body:has(.pagina-papiro) .sidemenu-toggle{left:calc(80px*var(--moldura-m) + 4px)!important}
 html body:has(.pagina-papiro) .cart-toggle{right:calc(80px*var(--moldura-m) + 4px)!important}
-html body:has(.pagina-papiro) .sidemenu-toggle span,html body:has(.pagina-papiro) .sidemenu-toggle span::before,html body:has(.pagina-papiro) .sidemenu-toggle span::after{background:#B5852F!important;width:22px!important;height:3px!important}
+html body:has(.pagina-papiro) .sidemenu-toggle span,html body:has(.pagina-papiro) .sidemenu-toggle span::before,html body:has(.pagina-papiro) .sidemenu-toggle span::after{background:var(--ocre,#B5852F)!important;width:22px!important;height:3px!important}
 html body:has(.pagina-papiro) .sidemenu-toggle span::before{top:-7px!important}
 html body:has(.pagina-papiro) .sidemenu-toggle span::after{top:7px!important}
 html body:has(.pagina-papiro) .cart-toggle svg{stroke:none;fill:#B5852F;width:28px!important;height:28px!important}
@@ -139,21 +139,21 @@ html body:has(.pagina-papiro) .hermes-toggle img{width:30px!important;height:30p
 .pagina-papiro .portal{max-width:none;font-family:'Cinzel',serif;text-align:left}
 .pagina-papiro .portal :is(input,select,textarea,button){font-family:inherit}
 .pagina-papiro .portal :is(.portal-cartao,.portal-aba,.portal-btn,.portal-item,input,select,textarea){border-radius:0}
-.pagina-papiro .portal-titulo{color:#A03E25;text-align:center}
+.pagina-papiro .portal-titulo{color:var(--terracota,#A03E25);text-align:center}
 .pagina-papiro .portal-sub{text-align:center}
-.pagina-papiro .portal-subtitulo{color:#A03E25;font-size:21px;margin:30px 0 12px}
+.pagina-papiro .portal-subtitulo{color:var(--terracota,#A03E25);font-size:21px;margin:30px 0 12px}
 @media(min-width:701px){.pagina-papiro .portal{font-size:clamp(16px,1.4vw,21px)}}
 .pagina-papiro .portal-aba{font-size:12px;padding:10px 2px;letter-spacing:0}
 @media(min-width:701px){.pagina-papiro .portal-aba{font-size:clamp(14px,1.2vw,18px)}}
-.pagina-papiro .portal a:not(.portal-btn){color:#1F5FA3}
+.pagina-papiro .portal a:not(.portal-btn){color:var(--azul-egipcio-claro,#1F5FA3)}
 /* páginas com estilo próprio no body (carrinho, horário confirmado): o papiro inteiro manda */
 body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:0!important}
 /* serviços: nada de quadro dentro de quadro. O investimento e os avisos ficam soltos no papiro; botão só com contorno, sem canto arredondado */
 .pagina-papiro .folha-pagina div[style*="f8f9fa"]{background:none!important;border:0!important;border-top:2px solid #1F5FA3!important;border-radius:0!important;box-shadow:none!important;padding:26px 0 0!important}
 .pagina-papiro .folha-pagina div[style*="background-color: white"]{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
-.pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:transparent!important;border:1.5px solid #1034A6!important;border-radius:0!important;color:#A03E25!important}
-.duvida-whats{margin:0 0 10px;color:#16233F;font-size:15px;text-align:center}
-.horarios-atendimento{margin:24px 0 20px;color:#16233F;font-size:15px;text-align:justify;hyphens:none}
+.pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:transparent!important;border:1.5px solid var(--azul-egipcio-escuro,#1034A6)!important;border-radius:0!important;color:var(--terracota,#A03E25)!important}
+.duvida-whats{margin:0 0 10px;color:var(--preto-tinta,#16233F);font-size:15px;text-align:center}
+.horarios-atendimento{margin:24px 0 20px;color:var(--preto-tinta,#16233F);font-size:15px;text-align:justify;hyphens:none}
 .icone-whats{display:inline-block;transition:transform .2s ease}
 .icone-whats:hover{transform:translateY(-3px)}
 .icone-whats img{display:block;width:44px;height:44px}
@@ -165,7 +165,7 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
    Botões secundários (voltar, sair, cancelar): só contorno azul egípcio. Link para o WhatsApp: sempre só o ícone (.icone-whats). */
 .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats),
 .pagina-papiro .blog-botao,
-.pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:#A03E25!important;color:#F3E3B8!important;border:1.5px solid #A03E25!important;border-radius:0!important}
+.pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:var(--terracota,#A03E25)!important;color:#F3E3B8!important;border:1.5px solid var(--terracota,#A03E25)!important;border-radius:0!important}
 .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):hover,
 .pagina-papiro .blog-botao:hover,
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]:hover{background:#7d2f1a!important;border-color:#7d2f1a!important;transform:none}
@@ -173,42 +173,42 @@ body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:
 /* canto reto em tudo dentro das páginas de papiro (sanfonas, cartões, campos, botões) */
 .pagina-papiro *,.pagina-papiro *::before,.pagina-papiro *::after{border-radius:0!important}
 /* exceções: o botão do Google Meet continua ocre (cor do Meet) e os de avisar no WhatsApp continuam verdes (cor do WhatsApp), só que de canto reto */
-.pagina-papiro .portal-btn-meet{background:#B5852F!important;color:#16233F!important;border:1.5px solid #B5852F!important}
+.pagina-papiro .portal-btn-meet{background:var(--ocre,#B5852F)!important;color:var(--preto-tinta,#16233F)!important;border:1.5px solid var(--ocre,#B5852F)!important}
 .pagina-papiro .portal-btn-whats{background:#4A7C59!important;color:#F3E3B8!important;border:1.5px solid #4A7C59!important}
 /* botões do portal numa linha só: a letra diminui conforme a tela */
 .pagina-papiro .portal-btn{white-space:nowrap;font-size:min(15px,3.1vw);padding-left:10px;padding-right:10px;max-width:100%;box-sizing:border-box}
 @media(min-width:701px){.pagina-papiro .portal-btn{font-size:15px;padding-left:24px;padding-right:24px}}
 /* abas do portal: azul; a selecionada fica em ocre. Botões dentro das listas (Assistir, Abrir, Baixar) são secundários: só contorno azul, para não ter vermelho demais */
-.pagina-papiro .portal-aba{color:#1F5FA3!important;background:transparent!important}
-.pagina-papiro .portal-aba.ativa{color:#B5852F!important}
-.pagina-papiro .portal-item-linha .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;color:#1034A6!important;border:1.5px solid #1034A6!important}
+.pagina-papiro .portal-aba{color:var(--azul-egipcio-claro,#1F5FA3)!important;background:transparent!important}
+.pagina-papiro .portal-aba.ativa{color:var(--ocre,#B5852F)!important}
+.pagina-papiro .portal-item-linha .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;color:var(--azul-egipcio-escuro,#1034A6)!important;border:1.5px solid var(--azul-egipcio-escuro,#1034A6)!important}
 .pagina-papiro .portal-item-linha .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;border-width:3px!important}
 /* a foto de perfil é redonda (decisão do astrólogo); nada que ele tenha pedido redondo vira quadrado */
 .pagina-papiro #foto-sobre,.pagina-papiro [style*="border-radius: 50%"]{border-radius:50%!important}
 /* ABAS DO PORTAL = mesmo desenho do retângulo de três botões do topo (um bloco só, divisas internas); só muda a cor do texto: azul, e a selecionada em ocre.
    Azul egípcio ESCURO (#1034A6) em todas as linhas. */
 .pagina-papiro .portal-abas{display:flex;gap:0!important;border:0!important;margin:0 0 18px!important;padding:0!important}
-.pagina-papiro .portal-aba{flex:1 1 0;border:0!important;border-left:2px solid #1F5FA3!important;padding:9px 2px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;color:#1034A6!important;background:transparent!important}
+.pagina-papiro .portal-aba{flex:1 1 0;border:0!important;border-left:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;padding:9px 2px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;color:var(--azul-egipcio-escuro,#1034A6)!important;background:transparent!important}
 .pagina-papiro .portal-aba:first-child{border-left:0!important}
-.pagina-papiro .portal-aba.ativa{color:#B5852F!important;border-width:0!important;border-left-width:2px!important;padding:9px 2px!important}
+.pagina-papiro .portal-aba.ativa{color:var(--ocre,#B5852F)!important;border-width:0!important;border-left-width:2px!important;padding:9px 2px!important}
 .pagina-papiro .portal-aba.ativa:first-child{border-left-width:0!important}
 @media(min-width:701px){.pagina-papiro .portal-aba{font-size:clamp(13px,1.1vw,17px)!important;padding:clamp(9px,.9vw,14px) 0!important}}
 /* botões não mexem nem encolhem quando o mouse passa: só a cor muda */
 .pagina-papiro .portal-btn,.pagina-papiro .portal-btn:hover,.pagina-papiro .portal-btn:active,.pagina-papiro .portal-aba:hover{transform:none!important;transition:background .15s ease,color .15s ease!important}
 .pagina-papiro .portal-btn-sec:hover,.pagina-papiro .portal-item-linha .portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{border-width:1.5px!important;box-shadow:inset 0 0 0 1px #1034A6;background:transparent!important}
 /* botões dentro das listas ganham das regras acima (secundários, só contorno) */
-html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;color:#1034A6!important;border:1.5px solid #1034A6!important}
+html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;color:var(--azul-egipcio-escuro,#1034A6)!important;border:1.5px solid var(--azul-egipcio-escuro,#1034A6)!important}
 html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;box-shadow:inset 0 0 0 1px #1034A6}
 /* linha separando as abas/botões do que vem embaixo (igual ao menu do topo) */
 .pagina-papiro .portal-abas{position:relative;margin-bottom:36px!important}
-.pagina-papiro .portal-abas::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:2px;background:#1F5FA3}
+.pagina-papiro .portal-abas::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:2px;background:var(--azul-egipcio-claro,#1F5FA3)}
 /* barra do painel e do aluno (Aplicações, Alunos, Clientes..., Sair): o mesmo retângulo dividido, com a linha embaixo */
 .pagina-papiro .portal-topo{position:relative;margin-bottom:36px!important}
-.pagina-papiro .portal-topo::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:2px;background:#1F5FA3}
+.pagina-papiro .portal-topo::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:2px;background:var(--azul-egipcio-claro,#1F5FA3)}
 .pagina-papiro .portal-topo .portal-grupo{display:flex!important;gap:0!important;flex-wrap:nowrap!important;border:0;max-width:100%;overflow-x:auto}
-.pagina-papiro .portal-topo .portal-grupo>*{flex:1 1 auto;border:0!important;border-left:2px solid #1F5FA3!important;padding:9px 14px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;white-space:nowrap;background:transparent!important;color:#1034A6!important;text-align:center;box-shadow:none!important}
+.pagina-papiro .portal-topo .portal-grupo>*{flex:1 1 auto;border:0!important;border-left:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;padding:9px 14px!important;font:700 13px 'Cinzel',serif!important;letter-spacing:.03em;white-space:nowrap;background:transparent!important;color:var(--azul-egipcio-escuro,#1034A6)!important;text-align:center;box-shadow:none!important}
 .pagina-papiro .portal-topo .portal-grupo>*:first-child{border-left:0!important}
-.pagina-papiro .portal-topo .portal-grupo>[aria-current="page"]{color:#B5852F!important}
+.pagina-papiro .portal-topo .portal-grupo>[aria-current="page"]{color:var(--ocre,#B5852F)!important}
 @media(min-width:701px){.pagina-papiro .portal-topo .portal-grupo>*{font-size:clamp(13px,1.1vw,17px)!important}}
 /* barra do painel: mesma largura e posição do retângulo do topo (centralizada); se não couber, rola para o lado (sem quebrar linha e sem barra de rolagem à vista) */
 .pagina-papiro .portal-topo .portal-grupo{width:100%;margin:0!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -217,16 +217,16 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 
 /* setinhas de rolagem da barra do painel (igual ao Astro Hellenic) */
 .pagina-papiro .rolagem-wrap{position:relative;width:100%}
-.pagina-papiro .barra-seta{display:none;position:absolute;top:1.5px;bottom:1.5px;z-index:3;width:34px;padding:0;border:0!important;cursor:pointer;align-items:center;color:#A03E25;background:transparent}
+.pagina-papiro .barra-seta{display:none;position:absolute;top:1.5px;bottom:1.5px;z-index:3;width:34px;padding:0;border:0!important;cursor:pointer;align-items:center;color:var(--terracota,#A03E25);background:transparent}
 .pagina-papiro .barra-seta.visivel{display:flex}
 .pagina-papiro .barra-seta-esq{left:1.5px;justify-content:flex-start;padding-left:4px;background:transparent}
 .pagina-papiro .barra-seta-dir{right:1.5px;justify-content:flex-end;padding-right:4px;background:transparent}
 
 /* hover: só a cor muda; nada de borda, padding ou tamanho (era isso que fazia o botão tremer) */
 .pagina-papiro .portal-btn:hover,.pagina-papiro .portal-btn:active,.pagina-papiro .portal-btn:focus{transform:none!important}
-.pagina-papiro .portal-btn-sec:hover,.pagina-papiro .portal-btn-perigo:hover{border-width:1.5px!important;background:transparent!important;color:#A03E25!important;box-shadow:none!important}
-.pagina-papiro .portal-btn-sec:hover{color:#1034A6!important;box-shadow:inset 0 0 0 1px #1034A6!important}
-.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn){background:#A03E25!important;color:#F3E3B8!important}
+.pagina-papiro .portal-btn-sec:hover,.pagina-papiro .portal-btn-perigo:hover{border-width:1.5px!important;background:transparent!important;color:var(--terracota,#A03E25)!important;box-shadow:none!important}
+.pagina-papiro .portal-btn-sec:hover{color:var(--azul-egipcio-escuro,#1034A6)!important;box-shadow:inset 0 0 0 1px #1034A6!important}
+.pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn){background:var(--terracota,#A03E25)!important;color:#F3E3B8!important}
 .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn):hover{background:#7d2f1a!important}
 /* TAMANHO FIXO dos botões do portal: o espaço interno e a borda são iguais com ou sem o mouse em cima (só a cor muda) */
 .pagina-papiro{--bpx:24px}
@@ -236,7 +236,7 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 
 /* ===== Alunos e Seu espaço mais leves (23/10/2026, pedido do astrólogo) ===== */
 /* sem retângulos: cada parte é separada só por uma linha, como nas páginas de serviço e nas postagens */
-.pagina-papiro .portal-cartao{border:0!important;border-top:2px solid #1F5FA3!important;padding:26px 0 8px!important;margin:0 0 10px!important}
+.pagina-papiro .portal-cartao{border:0!important;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;padding:26px 0 8px!important;margin:0 0 10px!important}
 .pagina-papiro .portal-topo::after{display:none}
 .pagina-papiro .portal-topo{margin-bottom:26px!important}
 .pagina-papiro .portal-topo+.portal-cartao,.pagina-papiro #app>.portal-cartao:first-child{border-top:0!important;padding-top:0!important}
@@ -248,14 +248,14 @@ html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-b
 html body .pagina-papiro .portal-btn:not(.portal-grupo>*),html body .pagina-papiro .portal-btn:not(.portal-grupo>*):hover{padding:5px var(--bpx)!important}
 /* botões só de contorno (Sair, Voltar, Baixar, Cancelar...): sem contorno, fica só a palavra */
 html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*),html body .pagina-papiro .portal-btn-perigo,
-html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;border:0!important;box-shadow:none!important;color:#1034A6!important;padding:6px 14px 6px 0!important}
-html body .pagina-papiro .portal-btn-perigo{color:#A03E25!important}
+html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){background:transparent!important;border:0!important;box-shadow:none!important;color:var(--azul-egipcio-escuro,#1034A6)!important;padding:6px 14px 6px 0!important}
+html body .pagina-papiro .portal-btn-perigo{color:var(--terracota,#A03E25)!important}
 html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*):hover,html body .pagina-papiro .portal-btn-perigo:hover,
-html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;box-shadow:none!important;color:#A03E25!important}
+html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{background:transparent!important;box-shadow:none!important;color:var(--terracota,#A03E25)!important}
 /* Entrar no encontro/atendimento: o ícone do Meet em ocre (como o do WhatsApp) e a frase ao lado */
-html body .pagina-papiro .portal-btn-meet{display:flex!important;align-items:center;justify-content:center;gap:12px;background:transparent!important;border:0!important;color:#16233F!important;padding:4px 0!important}
+html body .pagina-papiro .portal-btn-meet{display:flex!important;align-items:center;justify-content:center;gap:12px;background:transparent!important;border:0!important;color:var(--preto-tinta,#16233F)!important;padding:4px 0!important}
 .pagina-papiro .portal-btn-meet img{display:block;width:40px;height:40px}
-html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important;color:#A03E25!important}
+html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important;color:var(--terracota,#A03E25)!important}
 /* sanfona sem quadro: o conteúdo de dentro não repete a linha de cima */
 .pagina-papiro .sanfona-corpo .portal-cartao{border-top:0!important;padding-top:6px!important}
 .pagina-papiro .sanfona-corpo>*:first-child{margin-top:0}
@@ -263,10 +263,10 @@ html body .pagina-papiro .portal-btn-meet:hover{background:transparent!important
 .pagina-papiro .portal-abas+.portal-cartao,.pagina-papiro .portal-abas+div .portal-cartao:first-child{border-top:0!important;padding-top:6px!important}
 /* linha de lista que abre ao tocar (lista de alunos): sem botão, o nome muda de cor com o mouse */
 .pagina-papiro .portal-item-clicavel{cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
-.pagina-papiro .portal-item-clicavel:hover .portal-item-titulo,.pagina-papiro .portal-item-clicavel:focus-visible .portal-item-titulo{color:#A03E25}
+.pagina-papiro .portal-item-clicavel:hover .portal-item-titulo,.pagina-papiro .portal-item-clicavel:focus-visible .portal-item-titulo{color:var(--terracota,#A03E25)}
 
 /* Apagar/Excluir/Remover: sempre discreto (texto pequeno, apagado, sublinhado). Regra do astrólogo, vale para qualquer tela nova. */
-html body .pagina-papiro .portal-apagar,html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-baixar,html body .pagina-papiro .portal-baixar:hover{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:6px 4px!important;color:#16233F!important;font-size:12px!important;text-decoration:underline!important;font-family:var(--fonte-titulo)!important;text-transform:lowercase!important;letter-spacing:0!important;font-weight:400!important;transform:none!important}
+html body .pagina-papiro .portal-apagar,html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-baixar,html body .pagina-papiro .portal-baixar:hover{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:6px 4px!important;color:var(--preto-tinta,#16233F)!important;font-size:12px!important;text-decoration:underline!important;font-family:var(--fonte-titulo)!important;text-transform:lowercase!important;letter-spacing:0!important;font-weight:400!important;transform:none!important}
 html body .pagina-papiro .portal-apagar,html body .pagina-papiro .portal-baixar{opacity:.6}
 html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-baixar:hover{opacity:.9}
 
@@ -305,20 +305,20 @@ html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-b
 .pagina-papiro .portal-abas-rola .portal-abas::after{display:none}
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-top:0!important;padding-top:0!important;margin:0!important}
 /* linha DIVIDINDO uma coisa da outra dentro da aba: uma só, no fim de cada cartão (inclusive o último, que encerra), nunca duas coladas */
-.pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-bottom:2px solid #1F5FA3!important;padding-bottom:18px!important;margin-bottom:18px!important}
+.pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;padding-bottom:18px!important;margin-bottom:18px!important}
 
 .pagina-papiro .engrenagem{font-size:2em;line-height:.5;vertical-align:-.14em;display:inline-block}
 
 /* REGRA DO SITE (28/10/2026): tudo que ABRE (sanfona, formulário ou cartão que aparece ao tocar) leva uma barra ocre só do lado esquerdo, de cima até embaixo, para a pessoa não se perder sem saber onde termina */
 .pagina-papiro .barra-ocre{margin:8px 0}
-.pagina-papiro .barra-ocre:not(:empty),.pagina-papiro .sanfona-corpo{border-left:5px solid #B5852F;padding-left:12px}
+.pagina-papiro .barra-ocre:not(:empty),.pagina-papiro .sanfona-corpo{border-left:5px solid var(--ocre,#B5852F);padding-left:12px}
 .pagina-papiro .barra-ocre .portal-cartao,.pagina-papiro .sanfona-corpo>.portal-cartao{border-top:0!important;border-bottom:0!important;padding-top:4px!important;padding-bottom:4px!important;margin:0!important}
 
 /* datas: uma linha, nome pequenininho embaixo da caixa (e o "Tirar a data" junto do nome) */
 .pagina-papiro .data-linha{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 22px;margin-top:10px}
 .pagina-papiro .data-coluna{display:flex;flex-direction:column;align-items:flex-start;gap:0;min-width:0}
 .pagina-papiro .data-legenda{display:flex;align-items:center;flex-wrap:wrap;gap:0 10px;min-height:22px}
-.pagina-papiro .data-legenda-nome{font-size:12px;line-height:1.3;color:#16233F;opacity:.6;font-family:var(--fonte-mao,inherit);text-transform:none;letter-spacing:0;font-weight:400;padding:2px 0}
+.pagina-papiro .data-legenda-nome{font-size:12px;line-height:1.3;color:var(--preto-tinta,#16233F);opacity:.6;font-family:var(--fonte-mao,inherit);text-transform:none;letter-spacing:0;font-weight:400;padding:2px 0}
 .pagina-papiro .data-legenda .portal-apagar{padding:2px 0!important}
 
 /* painel do administrador: os 4 botões do site (Blog, Alunos, Cássio, Serviços) são trocados pela barra de abas do painel; escondidos já na primeira pintura para não piscar a cada troca de aba (o espaço fica reservado) */
@@ -328,20 +328,20 @@ html.fda-admin-tela .pagina-papiro .cab-papiro>.cab-nav{visibility:hidden}
 html.fda-admin-tela .pagina-papiro #app>.portal-cartao:first-child{border-top:0!important}
 
 /* rótulos fixos da lista de um projeto (Próximo passo, Depois, Feitos): Cinzel e ocre (são do site, não escritos por ele) */
-.pagina-papiro .proj-grupo{color:#B5852F!important}
+.pagina-papiro .proj-grupo{color:var(--ocre,#B5852F)!important}
 
 /* REGRA DO SITE INTEIRO (03/11/2026, dele): botão que é só a palavra (azul) leva SUBLINHADO, senão não parece botão */
 html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*),
 html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats){text-decoration:underline!important;text-decoration-thickness:2px!important;text-underline-offset:5px!important}
 
 /* BOTÃO NÃO MUDA NO HOVER (03/11/2026, ordem dele): passar o cursor não troca cor, fonte, tamanho nem forma de nenhum botão */
-html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*):hover,html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{color:#1034A6!important}
-html body .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn):hover{background:#A03E25!important}
-html body .pagina-papiro .portal-btn-meet:hover{color:#16233F!important}
+html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*):hover,html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{color:var(--azul-egipcio-escuro,#1034A6)!important}
+html body .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn):hover{background:var(--terracota,#A03E25)!important}
+html body .pagina-papiro .portal-btn-meet:hover{color:var(--preto-tinta,#16233F)!important}
 html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-baixar:hover{opacity:.6!important}
 html body .pagina-papiro .portal-btn-sec:not(.portal-grupo>*):hover,html body .pagina-papiro .portal-item-linha .portal-btn.portal-btn:not(.portal-btn-meet):not(.portal-btn-whats):hover{padding:6px 14px 6px 0!important}
 html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-baixar:hover{padding:6px 4px!important}
 html body .pagina-papiro .data-legenda .portal-apagar,html body .pagina-papiro .data-legenda .portal-apagar:hover{padding:2px 0!important}
-.pagina-papiro .portal-topo .portal-grupo>*:hover{border-width:0 0 0 2px!important;padding:9px 14px!important;color:#1034A6!important}
+.pagina-papiro .portal-topo .portal-grupo>*:hover{border-width:0 0 0 2px!important;padding:9px 14px!important;color:var(--azul-egipcio-escuro,#1034A6)!important}
 .pagina-papiro .portal-topo .portal-grupo>*:first-child:hover{border-left-width:0!important}
-.pagina-papiro .portal-topo .portal-grupo>[aria-current="page"]:hover{color:#B5852F!important}
+.pagina-papiro .portal-topo .portal-grupo>[aria-current="page"]:hover{color:var(--ocre,#B5852F)!important}

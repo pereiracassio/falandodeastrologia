@@ -100,8 +100,8 @@
   /* botão de opção (no lugar da bolinha nativa) */
   function botaoOpcao(texto, marcada, aoClicar) {
     var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
-    b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:#16233F;font:inherit;font-size:16px;cursor:pointer;border-radius:8px;margin:0 0 8px;' +
-      (marcada ? 'border:3px solid #1F5FA3;padding:10px 12px' : 'border:1px solid #1F5FA3;padding:12px');
+    b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:var(--preto-tinta,#16233F);font:inherit;font-size:16px;cursor:pointer;border-radius:8px;margin:0 0 8px;' +
+      (marcada ? 'border:3px solid var(--azul-egipcio-claro,#1F5FA3);padding:10px 12px' : 'border:1px solid var(--azul-egipcio-claro,#1F5FA3);padding:12px');
     if (aoClicar) b.addEventListener('click', aoClicar); else b.style.cursor = 'default';
     return b;
   }
@@ -139,7 +139,7 @@
     urlAssinada(caminho).then(function (url) {
       caixa.textContent = '';
       if (!url) { caixa.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a imagem agora.' })); return; }
-      var img = el('img', { src: url, alt: 'Mapa da atividade', style: 'display:block;width:100%;height:auto;border:1px solid #1F5FA3;border-radius:8px' });
+      var img = el('img', { src: url, alt: 'Mapa da atividade', style: 'display:block;width:100%;height:auto;border:1px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:8px' });
       caixa.appendChild(el('a', { href: url, target: '_blank', rel: 'noopener' }, [img]));
       caixa.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:6px', text: 'Toque na imagem para ver em tamanho grande.' }));
     });
@@ -376,7 +376,7 @@
       corpo.appendChild(cab);
 
       d.perguntas.forEach(function (p, i) {
-        var cartao = el('div', { class: 'portal-cartao' }, [el('p', { text: (i + 1) + '. ' + p.enunciado, style: 'font-weight:700;color:#16233F' })]);
+        var cartao = el('div', { class: 'portal-cartao' }, [el('p', { text: (i + 1) + '. ' + p.enunciado, style: 'font-weight:700;color:var(--preto-tinta,#16233F)' })]);
         var r = respostas[p.id] = respostas[p.id] || { texto: '', opcao: null };
         if (p.tipo === 'multipla') {
           var caixaOpcoes = el('div');
@@ -872,7 +872,7 @@
         d.perguntas.forEach(function (p, i) {
           var r = d.respostas[p.id] || {};
           var c = d.correcoes[p.id] || {};
-          var cx = el('div', { class: 'portal-cartao' }, [el('p', { style: 'font-weight:700;color:#16233F', text: (i + 1) + '. ' + p.enunciado })]);
+          var cx = el('div', { class: 'portal-cartao' }, [el('p', { style: 'font-weight:700;color:var(--preto-tinta,#16233F)', text: (i + 1) + '. ' + p.enunciado })]);
           if (p.tipo === 'multipla') {
             var certa = d.gabarito[p.id] ? d.gabarito[p.id].correta : null;
             (p.opcoes || []).forEach(function (op, k) {
