@@ -6,7 +6,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/icone-daily-180.png?v=1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=3"></script>
+  <script src="tema.js?v=4"></script>
   <meta name="theme-color" content="#e6d3a0">
   <!-- instalável na tela inicial (iPhone/iPad: Compartilhar > Adicionar à Tela de Início): abre em tela cheia, direto na Produção -->
   <link rel="manifest" href="manifest-daily.json">
@@ -21,11 +21,11 @@
   <link rel="stylesheet" href="temas.css?v=1">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=85">
-  <link rel="stylesheet" href="portal.css?v=29">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=30">
   <link rel="stylesheet" href="tema-paginas.css?v=4">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=36">
+  <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
     .prod-vt-topo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:0 0 10px}
     .prod-vt{display:flex}
@@ -39,7 +39,7 @@
     .rotulo-ocre{color:var(--ocre,#B5852F)!important;font-size:15px!important;text-transform:lowercase;letter-spacing:.04em} /* nomes que já vêm prontos (Roteiro, Gancho, Bloco N, Conclusão): Cinzel em ocre */
     .prod-rotulo{display:block;font-size:13px;color:var(--preto-tinta,#16233F);letter-spacing:.04em;margin:0 0 4px}
     .prod-grupo{margin:0 0 6px;font-size:18px;font-weight:700;color:var(--terracota,#A03E25)}
-    .prod-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)}
+    .prod-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 70%,transparent)}
     .prod-linha:last-child{border-bottom:0}
     .prod-titulo{font-weight:700;color:var(--preto-tinta,#16233F);font-size:15px}
     .prod-sub{display:block;font-size:13px;color:var(--terracota,#A03E25)}
@@ -67,7 +67,7 @@
     .prod-fila :is(input,select){height:46px}
     @media(max-width:560px){.prod-fila{grid-template-columns:1fr!important}}
     .prod-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px}
-    .prod-corte{border-bottom:1px solid rgba(31,95,163,.7);padding:10px 0}
+    .prod-corte{border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 70%,transparent);padding:10px 0}
     .prod-corte input{margin-bottom:8px}
     .prod-corte-topo{display:grid;grid-template-columns:1fr 160px;gap:0 10px}
     @media(max-width:560px){.prod-corte-topo{grid-template-columns:1fr}}
@@ -92,8 +92,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=156"></script>
-  <script src="menu.js?v=61" defer></script>
+  <script src="portal.js?v=157"></script>
+  <script src="menu.js?v=62" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');

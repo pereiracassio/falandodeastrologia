@@ -6,7 +6,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/icone-daily-180.png?v=1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=3"></script>
+  <script src="tema.js?v=4"></script>
   <link rel="manifest" href="manifest-daily.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -20,11 +20,11 @@
   <link rel="stylesheet" href="temas.css?v=1">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=85">
-  <link rel="stylesheet" href="portal.css?v=29">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=30">
   <link rel="stylesheet" href="tema-paginas.css?v=4">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=36">
+  <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
     /* tela do Financeiro: mesma ideia do Astro Hellenic (total em destaque, áreas com porcentagem, lista de linhas), nas regras do site:
        sem fundo nem canto redondo, contorno azul egípcio, Cinzel no que é fixo e letra à mão no que a pessoa escreve */
@@ -34,11 +34,11 @@
     .fin-mes-nome{font-size:18px;font-weight:700;color:var(--terracota,#A03E25);text-align:center}
     .fin-rotulo{font-size:13px;color:var(--preto-tinta,#16233F);letter-spacing:.04em}
     .fin-total{font-size:30px;font-weight:700;color:var(--terracota,#A03E25);margin:2px 0 10px}
-    .fin-area{display:flex;justify-content:space-between;gap:12px;font-size:15px;padding:6px 0;border-bottom:1px solid rgba(31,95,163,.8);color:var(--preto-tinta,#16233F)}
+    .fin-area{display:flex;justify-content:space-between;gap:12px;font-size:15px;padding:6px 0;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 80%,transparent);color:var(--preto-tinta,#16233F)}
     .fin-area:last-of-type{border-bottom:0}
     .fin-pct{opacity:.75}
     .fin-area strong{color:var(--azul-egipcio-escuro,#1034A6);font-size:14px}
-    .fin-linha{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(31,95,163,.8);cursor:pointer}
+    .fin-linha{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 80%,transparent);cursor:pointer}
     .fin-linha:hover .fin-nome{color:var(--terracota,#A03E25)}
     .fin-data{font-size:12px;opacity:.85}
     .fin-nome{font-size:16px;font-weight:700;color:var(--azul-egipcio-escuro,#1034A6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -80,8 +80,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=156"></script>
-  <script src="menu.js?v=61" defer></script>
+  <script src="portal.js?v=157"></script>
+  <script src="menu.js?v=62" defer></script>
   <script src="carrinho.js?v=6"></script>
   <script>
   (function () {
@@ -250,7 +250,7 @@
     /* ---------- GRÁFICOS (SVG feito aqui, sem biblioteca) ----------
        Cores = a paleta de época do Astro Hellenic (temas.css): azul egípcio, terracota, ocre e verde, na ordem das áreas (a cor segue a área,
        nunca a posição no gráfico). A 5ª área em diante e "Sem área" saem em cinza. Quadrados, sem canto redondo, sem fundo (o papiro aparece). */
-    var PALETA_AREAS = [FdaTema.cor('azul-egipcio-claro'), FdaTema.cor('terracota'), FdaTema.cor('ocre'), '#4A7C59'], COR_CINZA = '#6B7780', COR_TEXTO = FdaTema.cor('preto-tinta'), COR_LINHA = FdaTema.cor('azul-egipcio-claro');
+    var PALETA_AREAS = [FdaTema.cor('azul-egipcio-claro'), FdaTema.cor('terracota'), FdaTema.cor('ocre'), FdaTema.cor('verde')], COR_CINZA = FdaTema.cor('cinza'), COR_TEXTO = FdaTema.cor('preto-tinta'), COR_LINHA = FdaTema.cor('azul-egipcio-claro');
     var MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     var SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -379,7 +379,7 @@
       entradasDoEscopo().forEach(function (e) { var k = String(e.cliente_nome || '').trim() || 'Sem cliente'; tot[k] = (tot[k] || 0) + Number(e.valor || 0); soma += Number(e.valor || 0); });
       var ks = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; });
       if (!(soma > 0)) { caixa.appendChild(vazio('Nenhuma entrada neste período.')); return caixa; }
-      var CORES = [FdaTema.cor('azul-egipcio-claro'), FdaTema.cor('terracota'), FdaTema.cor('ocre'), '#4A7C59', FdaTema.cor('azul-egipcio-escuro'), '#7D2F1A', '#8A6A22', '#2F5D46'];
+      var CORES = [FdaTema.cor('azul-egipcio-claro'), FdaTema.cor('terracota'), FdaTema.cor('ocre'), FdaTema.cor('verde'), FdaTema.cor('azul-egipcio-escuro'), '#7D2F1A', '#8A6A22', '#2F5D46'];
       var fatias = ks.slice(0, 8).map(function (k, i) { return { nome: k, v: tot[k], cor: CORES[i % CORES.length] }; });
       if (ks.length > 8) fatias.push({ nome: 'Outros (' + (ks.length - 8) + ')', v: ks.slice(8).reduce(function (t, k) { return t + tot[k]; }, 0), cor: COR_CINZA, outros: true });
       function rotuloCurto(f) {

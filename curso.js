@@ -49,7 +49,7 @@
       caixa.appendChild(el('h2', { text: rs[0].data.titulo }));
       modulos.forEach(function (mo) {
         var aberto = mo.ordem <= m.modulo_liberado;
-        var tit = el('p', { class: 'proj-titulo', style: 'margin:0 0 6px;font-weight:700;color:' + (aberto ? FdaTema.cor('terracota') : '#16233F;opacity:.55'), text: (aberto ? '' : '🔒 ') + 'Módulo ' + mo.ordem + ' · ' + mo.titulo });
+        var tit = el('p', { class: 'proj-titulo', style: 'margin:0 0 6px;font-weight:700;color:' + (aberto ? FdaTema.cor('terracota') : 'var(--preto-tinta,#16233F);opacity:.55'), text: (aberto ? '' : '🔒 ') + 'Módulo ' + mo.ordem + ' · ' + mo.titulo });
         var bloco = el('div', { style: 'margin:0 0 18px;padding:0 0 12px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' }, [tit]);
         if (aberto) {
           if (mo.apostila_nome) bloco.appendChild(el('p', { style: 'margin:0 0 8px', text: 'Apostila: ' + mo.apostila_nome }));

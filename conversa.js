@@ -22,9 +22,9 @@
       '.balao-eu::before{right:-10px;border-top:1.5px solid ' + OCRE + ';background:linear-gradient(to bottom right,transparent calc(50% - .75px),' + OCRE + ' calc(50% - .75px),' + OCRE + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
       '.balao-outro::before{left:-10px;border-top:1.5px solid ' + AZUL_ESCURO + ';background:linear-gradient(to bottom left,transparent calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
       '.balao p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;font-family:"AstroIcones","Architects Daughter",cursive}' +
-      '.balao-rodape{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;font:400 11px "Architects Daughter",cursive;color:rgba(22,35,63,.62)}' +
+      '.balao-rodape{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;font:400 11px "Architects Daughter",cursive;color:color-mix(in srgb,var(--preto-tinta,#16233F) 62%,transparent)}' +
       '.aviso-card{align-self:center;display:flex;align-items:center;gap:8px;max-width:90%;margin:0 0 10px;padding:6px 10px;border:1px solid ' + AZUL + ';border-radius:0;background:transparent;cursor:pointer;font:400 14px/1.35 "Architects Daughter",cursive;color:var(--preto-tinta,#16233F)}' +
-      '.aviso-card img{width:22px;height:22px;flex:0 0 auto}.aviso-card small{flex:0 0 auto;font-size:11px;color:rgba(22,35,63,.62)}' +
+      '.aviso-card img{width:22px;height:22px;flex:0 0 auto}.aviso-card small{flex:0 0 auto;font-size:11px;color:color-mix(in srgb,var(--preto-tinta,#16233F) 62%,transparent)}' +
       '.aviso-fixo{position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:85;width:min(92vw,560px);box-sizing:border-box;background:var(--papiro-fundo-simples);border:1.5px solid ' + AZUL_ESCURO + ';border-radius:0;padding:4px 10px;max-height:50vh;overflow-y:auto}' +
       '.aviso-fixo .aviso-card{max-width:100%;margin:6px 0;border:0;padding:4px 0;align-self:stretch}.aviso-fixo .mais{font:700 12px "Cinzel",serif;text-transform:lowercase;color:' + AZUL_ESCURO + ';cursor:pointer;padding:0 0 6px}' +
       '.dia-conversa{align-self:center;margin:6px 0 12px;font:700 12px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;color:' + AZUL_ESCURO + '}';
@@ -35,7 +35,7 @@
   function tracinhos(lido) {
     var svg = document.createElementNS(SVG, 'svg'); svg.setAttribute('width', lido ? '19' : '14'); svg.setAttribute('height', '10'); svg.setAttribute('viewBox', lido ? '0 0 19 10' : '0 0 14 10'); svg.setAttribute('aria-label', lido ? 'Lida' : 'Enviada');
     [lido ? 'M1 5.5 L4.5 9 L12 1.5' : 'M1 5.5 L5 9 L13 1', 'M6.5 8.5 L7.8 9 L17.5 1.5'].slice(0, lido ? 2 : 1).forEach(function (d) {
-      var pth = document.createElementNS(SVG, 'path'); pth.setAttribute('d', d); pth.setAttribute('fill', 'none'); pth.setAttribute('stroke', lido ? AZUL_ESCURO : 'rgba(22,35,63,.55)');
+      var pth = document.createElementNS(SVG, 'path'); pth.setAttribute('d', d); pth.setAttribute('fill', 'none'); pth.setAttribute('stroke', lido ? AZUL_ESCURO : 'color-mix(in srgb,var(--preto-tinta,#16233F) 55%,transparent)');
       pth.setAttribute('stroke-width', '1.6'); pth.setAttribute('stroke-linecap', 'round'); pth.setAttribute('stroke-linejoin', 'round'); svg.appendChild(pth);
     });
     return svg;

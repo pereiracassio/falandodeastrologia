@@ -18,12 +18,12 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     function estilos() {
       if (document.getElementById('janela-site-css')) return;
       var st = document.createElement('style'); st.id = 'janela-site-css';
-      st.textContent = '.janela-fundo{position:fixed;inset:0;z-index:100000;background:rgba(22,35,63,.55);display:flex;align-items:center;justify-content:center;padding:20px}' +
+      st.textContent = '.janela-fundo{position:fixed;inset:0;z-index:100000;background:color-mix(in srgb,var(--preto-tinta,#16233F) 55%,transparent);display:flex;align-items:center;justify-content:center;padding:20px}' +
         '.janela-caixa{position:relative;width:100%;max-width:440px;background:var(--papiro-fundo-simples);padding:var(--moldura-pv) var(--moldura-ph);box-sizing:border-box;text-align:center;border-radius:0}' +
         '.janela-texto{margin:0 0 18px;font:400 17px/1.5 "Architects Daughter",cursive;color:var(--preto-tinta,#16233F);white-space:pre-line;overflow-wrap:anywhere;hyphens:none}' +
         '.janela-acoes{display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap}' +
         '.janela-acoes button{font:700 14px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;border-radius:0;cursor:pointer;white-space:nowrap;min-height:0}' +
-        '.janela-ok{background:var(--terracota,#A03E25);color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:#7d2f1a}' +
+        '.janela-ok{background:var(--terracota,#A03E25);color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:color-mix(in srgb,var(--terracota,#A03E25) 78%,black)}' +
         '.janela-nao{background:transparent;color:var(--azul-egipcio-escuro,#1034A6);border:0;padding:10px 6px}.janela-nao:hover{color:var(--preto-tinta,#16233F)}' +
         '.janela-campo{display:block;width:100%;box-sizing:border-box;margin:0 0 18px;padding:9px 10px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)!important;border-radius:0!important;background:transparent!important;color:var(--preto-tinta,#16233F);font:400 17px "Architects Daughter",cursive;min-height:0;outline:none;box-shadow:none}.janela-campo:focus{outline:none;border-width:2px!important;padding:8px 9px}';
       document.head.appendChild(st);
@@ -228,7 +228,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     var carregouAlguma = false;
     var aspas = function (t) { return String(t).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); };
     function linha(texto, extras) {
-      var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
+      var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 70%,transparent)';
       l.appendChild(texto); if (extras) l.appendChild(extras);
       return l;
     }
@@ -1084,7 +1084,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       lista.textContent = '';
       if (!achados.length) { lista.style.display = 'none'; return; }
       achados.forEach(function (i) {
-        var l = el('div', { text: i.rotulo, style: 'padding:10px 4px;border-bottom:1px solid rgba(31,95,163,.5);cursor:pointer;font-size:16px;font-weight:700' });
+        var l = el('div', { text: i.rotulo, style: 'padding:10px 4px;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 50%,transparent);cursor:pointer;font-size:16px;font-weight:700' });
         l.addEventListener('pointerdown', function (ev) { ev.preventDefault(); aoEscolher(i); fechar(); });
         lista.appendChild(l);
       });

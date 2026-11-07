@@ -26,7 +26,7 @@
     if (escuroDoAparelho.addEventListener) escuroDoAparelho.addEventListener('change', mudou); else if (escuroDoAparelho.addListener) escuroDoAparelho.addListener(mudou);
   }
   function gravar(a, t) { try { localStorage.setItem(chave(a), t); } catch (e) { /* sem armazenamento */ } if (a === app()) aplicar(t); }
-  var PADRAO = { 'azul-egipcio-escuro': '#1034A6', 'azul-egipcio-claro': '#1F5FA3', terracota: '#A03E25', ocre: '#B5852F', 'preto-tinta': '#16233F', 'fundo-creme': '#FFFDF5' };
+  var PADRAO = { 'azul-egipcio-escuro': '#1034A6', 'azul-egipcio-claro': '#1F5FA3', terracota: '#A03E25', ocre: '#B5852F', 'preto-tinta': '#16233F', 'fundo-creme': '#FFFDF5', verde: '#4A7C59', cinza: '#6B7780' };
   /* a cor de agora do tema, pra quem precisa do valor em si (desenho, cálculo de contraste) e não de var() */
   function cor(nome) {
     try { var v = getComputedStyle(document.documentElement).getPropertyValue('--' + nome).trim(); if (v) return v; } catch (e) { /* sem estilo */ }

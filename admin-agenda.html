@@ -6,7 +6,7 @@
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/icone-daily-180.png?v=1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=3"></script>
+  <script src="tema.js?v=4"></script>
   <link rel="manifest" href="manifest-daily.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -20,11 +20,11 @@
   <link rel="stylesheet" href="temas.css?v=1">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=85">
-  <link rel="stylesheet" href="portal.css?v=29">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=30">
   <link rel="stylesheet" href="tema-paginas.css?v=4">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=36">
+  <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
     /* como no Google Agenda: as visões e a navegação ficam presas no topo e a agenda corre por baixo */
     /* overflow-x:hidden do home.css faz o body virar "caixa de rolagem" e o sticky não gruda; clip corta igual, sem isso */
@@ -58,8 +58,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=156"></script>
-  <script src="menu.js?v=61" defer></script>
+  <script src="portal.js?v=157"></script>
+  <script src="menu.js?v=62" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
   (function () {
@@ -330,7 +330,7 @@
     /* abre no lugar onde ele está (nunca leva para o topo): uma folha por cima da tela, que some sozinha quando o conteúdo é fechado ou salvo */
     function abrirFolha() {
       var antiga = document.getElementById('folha-agenda'); if (antiga) antiga.remove();
-      var fundo = el('div', { id: 'folha-agenda', style: 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:99990;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:84px 10px 4vh;box-sizing:border-box;background:rgba(22,35,63,.35);display:flex;flex-direction:column' });
+      var fundo = el('div', { id: 'folha-agenda', style: 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:99990;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:84px 10px 4vh;box-sizing:border-box;background:color-mix(in srgb,var(--preto-tinta,#16233F) 35%,transparent);display:flex;flex-direction:column' });
       var corpo = el('div', { class: 'barra-ocre', style: 'width:100%;max-width:600px;margin:auto;box-sizing:border-box;border:2px solid var(--azul-egipcio-claro);border-left:6px solid var(--ocre);padding:4px 14px 14px;background:var(--papiro-fundo-simples,#e6d3a0)' });
       fundo.appendChild(corpo); app.appendChild(fundo);
       var obs = new MutationObserver(function () { if (!corpo.firstChild) { obs.disconnect(); fundo.remove(); } });
@@ -434,7 +434,7 @@
       }).then(function () {}, function () {});
     }
     function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
-    var linhaFina = '1px solid rgba(31,95,163,.35)';
+    var linhaFina = '1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 35%,transparent)';
     /* o ícone ocre do Meet (o mesmo da página do aluno), pequeno, na frente do título */
     function marcaMeet(px) { return el('img', { src: 'img/rede-meet.svg', alt: 'Meet', width: String(px), height: String(px), style: 'vertical-align:middle;margin-right:3px' }); }
     function bloco(texto, estilo) { var d = el('div', { text: texto }); d.style.cssText = estilo; return d; }
@@ -651,7 +651,7 @@
       }
       isos.forEach(function (iso, di) {
         var d0 = doIso(iso), d1 = d0 + DIA, segs = todos[di];
-        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + H + 'px)' });
+        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 30%,transparent) ' + (H - 1) + 'px,color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 30%,transparent) ' + H + 'px)' });
         if (di === isos.length - 1) col.style.borderRight = linhaFina; /* a última coluna fecha a grade do lado direito */
         if (!unico) segs.forEach(function (s, k) { /* na semana cada coluna tem o seu ícone e hora, no cantinho da linha */
           var m = el('div', { style: 'position:absolute;left:2px;top:' + (k * H + 2) + 'px;display:flex;align-items:center;gap:2px;font-size:9px;color:var(--preto-tinta);opacity:.7;pointer-events:none' });
