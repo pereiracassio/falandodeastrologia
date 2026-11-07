@@ -986,7 +986,7 @@
         prepararImagem(arq).then(function (blob) { capaNova = blob; capaUrl = URL.createObjectURL(blob); mostrarCapa(); enviarCapaAgora(); })
           .catch(function () { P.mensagem(msg, 'Não consegui ler essa imagem. Tente outra (JPEG ou PNG).', 'erro'); });
       });
-      cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Foto da capa (a mesma que vai para o blog)' }));
+      cartao.appendChild(el('span', { class: 'prod-rotulo prod-fixo', text: 'Capa' }));
       cartao.appendChild(previa);
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin-bottom:14px;align-items:center;gap:22px' }, [botImg, botTirar, escolher]));
       mostrarCapa();
