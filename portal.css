@@ -101,7 +101,7 @@ textarea.escrita-livre:focus{outline:none}
 .portal select:focus{outline:none;border:0;border-bottom:2px solid var(--terracota,#A03E25);padding:8px 2px}
 
 /* barra de etapas com a data de cada etapa por cima (portal.barraComDatas): duas linhas, uma coluna por etapa */
-.prod-seg.com-datas{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;grid-auto-columns:minmax(max-content,1fr);border:0;overflow-x:auto;align-items:end}
+.prod-seg.com-datas{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;grid-auto-columns:minmax(max-content,1fr);border:0;overflow-x:auto;overflow-y:hidden;align-items:end}
 .prod-seg.com-datas .prod-data-cel{display:flex;justify-content:center;min-width:0;padding:0 4px}
 .prod-seg.com-datas .prod-data-cel .data-caderno{margin:0 0 2px;min-height:26px}
 .prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:11px;line-height:26px;gap:2px}
