@@ -1259,8 +1259,8 @@
           el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c, true), tirar]),
           faltaSeoCorte,
           caixaFotosC,
-          campo('Texto do corte', tx, function () { return tx.value; }),
-          campo('Tags do YouTube Shorts', tg, function () { return tg.value.trim(); }),
+          campo('Texto', tx, function () { return tx.value; }),
+          campo('Tags', tg, function () { return tg.value.trim(); }),
           jupC
         ]);
         ce.appendChild(editor); editores[c.id] = editor;
