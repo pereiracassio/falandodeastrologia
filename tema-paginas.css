@@ -30,3 +30,8 @@
 }
 /* barra de TEMPO no Sulfite: os vãos de caneta por cima do degradê */
 :root.tema-sulfite .preench.tempo { background-image: var(--tinta-vaos), var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25))  !important; background-size: 200px 200px, var(--tw) 100% !important; background-repeat: repeat, no-repeat !important; }
+
+/* Sulfite: o texto do botão preenchido é VAZADO (branco, a cor do papel), nunca o creme dourado do papiro */
+:root.tema-sulfite .pagina-papiro .portal-btn:not(.portal-btn-sec):not(.portal-btn-perigo):not(.portal-btn-meet):not(.portal-btn-whats):not(.portal-item-linha .portal-btn),
+:root.tema-sulfite .pagina-papiro .folha-pagina a[href*="carrinho.html"],
+:root.tema-sulfite .checkout .btn-pay { color: var(--vazado, #FFFFFF) !important; }
