@@ -28,3 +28,5 @@
 :root.tema-sulfite i.preench {
   background-image: var(--tinta-vaos) !important; background-size: 200px 200px;
 }
+/* barra de TEMPO no Sulfite: os vãos de caneta por cima do degradê */
+:root.tema-sulfite i.preench.tempo { background-image: var(--tinta-vaos), var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25))  !important; background-size: 200px 200px, var(--tw) 100% !important; background-repeat: repeat, no-repeat !important; }

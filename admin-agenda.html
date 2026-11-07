@@ -17,13 +17,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="temas.css?v=4">
+  <link rel="stylesheet" href="temas.css?v=5">
   <script src="moldura.js?v=1"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=86">
   <link rel="stylesheet" href="portal.css?v=31">
-  <link rel="stylesheet" href="tema-paginas.css?v=5">
+  <link rel="stylesheet" href="tema-paginas.css?v=6">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
@@ -59,7 +59,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=158"></script>
+  <script src="portal.js?v=159"></script>
   <script src="menu.js?v=63" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
@@ -1370,9 +1370,9 @@
       var f = Math.max(0, Math.min(1, (agora - ini) / (fim - ini))), cor = corTempo(f), pct = agora >= fim ? 100 : Math.floor(f * 100);
       var total = unidade === 'horas' ? Math.round((fim - ini) / 3600000 * 2) / 2 : Math.round((fim - ini) / 60000 * 2) / 2;
       var passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
-      if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade);
+      if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade, true);
       return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px;color:' + cor }, [el('span', { text: pct + '%', style: 'flex:none;min-width:34px;font-weight:700' }),
-        el('div', { style: 'flex:1;height:4px;border:1px solid ' + cor }, [el('i', { class: 'preench', style: 'display:block;height:100%;width:' + pct + '%;background:' + cor })]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, style: 'flex:none;white-space:nowrap' })]);
+        el('div', { style: 'flex:1;height:4px;border:1px solid ' + cor }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, style: 'flex:none;white-space:nowrap' })]);
     }
     function cabecalhoHoras() {
       var caixa = el('div', { class: 'cab-horas' });

@@ -18,13 +18,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="temas.css?v=4">
+  <link rel="stylesheet" href="temas.css?v=5">
   <script src="moldura.js?v=1"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=86">
   <link rel="stylesheet" href="portal.css?v=31">
-  <link rel="stylesheet" href="tema-paginas.css?v=5">
+  <link rel="stylesheet" href="tema-paginas.css?v=6">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
@@ -93,7 +93,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=158"></script>
+  <script src="portal.js?v=159"></script>
   <script src="menu.js?v=63" defer></script>
   <script>
   (function () {
@@ -532,7 +532,7 @@
     /* a barra do tempo é a mesma em todo lugar: "62% [barra] 12/23 dias" (a barra fica sempre, mesmo com o item pronto) */
     function barraTempo(criado, fimISO, pronto) {
       var t = tempoProx(criado, fimISO);
-      return t ? barraProx(t.pct, t.cor, t.texto) : null;
+      return t ? barraProx(t.pct, t.cor, t.texto, true) : null;
     }
     function escolhaAcesso(atual, aoEscolher) {
       var valor = atual === 'membros' ? 'membros' : 'publico', botoes = [];
@@ -638,10 +638,10 @@
     }
     /* PRÓXIMOS: o que ainda não terminou, numa lista só. Vídeo sai quando está no YouTube; corte sai quando está no Instagram e no TikTok.
        Por data (a mais perto primeiro); sem data, depois, do mais pronto para o menos pronto. Tocar na linha abre o lugar certo. */
-    function barraProx(pct, cor, fim) {
+    function barraProx(pct, cor, fim, tempo) {
       return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
         el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
-        el('div', { class: 'prox-barra', style: 'flex:1' }, [el('i', { style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]),
+        el('div', { class: 'prox-barra', style: 'flex:1' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]),
         el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
       ]);
     }
@@ -682,7 +682,7 @@
           el('span', { class: 'prod-sub', text: it.sub }),
           it.corte ? chipsDoCorte(it.corte) : it.video ? chipsDaEtapa(it.video) : barraProx(it.pct, null, it.rotulo)
         ]);
-        if (it.tempo) linha.appendChild(barraProx(it.tempo.pct, it.tempo.cor, it.tempo.texto));
+        if (it.tempo) linha.appendChild(barraProx(it.tempo.pct, it.tempo.cor, it.tempo.texto, true));
         linha.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('button')) return; it.abrir(); });
         linha.addEventListener('keydown', function (e) { if (e.target === linha && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); it.abrir(); } });
         cartao.appendChild(linha);

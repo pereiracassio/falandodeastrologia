@@ -17,13 +17,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="temas.css?v=4">
+  <link rel="stylesheet" href="temas.css?v=5">
   <script src="moldura.js?v=1"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=86">
   <link rel="stylesheet" href="portal.css?v=31">
-  <link rel="stylesheet" href="tema-paginas.css?v=5">
+  <link rel="stylesheet" href="tema-paginas.css?v=6">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
@@ -54,7 +54,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=158"></script>
+  <script src="portal.js?v=159"></script>
   <script src="menu.js?v=63" defer></script>
   <script>
   (function () {
@@ -170,8 +170,8 @@
 
     /* projeto concluído (todos os passos feitos) sai das abas e vai para "Concluídos"; "Reabrir" desmarca o último passo feito e ele volta para as abas */
     /* uma linha da lista: bolinha e nome; embaixo "14% [barra] 1/7" e, se tem prazo, "50% [barra] 12 dias" */
-    function linhaDeBarra(pct, cor, fim) {
-      var barra = el('div', { class: 'proj-barra', style: 'flex:1;margin:0' }, [el('i', { style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
+    function linhaDeBarra(pct, cor, fim, tempo) {
+      var barra = el('div', { class: 'proj-barra', style: 'flex:1;margin:0' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
       return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta);font-size:15px' }, [el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })]);
     }
     /* o tempo do prazo: dias que já passaram sobre o total de dias, com a barra azul, ocre no meio e terracota no fim */
@@ -199,7 +199,7 @@
       cabeca.appendChild(el('span', { class: 'portal-item-titulo', text: p.nome }));
       var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [cabeca, linhaDeBarra(pctProj(p), null, cp.feitos + '/' + cp.total)]);
       var tempo = tempoDoProjeto(p);
-      if (tempo) linha.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
+      if (tempo) linha.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto, true));
       var abrir = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); window.scrollTo(0, 0); };
       linha.addEventListener('click', abrir);
       linha.addEventListener('keydown', function (ev) { if (ev.target === linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(); } });
@@ -350,7 +350,7 @@
       conteudo.appendChild(linhaDeBarra(pct, null, feitos + '/' + cont.total));
       /* prazo opcional: a segunda barra é o tempo que já passou, do dia em que o projeto foi criado até a data final; azul, ocre no meio e terracota no fim */
       var tempo = tempoDoProjeto(proj);
-      if (tempo) conteudo.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
+      if (tempo) conteudo.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto, true));
       if (!leitura) {
         /* data de início: começa no dia em que o projeto foi criado e dá para corrigir para o dia certo; a barra de tempo conta a partir dela */
         var dataIni = el('input', { type: 'date', id: 'projIni', style: 'width:auto' }); dataIni.value = proj.data_inicio || new Date(proj.criado_em).toLocaleDateString('sv-SE');
@@ -399,7 +399,7 @@
       function linhaDoFilho(x, grupo, i) {
         var c = x.filhoProj, k = x.k;
         var textos = [el('span', { class: 'proj-titulo', text: c.nome }), linhaDeBarra(Math.floor(k.feitos * 100 / k.total), null, k.feitos + '/' + k.total)];
-        var tp = tempoDoProjeto(c); if (tp) textos.push(linhaDeBarra(tp.pct, tp.cor, tp.texto));
+        var tp = tempoDoProjeto(c); if (tp) textos.push(linhaDeBarra(tp.pct, tp.cor, tp.texto, true));
         
         var linha = el('div', { class: 'proj-passo' + (x.feito ? ' feito' : ''), role: 'button', tabindex: '0', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:0' }, textos)]);
         var abrir = function () { if (leitura) verConcluido = c.id; else { aberto = c.id; P.estado.gravar({ projeto: aberto }); } desenhar(); window.scrollTo(0, 0); };

@@ -1205,10 +1205,16 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   }
   if (document.body) ligarLinks(); else document.addEventListener('DOMContentLoaded', ligarLinks);
   /* barras de progresso e de tempo, SEMPRE neste desenho: "62% [barra] 12/23 dias" (o tanto de passos ou de dias no fim da linha) */
-  function barraLinha(pct, cor, fim) {
+  /* barra de TEMPO: o degradê azul → ocre → terracota (cores do tema) fica FIXO na barra inteira e o preenchimento só o revela até onde o tempo chegou */
+  function tempoNoPreenchimento(i, pct) {
+    i.classList.add('preench', 'tempo'); i.style.setProperty('--tw', (pct > 0 ? 10000 / pct : 100).toFixed(2) + '%');
+    i.style.background = 'var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25)) 0 0 / var(--tw) 100% no-repeat';
+    return i;
+  }
+  function barraLinha(pct, cor, fim, tempo) {
     return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
       el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
-      el('div', { style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('i', { class: 'preench', style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || FdaTema.cor('azul-egipcio-claro')) })]),
+      el('div', { style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [tempo ? tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || FdaTema.cor('azul-egipcio-claro')) })]),
       el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
     ]);
   }
@@ -1221,7 +1227,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
     return { pct: Math.floor(f * 100), cor: 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')', texto: passou + '/' + total + ' dias' };
   }
-  function barraTempoDias(inicio, fimData) { var t = tempoDias(inicio, fimData); return t ? barraLinha(t.pct, t.cor, t.texto) : null; }
+  function barraTempoDias(inicio, fimData) { var t = tempoDias(inicio, fimData); return t ? barraLinha(t.pct, t.cor, t.texto, true) : null; }
   function linhaDatas(colunas) { return el('div', { class: 'data-linha' }, colunas); }
   /* BARRA DE ETAPAS COM DATAS (opcionais): acima de CADA etapa fica um campo de data, sem nada escrito (é a data em que aquela etapa deve estar pronta).
      botoes = os botões de etapa já montados; chaves = a chave de cada etapa (mesma ordem); datas = {chave: 'aaaa-mm-dd'}; salvar(objeto) só grava (nada é redesenhado: o calendário não fecha).
@@ -1530,7 +1536,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias, tempoNoPreenchimento: tempoNoPreenchimento
   };
 
   /* A TELA NÃO PULA (regra dele): quase toda ação redesenha a área #app (esvazia e monta de novo) e o navegador joga a rolagem para o topo. Aqui, uma vez para o site todo:

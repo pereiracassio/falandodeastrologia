@@ -85,3 +85,6 @@
 :root, .paleta-clara { --moldura-contorno: #2B1D12; }
 :root.tema-escuro, .paleta-escura { --moldura-contorno: #E2E8F0; }
 :root.tema-sulfite, .paleta-sulfite { --moldura-contorno: #1C1C1C; }
+
+/* barra de TEMPO: degradê azul → ocre → terracota nas cores do tema (portal.js: tempoNoPreenchimento) */
+:root { --grad-tempo: linear-gradient(to right, var(--azul-egipcio-claro), var(--ocre), var(--terracota)); }
