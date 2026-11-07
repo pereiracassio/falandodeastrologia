@@ -16,6 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="temas.css?v=1">
   <link rel="stylesheet" href="papiro.css?v=4">
   <link rel="stylesheet" href="home.css?v=20">
   <link rel="stylesheet" href="page.css?v=82">
@@ -85,7 +86,7 @@
       String(txt || '').split('\n').forEach(function (linha) {
         if (/^##\s+/.test(linha)) {
           fechar();
-          var h = el('h3', { text: linha.replace(/^##\s+/, '') }); h.style.cssText = 'color:#A03E25;margin:18px 0 6px'; caixa.appendChild(h);
+          var h = el('h3', { text: linha.replace(/^##\s+/, '') }); h.style.cssText = 'color:var(--terracota);margin:18px 0 6px'; caixa.appendChild(h);
         } else if (!linha.trim()) fechar();
         else atual.push(linha);
       });
@@ -94,8 +95,8 @@
     }
     function botaoOpcao(texto, marcada, aoClicar) {
       var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
-      b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:#16233F;font:inherit;font-size:16px;cursor:pointer;border-radius:0;margin:0 0 8px;' +
-        (marcada ? 'border:3px solid #1F5FA3;padding:10px 12px' : 'border:1px solid #1F5FA3;padding:12px');
+      b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:var(--preto-tinta);font:inherit;font-size:16px;cursor:pointer;border-radius:0;margin:0 0 8px;' +
+        (marcada ? 'border:3px solid var(--azul-egipcio-claro);padding:10px 12px' : 'border:1px solid var(--azul-egipcio-claro);padding:12px');
       if (aoClicar) b.addEventListener('click', aoClicar); else b.style.cursor = 'default';
       return b;
     }
@@ -261,7 +262,7 @@
       var desenhar = function () {
         caixa.textContent = '';
         caixa.appendChild(el('span', { class: 'rotulo-fixo', text: 'Apostila' }));
-        var mini = function (t, aoClicar) { var b = el('button', { type: 'button', class: 'proj-mini botao-fixo', text: t }); b.style.cssText = 'background:transparent;border:0;padding:2px 4px;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline'; b.addEventListener('click', aoClicar); return b; };
+        var mini = function (t, aoClicar) { var b = el('button', { type: 'button', class: 'proj-mini botao-fixo', text: t }); b.style.cssText = 'background:transparent;border:0;padding:2px 4px;font-size:13px;color:var(--preto-tinta);opacity:.6;cursor:pointer;text-decoration:underline'; b.addEventListener('click', aoClicar); return b; };
         var escolher = function () {
           garantirPastaEstudos().catch(function () { return null; }).then(function () { P.escolherDoDrive(function (url, id, token) {
             if (/\/folders\//.test(url)) { P.mensagem(aviso, 'Escolha um arquivo PDF, não uma pasta.', 'erro'); return; }
@@ -279,7 +280,7 @@
         };
         if (est.apostila_drive_id) {
           var abrir = el('button', { type: 'button', class: 'prod-titulo', text: est.apostila_nome || 'Apostila' });
-          abrir.style.cssText = 'background:transparent;border:0;padding:0;margin:0;font:inherit;font-size:17px;color:#A03E25;cursor:pointer;text-align:left;text-decoration:underline';
+          abrir.style.cssText = 'background:transparent;border:0;padding:0;margin:0;font:inherit;font-size:17px;color:var(--terracota);cursor:pointer;text-align:left;text-decoration:underline';
           abrir.addEventListener('click', function () { abrirApostila(est, aviso); });
           caixa.appendChild(abrir);
           if (!encerrado) {
@@ -341,7 +342,7 @@
         /* cartão do estudo: nome; barra de progresso da SEMANA (segunda a domingo; sábado e domingo mostram a semana que vem); barra do TEMPO se tiver data final */
         var cartao = el('div', { class: 'portal-cartao' });
         var renomear = el('button', { type: 'button', class: 'botao-fixo', text: 'Renomear' });
-        renomear.style.cssText = 'background:none;border:0;padding:0;color:#1034A6;font:inherit;font-size:13px;font-weight:700;cursor:pointer;display:' + (encerrado ? 'none' : 'inline');
+        renomear.style.cssText = 'background:none;border:0;padding:0;color:var(--azul-egipcio-escuro);font:inherit;font-size:13px;font-weight:700;cursor:pointer;display:' + (encerrado ? 'none' : 'inline');
         renomear.addEventListener('click', function () {
           var n = (prompt('Nome do estudo', est.nome) || '').trim();
           if (!n || n === est.nome) return;
@@ -416,7 +417,7 @@
           corpo.appendChild(cf);
         }
         if (feitas.length) {
-          corpo.appendChild(el('hr', { style: 'border:0;border-top:5px solid #1F5FA3;margin:22px 0 14px' }));
+          corpo.appendChild(el('hr', { style: 'border:0;border-top:5px solid var(--azul-egipcio-claro);margin:22px 0 14px' }));
           var cd = el('div', { class: 'portal-cartao', style: 'opacity:.5' });
           feitas.forEach(function (x) { cd.appendChild(linhaDe(x)); });
           cd.lastChild.style.borderBottom = '0';
@@ -639,7 +640,7 @@
       var ALTURA = 240, PASSO = 200;
       var caixa = el('div', { style: 'margin:10px 0 14px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none' });
       caixa.appendChild(el('p', { class: 'portal-item-data rotulo-fixo', text: 'Espaço para a conta' }));
-      var cv = el('canvas'); cv.style.cssText = 'display:block;width:100%;height:' + ALTURA + 'px;border:1px solid #1F5FA3;background:transparent;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent';
+      var cv = el('canvas'); cv.style.cssText = 'display:block;width:100%;height:' + ALTURA + 'px;border:1px solid var(--azul-egipcio-claro);background:transparent;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent';
       caixa.appendChild(cv);
       var g = cv.getContext('2d'), dpr = Math.max(1, window.devicePixelRatio || 1);
       var larg = 0, alt = ALTURA, borracha = false, desfazer = [], desenhando = false, ultimo = null, espera = null;
@@ -687,7 +688,7 @@
 
       var botao = function (texto, aoClicar) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: texto }); b.addEventListener('click', aoClicar); return b; };
       var bCaneta = botao('Caneta', function () { borracha = false; marcar(); }), bBorracha = botao('Borracha', function () { borracha = true; marcar(); });
-      var marcar = function () { [[bCaneta, !borracha], [bBorracha, borracha]].forEach(function (p) { p[0].style.border = p[1] ? '3px solid #1F5FA3' : ''; }); };
+      var marcar = function () { [[bCaneta, !borracha], [bBorracha, borracha]].forEach(function (p) { p[0].style.border = p[1] ? '3px solid var(--azul-egipcio-claro)' : ''; }); };
       marcar();
       var bDesfazer = botao('Desfazer', function () { var s = desfazer.pop(); if (s) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.putImageData(s, 0, 0); g.restore(); guardar(); } });
       var bMais = botao('Mais espaço', function () {
@@ -729,7 +730,7 @@
         MOTIVOS.forEach(function (m) {
           var marcado = resposta.motivo === m[0];
           var b = el('button', { type: 'button', text: m[1], 'aria-pressed': marcado ? 'true' : 'false' });
-          b.style.cssText = 'display:inline-block;background:transparent;color:#16233F;font:inherit;font-size:14px;cursor:pointer;border-radius:0;margin:0 8px 8px 0;' + (marcado ? 'border:3px solid #1F5FA3;padding:6px 10px' : 'border:1px solid #1F5FA3;padding:8px 12px');
+          b.style.cssText = 'display:inline-block;background:transparent;color:var(--preto-tinta);font:inherit;font-size:14px;cursor:pointer;border-radius:0;margin:0 8px 8px 0;' + (marcado ? 'border:3px solid var(--azul-egipcio-claro);padding:6px 10px' : 'border:1px solid var(--azul-egipcio-claro);padding:8px 12px');
           b.addEventListener('click', function () {
             var novo = marcado ? null : m[0], antigo = resposta.motivo; resposta.motivo = novo; desenhar();
             C.from('estudo_respostas').upsert({ questao_id: q.id, motivo: novo, atualizado_em: new Date().toISOString() }, { onConflict: 'questao_id' }).then(function (x) {
@@ -745,9 +746,9 @@
 
     function cartaoQuestao(q, i, r) {
       var cartao = el('div', { class: 'portal-cartao' });
-      var enun = el('p', { text: (i + 1) + '. ' + q.enunciado }); enun.style.cssText = 'white-space:pre-line;font-weight:700;color:#16233F';
+      var enun = el('p', { text: (i + 1) + '. ' + q.enunciado }); enun.style.cssText = 'white-space:pre-line;font-weight:700;color:var(--preto-tinta)';
       cartao.appendChild(enun);
-      if (q.imagem) { var fig = el('img', { src: q.imagem, alt: 'Figura da questão' }); fig.style.cssText = 'display:block;max-width:100%;height:auto;margin:10px 0 12px;border:1px solid #1F5FA3'; cartao.appendChild(fig); }
+      if (q.imagem) { var fig = el('img', { src: q.imagem, alt: 'Figura da questão' }); fig.style.cssText = 'display:block;max-width:100%;height:auto;margin:10px 0 12px;border:1px solid var(--azul-egipcio-claro)'; cartao.appendChild(fig); }
       var resposta = r || { questao_id: q.id, opcao: null, texto: '' };
       if (q.espaco_conta) cartao.appendChild(quadroConta(q, resposta));
       var area = el('div'); cartao.appendChild(area);
