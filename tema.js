@@ -20,11 +20,29 @@
     atual = t; var e = efetivo(t), r = document.documentElement;
     ['papiro', 'claro', 'escuro', 'sulfite'].forEach(function (x) { r.classList.toggle('tema-' + x, x === e && e !== 'papiro'); });
     r.classList.toggle('tema-papiro', e === 'papiro');
+    if (document.body) imagens();
   }
   if (escuroDoAparelho) {
     var mudou = function () { if (atual === 'automatico') aplicar('automatico'); };
     if (escuroDoAparelho.addEventListener) escuroDoAparelho.addEventListener('change', mudou); else if (escuroDoAparelho.addListener) escuroDoAparelho.addListener(mudou);
   }
+
+  /* imagens com cor própria (logo do cabeçalho e Hermes dos avisos): uma versão por tema, como no Astro Hellenic */
+  var IMG = /(logo-menu(?:-daily)?|hermes-aviso)(?:-escuro|-sulfite)?\.(svg|png)/;
+  function imagens() {
+    var e = efetivo(atual), suf = e === 'escuro' || e === 'sulfite' ? '-' + e : '';
+    var lista = document.querySelectorAll('img[src*="logo-menu"], img[src*="hermes-aviso"]');
+    for (var i = 0; i < lista.length; i++) {
+      var s = lista[i].getAttribute('src'), n = s.replace(IMG, function (m, base, ext) { return base + suf + '.' + ext; });
+      if (n !== s) lista[i].setAttribute('src', n);
+    }
+  }
+  var espera = false;
+  function agendarImagens() { if (espera) return; espera = true; requestAnimationFrame(function () { espera = false; imagens(); }); }
+  document.addEventListener('DOMContentLoaded', function () {
+    imagens();
+    if (window.MutationObserver) new MutationObserver(agendarImagens).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+  });
   function gravar(a, t) { try { localStorage.setItem(chave(a), t); } catch (e) { /* sem armazenamento */ } if (a === app()) aplicar(t); }
   var PADRAO = { 'azul-egipcio-escuro': '#1034A6', 'azul-egipcio-claro': '#1F5FA3', terracota: '#A03E25', ocre: '#B5852F', 'preto-tinta': '#16233F', 'fundo-creme': '#FFFDF5', verde: '#4A7C59', cinza: '#6B7780' };
   /* a cor de agora do tema, pra quem precisa do valor em si (desenho, cálculo de contraste) e não de var() */
