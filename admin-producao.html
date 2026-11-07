@@ -1049,7 +1049,7 @@
         texto.value = texto.value.replace(/\s+$/, '') + fimDescricao(); texto.dispatchEvent(new Event('input'));
       });
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botLinha]));
-      cartao.appendChild(campo('Tags do YouTube', tags, function () { return tags.value.trim(); }));
+      cartao.appendChild(campo('Tags', tags, function () { return tags.value.trim(); }));
       var cCards = campo('Cards', cardsTxt); cCards.firstChild.classList.add('rotulo-ocre');
       cCards.firstChild.appendChild(el('span', { text: ' (um por linha, no máximo 5)', style: 'font-family:var(--fonte-mao);font-size:12px;opacity:.7;color:var(--preto-tinta,#16233F);text-transform:none;letter-spacing:0' }));
       cartao.appendChild(cCards);
