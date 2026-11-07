@@ -11,3 +11,5 @@
     --papiro-fundo-simples: var(--fundo-creme);
 }
 :root.tema-escuro { color-scheme: dark; }
+/* os nomes antigos de cor do site seguem o tema */
+:root.tema-claro, :root.tema-escuro, :root.tema-sulfite { --azul: var(--azul-egipcio-claro); --ouro: var(--ocre); }
