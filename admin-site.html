@@ -6,6 +6,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=7"></script>
   <link rel="manifest" href="manifest-producao.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -16,12 +17,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="papiro.css?v=4">
-  <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=82">
-  <link rel="stylesheet" href="portal.css?v=27">
+  <link rel="stylesheet" href="temas.css?v=5">
+  <script src="moldura.js?v=1"></script>
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=26">
+  <link rel="stylesheet" href="tipografia.css?v=37">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -37,8 +41,8 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=153"></script>
-  <script src="menu.js?v=60" defer></script>
+  <script src="portal.js?v=168"></script>
+  <script src="menu.js?v=64" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -95,6 +99,26 @@
     ];
     /* texto que vem em todo vídeo, em cima da linha e dos Capítulos (a Produção lê daqui; sem nada salvo vale o texto de sempre) */
     var TEXTO_FIXO_PADRAO = '✨ Atendimentos e Consultas Astrológicas\nEstude comigo ou agende Mapa Natal Clássico, Revolução Solar, Previsões Astrológicas em https://falandodeastrologia.com.br\n\n💎 Apoie o Canal\n• Contribuição via Pix: cassiofalandodeastrologia@gmail.com\n• Torne-se Membro do Canal: confira os níveis e benefícios 👉 https://youtu.be/pNtRwLHb1us?is=r-XY9_GwyXppsACF\n';
+    /* Tema do app (por aparelho; cada app com o seu): Papiro, Claro, Escuro, Sulfite */
+    function cartaoTema(app) {
+      var NOMES = { papiro: 'Papiro', claro: 'Claro', escuro: 'Escuro', sulfite: 'Sulfite', automatico: 'Autom\u00e1tico' };
+      var cartao = el('div', { class: 'portal-cartao' }), linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:6px' });
+      cartao.appendChild(el('h2', { text: 'Tema' }));
+      function desenhar() {
+        linha.textContent = '';
+        var atual = window.FdaTema.ler(app);
+        window.FdaTema.TEMAS.forEach(function (t) {
+          var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: (t === atual ? '\u2713 ' : '') + NOMES[t] });
+          if (t === atual) b.style.setProperty('color', 'var(--terracota)', 'important');
+          b.setAttribute('aria-pressed', t === atual ? 'true' : 'false');
+          b.addEventListener('click', function () { window.FdaTema.gravar(app, t); desenhar(); });
+          linha.appendChild(b);
+        });
+      }
+      desenhar(); cartao.appendChild(linha);
+      return cartao;
+    }
+
     function cartaoTextoFixo() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Texto fixo dos vídeos' })]);
       var area = el('textarea', { rows: '10' }), msg = el('p', { class: 'portal-msg' }), salvo = false, t = null;
@@ -186,7 +210,7 @@
         var msg = el('p', { class: 'portal-msg' });
         (rs[0].items || []).forEach(function (c) {
           var marcada = ocultas.indexOf(c.id) < 0;
-          var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+          var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:0;color:var(--terracota,#A03E25);font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
           var pinta = function () { cx.textContent = marcada ? '✓' : ''; cx.setAttribute('aria-checked', marcada ? 'true' : 'false'); };
           pinta();
           var alterna = function () {
@@ -200,7 +224,7 @@
           var nome = el('span', { text: c.summaryOverride || c.summary || c.id, style: 'flex:1;text-align:left;cursor:pointer' });
           cx.addEventListener('click', alterna); nome.addEventListener('click', alterna);
           /* a cor da agenda: a mesma do Google; trocar aqui troca lá */
-          var cor = el('button', { type: 'button', title: 'Cor', 'aria-label': 'Cor', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;border:0;border-radius:0;cursor:pointer;background:' + (c.backgroundColor || '#B5852F') });
+          var cor = el('button', { type: 'button', title: 'Cor', 'aria-label': 'Cor', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;border:0;border-radius:0;cursor:pointer;background:' + (c.backgroundColor || FdaTema.cor('ocre')) });
           var paleta = el('div', { style: 'display:none;flex-wrap:wrap;gap:6px;padding:8px 0 4px 38px' });
           PALETA_AGENDA.forEach(function (hex) {
             var q = el('button', { type: 'button', 'aria-label': hex, style: 'width:30px;height:30px;padding:0;border:0;border-radius:0;cursor:pointer;background:' + hex });
@@ -217,7 +241,7 @@
             paleta.appendChild(q);
           });
           cor.addEventListener('click', function () { paleta.style.display = paleta.style.display === 'none' ? 'flex' : 'none'; });
-          var linha = el('div', { style: 'display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.5)' }, [cx, cor, nome]);
+          var linha = el('div', { style: 'display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 50%,transparent)' }, [cx, cor, nome]);
           corpo.appendChild(el('div', {}, [linha, paleta]));
         });
         corpo.appendChild(msg);
@@ -407,7 +431,7 @@
       app.appendChild(topo(nomeAdmin));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Foto da página Sobre' })]);
       var foto = el('img', { alt: 'Foto atual', src: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' }); /* a foto do arquivo só entra se não houver outra */
-      foto.style.cssText = 'display:block;width:180px;height:180px;border-radius:50%;object-fit:cover;margin:0 auto 14px;border:1px solid #1F5FA3';
+      foto.style.cssText = 'display:block;width:180px;height:180px;border-radius:50%;object-fit:cover;margin:0 auto 14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)';
       var msg = el('p', { class: 'portal-msg' });
       var acoes = el('div', { class: 'portal-acoes', style: 'justify-content:center' });
       var previaAtiva = false, atual = null; /* endereço da foto guardada no Supabase */
@@ -457,6 +481,7 @@
       var daily = P.appDaPagina() === 'daily', pagina = el('div');
       if (!daily) {
         /* Falando de Astrologia: foto do Sobre, pasta dos alunos e clientes, avisos, importar clientes */
+        pagina.appendChild(cartaoTema('falando'));
         pagina.appendChild(cartao);
         pagina.appendChild(P.cartaoPastaBase('alunos'));
         pagina.appendChild(P.cartaoPastaBase('clientes'));
@@ -464,6 +489,7 @@
         pagina.appendChild(cartaoImportarClientes());
       } else {
         /* Hellenic Daily: conexão Google (Drive e Agenda), lugar das horas, texto fixo da Produção, agendas que aparecem, avisos, e as Áreas e Serviços do Financeiro */
+        pagina.appendChild(cartaoTema('daily'));
         var conexaoDrive = P.cartaoConexaoDrive();
         if (conexaoDrive) pagina.appendChild(conexaoDrive);
         pagina.appendChild(cartaoLugar());

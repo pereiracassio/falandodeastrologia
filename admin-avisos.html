@@ -6,6 +6,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=7"></script>
   <link rel="manifest" href="manifest-producao.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -16,11 +17,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="papiro.css?v=4">
-  <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=82">
-  <link rel="stylesheet" href="portal.css?v=27">
-  <link rel="stylesheet" href="tipografia.css?v=26">
+  <link rel="stylesheet" href="temas.css?v=5">
+  <script src="moldura.js?v=1"></script>
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tema-paginas.css?v=42">
+  <link rel="stylesheet" href="tipografia.css?v=37">
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -37,8 +41,8 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="hora-planetaria.js"></script>
-  <script src="portal.js?v=153"></script>
-  <script src="menu.js?v=60" defer></script>
+  <script src="portal.js?v=168"></script>
+  <script src="menu.js?v=64" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -73,7 +77,7 @@
         lista.forEach(function (p) {
           var dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
           var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas! 🎈🎂\nDe presente, você tem 10% de desconto em qualquer um dos meus serviços disponíveis no site (https://falandodeastrologia.com.br), por 30 dias. É só usar o cupom aniversário no carrinho. Aproveite para fazer a sua Revolução Solar. Um abraço 🫂';
-          var linha = el('a', { href: '#', class: 'portal-item-titulo', style: 'display:block;text-decoration:none;color:#A03E25;margin:0 0 14px', text: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome });
+          var linha = el('a', { href: '#', class: 'portal-item-titulo', style: 'display:block;text-decoration:none;color:var(--terracota,#A03E25);margin:0 0 14px', text: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome });
           var detalhe = el('div', { style: 'display:none;margin:-6px 0 14px' });
           if (dig) detalhe.appendChild(el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]));
           else detalhe.appendChild(el('p', { text: 'Sem WhatsApp cadastrado.' }));
@@ -81,7 +85,7 @@
           fixos.appendChild(linha);
           fixos.appendChild(detalhe);
         });
-        if (lista.length) fixos.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+        if (lista.length) fixos.appendChild(el('hr', { style: 'border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 14px' }));
       });
       /* Produção: o que está chegando e ainda não foi concluído (cortes mostram a hora de Júpiter do dia) */
       var producao = el('div', {});
@@ -99,12 +103,12 @@
             var p = x.data.split('-'), dia = DIAS[new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay()] + ' ' + p[2] + '/' + p[1];
             var jup = x.tipo === 'corte' ? jupiterDe(x.data) : [];
             var linha = el('a', { href: x.url || 'admin-producao.html', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
-              el('span', { class: 'portal-item-titulo', style: 'color:#A03E25', text: x.nome }),
+              el('span', { class: 'portal-item-titulo', style: 'color:var(--terracota,#A03E25)', text: x.nome }),
               el('p', { style: 'margin:4px 0 0', text: 'Postar ' + dia + (jup.length ? ' · Júpiter ' + jup.join(' · ') : '') + (x.falta ? ' · falta: ' + x.falta.toLowerCase() : '') })
             ]);
             producao.appendChild(linha);
           });
-          if (lista.length) producao.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+          if (lista.length) producao.appendChild(el('hr', { style: 'border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 14px' }));
         });
       });
       app.appendChild(P.botaoVoltar(voltar));
@@ -116,7 +120,7 @@
         P.sinoAdmin(naoLidos);
         r.data.forEach(function (a) {
           var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
-            el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:#A03E25', text: a.titulo }),
+            el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:var(--terracota,#A03E25)', text: a.titulo }),
             el('span', { class: 'portal-item-data', text: P.dataBR(String(a.criado_em).slice(0, 10)) }),
             el('p', { style: 'margin:4px 0 0' + (a.lido ? '' : ';font-weight:700'), text: a.corpo })
           ]);

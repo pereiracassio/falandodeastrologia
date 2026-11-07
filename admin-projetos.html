@@ -6,6 +6,7 @@
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/icone-daily-180.png?v=1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=7"></script>
   <link rel="manifest" href="manifest-daily.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -16,24 +17,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="papiro.css?v=4">
-  <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=82">
-  <link rel="stylesheet" href="portal.css?v=27">
+  <link rel="stylesheet" href="temas.css?v=5">
+  <script src="moldura.js?v=1"></script>
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=26">
+  <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
-    .proj-barra{height:14px;border:1px solid #1F5FA3;margin:8px 0 6px}
-    .proj-barra i{display:block;height:100%;background:#1F5FA3}
-    .proj-passo{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid #1F5FA3}
+    .proj-barra{height:14px;border:1px solid var(--azul-egipcio-claro);margin:8px 0 6px}
+    .proj-barra i{display:block;height:100%;background:var(--azul-egipcio-claro)}
+    .proj-passo{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid var(--azul-egipcio-claro)}
     .proj-passo:last-child{border-bottom:0}
-    .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid #1F5FA3;background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
-    .proj-passo input[type=checkbox]:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#A03E25;font-size:20px;font-weight:700;font-family:Arial,sans-serif}
+    .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid var(--azul-egipcio-claro);background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
+    .proj-passo input[type=checkbox]:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--terracota);font-size:20px;font-weight:700;font-family:Arial,sans-serif}
     .proj-passo.feito .proj-titulo{text-decoration:line-through;opacity:.6}
-    .proj-grupo{font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:22px 0 6px;text-transform:lowercase}
-    .proj-titulo{font-size:17px;line-height:1.4;color:#16233F;display:block;overflow-wrap:anywhere}
+    .proj-grupo{font-family:Cinzel,serif;font-weight:700;font-size:14px;color:var(--terracota);margin:22px 0 6px;text-transform:lowercase}
+    .proj-titulo{font-size:17px;line-height:1.4;color:var(--preto-tinta);display:block;overflow-wrap:anywhere}
     .proj-acoes{display:flex;gap:18px;align-items:center;margin-top:6px}
-    .proj-mini{background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:.6;cursor:pointer;text-decoration:underline}
+    .proj-mini{background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:var(--preto-tinta);opacity:.6;cursor:pointer;text-decoration:underline}
     .proj-mini:disabled{opacity:.2;cursor:default}
   </style>
 </head>
@@ -50,8 +54,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=153"></script>
-  <script src="menu.js?v=60" defer></script>
+  <script src="portal.js?v=168"></script>
+  <script src="menu.js?v=64" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -166,9 +170,9 @@
 
     /* projeto concluído (todos os passos feitos) sai das abas e vai para "Concluídos"; "Reabrir" desmarca o último passo feito e ele volta para as abas */
     /* uma linha da lista: bolinha e nome; embaixo "14% [barra] 1/7" e, se tem prazo, "50% [barra] 12 dias" */
-    function linhaDeBarra(pct, cor, fim) {
-      var barra = el('div', { class: 'proj-barra', style: 'flex:1;margin:0' }, [el('i', { style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
-      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })]);
+    function linhaDeBarra(pct, cor, fim, tempo) {
+      var barra = el('div', { class: 'proj-barra' + (tempo ? ' tempo-trilho' : ''), style: 'flex:1;margin:0' }, [tempo ? P.tempoNoPreenchimento(el('i', { style: 'width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'width:' + pct + '%' + (cor ? ';background:' + cor : '') })]);
+      return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta);font-size:15px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:38px' }), barra, el('span', { text: fim, class: tempo ? 'tempo-fim' : 'tempo-pct', style: 'flex:none;min-width:84px;text-align:right' })]);
     }
     /* o tempo do prazo: dias que já passaram sobre o total de dias, com a barra azul, ocre no meio e terracota no fim */
     function tempoDoProjeto(p) {
@@ -185,7 +189,7 @@
         /* a bolinha com o número (ou vazia) fica antes do nome */
         var bolinha = el('input', { type: 'text', inputmode: 'numeric', maxlength: '2', 'aria-label': 'Número do projeto ' + p.nome });
         bolinha.value = p.prioridade == null ? '' : String(p.prioridade);
-        bolinha.style.cssText = 'flex:none;width:26px;height:26px;box-sizing:border-box;padding:0;margin:0;border:1.5px solid #1F5FA3;border-radius:50%;background:transparent;text-align:center;font:700 13px Arial,sans-serif;color:#16233F;min-height:0';
+        bolinha.style.cssText = 'flex:none;width:26px;height:26px;box-sizing:border-box;padding:0;margin:0;border:1.5px solid var(--azul-egipcio-claro);border-radius:50%;background:transparent;text-align:center;font:700 13px Arial,sans-serif;color:var(--preto-tinta);min-height:0';
         bolinha.addEventListener('click', function (ev) { ev.stopPropagation(); });
         bolinha.addEventListener('keydown', function (ev) { ev.stopPropagation(); if (ev.key === 'Enter') bolinha.blur(); });
         bolinha.addEventListener('input', function () { bolinha.value = bolinha.value.replace(/\D/g, ''); });
@@ -195,7 +199,7 @@
       cabeca.appendChild(el('span', { class: 'portal-item-titulo', text: p.nome }));
       var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [cabeca, linhaDeBarra(pctProj(p), null, cp.feitos + '/' + cp.total)]);
       var tempo = tempoDoProjeto(p);
-      if (tempo) linha.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
+      if (tempo) linha.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto, true));
       var abrir = function () { aberto = p.id; P.estado.gravar({ projeto: aberto }); desenhar(); window.scrollTo(0, 0); };
       linha.addEventListener('click', abrir);
       linha.addEventListener('keydown', function (ev) { if (ev.target === linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(); } });
@@ -239,7 +243,7 @@
           var abrir = function () { verConcluido = p.id; desenhar(); window.scrollTo(0, 0); };
           var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, [
             el('span', { class: 'portal-item-titulo', text: p.nome }),
-            el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + (ultima ? ' · concluído em ' + P.dataBR(ultima.slice(0, 10)) : '') })])])]);
+            el('span', { class: 'portal-item-data', style: 'color:var(--ocre)', text: m.length + (m.length === 1 ? ' passo' : ' passos') + (ultima ? ' · concluído em ' + P.dataBR(ultima.slice(0, 10)) : '') })])])]);
           linha.addEventListener('click', abrir);
           linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
           cc.appendChild(linha);
@@ -347,7 +351,7 @@
       conteudo.appendChild(linhaDeBarra(pct, null, feitos + '/' + cont.total));
       /* prazo opcional: a segunda barra é o tempo que já passou, do dia em que o projeto foi criado até a data final; azul, ocre no meio e terracota no fim */
       var tempo = tempoDoProjeto(proj);
-      if (tempo) conteudo.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto));
+      if (tempo) conteudo.appendChild(linhaDeBarra(tempo.pct, tempo.cor, tempo.texto, true));
       if (!leitura) {
         /* data de início: começa no dia em que o projeto foi criado e dá para corrigir para o dia certo; a barra de tempo conta a partir dela */
         var dataIni = el('input', { type: 'date', id: 'projIni', style: 'width:auto' }); dataIni.value = proj.data_inicio || new Date(proj.criado_em).toLocaleDateString('sv-SE');
@@ -396,7 +400,7 @@
       function linhaDoFilho(x, grupo, i) {
         var c = x.filhoProj, k = x.k;
         var textos = [el('span', { class: 'proj-titulo', text: c.nome }), linhaDeBarra(Math.floor(k.feitos * 100 / k.total), null, k.feitos + '/' + k.total)];
-        var tp = tempoDoProjeto(c); if (tp) textos.push(linhaDeBarra(tp.pct, tp.cor, tp.texto));
+        var tp = tempoDoProjeto(c); if (tp) textos.push(linhaDeBarra(tp.pct, tp.cor, tp.texto, true));
         
         var linha = el('div', { class: 'proj-passo' + (x.feito ? ' feito' : ''), role: 'button', tabindex: '0', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:0' }, textos)]);
         var abrir = function () { if (leitura) verConcluido = c.id; else { aberto = c.id; P.estado.gravar({ projeto: aberto }); } desenhar(); window.scrollTo(0, 0); };
@@ -413,8 +417,8 @@
           C.from('projeto_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
         var textos = [el('span', { class: 'proj-titulo', text: x.titulo })];
-        if (x.data) textos.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) }));
-        if (x.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:#16233F;opacity:.75', text: x.nota }));
+        if (x.data) textos.push(el('span', { class: 'portal-item-data', style: 'color:var(--azul-egipcio-escuro)', text: 'até ' + P.dataBR(x.data) }));
+        if (x.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:var(--preto-tinta);opacity:.75', text: x.nota }));
         var acoes = el('div', { class: 'proj-acoes' });
         var par = setas(x, grupo, i), sobe = par[0], desce = par[1];
         var editar = el('button', { type: 'button', class: 'proj-mini', text: 'Editar' });
@@ -440,7 +444,7 @@
       function grupoDe(titulo, itens, grande) {
         if (!itens.length) return;
         lista.appendChild(el('p', { class: 'proj-grupo', text: titulo }));
-        var caixa = el('div', { style: 'border-top:1px solid #1F5FA3' + (grande ? ';border-top-width:3px' : '') });
+        var caixa = el('div', { style: 'border-top:1px solid var(--azul-egipcio-claro)' + (grande ? ';border-top-width:3px' : '') });
         itens.forEach(function (x, k) { caixa.appendChild(linhaDoPasso(x, itens, k)); });
         lista.appendChild(caixa);
       }
@@ -448,7 +452,7 @@
       var depois = pendentes.slice(1);
       if (depois.length) {
         lista.appendChild(el('p', { class: 'proj-grupo', text: 'Depois' }));
-        var cx = el('div', { style: 'border-top:1px solid #1F5FA3' });
+        var cx = el('div', { style: 'border-top:1px solid var(--azul-egipcio-claro)' });
         depois.forEach(function (x, k) { cx.appendChild(linhaDoPasso(x, pendentes, k + 1)); });
         lista.appendChild(cx);
       }

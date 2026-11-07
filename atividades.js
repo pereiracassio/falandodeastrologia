@@ -66,11 +66,11 @@
   var hojeISO = function () { return new Date().toLocaleDateString('sv-SE'); }; /* AAAA-MM-DD no dia do aparelho */
   var diaDe = function (iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; };
   var COLUNAS_BASE = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga';
-  var COLUNAS = COLUNAS_BASE + ',imagem_caminho,somente_leitura,rascunho';
+  var COLUNAS = COLUNAS_BASE + ',imagem_caminho,somente_leitura,rascunho,data_limite';
   /* lista as atividades do aluno; se a coluna da imagem ainda não existe no banco, tenta de novo sem ela (nunca derruba a tela) */
   function atividadesDoAluno(alunoId, ordem) {
     var pedir = function (cols) { var q = C.from('atividades').select(cols).eq('aluno_id', alunoId); return ordem ? ordenar(q) : q; };
-    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho|somente_leitura|rascunho/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
+    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho|somente_leitura|rascunho|data_limite/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
   }
   var ordenar = function (q) { return q.order('data_atividade', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }); };
   var dataPostagem = function (a) { return a.data_atividade || diaDe(a.criado_em); };
@@ -78,6 +78,7 @@
   function linhaDatas(a) {
     if (a.somente_leitura) return 'Texto para leitura · ' + dataCurta(dataPostagem(a));
     var p = ['Postada em ' + dataCurta(dataPostagem(a))];
+    if (a.data_limite && !a.enviada_em) p.push('Responder até ' + dataCurta(a.data_limite));
     if (a.enviada_em) p.push('Respondida em ' + dataCurta(a.enviada_em));
     if (a.corrigida_em) p.push('Corrigida em ' + dataCurta(a.corrigida_em));
     return p.join(' · ');
@@ -100,8 +101,8 @@
   /* botão de opção (no lugar da bolinha nativa) */
   function botaoOpcao(texto, marcada, aoClicar) {
     var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
-    b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:#16233F;font:inherit;font-size:16px;cursor:pointer;border-radius:8px;margin:0 0 8px;' +
-      (marcada ? 'border:3px solid #1F5FA3;padding:10px 12px' : 'border:1px solid #1F5FA3;padding:12px');
+    b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:var(--preto-tinta,#16233F);font:inherit;font-size:16px;cursor:pointer;border-radius:8px;margin:0 0 8px;' +
+      (marcada ? 'border:3px solid var(--azul-egipcio-claro,#1F5FA3);padding:10px 12px' : 'border:1px solid var(--azul-egipcio-claro,#1F5FA3);padding:12px');
     if (aoClicar) b.addEventListener('click', aoClicar); else b.style.cursor = 'default';
     return b;
   }
@@ -139,7 +140,7 @@
     urlAssinada(caminho).then(function (url) {
       caixa.textContent = '';
       if (!url) { caixa.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a imagem agora.' })); return; }
-      var img = el('img', { src: url, alt: 'Mapa da atividade', style: 'display:block;width:100%;height:auto;border:1px solid #1F5FA3;border-radius:8px' });
+      var img = el('img', { src: url, alt: 'Mapa da atividade', style: 'display:block;width:100%;height:auto;border:1px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:8px' });
       caixa.appendChild(el('a', { href: url, target: '_blank', rel: 'noopener' }, [img]));
       caixa.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:6px', text: 'Toque na imagem para ver em tamanho grande.' }));
     });
@@ -376,7 +377,7 @@
       corpo.appendChild(cab);
 
       d.perguntas.forEach(function (p, i) {
-        var cartao = el('div', { class: 'portal-cartao' }, [el('p', { text: (i + 1) + '. ' + p.enunciado, class: 'portal-item-titulo' })]);
+        var cartao = el('div', { class: 'portal-cartao' }, [el('p', { text: (i + 1) + '. ' + p.enunciado, style: 'font-weight:700;color:var(--preto-tinta,#16233F)' })]);
         var r = respostas[p.id] = respostas[p.id] || { texto: '', opcao: null };
         if (p.tipo === 'multipla') {
           var caixaOpcoes = el('div');
@@ -524,6 +525,7 @@
             var perguntas = leit ? [] : (item.perguntas || []).filter(function (q) { return q && String(q.enunciado || '').trim(); });
             if (!leit && !perguntas.length) { puladas++; return; }
             var registro = { aluno_id: aluno.id, titulo: tit, descricao: item.descricao ? String(item.descricao).trim() : null, data_atividade: hojeISO(), antiga: leit, rascunho: true };
+            if (/^\d{4}-\d{2}-\d{2}$/.test(item.limite || '')) registro.data_limite = item.limite;
             if (leit) { registro.somente_leitura = true; registro.enviada_em = new Date().toISOString(); }
             return C.from('atividades').insert(registro).select('id').single().then(function (r) {
               if (r.error) throw r.error;
@@ -773,12 +775,16 @@
 
         /* datas da atividade (dá pra acertar à mão, principalmente nas antigas) */
         var dAt = el('input', { type: 'date' }); dAt.value = dataPostagem(a);
+        var dLim = el('input', { type: 'date' }); dLim.value = a.data_limite || '';
+        var ehAntigaOuLeitura = !!(a.antiga || a.somente_leitura);
         var dResp = el('input', { type: 'date' }); dResp.value = a.enviada_em ? diaDe(a.enviada_em) : '';
         var dCorr = el('input', { type: 'date' }); dCorr.value = a.corrigida_em || '';
         var msgDatas = el('p', { class: 'portal-msg' });
         var salvarDatas = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Salvar datas' });
         salvarDatas.addEventListener('click', function () {
-          var campos = { data_atividade: dAt.value || null, corrigida_em: dCorr.value || null };
+          var campos = { corrigida_em: dCorr.value || null };
+          if (ehAntigaOuLeitura) campos.data_atividade = dAt.value || null; /* a data de postagem só se acerta à mão nas antigas; nas outras é o dia do envio */
+          else campos.data_limite = dLim.value || null;
           if (a.enviada_em && dResp.value) campos.enviada_em = new Date(dResp.value + 'T12:00:00').toISOString();
           salvarDatas.disabled = true;
           C.from('atividades').update(campos).eq('id', a.id).then(function (r) {
@@ -788,7 +794,7 @@
           });
         });
         var cartaoDatas = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Datas' }),
-          el('label', { text: 'Data da atividade' }), dAt]);
+          ehAntigaOuLeitura ? el('label', { text: 'Data da atividade' }) : el('label', { text: 'Data limite para responder' }), ehAntigaOuLeitura ? dAt : dLim]);
         if (a.enviada_em && !a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data em que o aluno respondeu' })); cartaoDatas.appendChild(dResp); }
         if (!a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr); }
         cartaoDatas.appendChild(msgDatas); cartaoDatas.appendChild(salvarDatas);
@@ -872,7 +878,7 @@
         d.perguntas.forEach(function (p, i) {
           var r = d.respostas[p.id] || {};
           var c = d.correcoes[p.id] || {};
-          var cx = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo', text: (i + 1) + '. ' + p.enunciado })]);
+          var cx = el('div', { class: 'portal-cartao' }, [el('p', { style: 'font-weight:700;color:var(--preto-tinta,#16233F)', text: (i + 1) + '. ' + p.enunciado })]);
           if (p.tipo === 'multipla') {
             var certa = d.gabarito[p.id] ? d.gabarito[p.id].correta : null;
             (p.opcoes || []).forEach(function (op, k) {

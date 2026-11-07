@@ -1,6 +1,8 @@
 /* Portal do Aluno — peças comuns à página do aluno (aluno.html) e ao painel da administrador (admin-alunos.html).
    Projeto Supabase PRÓPRIO do Falando de Astrologia (separado do Astro Hellenic). A chave "publishable" é pública
    por natureza: quem protege os dados são as regras de acesso (RLS) de docs/portal-aluno.sql. */
+/* páginas sem tema.js (carrinho, mentoria): as cores de sempre */
+if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipcio-escuro': '#1034A6', 'azul-egipcio-claro': '#1F5FA3', terracota: '#A03E25', ocre: '#B5852F', 'preto-tinta': '#16233F' }[n]; } };
 (function () {
   var SUPABASE_URL = 'https://wqkgsotfwkzjwaowenrb.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt';
@@ -16,14 +18,14 @@
     function estilos() {
       if (document.getElementById('janela-site-css')) return;
       var st = document.createElement('style'); st.id = 'janela-site-css';
-      st.textContent = '.janela-fundo{position:fixed;inset:0;z-index:100000;background:rgba(22,35,63,.55);display:flex;align-items:center;justify-content:center;padding:20px}' +
+      st.textContent = '.janela-fundo{position:fixed;inset:0;z-index:100000;background:color-mix(in srgb,var(--preto-tinta,#16233F) 55%,transparent);display:flex;align-items:center;justify-content:center;padding:20px}' +
         '.janela-caixa{position:relative;width:100%;max-width:440px;background:var(--papiro-fundo-simples);padding:var(--moldura-pv) var(--moldura-ph);box-sizing:border-box;text-align:center;border-radius:0}' +
-        '.janela-texto{margin:0 0 18px;font:400 17px/1.5 "Architects Daughter",cursive;color:#16233F;white-space:pre-line;overflow-wrap:anywhere;hyphens:none}' +
+        '.janela-texto{margin:0 0 18px;font:400 17px/1.5 "Architects Daughter",cursive;color:var(--preto-tinta,#16233F);white-space:pre-line;overflow-wrap:anywhere;hyphens:none}' +
         '.janela-acoes{display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap}' +
         '.janela-acoes button{font:700 14px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;border-radius:0;cursor:pointer;white-space:nowrap;min-height:0}' +
-        '.janela-ok{background:#A03E25;color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:#7d2f1a}' +
-        '.janela-nao{background:transparent;color:#1034A6;border:0;padding:10px 6px}.janela-nao:hover{color:#16233F}' +
-        '.janela-campo{display:block;width:100%;box-sizing:border-box;margin:0 0 18px;padding:9px 10px;border:1px solid #1F5FA3!important;border-radius:0!important;background:transparent!important;color:#16233F;font:400 17px "Architects Daughter",cursive;min-height:0;outline:none;box-shadow:none}.janela-campo:focus{outline:none;border-width:2px!important;padding:8px 9px}';
+        '.janela-ok{background:var(--terracota,#A03E25);color:#F3E3B8;border:0;padding:10px 24px}.janela-ok:hover{background:color-mix(in srgb,var(--terracota,#A03E25) 78%,black)}' +
+        '.janela-nao{background:transparent;color:var(--azul-egipcio-escuro,#1034A6);border:0;padding:10px 6px}.janela-nao:hover{color:var(--preto-tinta,#16233F)}' +
+        '.janela-campo{display:block;width:100%;box-sizing:border-box;margin:0 0 18px;padding:9px 10px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)!important;border-radius:0!important;background:transparent!important;color:var(--preto-tinta,#16233F);font:400 17px "Architects Daughter",cursive;min-height:0;outline:none;box-shadow:none}.janela-campo:focus{outline:none;border-width:2px!important;padding:8px 9px}';
       document.head.appendChild(st);
     }
     function abrir(texto, comCancelar, aoFechar, campoInicial) {
@@ -45,7 +47,7 @@
       if (campo) campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); fechar(campo.value); } });
       if (nao) nao.addEventListener('click', function () { fechar(false); });
       fundo.addEventListener('click', function (ev) { if (ev.target === fundo && comCancelar) fechar(false); });
-      setTimeout(function () { (campo || nao || ok).focus(); }, 0);
+      setTimeout(function () { (campo || nao || ok).focus({ preventScroll: true }); }, 0);
     }
     window.confirm = function (texto) {
       var t = String(texto);
@@ -207,13 +209,13 @@
     var fundo = el('div');
     fundo.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:100000;background:rgba(10,19,48,.7);display:flex;align-items:center;justify-content:center;padding:12px';
     var painel = el('div');
-    painel.style.cssText = 'background:var(--papiro-fundo);border:1px solid #1F5FA3;border-radius:12px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;color:#16233F;font-family:system-ui,-apple-system,sans-serif';
+    painel.style.cssText = 'background:var(--papiro-fundo);border:1px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:12px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;color:var(--preto-tinta,#16233F);font-family:system-ui,-apple-system,sans-serif';
     var topo = el('div'); topo.style.cssText = 'padding:14px 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
-    var titulo = el('strong', { text: soPastas ? 'Escolha a pasta' : tipo === 'pdf' ? 'Escolha o PDF' : tipo === 'video' ? 'Escolha o vídeo' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
+    var titulo = el('strong', { class: 'nome-coisa', text: soPastas ? 'Escolha a pasta' : tipo === 'pdf' ? 'Escolha o PDF' : tipo === 'video' ? 'Escolha o vídeo' : 'Escolha o arquivo ou a pasta' }); titulo.style.cssText = 'flex:1;min-width:150px';
     var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
     topo.appendChild(titulo); topo.appendChild(fechar);
     var caminho = el('div'); caminho.style.cssText = 'padding:0 16px 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
-    var busca = el('input', { type: 'search', placeholder: 'Buscar pelo nome' }); busca.style.cssText = 'margin:0 16px 8px;width:calc(100% - 32px);background:transparent;border:1px solid #1F5FA3;border-radius:8px;padding:10px 12px;font:inherit;color:#16233F;-webkit-appearance:none;appearance:none';
+    var busca = el('input', { type: 'search', placeholder: 'Buscar pelo nome' }); busca.style.cssText = 'margin:0 16px 8px;width:calc(100% - 32px);background:transparent;border:1px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:8px;padding:10px 12px;font:inherit;color:var(--preto-tinta,#16233F);-webkit-appearance:none;appearance:none';
     var lista = el('div'); lista.style.cssText = 'overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 14px;flex:1;min-height:120px';
     painel.appendChild(topo); painel.appendChild(caminho); painel.appendChild(busca); painel.appendChild(lista);
     fundo.appendChild(painel); document.body.appendChild(fundo);
@@ -226,7 +228,7 @@
     var carregouAlguma = false;
     var aspas = function (t) { return String(t).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); };
     function linha(texto, extras) {
-      var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(31,95,163,.7)';
+      var l = el('div'); l.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 70%,transparent)';
       l.appendChild(texto); if (extras) l.appendChild(extras);
       return l;
     }
@@ -251,8 +253,8 @@
     }
     function itemDaLista(f) {
       var ePasta = f.mimeType === PASTA_MIME;
-      var nome = el('button', { type: 'button', text: (ePasta ? '📁 ' : '📄 ') + f.name });
-      nome.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F;flex:1;word-break:break-word';
+      var nome = el('button', { type: 'button', class: 'nome-coisa', text: (ePasta ? '📁 ' : '📄 ') + f.name });
+      nome.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:var(--preto-tinta,#16233F);flex:1;word-break:break-word';
       var botao = null;
       if (ePasta) {
         nome.addEventListener('click', function () { pilha.push({ id: f.id, nome: f.name }); busca.value = ''; carregar(); });
@@ -283,8 +285,8 @@
         if (!anexar) lista.textContent = '';
         else { var mais = lista.querySelector('[data-mais]'); if (mais) lista.removeChild(mais); }
         if (!anexar && !termo && atual.id === 'root') {
-          var comp = el('button', { type: 'button', text: '👥 Compartilhados comigo' });
-          comp.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:#16233F';
+          var comp = el('button', { type: 'button', class: 'nome-coisa', text: '👥 Compartilhados comigo' });
+          comp.style.cssText = 'background:none;border:0;padding:6px 0;font:inherit;text-align:left;cursor:pointer;color:var(--preto-tinta,#16233F)';
           comp.addEventListener('click', function () { pilha.push({ id: 'compartilhados', nome: 'Compartilhados comigo' }); carregar(); });
           lista.appendChild(linha(comp));
         }
@@ -409,7 +411,7 @@
       area.textContent = '';
       assistir.textContent = aberto ? 'Fechar o vídeo' : 'Assistir';
       if (!aberto) return;
-      var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;margin-top:12px;border:1px solid #1F5FA3;overflow:hidden' });
+      var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;margin-top:12px;border:1px solid var(--azul-egipcio-claro,#1F5FA3);overflow:hidden' });
       caixa.appendChild(el('iframe', { src: 'https://drive.google.com/file/d/' + id + '/preview', allow: 'autoplay; fullscreen', allowfullscreen: '',
         style: 'position:absolute;inset:0;width:100%;height:100%;border:0', title: 'Gravação' }));
       area.appendChild(caixa);
@@ -506,7 +508,7 @@
     if (!elemento) return;
     try { elemento.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { elemento.scrollIntoView(); }
     var antes = elemento.style.outline;
-    elemento.style.outline = '3px solid #1034A6'; elemento.style.outlineOffset = '4px';
+    elemento.style.outline = '3px solid var(--azul-egipcio-escuro,#1034A6)'; elemento.style.outlineOffset = '4px';
     setTimeout(function () { elemento.style.outline = antes; elemento.style.outlineOffset = ''; }, 6000);
   }
   /* número no ícone do app (iPhone/iPad com o app instalado): a quantidade de avisos não lidos; sem suporte, nada acontece */
@@ -517,7 +519,7 @@
   var sinoAdminLigado = false;
   function sinoAdmin(n) {
     var pintar = function (q) {
-      var cfg = { n: q, aoTocar: function () { try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } location.href = 'admin-avisos.html'; } }; /* o carimbo de uso novo evita que a página de destino ache que o app abriu do zero e volte para a última tela */
+      var cfg = { n: q, aoTocar: function () { try { localStorage.setItem('fda_ultimo_uso', String(Date.now())); } catch (e) { /* sem armazenamento */ } location.href = 'admin-avisos.html?app=' + appDaPagina(); } }; /* o carimbo de uso novo evita que a página de destino ache que o app abriu do zero e volte para a última tela */
       if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); else document.addEventListener('DOMContentLoaded', function () { if (window.fdaSinoAvisos) window.fdaSinoAvisos(cfg); });
       numeroNoIcone(q);
     };
@@ -559,7 +561,11 @@
         sessionStorage.setItem('fda_app', 'falando'); localStorage.setItem('fda_app_ultimo', 'falando');
         return 'falando';
       }
-      if (compartilhada) return sessionStorage.getItem('fda_app') || localStorage.getItem('fda_app_ultimo') || 'falando';
+      if (compartilhada) {
+        var qa = new URLSearchParams(location.search).get('app'); /* o link que abriu a tela diz de qual app a pessoa saiu */
+        if (qa === 'falando' || qa === 'daily') { sessionStorage.setItem('fda_app', qa); return qa; }
+        return sessionStorage.getItem('fda_app') || localStorage.getItem('fda_app_ultimo') || 'falando';
+      }
     } catch (e) { /* sem armazenamento */ }
     return 'falando';
   }
@@ -580,13 +586,13 @@
     var ORDEM_DAILY = ['todo', 'agenda', 'producao', 'projetos', 'estudos', 'financeiro', 'horas', 'leitor'];
     if (appAtual === 'daily') itens.sort(function (a, b) { return ORDEM_DAILY.indexOf(a[0]) - ORDEM_DAILY.indexOf(b[0]); });
     else itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
-    itens.push(['site', '\u2699\uFE0E', 'admin-site.html']);
+    itens.push(['site', '\u2699\uFE0E', 'admin-site.html?app=' + appAtual]);
     if (appAtual === 'daily') { var logo = document.querySelector('.cab-logo img'); if (logo && /logo-menu\.svg/.test(logo.getAttribute('src'))) { logo.setAttribute('src', '/img/logo-menu-daily.svg?v=1'); logo.setAttribute('alt', 'Hellenic Daily'); } } /* telas compartilhadas (⚙ e Avisos) mostram o logo do app em que você está */
     var botoes = itens.map(function (i) {
       var a = i[0] === 'aplicacoes' ? linkAplicacoes() : el('a', { class: 'portal-btn portal-btn-sec', href: i[2], text: i[0] === 'site' ? '' : i[1] });
       if (i[0] === 'agenda' || i[0] === 'horas' || i[0] === 'todo') a.addEventListener('click', function (ev) { if (window.fdaAgendaIr) { ev.preventDefault(); window.fdaAgendaIr(i[0]); } }); /* já estando na Agenda, troca de aba sem recarregar */
       if (i[0] === 'site') { a.setAttribute('aria-label', 'Configurações'); a.title = 'Configurações'; a.appendChild(el('span', { class: 'engrenagem', text: i[1] })); } /* a engrenagem é maior que a letra, para ficar do tamanho dos botões escritos */
-      if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid #1F5FA3;padding:10px 22px;color:#A03E25'; }
+      if (i[0] === atual) { a.setAttribute('aria-current', 'page'); a.style.cssText = 'border:3px solid var(--azul-egipcio-claro,#1F5FA3);padding:10px 22px;color:var(--terracota,#A03E25)'; }
       return a;
     });
     /* o Sair não é mais uma aba: fica no fim do ⚙ (admin-site.html), com o Trocar senha acima dele */
@@ -679,9 +685,9 @@
     var sinal = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif' });
     var barra = el('button', { type: 'button' }, [el('span', { text: titulo }), sinal]);
     /* sem quadro: uma linha em cima e outra embaixo; aberta, a de baixo desce para o fim do conteúdo e fecha a seção */
-    var caixa = el('div', { class: 'sanfona', style: 'border-top:2px solid #1F5FA3;border-bottom:2px solid #1F5FA3;margin:0' }, [barra, corpo]);
+    var caixa = el('div', { class: 'sanfona', style: 'border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:0' }, [barra, corpo]);
     barra.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;background:transparent;border:0;border-radius:0;cursor:pointer;padding:14px 2px;' +
-      'font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:#A03E25;margin:0';
+      'font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:var(--terracota,#A03E25);margin:0';
     function pintar() {
       var aberta = abertas.indexOf(chave) >= 0;
       corpo.style.display = aberta ? '' : 'none';
@@ -1066,7 +1072,7 @@
   }
   function botaoVoltar(aoClicar) {
     var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' });
-    b.style.cssText = 'color:#A03E25!important;font-weight:700';
+    b.style.cssText = 'color:var(--terracota,#A03E25)!important;font-weight:700';
     b.addEventListener('click', aoClicar);
     return b;
   }
@@ -1074,7 +1080,7 @@
   /* Campo com lista de escolha, o mesmo do Financeiro: campo comum onde se digita, apaga e escreve o que quiser; embaixo abre uma lista só de texto com o que combina.
      itens() devolve [{ valor, rotulo, busca }]; aoEscolher(item) roda quando toca num item; mostrarTudoNoFoco abre a lista já ao tocar no campo. Devolve [campo, lista]. */
   function combo(input, itens, aoEscolher, mostrarTudoNoFoco) {
-    var lista = el('div', { style: 'display:none;margin:-8px 0 14px;border-top:2px solid #1F5FA3' });
+    var lista = el('div', { style: 'display:none;margin:-8px 0 14px;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
     function fechar() { lista.style.display = 'none'; lista.textContent = ''; }
     function abrir() {
       var t = input.value.trim().toLowerCase();
@@ -1082,7 +1088,7 @@
       lista.textContent = '';
       if (!achados.length) { lista.style.display = 'none'; return; }
       achados.forEach(function (i) {
-        var l = el('div', { text: i.rotulo, style: 'padding:10px 4px;border-bottom:1px solid rgba(31,95,163,.5);cursor:pointer;font-size:16px;font-weight:700' });
+        var l = el('div', { text: i.rotulo, style: 'padding:10px 4px;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 50%,transparent);cursor:pointer;font-size:16px;font-weight:700' });
         l.addEventListener('pointerdown', function (ev) { ev.preventDefault(); aoEscolher(i); fechar(); });
         lista.appendChild(l);
       });
@@ -1141,6 +1147,32 @@
     pinta();
     return inp;
   }
+  /* O seletor de data do iPhone/iPad dispara "mudou" com a data de HOJE no instante em que abre, antes de a pessoa escolher nada: tudo que grava ao mudar guardava
+     "hoje" sozinho (e a lista pulava). Uma vez para o site todo: se o valor virou hoje logo depois de tocar no campo (ninguém escolhe uma data em menos de 1,2 s),
+     o evento é descartado e o campo volta ao que era; só vale a escolha de verdade. Fase de captura: roda antes de qualquer tratamento da página. */
+  (function seletorDeDataNaoEscolheSozinho() {
+    var abertura = new WeakMap();
+    function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+    function ehData(t) { return t && t.tagName === 'INPUT' && t.type === 'date'; }
+    function marca(ev) {
+      var t = ev.target; if (!ehData(t)) return;
+      var a = abertura.get(t);
+      if (ev.type === 'focusin' && a && Date.now() - a.quando < 2000) return; /* o foco que vem logo depois do toque não refaz a marca (o valor já pode ser o "hoje" do seletor) */
+      abertura.set(t, { quando: Date.now(), antes: t.value });
+    }
+    ['pointerdown', 'touchstart', 'focusin'].forEach(function (n) { document.addEventListener(n, marca, true); });
+    ['change', 'input'].forEach(function (n) {
+      document.addEventListener(n, function (ev) {
+        var t = ev.target; if (!ehData(t)) return;
+        var a = abertura.get(t); if (!a) return;
+        if (a.bloqueado && Date.now() - a.bloqueado < 400) { ev.stopImmediatePropagation(); return; } /* o "mudou" que vem junto com o "input" do mesmo gesto */
+        if (Date.now() - a.quando < 1200 && t.value === hojeISO() && t.value !== a.antes) {
+          ev.stopImmediatePropagation();
+          t.value = a.antes; a.bloqueado = Date.now();
+        }
+      }, true);
+    });
+  })();
   function todasDatas(raiz) { [].forEach.call((raiz.querySelectorAll ? raiz.querySelectorAll('input[type=date]:not(.data-caderno-input)') : []), dataCaderno); }
   function ligarDatas() {
     todasDatas(document);
@@ -1162,7 +1194,7 @@
     if (inp.classList.contains('link-copiavel-input') || !inp.parentNode) return inp;
     inp.classList.add('link-copiavel-input');
     var editando = false;
-    var icone = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:#1034A6;cursor:pointer;flex:none' });
+    var icone = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:var(--azul-egipcio-escuro,#1034A6);cursor:pointer;flex:none' });
     icone.innerHTML = SVG_ELO;
     if (inp.hasAttribute('data-link-abre')) { icone.title = 'Abrir o link'; icone.setAttribute('aria-label', 'Abrir o link'); }
     var ed = el('span', { text: 'Editar', role: 'button', tabindex: '0', style: 'font-size:12px;opacity:.6;text-decoration:underline;cursor:pointer;font-family:var(--fonte-mao)' });
@@ -1191,7 +1223,7 @@
   }
   /* só o ícone de elo que copia (para link fixo, que não se edita) */
   function iconeLink(u) {
-    var b = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:#1034A6;cursor:pointer;flex:none' });
+    var b = el('button', { type: 'button', title: 'Copiar o link', 'aria-label': 'Copiar o link', style: 'background:transparent;border:0;border-radius:0;padding:6px 10px;color:var(--azul-egipcio-escuro,#1034A6);cursor:pointer;flex:none' });
     b.innerHTML = SVG_ELO;
     b.addEventListener('click', function () { copiarParaAreaDeTransferencia(u).then(function () { b.innerHTML = SVG_ELO_OK; setTimeout(function () { b.innerHTML = SVG_ELO; }, 1500); }, function () { window.prompt('Copie o link:', u); }); });
     return b;
@@ -1203,11 +1235,17 @@
   }
   if (document.body) ligarLinks(); else document.addEventListener('DOMContentLoaded', ligarLinks);
   /* barras de progresso e de tempo, SEMPRE neste desenho: "62% [barra] 12/23 dias" (o tanto de passos ou de dias no fim da linha) */
-  function barraLinha(pct, cor, fim) {
-    return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:#16233F;font-size:15px' }, [
-      el('span', { text: pct + '%', style: 'flex:none;min-width:38px' }),
-      el('div', { style: 'flex:1;height:14px;border:1px solid #1F5FA3' }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || '#1F5FA3') })]),
-      el('span', { text: fim, style: 'flex:none;min-width:84px;text-align:right' })
+  /* barra de TEMPO: o degradê azul → ocre → terracota (cores do tema) fica FIXO na barra inteira e o preenchimento só o revela até onde o tempo chegou */
+  function tempoNoPreenchimento(i, pct) {
+    i.classList.add('preench', 'tempo'); i.style.setProperty('--tw', (pct > 0 ? 10000 / pct : 100).toFixed(2) + '%');
+    i.style.background = 'var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25)) 0 0 / var(--tw) 100% no-repeat';
+    return i;
+  }
+  function barraLinha(pct, cor, fim, tempo) {
+    return el('div', { style: 'display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--preto-tinta,#16233F);font-size:15px' }, [
+      el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:38px' }),
+      el('div', { class: tempo ? 'tempo-trilho' : '', style: 'flex:1;height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [tempo ? tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct) : el('i', { class: 'preench', style: 'display:block;height:100%;width:' + pct + '%;background:' + (cor || FdaTema.cor('azul-egipcio-claro')) })]),
+      el('span', { text: fim, class: tempo ? 'tempo-fim' : 'tempo-pct', style: 'flex:none;min-width:84px;text-align:right' })
     ]);
   }
   /* o tempo de um prazo: dias que já passaram sobre o total de dias (datas AAAA-MM-DD); a cor vai de azul a ocre e terracota */
@@ -1219,7 +1257,7 @@
     var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
     return { pct: Math.floor(f * 100), cor: 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')', texto: passou + '/' + total + ' dias' };
   }
-  function barraTempoDias(inicio, fimData) { var t = tempoDias(inicio, fimData); return t ? barraLinha(t.pct, t.cor, t.texto) : null; }
+  function barraTempoDias(inicio, fimData) { var t = tempoDias(inicio, fimData); return t ? barraLinha(t.pct, t.cor, t.texto, true) : null; }
   function linhaDatas(colunas) { return el('div', { class: 'data-linha' }, colunas); }
   /* BARRA DE ETAPAS COM DATAS (opcionais): acima de CADA etapa fica um campo de data, sem nada escrito (é a data em que aquela etapa deve estar pronta).
      botoes = os botões de etapa já montados; chaves = a chave de cada etapa (mesma ordem); datas = {chave: 'aaaa-mm-dd'}; salvar(objeto) só grava (nada é redesenhado: o calendário não fecha).
@@ -1389,7 +1427,7 @@
     }
     /* o botão é só o reloginho azul (sem quadrado): conta quanto falta e avisa */
     var quanto = el('button', { type: 'button', title: 'Avisar quanto falta', 'aria-label': 'Avisar quanto falta', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer;min-height:0' });
-    quanto.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1034A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+    quanto.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--azul-egipcio-escuro)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
     quanto.addEventListener('click', function () {
       quanto.disabled = true; mensagem(msg, 'Vendo o horário na agenda...');
       inicioDoCompromisso().then(function (inicio) {
@@ -1404,7 +1442,7 @@
     mandar.addEventListener('click', function () { enviar(texto.value, false); });
     /* no lugar do título escrito, o sininho vermelho (o mesmo da Agenda) */
     var sininho = el('span', { title: 'Enviar aviso', 'aria-label': 'Enviar aviso', style: 'display:inline-block;line-height:0' });
-    sininho.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A03E25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
+    sininho.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--terracota)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
     return el('div', { class: 'portal-cartao' }, [
       el('div', { class: 'portal-acoes', style: 'align-items:center;gap:18px;margin:0 0 10px' }, [sininho].concat(prontos)),
       texto,
@@ -1419,7 +1457,7 @@
       if (r.error || !r.data || !r.data.length) return;
       r.data.forEach(function (a) {
         var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
-          el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:#A03E25', text: a.titulo }),
+          el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:var(--terracota,#A03E25)', text: a.titulo }),
           el('span', { class: 'portal-item-data', text: dataBR(String(a.criado_em).slice(0, 10)) }),
           el('p', { style: 'margin:4px 0 0' + (a.lido ? '' : ';font-weight:700'), text: a.corpo })
         ]);
@@ -1430,7 +1468,7 @@
         });
         caixa.appendChild(linha);
       });
-      caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+      caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 14px' }));
     });
     return caixa;
   }
@@ -1528,7 +1566,7 @@
     client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias, tempoNoPreenchimento: tempoNoPreenchimento
   };
 
   /* A TELA NÃO PULA (regra dele): quase toda ação redesenha a área #app (esvazia e monta de novo) e o navegador joga a rolagem para o topo. Aqui, uma vez para o site todo:
@@ -1536,7 +1574,11 @@
   (function naoPular() {
     var app = document.getElementById('app'); if (!app || !window.MutationObserver) return;
     var y = window.scrollY || 0;
-    var guarda = function () { y = window.scrollY || 0; };
+    var guarda = function () {
+      var maximo = Math.max(0, document.documentElement.scrollHeight - window.innerHeight), atual = window.scrollY || 0;
+      if (y > maximo + 2 && atual <= maximo + 1) return; /* a página encolheu (a tela foi esvaziada esperando os dados): o navegador subiu sozinho, não foi ele rolando; guarda o lugar de antes */
+      y = atual;
+    };
     window.addEventListener('scroll', guarda, { passive: true });
     ['scrollTo', 'scrollBy'].forEach(function (nome) {
       var original = window[nome];
@@ -1557,5 +1599,43 @@
         if (y > 2 && (window.scrollY || 0) < alvo - 2) window.scrollTo(0, alvo);
       });
     }).observe(app, { childList: true, subtree: true });
+  })();
+  /* ACENTO SOLTO (07/11/2026): texto copiado de Pages/Notas ou ditado no iPad às vezes chega com o acento separado da letra (I + ´). A Architects Daughter não tem o acento solto,
+     então o Safari o desenha com outra fonte (um rabisco em cima da letra). Aqui, para o site todo: juntar letra e acento (NFC) ao digitar/colar/sair do campo
+     e em todo texto que aparece na tela (inclusive o que já estava salvo assim). */
+  (function juntarAcentos() {
+    if (!String.prototype.normalize) return;
+    var SOLTO = /[\u0300-\u036f]/;
+    function campo(el) {
+      if (!el || !/^(INPUT|TEXTAREA)$/.test(el.tagName)) return;
+      if (el.tagName === 'INPUT' && !/^(text|search|email|url|tel|)$/i.test(el.type || '')) return;
+      var v = el.value; if (!v || !SOLTO.test(v)) return;
+      var n = v.normalize('NFC'); if (n === v) return;
+      var ini = null; try { ini = el.selectionStart; } catch (e) {}
+      el.value = n;
+      if (ini != null) { try { var pos = v.slice(0, ini).normalize('NFC').length; el.setSelectionRange(pos, pos); } catch (e) {} }
+    }
+    ['input', 'change', 'focusout'].forEach(function (ev) { document.addEventListener(ev, function (e) { campo(e.target); }, true); });
+    function texto(raiz) {
+      if (!raiz) return;
+      if (raiz.nodeType === 3) { var v = raiz.nodeValue; if (v && SOLTO.test(v)) { var n = v.normalize('NFC'); if (n !== v) raiz.nodeValue = n; } return; }
+      if (raiz.nodeType !== 1 || /^(SCRIPT|STYLE|TEXTAREA)$/.test(raiz.tagName)) return;
+      var w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, null), no, lista = [];
+      while ((no = w.nextNode())) { if (no.nodeValue && SOLTO.test(no.nodeValue)) lista.push(no); }
+      lista.forEach(texto);
+      if (/^(INPUT)$/.test(raiz.tagName)) campo(raiz);
+      Array.prototype.forEach.call(raiz.querySelectorAll ? raiz.querySelectorAll('input,textarea') : [], campo);
+    }
+    function iniciar() {
+      texto(document.body);
+      if (!window.MutationObserver) return;
+      new MutationObserver(function (muts) {
+        muts.forEach(function (m) {
+          if (m.type === 'characterData') texto(m.target);
+          else Array.prototype.forEach.call(m.addedNodes, texto);
+        });
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+    if (document.body) iniciar(); else document.addEventListener('DOMContentLoaded', iniciar);
   })();
 })();

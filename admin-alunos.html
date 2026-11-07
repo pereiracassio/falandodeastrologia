@@ -6,6 +6,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=7"></script>
   <link rel="manifest" href="manifest-producao.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -19,12 +20,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="papiro.css?v=4">
-  <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=82">
-  <link rel="stylesheet" href="portal.css?v=27">
+  <link rel="stylesheet" href="temas.css?v=5">
+  <script src="moldura.js?v=1"></script>
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=26">
+  <link rel="stylesheet" href="tipografia.css?v=37">
 </head>
 <body>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
@@ -39,9 +43,9 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=153"></script>
-  <script src="conversa.js?v=7"></script>
-  <script src="atividades.js?v=40"></script>
+  <script src="portal.js?v=168"></script>
+  <script src="conversa.js?v=10"></script>
+  <script src="atividades.js?v=45"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -176,7 +180,7 @@
           esperando.forEach(function (x) {
             var aluno = r.data.filter(function (a) { return a.id === x.aluno_id; })[0];
             if (!aluno) return;
-            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + ' · ' + (x.titulo || 'atividade') });
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:var(--terracota,#A03E25);text-decoration:underline', text: aluno.nome + ' · ' + (x.titulo || 'atividade') });
             l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, atividade: x.id }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
             cartao.appendChild(l);
           });
@@ -188,7 +192,7 @@
           Object.keys(mensagensNovas).forEach(function (id) {
             var aluno = r.data.filter(function (a) { return a.id === id; })[0];
             if (!aluno) return;
-            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:#A03E25;text-decoration:underline', text: aluno.nome + (mensagensNovas[id] > 1 ? ' · ' + mensagensNovas[id] + ' mensagens' : '') });
+            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:var(--terracota,#A03E25);text-decoration:underline', text: aluno.nome + (mensagensNovas[id] > 1 ? ' · ' + mensagensNovas[id] + ' mensagens' : '') });
             l.addEventListener('click', function (ev) { ev.preventDefault(); P.estado.gravar({ aluno: aluno.id, aba: 'conversa' }); alunoAberto = aluno; paginaDoAluno(user, aluno); });
             cartao.appendChild(l);
           });
@@ -234,9 +238,9 @@
     function painelTrilhas(aluno) {
       var raiz = el('div');
       var trilhas = [], passos = [], itensAluno = [], ativsAluno = [], abertaConcl = null;
-      var barra = function (pct) { return el('div', { style: 'height:14px;border:1px solid #1F5FA3;margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:#1F5FA3;width:' + pct + '%' })]); };
-      var mini = function (txt, aoClicar, desligado) { var b = el('button', { type: 'button', text: txt, style: 'background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:#16233F;opacity:' + (desligado ? '.2' : '.6') + ';cursor:pointer;text-decoration:underline' }); b.disabled = !!desligado; b.addEventListener('click', aoClicar); return b; };
-      var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
+      var barra = function (pct) { return el('div', { style: 'height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3);margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:var(--azul-egipcio-claro,#1F5FA3);width:' + pct + '%' })]); };
+      var mini = function (txt, aoClicar, desligado) { var b = el('button', { type: 'button', text: txt, style: 'background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:var(--preto-tinta,#16233F);opacity:' + (desligado ? '.2' : '.6') + ';cursor:pointer;text-decoration:underline' }); b.disabled = !!desligado; b.addEventListener('click', aoClicar); return b; };
+      var rotulo = function (t) { return el('p', { text: t, class: 'rotulo-grupo', style: "font-weight:700;font-size:14px;color:var(--terracota,#A03E25);margin:20px 0 6px;text-transform:lowercase" }); };
       /* O formulário dos fatos fica no banco do Astro Hellenic. Pergunta lá (função pública, só com o link do passo: u, m e t) se o cliente já enviou. */
       function fatosEnviadosDoLink(link) {
         try {
@@ -370,12 +374,12 @@
           x.feito = cb.checked; desenhar();
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
-        var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (minhaParte(x) ? 'text-decoration:line-through;opacity:.6' : '') })];
-        if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
-        if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
-        if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (at.antiga || at.somente_leitura ? 'já feita' : !at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
-        if (x.link) texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: 'Link dos fatos · o aluno vê o botão Preencher os fatos' }));
-        if (leitura) { if (x.data) texto.push(el('span', { class: 'portal-item-data', style: 'color:#1034A6', text: 'até ' + P.dataBR(x.data) })); }
+        var texto = [el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (minhaParte(x) ? 'text-decoration:line-through;opacity:.6' : '') })];
+        if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
+        if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
+        if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (at.antiga || at.somente_leitura ? 'já feita' : !at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
+        if (x.link) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: 'Link dos fatos · o aluno vê o botão Preencher os fatos' }));
+        if (leitura) { if (x.data) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--azul-egipcio-escuro,#1034A6)', text: 'até ' + P.dataBR(x.data) })); }
         else { /* data de conclusão do passo: grava sozinha; o aluno também vê, e o passo entra no To Do da Agenda */
           var dataP = el('input', { type: 'date' }); dataP.value = x.data || '';
           var dataSuja = false; /* salva ao escolher; a lista só se reordena quando o campo perde o foco (redesenhar antes fecha o calendário do iPad) */
@@ -412,13 +416,17 @@
             var sel = el('select', { style: 'max-width:100%' }, [el('option', { value: '', text: tipo === 'material' ? 'Escolha o material' : tipo === 'gravacao' ? 'Escolha a gravação' : 'Escolha a atividade' }), el('option', { value: '__prep', text: 'Ainda não criado (em preparação)' })].concat(
               fonte.slice().reverse().map(function (i) { return el('option', { value: i.id, text: i.titulo + (tipo === 'atividade' && i.data_atividade ? ' · ' + P.dataBR(String(i.data_atividade).slice(0, 10)) : '') + (usados.indexOf(i.id) >= 0 ? ' · já ligada a outro passo' : '') }); })));
             if (!fonte.length) areaLigar.appendChild(el('p', { class: 'portal-msg erro', text: tipo === 'atividade' ? 'Este aluno não tem nenhuma atividade cadastrada.' : tipo === 'gravacao' ? 'Este aluno não tem nenhuma gravação na aba Gravações.' : 'Este aluno não tem nenhum material na aba Materiais.' }));
-            sel.addEventListener('change', function () {
+            /* escolher na lista NÃO liga nada: só o botão Ligar grava (o seletor do iPhone/iPad dispara "mudou" enquanto a roda gira, e ligava a coisa errada sozinho) */
+            var ligarBt = mini('Ligar', function () {
               if (!sel.value) return;
+              ligarBt.disabled = true;
               var campos = { tipo: tipo, item_id: null, atividade_id: null, lido_em: null, feito: false, feito_em: null };
               if (sel.value !== '__prep') campos[campoId] = sel.value;
-              P.client.from('aluno_trilha_passos').update(campos).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível ligar.'); else carregar(); });
+              P.client.from('aluno_trilha_passos').update(campos).eq('id', x.id).then(function (r) { if (r.error) { ligarBt.disabled = false; alert('Não foi possível ligar.'); } else carregar(); });
             });
-            areaLigar.appendChild(el('div', { style: 'margin-top:8px' }, [sel]));
+            ligarBt.style.display = 'none';
+            sel.addEventListener('change', function () { ligarBt.style.display = sel.value ? '' : 'none'; });
+            areaLigar.appendChild(el('div', { style: 'margin-top:8px;display:flex;gap:16px;align-items:center;flex-wrap:wrap' }, [sel, ligarBt]));
             }
           }
           /* link dos fatos (retificação): opcional, em qualquer passo; salva sozinho e o aluno vê o botão "Preencher os fatos" */
@@ -446,10 +454,10 @@
           ap.addEventListener('click', function () { if (confirm('Apagar o passo "' + x.titulo + '"?')) P.client.from('aluno_trilha_passos').delete().eq('id', x.id).then(carregar); });
           acoes.appendChild(ap); texto.push(acoes); texto.push(areaLigar);
         }
-        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid #1F5FA3' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb])); /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
+        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb])); /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
       }
       function listaDePassos(alvo, lista, leitura, grande) {
-        var caixa = el('div', { style: 'border-bottom:1px solid #1F5FA3' + (grande ? ';border-top:2px solid #1F5FA3' : '') });
+        var caixa = el('div', { style: 'border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3)' + (grande ? ';border-top:2px solid var(--azul-egipcio-claro,#1F5FA3)' : '') });
         lista.forEach(function (x, i) { var l = linhaPasso(x, lista, i, leitura); if (grande && i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
         alvo.appendChild(caixa);
       }
@@ -461,11 +469,11 @@
         });
         var soma = m.reduce(function (a, x) { return a + pontos(x); }, 0);
         var pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
-        var cartao = el('div', { class: 'portal-cartao', style: 'border-top:0!important;border-bottom:2px solid #1F5FA3!important;padding:0 0 20px!important;margin:0 0 20px!important' }); /* a linha fica no FIM da trilha, depois do Apagar, para saber de qual trilha é cada botão */
+        var cartao = el('div', { class: 'portal-cartao', style: 'border-top:0!important;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;padding:0 0 20px!important;margin:0 0 20px!important' }); /* a linha fica no FIM da trilha, depois do Apagar, para saber de qual trilha é cada botão */
         /* sanfona: o cabeçalho (nome + barras) fica sempre à vista; ao tocar, abre/fecha os passos, com a barra ocre do lado esquerdo */
-        var cabeca = el('div', { role: 'button', tabindex: '0', 'aria-expanded': 'false', style: 'cursor:pointer' }), c = el('div', { class: 'barra-ocre', style: 'margin-top:12px' }), sinalT = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif;color:#A03E25' });
+        var cabeca = el('div', { role: 'button', tabindex: '0', 'aria-expanded': 'false', style: 'cursor:pointer' }), c = el('div', { class: 'barra-ocre', style: 'margin-top:12px' }), sinalT = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif;color:var(--terracota,#A03E25)' });
         var renomear = mini('Renomear', function () { var n = (prompt('Assunto da trilha', t.nome) || '').trim(); if (n && n !== t.nome) P.client.from('aluno_trilhas').update({ nome: n }).eq('id', t.id).then(carregar); });
-        cabeca.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), sinalT]));
+        cabeca.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:var(--terracota,#A03E25);font-size:18px' }), sinalT]));
         c.appendChild(el('div', { style: 'margin-bottom:6px' }, [renomear]));
         cabeca.appendChild(P.barraLinha(pct, null, m.filter(function (x) { return pontos(x) >= 1; }).length + '/' + m.length));
         /* prazo opcional: com data final aparece a barra do tempo logo embaixo, no mesmo desenho */
@@ -481,7 +489,7 @@
         if (semT.length) gruposT.push(['Sem data', semT]);
         if (feitos.length) gruposT.push(['Feitos', feitos]);
         gruposT.forEach(function (g) {
-          c.appendChild(el('div', { text: g[0], style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
+          c.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' }));
           var cx = el('div', {});
           g[1].forEach(function (x, k) { var l = linhaPasso(x, g[1], k, false); if (k === 0) l.style.borderTop = '0'; cx.appendChild(l); });
           c.appendChild(cx);
@@ -525,7 +533,7 @@
             var m = meus(t), ultima = t.concluida_em || '';
             var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, [
               el('span', { class: 'portal-item-titulo', text: t.nome }),
-              el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + ' · iniciada em ' + P.dataBR(inicioDe(t)) + (ultima ? ' · concluída em ' + P.dataBR(String(ultima).slice(0, 10)) : '') + (t.data_fim ? ' · prevista para ' + P.dataBR(t.data_fim) : '') })])])]);
+              el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: m.length + (m.length === 1 ? ' passo' : ' passos') + ' · iniciada em ' + P.dataBR(inicioDe(t)) + (ultima ? ' · concluída em ' + P.dataBR(String(ultima).slice(0, 10)) : '') + (t.data_fim ? ' · prevista para ' + P.dataBR(t.data_fim) : '') })])])]);
             var abrir = function () { abertaConcl = abertaConcl === t.id ? null : t.id; desenhar(); };
             linha.addEventListener('click', abrir);
             linha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
@@ -607,7 +615,7 @@
                 if (!confirm('Apagar este registro?')) return;
                 P.client.from('aluno_acompanhamento').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else carregar(); });
               });
-              var textos = [el('span', { class: 'portal-item-titulo', style: 'color:#B5852F', text: P.dataBR(String(i.data).slice(0, 10)) })];
+              var textos = [el('span', { class: 'portal-item-titulo', style: 'color:var(--ocre,#B5852F)', text: P.dataBR(String(i.data).slice(0, 10)) })];
               if (i.paramos) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px' }, [el('span', { class: 'rotulo-fixo', text: 'Paramos em: ' }), document.createTextNode(i.paramos)]));
               if (i.proximo) textos.push(el('span', { class: 'portal-item-data', style: 'white-space:pre-wrap;color:#000;font-size:15px' }, [el('span', { class: 'rotulo-fixo', text: 'Vou trabalhar: ' }), document.createTextNode(i.proximo)]));
               lista.appendChild(el('div', { class: 'portal-item' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, textos), el('div', { class: 'portal-acoes' }, [editar, apagar])])]));
@@ -918,6 +926,6 @@
     });
   })();
   </script>
-  <script src="menu.js?v=60" defer></script>
+  <script src="menu.js?v=64" defer></script>
 </body>
 </html>

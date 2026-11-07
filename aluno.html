@@ -5,6 +5,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=7"></script>
   <meta name="theme-color" content="#e6d3a0">
   <!-- instalável na tela inicial (Android: Instalar aplicativo; iPhone: Compartilhar > Adicionar à Tela de Início): abre em tela cheia, direto em Alunos -->
   <link rel="manifest" href="manifest-alunos.json">
@@ -19,12 +20,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="papiro.css?v=4">
-  <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=82">
-  <link rel="stylesheet" href="portal.css?v=27">
+  <link rel="stylesheet" href="temas.css?v=5">
+  <script src="moldura.js?v=1"></script>
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=26">
+  <link rel="stylesheet" href="tipografia.css?v=37">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -41,12 +45,12 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=153"></script>
+  <script src="portal.js?v=168"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="leitor.js?v=9"></script>
-  <script src="curso.js?v=1"></script>
-  <script src="conversa.js?v=7"></script>
-  <script src="atividades.js?v=40"></script>
+  <script src="leitor.js?v=10"></script>
+  <script src="curso.js?v=5"></script>
+  <script src="conversa.js?v=10"></script>
+  <script src="atividades.js?v=45"></script>
   <script src="caderno.js?v=11"></script>
   <script>
   (function () {
@@ -308,14 +312,14 @@
       var caixa = el('div', {});
       if (fixoMensalidade) {
         caixa.appendChild(el('p', { class: 'impresso', style: 'margin:0 0 14px;font-weight:700;color:' + fixoMensalidade.cor, text: fixoMensalidade.texto }));
-        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 14px' }));
       }
       if (previa) return caixa;
       P.client.from('avisos_recebidos').select('id,titulo,corpo,url,atividade_id,lido,criado_em').order('criado_em', { ascending: false }).limit(10).then(function (r) {
         if (r.error || !r.data || !r.data.length) return;
         r.data.forEach(function (a) {
           var linha = el('a', { href: '#', style: 'display:block;text-decoration:none;color:inherit;margin:0 0 14px' }, [
-            el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:#A03E25', text: a.titulo }),
+            el('span', { class: 'portal-item-titulo', style: a.lido ? '' : 'color:var(--terracota,#A03E25)', text: a.titulo }),
             el('span', { class: 'portal-item-data', text: P.dataBR(String(a.criado_em).slice(0, 10)) }),
             el('p', { style: 'margin:4px 0 0' + (a.lido ? '' : ';font-weight:700'), text: a.corpo })
           ]);
@@ -326,7 +330,7 @@
           });
           caixa.appendChild(linha);
         });
-        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 14px' }));
       });
       return caixa;
     }
@@ -334,7 +338,7 @@
     function telaTrilha(aluno, itens, previa) {
       var raiz = el('div', {});
       raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
-      var rotulo = function (t) { return el('p', { text: t, style: "font-family:Cinzel,serif;font-weight:700;font-size:14px;color:#A03E25;margin:20px 0 6px;text-transform:lowercase" }); };
+      var rotulo = function (t) { return el('p', { text: t, class: 'rotulo-grupo', style: "font-weight:700;font-size:14px;color:var(--terracota,#A03E25);margin:20px 0 6px;text-transform:lowercase" }); };
       var corDoTempo = function (f) {
         var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, k = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
         return 'rgb(' + de.map(function (c, i) { return Math.round(c + (para[i] - c) * k); }).join(',') + ')';
@@ -378,7 +382,7 @@
           var feito = pontos(x) >= 1, it = itemDe(x), at = ativDe(x);
           var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
           var hojeISO = new Date().toLocaleDateString('sv-SE'), abrirLinha = null;
-          if (x.data && !parteFeita(x) && (x.data < hojeISO || x.devolvidaEm)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (x.data < hojeISO ? '#A03E25' : '#1034A6'), text: x.devolvidaEm ? 'devolvida para refazer em ' + P.dataBR(x.devolvidaEm) : (x.data < hojeISO ? 'atrasado · ' : '') + 'até ' + P.dataBR(x.data) }));
+          if (x.data && !parteFeita(x) && (x.data < hojeISO || x.devolvidaEm)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (x.data < hojeISO ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')), text: x.devolvidaEm ? 'devolvida para refazer em ' + P.dataBR(x.devolvidaEm) : (x.data < hojeISO ? 'atrasado · ' : '') + 'até ' + P.dataBR(x.data) }));
           if (x.tipo === 'material') {
             if (!it) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else {
@@ -397,7 +401,7 @@
           } else if (x.tipo === 'atividade') {
             if (!at) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else {
-              texto.push(el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: at.antiga || at.somente_leitura ? 'Já feita' : !at.enviada_em ? 'Para responder' : at.corrigida_em ? 'Corrigida' : 'Enviada para correção' }));
+              texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: at.antiga || at.somente_leitura ? 'Já feita' : !at.enviada_em ? 'Para responder' : at.corrigida_em ? 'Corrigida' : 'Enviada para correção' }));
               var abrirAt = el('button', { type: 'button', class: 'portal-btn', text: at.enviada_em || at.antiga || at.somente_leitura ? 'Ver a atividade' : 'Responder', style: 'margin-top:8px' });
               abrirAt.addEventListener('click', function () { at.alunoNome = aluno.nome; abaAoVoltar = 'trilha'; window.atividades.telaDaAtividadeAluno(app, at, function () { desenharPaginaDoAluno(userAtual, aluno, previa); }, previa); });
               texto.push(abrirAt); if (!at.enviada_em && !at.antiga && !at.somente_leitura) abrirLinha = function () { abrirAt.click(); };
@@ -405,7 +409,7 @@
           }
           var linkDoPasso = P.linkSeguro(x.link);
           if (linkDoPasso) texto.push(el('a', { class: 'portal-btn', href: linkDosFatos(linkDoPasso), target: '_blank', rel: 'noopener', text: 'Preencher os fatos', style: 'margin-top:8px' }));
-          var linhaEl = el('div', { style: 'padding:12px 2px;border-top:1px solid #1F5FA3' + (abrirLinha ? ';cursor:pointer' : '') }, [el('div', { style: 'min-width:0' }, texto)]);
+          var linhaEl = el('div', { style: 'padding:12px 2px;border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' + (abrirLinha ? ';cursor:pointer' : '') }, [el('div', { style: 'min-width:0' }, texto)]);
           if (abrirLinha) linhaEl.addEventListener('click', function (ev) { if (ev.target.closest('button,a')) return; abrirLinha(); });
           return linhaEl;
         }
@@ -418,10 +422,10 @@
             if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
           }), feitos = m.filter(function (x) { return pontos(x) >= 1; });
           /* sanfona: nome e barras sempre à vista; ao tocar, abrem/fecham os passos (barra ocre do lado) */
-          var cartao = el('div', { style: 'margin-bottom:22px;padding-bottom:20px;border-bottom:2px solid #1F5FA3' });
+          var cartao = el('div', { style: 'margin-bottom:22px;padding-bottom:20px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
           var c = el('div', { role: 'button', tabindex: '0', 'aria-expanded': 'false', style: 'cursor:pointer' }), corpo = el('div', { class: 'barra-ocre', style: 'margin-top:12px' });
-          var sinalT = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif;color:#A03E25' });
-          c.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:#A03E25;font-size:18px' }), sinalT]));
+          var sinalT = el('span', { 'aria-hidden': 'true', style: 'font-size:24px;line-height:1;font-family:Arial,sans-serif;color:var(--terracota,#A03E25)' });
+          c.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:var(--terracota,#A03E25);font-size:18px' }), sinalT]));
           c.appendChild(P.barraLinha(pct, null, feitos.length + '/' + m.length));
           var iniT = t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE');
           if (t.data_fim) c.appendChild(P.barraTempoDias(iniT, t.data_fim));
@@ -445,7 +449,7 @@
           if (cumpridos.length) grupos.push(['Feitos', cumpridos]);
           grupos.forEach(function (g) {
             if (!g[1].length) return;
-            corpo.appendChild(el('div', { text: g[0], style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:1px solid #1F5FA3;margin-top:14px' }));
+            corpo.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' }));
             var caixa = el('div', {});
             g[1].forEach(function (x, i) { var l = linha(x); if (i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
             corpo.appendChild(caixa);
@@ -460,7 +464,7 @@
               var m = meus(t);
               var l = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', {}, [
                 el('span', { class: 'portal-item-titulo', text: t.nome }),
-                el('span', { class: 'portal-item-data', style: 'color:#B5852F', text: m.length + (m.length === 1 ? ' passo' : ' passos') + ' · iniciada em ' + P.dataBR(t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE')) + (t.concluida_em ? ' · concluída em ' + P.dataBR(String(t.concluida_em).slice(0, 10)) : '') + (t.data_fim ? ' · prevista para ' + P.dataBR(t.data_fim) : '') })])])]);
+                el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: m.length + (m.length === 1 ? ' passo' : ' passos') + ' · iniciada em ' + P.dataBR(t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE')) + (t.concluida_em ? ' · concluída em ' + P.dataBR(String(t.concluida_em).slice(0, 10)) : '') + (t.data_fim ? ' · prevista para ' + P.dataBR(t.data_fim) : '') })])])]);
               var abrir = function () { aberta = aberta === t.id ? null : t.id; desenharConcl(); };
               l.addEventListener('click', abrir);
               l.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
@@ -643,9 +647,9 @@ function desenharPaginaDoAluno(user, aluno, previa) {
           var agora = new Date(), hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
           var pv = venc.split('-'), dias = Math.round((new Date(+pv[0], +pv[1] - 1, +pv[2]) - hoje) / 86400000), dia = pv[2] + '/' + pv[1];
           var texto, cor;
-          if (dias < 0) { texto = 'Sua mensalidade venceu dia ' + dia + '. Quando puder, é só me avisar.'; cor = '#A03E25'; }
-          else if (dias === 0) { texto = 'Sua mensalidade vence hoje, dia ' + dia + '.'; cor = '#1034A6'; }
-          else if (dias <= 2) { texto = 'Sua mensalidade vence dia ' + dia + '.'; cor = '#1034A6'; }
+          if (dias < 0) { texto = 'Sua mensalidade venceu dia ' + dia + '. Quando puder, é só me avisar.'; cor = FdaTema.cor('terracota'); }
+          else if (dias === 0) { texto = 'Sua mensalidade vence hoje, dia ' + dia + '.'; cor = FdaTema.cor('azul-egipcio-escuro'); }
+          else if (dias <= 2) { texto = 'Sua mensalidade vence dia ' + dia + '.'; cor = FdaTema.cor('azul-egipcio-escuro'); }
           else return;
           fixoMensalidade = { texto: texto, cor: cor }; atualizarAvisos();
           /* vencida é importante demais para ficar só atrás do sino: continua também no topo da página */
@@ -671,7 +675,7 @@ function desenharPaginaDoAluno(user, aluno, previa) {
               avisoResponder.textContent = paraResponder === 1 ? 'Você tem 1 atividade para responder.' : 'Você tem ' + paraResponder + ' atividades para responder.';
               avisoResponder.style.display = paraResponder ? '' : 'none';
             } });
-            var avisoResponder = el('p', { class: 'impresso', style: 'display:none;margin:0 0 14px;color:#A03E25;font-weight:700;font-size:16px' });
+            var avisoResponder = el('p', { class: 'impresso', style: 'display:none;margin:0 0 14px;color:var(--terracota,#A03E25);font-weight:700;font-size:16px' });
             app.appendChild(avisoResponder);
             // "Baixar meu caderno": o PDF com a capa e tudo que o aluno já fez; só aparece quando há atividades, no topo da aba Materiais
             var caixaCaderno = window.caderno.botao(aluno);
@@ -684,7 +688,7 @@ function desenharPaginaDoAluno(user, aluno, previa) {
               if (abrirAvisosNaEntrada) { abrirAvisosNaEntrada = false; irParaAvisos(); }
               // no fim da página, em qualquer aba: o Hermes e, em seguida, "Tire suas dúvidas" (ocre); leva às mensagens com o Cássio
               var texto = el('span', { text: 'Tire suas dúvidas' });
-              var duvidas = el('a', { href: '#', 'aria-label': 'Tire suas dúvidas', style: 'display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#B5852F;font:700 17px Cinzel,serif;text-transform:lowercase;letter-spacing:.03em' }, [
+              var duvidas = el('a', { href: '#', 'aria-label': 'Tire suas dúvidas', style: 'display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ocre,#B5852F);font:700 17px Cinzel,serif;text-transform:lowercase;letter-spacing:.03em' }, [
                 el('img', { src: 'img/hermes-aviso.png', alt: '', width: '34', height: '34' }), texto
               ]);
               duvidas.addEventListener('click', function (ev) { ev.preventDefault(); telaDuvidas(userAtual, aluno, previa); });
@@ -693,7 +697,7 @@ function desenharPaginaDoAluno(user, aluno, previa) {
                 if (!n) return;
                 /* os parênteses ficam ocres, como o texto; só o número é terracota */
                 texto.textContent = 'Tire suas dúvidas (';
-                texto.appendChild(el('span', { style: 'color:#A03E25', text: String(n) }));
+                texto.appendChild(el('span', { style: 'color:var(--terracota,#A03E25)', text: String(n) }));
                 texto.appendChild(document.createTextNode(')'));
               });
               /* aviso de mensagem no celular (?aba=conversa) abre direto nas dúvidas */
@@ -725,6 +729,6 @@ function desenharPaginaDoAluno(user, aluno, previa) {
     });
   })();
   </script>
-  <script src="menu.js?v=60" defer></script>
+  <script src="menu.js?v=64" defer></script>
 </body>
 </html>

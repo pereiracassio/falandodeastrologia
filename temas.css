@@ -1,0 +1,90 @@
+/* TEMAS — A ÚNICA lista de cores de época do Astro Hellenic.
+
+   Cada cor tem um nome e um valor por modo. Onde o software usar "o laranja", usa o laranja daquele modo,
+   sempre o mesmo valor, em qualquer tela. Ninguém decide cor por tela.
+
+   - Papiro e modo claro usam as MESMAS cores.
+   - O modo escuro usa a cor ADAPTADA (um pouco mais clara, pra aparecer no fundo escuro).
+   - Cor nova entra AQUI, nunca dentro de uma ferramenta.
+
+   Este arquivo ainda NÃO está ligado ao software (nenhuma tela usa estas variáveis hoje). Ele entra quando a
+   migração começar, uma ferramenta por vez. Ver o guia de design. */
+
+/* PAPIRO E MODO CLARO  (.paleta-clara: usada por uma "sonda" do JS pra ler estes valores mesmo com o modo escuro ligado) */
+:root, .paleta-clara {
+    --azul-egipcio-escuro: #1034A6;   /* mandala, linhas e texto em azul (o que não é pintado) */
+    --azul-egipcio-claro: #1F5FA3;    /* divisas, logo, tudo que é pintado; também a água */
+    --preto-tinta: #1A1410;           /* texto */
+    --ocre: #B5852F;                  /* dourado de época: termos, eixos, destaques */
+    --terracota: #A03E25;             /* títulos e destaques */
+    --laranja: #D0610F;               /* fogo (realgar) e a parte de fora da mancha do Sol */
+    --marrom: #6B4A2B;                /* terra */
+    --cinza: #6B7780;                 /* ar */
+    --verde: #4A7C59;                 /* WhatsApp */
+    --fundo-creme: #FFFDF5;           /* painel por baixo no modo claro (o papiro tem o dele em papiro.css) */
+}
+
+/* SULFITE — folha branca escrita à mão, com caneta. Mesmas cores de época, trocadas pelas cores das canetas.
+   (.paleta-sulfite: a sonda do JS, ver paletaEpoca em papiro.js) */
+:root.tema-sulfite, .paleta-sulfite {
+    --azul-egipcio-escuro: #0C34B1;   /* azul egípcio arroxeado */
+    --azul-egipcio-claro: #01C7FC;    /* azul egípcio claro */
+    --preto-tinta: #1C1C1C;           /* preto de tinta */
+    --ocre: #B8860B;                  /* ocre (caneta amarela, tinta dourada) */
+    --terracota: #BB0C34;             /* terracota (caneta vermelha) */
+    --laranja: #FC8520;               /* fogo */
+    --marrom: #734028;                /* terra */
+    --cinza: #808A91;                 /* ar */
+    --verde: #004E38;                 /* WhatsApp */
+    --fundo-creme: #FFFFFF;           /* fundo sulfite */
+}
+
+/* MODO ESCURO — as mesmas cores, adaptadas  (.paleta-escura: a sonda do JS) */
+:root.tema-escuro, .paleta-escura {
+    --azul-egipcio-escuro: #5F80E7;
+    --azul-egipcio-claro: #4A8DD4;
+    --preto-tinta: #E2E8F0;           /* no escuro o "preto de tinta" é este cinza bem claro */
+    --ocre: #D9AE3F;                  /* o dourado de antes */
+    --terracota: #CF6044;
+    --laranja: #F28A33;
+    --marrom: #AE7C4E;
+    --cinza: #A3ADB5;
+    --verde: #5FA073;
+    --fundo-creme: #1C1917;           /* painel por baixo no modo escuro */
+}
+
+/* ASPECTOS — as mesmas cores em TODAS as telas e temas (cada uma já tem a versão do modo escuro pela variável da paleta) */
+:root, .paleta-clara, :root.tema-escuro, .paleta-escura, :root.tema-sulfite, .paleta-sulfite {
+    --aspect-conjuncao: var(--preto-tinta);
+    --aspect-sextil: var(--azul-egipcio-claro);
+    --aspect-trigono: var(--azul-egipcio-escuro);
+    --aspect-quadratura: var(--terracota);
+    --aspect-oposicao: var(--laranja);
+}
+
+/* ELEMENTOS DOS SIGNOS — fogo = laranja, terra = marrom, ar = cinza, água = azul egípcio claro (cada um na versão do modo). Fonte única para CSS; para JS: corElementoSigno (papiro.js). */
+:root, .paleta-clara, :root.tema-escuro, .paleta-escura, :root.tema-sulfite, .paleta-sulfite {
+    --element-fogo: var(--laranja);
+    --element-terra: var(--marrom);
+    --element-ar: var(--cinza);
+    --element-agua: var(--azul-egipcio-claro);
+}
+
+/* SOMBRA DAS JANELAS QUE FLUTUAM (menus flutuantes): só estas têm sombra, pra ficar claro que estão por cima. */
+:root, .paleta-clara, :root.tema-sulfite, .paleta-sulfite { --sombra-janela: 0 4px 14px rgba(26, 20, 16, .30); }
+:root.tema-escuro, .paleta-escura { --sombra-janela: 0 4px 16px rgba(0, 0, 0, .70); }
+
+/* SULFITE — FONTE: letra de caneta (Caveat) no lugar de Montserrat e Cinzel, em tudo menos nos ícones (Font Awesome).
+   !important porque várias telas guardam a fonte no style inline. */
+:root.tema-sulfite {
+    --fonte-sulfite: 'Caveat', cursive;
+}
+/* (o Sulfite não tem mais fonte própria: a tipografia é uma só, em tipografia.css, igual em todos os temas) */
+
+/* MOLDURA (meandros): o SVG é montado por moldura.js com as cores do tema (contorno, --ocre, --azul-egipcio-claro). Aqui só a cor do contorno de cada tema. */
+:root, .paleta-clara { --moldura-contorno: #2B1D12; }
+:root.tema-escuro, .paleta-escura { --moldura-contorno: #E2E8F0; }
+:root.tema-sulfite, .paleta-sulfite { --moldura-contorno: #1C1C1C; }
+
+/* barra de TEMPO: degradê azul → ocre → terracota nas cores do tema (portal.js: tempoNoPreenchimento) */
+:root { --grad-tempo: linear-gradient(to right, var(--azul-egipcio-claro), var(--ocre), var(--terracota)); }

@@ -8,7 +8,7 @@
    Aviso de mensagem (url com aba=conversa) não aparece como cartão: a mensagem já está ali. */
 (function () {
   var P = window.portal, el = P.el, C = P.client;
-  var AZUL = '#1F5FA3', AZUL_ESCURO = '#1034A6', OCRE = '#B5852F', TERRACOTA = '#A03E25';
+  var AZUL = FdaTema.cor('azul-egipcio-claro'), AZUL_ESCURO = FdaTema.cor('azul-egipcio-escuro'), OCRE = FdaTema.cor('ocre'), TERRACOTA = FdaTema.cor('terracota');
 
   /* balão só de contorno, como no WhatsApp (único lugar do site com canto arredondado, pedido dele; por isso o !important contra a regra de canto reto): o canto de cima do lado de quem fala é reto e leva um bico desenhado (nada de preenchimento no papiro) */
   function estilosDosBaloes() {
@@ -22,9 +22,9 @@
       '.balao-eu::before{right:-10px;border-top:1.5px solid ' + OCRE + ';background:linear-gradient(to bottom right,transparent calc(50% - .75px),' + OCRE + ' calc(50% - .75px),' + OCRE + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
       '.balao-outro::before{left:-10px;border-top:1.5px solid ' + AZUL_ESCURO + ';background:linear-gradient(to bottom left,transparent calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% - .75px),' + AZUL_ESCURO + ' calc(50% + .75px),transparent calc(50% + .75px))}' +
       '.balao p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;font-family:"AstroIcones","Architects Daughter",cursive}' +
-      '.balao-rodape{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;font:400 11px "Architects Daughter",cursive;color:rgba(22,35,63,.62)}' +
-      '.aviso-card{align-self:center;display:flex;align-items:center;gap:8px;max-width:90%;margin:0 0 10px;padding:6px 10px;border:1px solid ' + AZUL + ';border-radius:0;background:transparent;cursor:pointer;font:400 14px/1.35 "Architects Daughter",cursive;color:#16233F}' +
-      '.aviso-card img{width:22px;height:22px;flex:0 0 auto}.aviso-card small{flex:0 0 auto;font-size:11px;color:rgba(22,35,63,.62)}' +
+      '.balao-rodape{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;font:400 11px "Architects Daughter",cursive;color:color-mix(in srgb,var(--preto-tinta,#16233F) 62%,transparent)}' +
+      '.aviso-card{align-self:center;display:flex;align-items:center;gap:8px;max-width:90%;margin:0 0 10px;padding:6px 10px;border:1px solid ' + AZUL + ';border-radius:0;background:transparent;cursor:pointer;font:400 14px/1.35 "Architects Daughter",cursive;color:var(--preto-tinta,#16233F)}' +
+      '.aviso-card img{width:22px;height:22px;flex:0 0 auto}.aviso-card small{flex:0 0 auto;font-size:11px;color:color-mix(in srgb,var(--preto-tinta,#16233F) 62%,transparent)}' +
       '.aviso-fixo{position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:85;width:min(92vw,560px);box-sizing:border-box;background:var(--papiro-fundo-simples);border:1.5px solid ' + AZUL_ESCURO + ';border-radius:0;padding:4px 10px;max-height:50vh;overflow-y:auto}' +
       '.aviso-fixo .aviso-card{max-width:100%;margin:6px 0;border:0;padding:4px 0;align-self:stretch}.aviso-fixo .mais{font:700 12px "Cinzel",serif;text-transform:lowercase;color:' + AZUL_ESCURO + ';cursor:pointer;padding:0 0 6px}' +
       '.dia-conversa{align-self:center;margin:6px 0 12px;font:700 12px "Cinzel",serif;text-transform:lowercase;letter-spacing:.03em;color:' + AZUL_ESCURO + '}';
@@ -35,7 +35,7 @@
   function tracinhos(lido) {
     var svg = document.createElementNS(SVG, 'svg'); svg.setAttribute('width', lido ? '19' : '14'); svg.setAttribute('height', '10'); svg.setAttribute('viewBox', lido ? '0 0 19 10' : '0 0 14 10'); svg.setAttribute('aria-label', lido ? 'Lida' : 'Enviada');
     [lido ? 'M1 5.5 L4.5 9 L12 1.5' : 'M1 5.5 L5 9 L13 1', 'M6.5 8.5 L7.8 9 L17.5 1.5'].slice(0, lido ? 2 : 1).forEach(function (d) {
-      var pth = document.createElementNS(SVG, 'path'); pth.setAttribute('d', d); pth.setAttribute('fill', 'none'); pth.setAttribute('stroke', lido ? AZUL_ESCURO : 'rgba(22,35,63,.55)');
+      var pth = document.createElementNS(SVG, 'path'); pth.setAttribute('d', d); pth.setAttribute('fill', 'none'); pth.setAttribute('stroke', lido ? AZUL_ESCURO : 'color-mix(in srgb,var(--preto-tinta,#16233F) 55%,transparent)');
       pth.setAttribute('stroke-width', '1.6'); pth.setAttribute('stroke-linecap', 'round'); pth.setAttribute('stroke-linejoin', 'round'); svg.appendChild(pth);
     });
     return svg;
@@ -189,7 +189,7 @@
     function montarBarra() {
       var campo = el('textarea', { rows: '1', placeholder: 'Escreva a sua mensagem', 'aria-label': 'Mensagem', 'data-icones': '1' });
       campo.classList.add('escrita-livre');   /* já marcado, para o site não aplicar a escrita livre grande nem a paleta de ícones aqui */
-      var estilo = { border: '1px solid ' + AZUL, 'border-radius': '0', padding: '9px 10px', margin: '0', background: 'transparent', color: '#16233F', 'min-height': '44px', 'max-height': '40vh',
+      var estilo = { border: '1px solid ' + AZUL, 'border-radius': '0', padding: '9px 10px', margin: '0', background: 'transparent', color: FdaTema.cor('preto-tinta'), 'min-height': '44px', 'max-height': '40vh',
         'font-size': '17px', 'font-family': '"Architects Daughter", cursive', 'line-height': '1.4', resize: 'none', 'overflow-y': 'auto', flex: '1 1 auto', width: '100%', display: 'block', 'box-sizing': 'border-box' };
       Object.keys(estilo).forEach(function (k) { campo.style.setProperty(k, estilo[k], 'important'); });
       var enviar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar' });

@@ -6,6 +6,7 @@
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/icone-daily-180.png?v=1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=7"></script>
   <link rel="manifest" href="manifest-daily.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -16,12 +17,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="papiro.css?v=4">
-  <link rel="stylesheet" href="home.css?v=20">
-  <link rel="stylesheet" href="page.css?v=82">
-  <link rel="stylesheet" href="portal.css?v=27">
+  <link rel="stylesheet" href="temas.css?v=5">
+  <script src="moldura.js?v=1"></script>
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="tipografia.css?v=26">
+  <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
     /* como no Google Agenda: as visões e a navegação ficam presas no topo e a agenda corre por baixo */
     /* overflow-x:hidden do home.css faz o body virar "caixa de rolagem" e o sticky não gruda; clip corta igual, sem isso */
@@ -33,10 +37,15 @@
     .barra-agenda{position:sticky;z-index:900;margin:0 calc(-1*var(--moldura-ph));padding:4px var(--moldura-ph)}
     /* parte presa = uma folha de papiro por cima: o mesmo papiro alinhado, moldura dos lados e a beirada de baixo rasgada, com sombra sobre o papiro da agenda que corre por baixo */
     .fundo-presa{position:fixed;top:0;z-index:899;display:none;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(70,45,15,.55))}
-    .fundo-presa i{display:block;width:100%;height:100%;box-sizing:border-box;border-style:solid;border-width:0 calc(80px*var(--moldura-m));border-image:url(img/moldura-redes.svg?v=3) 130 80 round;
+    .fundo-presa i{display:block;width:100%;height:100%;box-sizing:border-box;border-style:solid;border-width:0 calc(80px*var(--moldura-m));border-image:var(--moldura-img,url(img/moldura-redes.svg?v=3)) 130 80 round;
       background:var(--papiro-fundo);background-origin:border-box;background-size:var(--bw,100%) var(--bh,100%);background-position:var(--bx,0) var(--by,0);
       clip-path:polygon(0 0, 100% 0, 100.00% calc(100% - 3px), 97.73% calc(100% - 2px), 95.45% calc(100% - 1px), 93.18% calc(100% - 3px), 90.91% calc(100% - 5px), 88.64% calc(100% - 0px), 86.36% calc(100% - 0px), 84.09% calc(100% - 6px), 81.82% calc(100% - 4px), 79.55% calc(100% - 0px), 77.27% calc(100% - 2px), 75.00% calc(100% - 4px), 72.73% calc(100% - 0px), 70.45% calc(100% - 4px), 68.18% calc(100% - 1px), 65.91% calc(100% - 0px), 63.64% calc(100% - 0px), 61.36% calc(100% - 3px), 59.09% calc(100% - 3px), 56.82% calc(100% - 0px), 54.55% calc(100% - 1px), 52.27% calc(100% - 0px), 50.00% calc(100% - 4px), 47.73% calc(100% - 3px), 45.45% calc(100% - 0px), 43.18% calc(100% - 6px), 40.91% calc(100% - 4px), 38.64% calc(100% - 0px), 36.36% calc(100% - 1px), 34.09% calc(100% - 5px), 31.82% calc(100% - 5px), 29.55% calc(100% - 4px), 27.27% calc(100% - 0px), 25.00% calc(100% - 4px), 22.73% calc(100% - 4px), 20.45% calc(100% - 3px), 18.18% calc(100% - 0px), 15.91% calc(100% - 1px), 13.64% calc(100% - 0px), 11.36% calc(100% - 4px), 9.09% calc(100% - 6px), 6.82% calc(100% - 1px), 4.55% calc(100% - 2px), 2.27% calc(100% - 3px), 0.00% calc(100% - 3px));}
     .barra-agenda{padding-bottom:10px}
+    /* To do: sem a parte presa no topo (ela é da Agenda, para ver o dia enquanto corre a lista) */
+    body.sem-trava h1.portal-titulo,body.sem-trava .cab-horas,body.sem-trava .barra-agenda{position:static!important}
+    body.sem-trava .fundo-presa{display:none!important}
+      /* o texto NUNCA escapa do campo: no celular a hora vai numa linha só dela e o título ganha a largura toda */
+    @media (max-width:560px){.lista-linha{flex-wrap:wrap;row-gap:2px}.lista-linha>.lista-hora{flex:0 0 100% !important;min-width:0 !important}}
   </style>
 </head>
 <body>
@@ -52,8 +61,8 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=153"></script>
-  <script src="menu.js?v=60" defer></script>
+  <script src="portal.js?v=168"></script>
+  <script src="menu.js?v=64" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
   (function () {
@@ -129,8 +138,8 @@
     var CORES_EVENTO = { 1: '#7986cb', 2: '#33b679', 3: '#8e24aa', 4: '#e67c73', 5: '#f6bf26', 6: '#f4511e', 7: '#039be5', 8: '#616161', 9: '#3f51b5', 10: '#0b8043', 11: '#d50000' };
     var NOMES_COR = { 1: 'Lavanda', 2: 'Sálvia', 3: 'Uva', 4: 'Flamingo', 5: 'Banana', 6: 'Tangerina', 7: 'Pavão', 8: 'Grafite', 9: 'Mirtilo', 10: 'Manjericão', 11: 'Tomate' };
     /* compromisso PREENCHIDO: ocre, ou a cor que ele escolheu; o texto escuro ou claro conforme a cor, para ler bem por cima da grade */
-    function preenche(e) { return e.cor || e.calCor || '#B5852F'; }
-    function textoSobre(hex) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 120 ? '#16233F' : '#FFFFFF'; }
+    function preenche(e) { return e.cor || e.calCor || FdaTema.cor('ocre'); }
+    function textoSobre(hex) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 120 ? FdaTema.cor('preto-tinta') : '#FFFFFF'; }
     function normalizar(e, cal) {
       if (e.status === 'cancelled') return null;
       var diaTodo = !!(e.start && e.start.date);
@@ -170,7 +179,7 @@
         for (var y = a0; y <= a1; y++) {
           var bi = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0, dd = (m === 2 && d === 29 && !bi) ? 28 : d, iso = y + '-' + p2(m) + '-' + p2(dd), ini = doIso(iso);
           if (ini < de || ini >= ate) continue;
-          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome, curto: (p.codigo ? p.codigo + ' · ' : '') + p.nome, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#A03E25', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
+          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome, curto: (p.codigo ? p.codigo + ' · ' : '') + p.nome, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: FdaTema.cor('terracota'), calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
         }
       });
       return saida;
@@ -194,7 +203,7 @@
         var h = escolha != null ? hs[Math.min(escolha, hs.length - 1)] : ehVideo ? hs.slice().sort(function (x, y) { return Math.abs(x.ini - (d0 + 16 * 3600000)) - Math.abs(y.ini - (d0 + 16 * 3600000)); })[0] : hs[0];
         if (h.fim <= de || h.ini >= ate) return;
         var ini = h.ini, fim = h.fim;
-        saida.push({ id: idBase, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: fim, diaTodo: false, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: '#1F5FA3', calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } });
+        saida.push({ id: idBase, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: fim, diaTodo: false, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: FdaTema.cor('azul-egipcio-claro'), calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } });
       }
       producao.videos.forEach(function (v) {
         var iso = (v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar; if (!iso) return;
@@ -313,7 +322,7 @@
     /* caixinha só com contorno (igual ao resto do painel): devolve { el, valor() } */
     function caixinha(rotulo, inicial, aoMudar) {
       var marcada = !!inicial;
-      var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+      var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid var(--azul-egipcio-claro);border-radius:0;color:var(--terracota);font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
       var nome = el('span', { class: 'rotulo-fixo', text: rotulo, style: 'cursor:pointer' });
       var pinta = function () { cx.textContent = marcada ? '\u2713' : ''; cx.setAttribute('aria-checked', marcada ? 'true' : 'false'); if (aoMudar) aoMudar(marcada); };
       var alterna = function () { marcada = !marcada; pinta(); };
@@ -324,8 +333,8 @@
     /* abre no lugar onde ele está (nunca leva para o topo): uma folha por cima da tela, que some sozinha quando o conteúdo é fechado ou salvo */
     function abrirFolha() {
       var antiga = document.getElementById('folha-agenda'); if (antiga) antiga.remove();
-      var fundo = el('div', { id: 'folha-agenda', style: 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:99990;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:84px 10px 4vh;box-sizing:border-box;background:rgba(22,35,63,.35);display:flex;flex-direction:column' });
-      var corpo = el('div', { class: 'barra-ocre', style: 'width:100%;max-width:600px;margin:auto;box-sizing:border-box;border:2px solid #1F5FA3;border-left:6px solid #B5852F;padding:4px 14px 14px;background:var(--papiro-fundo-simples,#e6d3a0)' });
+      var fundo = el('div', { id: 'folha-agenda', style: 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:99990;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:84px 10px 4vh;box-sizing:border-box;background:color-mix(in srgb,var(--preto-tinta,#16233F) 35%,transparent);display:flex;flex-direction:column' });
+      var corpo = el('div', { class: 'barra-ocre', style: 'width:100%;max-width:600px;margin:auto;box-sizing:border-box;border:2px solid var(--azul-egipcio-claro);border-left:6px solid var(--ocre);padding:4px 14px 14px;background:var(--papiro-fundo-simples,#e6d3a0)' });
       fundo.appendChild(corpo); app.appendChild(fundo);
       var obs = new MutationObserver(function () { if (!corpo.firstChild) { obs.disconnect(); fundo.remove(); } });
       obs.observe(corpo, { childList: true });
@@ -342,25 +351,25 @@
       var acoes = [];
       if (dig) { var w = el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]); acoes.push(w); }
       acoes.push(fechar);
-      destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:#A03E25' }), el('p', { text: rotuloDia(isoDia(e.ini)) + ' · faz ' + p.idade + ' anos', style: 'margin:10px 0 0' }), el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes)]));
+      destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:var(--terracota)' }), el('p', { text: rotuloDia(isoDia(e.ini)) + ' · faz ' + p.idade + ' anos', style: 'margin:10px 0 0' }), el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes)]));
     }
     function detalhe(destino, e) {
       destino.textContent = '';
       if (e.aniversario) { detalheAniversario(destino, e); return; }
-      if (e.producao) { var fx = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' }); fx.addEventListener('click', function () { destino.textContent = ''; }); destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:#A03E25' }), el('p', { text: rotuloDia(isoDia(e.ini)), style: 'margin:10px 0 0' })].concat(e.producao.linhas.map(function (l) { return el('p', { text: l, style: 'margin:6px 0 0' }); }), [el('div', { style: 'margin-top:14px' }, [fx])]))); return; }
+      if (e.producao) { var fx = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' }); fx.addEventListener('click', function () { destino.textContent = ''; }); destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:var(--terracota)' }), el('p', { text: rotuloDia(isoDia(e.ini)), style: 'margin:10px 0 0' })].concat(e.producao.linhas.map(function (l) { return el('p', { text: l, style: 'margin:6px 0 0' }); }), [el('div', { style: 'margin-top:14px' }, [fx])]))); return; }
       var ultimo = isoDia(Math.max(e.ini, e.fim - 1)), quando = e.diaTodo ? (isoDia(e.ini) === ultimo ? 'o dia todo' : 'de ' + curto(isoDia(e.ini)) + ' a ' + curto(ultimo)) : 'das ' + hhmm(e.ini) + ' às ' + hhmm(e.fim);
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
       var acoes = [];
       if (e.meet) acoes.push(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: P.linkSeguro(e.meet) || e.meet, target: '_blank', rel: 'noopener', title: 'Entrar no Meet', 'aria-label': 'Entrar no Meet' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' })]));
       acoes.push(fechar);
-      var topo = el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:10px' }, [el('h2', { text: e.titulo, style: 'margin:0;flex:1;color:#A03E25' })]);
+      var topo = el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:10px' }, [el('h2', { text: e.titulo, style: 'margin:0;flex:1;color:var(--terracota)' })]);
       if (e.editavel) {
-        var lapis = el('button', { type: 'button', title: 'Editar', 'aria-label': 'Editar', text: '✎', style: 'flex:none;width:34px;height:34px;padding:0;background:transparent;border:0;border-radius:0;color:#1034A6;font-size:28px;line-height:1;cursor:pointer' });
+        var lapis = el('button', { type: 'button', title: 'Editar', 'aria-label': 'Editar', text: '✎', style: 'flex:none;width:34px;height:34px;padding:0;background:transparent;border:0;border-radius:0;color:var(--azul-egipcio-escuro);font-size:28px;line-height:1;cursor:pointer' });
         lapis.addEventListener('click', function () { formulario(destino, e, {}); });
         topo.appendChild(lapis);
       }
-      var filhos = [topo, el('p', { style: 'margin:10px 0 0' }, [el('span', { text: rotuloDia(isoDia(e.ini)) + ', ' }), el('span', { text: quando, style: 'color:#1034A6;font-weight:700' })])];
+      var filhos = [topo, el('p', { style: 'margin:10px 0 0' }, [el('span', { text: rotuloDia(isoDia(e.ini)) + ', ' }), el('span', { text: quando, style: 'color:var(--azul-egipcio-escuro);font-weight:700' })])];
       if (e.recorrenteId || e.recorrencia) filhos.push(el('p', { text: 'Compromisso que se repete.', style: 'margin:6px 0 0' }));
       if (e.local) filhos.push(el('p', { text: e.local, style: 'margin:6px 0 0' }));
       if (e.convidados.length) filhos.push(el('p', { text: 'Com ' + e.convidados.join(', '), style: 'margin:6px 0 0' }));
@@ -384,13 +393,13 @@
           var dia = isoDia(e.ini), hora = hhmm(e.ini).replace(':00', 'h').replace(':', 'h');
           var quandoTxt = dia === isoDia(Date.now()) ? 'hoje' : dia === isoDia(Date.now() + DIA) ? 'amanhã' : 'no dia ' + curto(dia);
           var sino = el('button', { type: 'button', title: 'Avisar no aplicativo', 'aria-label': 'Avisar no aplicativo', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer' });
-          sino.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A03E25" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
+          sino.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--terracota)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
           sino.addEventListener('click', function () {
             sino.disabled = true;
             P.avisos.manual(f.para, f.p.id, 'Oi, ' + primeiro + '! Passando para lembrar do seu ' + (f.para === 'aluno' ? 'encontro' : 'atendimento') + ' ' + quandoTxt + ', às ' + hora + '.').then(function (x) {
               sino.disabled = false;
               if (!x.ok) { alert((x.dados && x.dados.erro) || 'Não foi possível enviar agora.'); return; }
-              sino.innerHTML = '<span style="font-size:28px;line-height:36px;color:#A03E25;font-weight:700">✓</span>';
+              sino.innerHTML = '<span style="font-size:28px;line-height:36px;color:var(--terracota);font-weight:700">✓</span>';
               sino.title = x.dados.enviados ? 'Aviso enviado' : 'Guardado na lista dele (avisos não ativados no celular)';
             }, function () { sino.disabled = false; alert('Não foi possível enviar agora.'); });
           });
@@ -428,7 +437,7 @@
       }).then(function () {}, function () {});
     }
     function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
-    var linhaFina = '1px solid rgba(31,95,163,.35)';
+    var linhaFina = '1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 35%,transparent)';
     /* o ícone ocre do Meet (o mesmo da página do aluno), pequeno, na frente do título */
     function marcaMeet(px) { return el('img', { src: 'img/rede-meet.svg', alt: 'Meet', width: String(px), height: String(px), style: 'vertical-align:middle;margin-right:3px' }); }
     function bloco(texto, estilo) { var d = el('div', { text: texto }); d.style.cssText = estilo; return d; }
@@ -465,7 +474,7 @@
       visao = visaoDoEndereco(); /* abre onde ficou: horas, to do ou a última aba da agenda */
       areaForm = el('div');
       var vista = el('div'), titulo = el('h2', { style: 'margin:6px 0 4px;text-align:center;flex:1;min-width:0;font-size:12.5px;line-height:1.15' }), encaixe = el('div');
-      var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:#A03E25;font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
+      var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:var(--terracota);font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
       novo.addEventListener('click', function () { if (visao === 'todo') { if (alternarFormTodo) alternarFormTodo(); return; } formulario(abrirFolha(), null, { dia: visao === 'dia' ? ancora : undefined }); });
       var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:0' }), botoes = {};
       VISOES.forEach(function (v) {
@@ -474,7 +483,7 @@
         botoes[v[0]] = b; abas.appendChild(b);
       });
       var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' || visao === 'horas' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
-      var estSeta = 'flex:none;background:transparent;border:0;border-radius:0;color:#1034A6;font-size:30px;line-height:1;padding:0 6px;cursor:pointer;font-family:inherit';
+      var estSeta = 'flex:none;background:transparent;border:0;border-radius:0;color:var(--azul-egipcio-escuro);font-size:30px;line-height:1;padding:0 6px;cursor:pointer;font-family:inherit';
       var ant = el('button', { type: 'button', text: '‹', 'aria-label': 'Anterior', style: estSeta }), prox = el('button', { type: 'button', text: '›', 'aria-label': 'Próximo', style: estSeta });
       /* a data em terracota fica entre ‹ e › na mesma linha; só no Dia (e nas Horas) tocar nela abre o calendário para buscar a data. O seletor do iPad dispara "mudou" com a data de HOJE assim que abre,
          por isso o campo só guarda o valor, e só o botão Ir leva até lá (nada redesenha com o seletor aberto) */
@@ -508,6 +517,7 @@
         P.estado.gravar({ v: visao, d: ancora });
         guardarVisaoCal(visao);
         var modo = modoDe(visao), h1x = document.querySelector('h1.portal-titulo');
+        document.body.classList.toggle('sem-trava', modo === 'todo' || modo === 'horas');
         if (h1x) h1x.textContent = ROTULO[modo]; document.title = ROTULO[modo] + ' - Falando de Astrologia';
         VISOES.forEach(function (v) { botoes[v[0]].style.display = CALV.indexOf(v[0]) >= 0 && modo === 'agenda' ? '' : 'none'; }); /* Horas e To do saíram desta barra: são abas da barra de cima */
         novo.style.display = modo === 'horas' ? 'none' : ''; /* nas Horas só se encaixa: o + de compromisso normal é da Agenda */
@@ -518,10 +528,10 @@
           var ini0 = somaDias(ancora, -diaSem(ancora)), hojeIso = isoDia(Date.now());
           titulo.textContent = tituloPeriodo(); diasSemana.style.cssText = 'display:grid;grid-template-columns:repeat(7, minmax(0, 1fr))';
           for (var k = 0; k < 7; k++) (function (iso) {
-            var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:0;font-family:var(--fonte-mao);color:#A03E25;text-align:center;line-height:1.1' });
+            var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:0;font-family:var(--fonte-mao);color:var(--terracota);text-align:center;line-height:1.1' });
             b.appendChild(el('div', { class: 'rotulo-fixo', text: SEM_CURTO[diaSem(iso)], style: 'font-size:10px' }));
             var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:15px;font-weight:700;display:inline-block;min-width:22px;line-height:22px' });
-            if (iso === hojeIso) n.style.cssText += ';border:2px solid #B5852F;color:#A03E25';
+            if (iso === hojeIso) n.style.cssText += ';border:2px solid var(--ocre);color:var(--terracota)';
             b.appendChild(n);
             b.addEventListener('click', function () { visao = 'dia'; ancora = iso; mudou(); });
             diasSemana.appendChild(b);
@@ -571,7 +581,7 @@
     var ORDEM_ICONES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno'];
     function iconePlaneta(nome, px, cor) {
       return el('span', { text: String.fromCharCode(0xE000 + ORDEM_ICONES.indexOf(nome)), title: nome, 'aria-label': nome,
-        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + (cor || '#1F5FA3') + ';vertical-align:middle;flex:none' });
+        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + (cor || FdaTema.cor('azul-egipcio-claro')) + ';vertical-align:middle;flex:none' });
     }
     /* as horas planetárias de um dia civil, cortadas na meia-noite: cada uma vira uma linha da grade */
     function segmentosDoDia(iso) {
@@ -586,14 +596,14 @@
       return null;
     }
     function comPecaClara(ic, comFundo) { /* peça clarinha atrás, para ler em cima da cor de qualquer agenda */
-      return comFundo ? el('span', { style: 'display:inline-flex;flex:none;align-items:center;justify-content:center;background:#F3E3B8;padding:1px 2px;line-height:1' }, [ic]) : ic;
+      return comFundo ? el('span', { style: 'display:inline-flex;flex:none;align-items:center;justify-content:center;background:var(--vazado,#F3E3B8);padding:1px 2px;line-height:1' }, [ic]) : ic;
     }
     function planetaDoInstante(ms, px, comFundo) {
       var s = horaDoInstante(ms); if (!s) return null;
-      return comPecaClara(iconePlaneta(s.planeta, px, s.noite ? '#1F5FA3' : '#B5852F'), comFundo);
+      return comPecaClara(iconePlaneta(s.planeta, px, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')), comFundo);
     }
     var REGENTE_DO_DIA = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno']; /* domingo a sábado */
-    function planetaDoDia(ms, px, comFundo) { return comPecaClara(iconePlaneta(REGENTE_DO_DIA[diaSem(isoDia(ms))], px, '#A03E25'), comFundo); } /* o planeta do DIA é terracota */
+    function planetaDoDia(ms, px, comFundo) { return comPecaClara(iconePlaneta(REGENTE_DO_DIA[diaSem(isoDia(ms))], px, FdaTema.cor('terracota')), comFundo); } /* o planeta do DIA é terracota */
     /* evento com hora = planeta da hora em que começa; evento de dia todo = planeta do dia */
     function planetaDoEvento(e, px, comFundo) { return e.diaTodo ? planetaDoDia(e.ini, px, comFundo) : planetaDoInstante(e.ini, px, comFundo); }
     function yDe(segs, t, H) { /* onde, na coluna, fica um instante: dentro da linha da hora planetária em que ele cai */
@@ -609,10 +619,10 @@
       var caixa = el('div');
       var cab = el('div', { style: 'display:grid;grid-template-columns:' + modelo }); if (unico) cab.appendChild(el('div'));
       isos.forEach(function (iso) {
-        var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:6px 0;font-family:var(--fonte-mao);color:#16233F;text-align:center' });
+        var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:6px 0;font-family:var(--fonte-mao);color:var(--preto-tinta);text-align:center' });
         b.appendChild(el('div', { class: 'rotulo-fixo', text: SEM_CURTO[diaSem(iso)], style: 'font-size:11px' }));
         var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:16px;font-weight:700;display:inline-block;min-width:26px;line-height:26px' });
-        if (iso === hoje) n.style.cssText += ';border:2px solid #B5852F;color:#A03E25';
+        if (iso === hoje) n.style.cssText += ';border:2px solid var(--ocre);color:var(--terracota)';
         b.appendChild(n);
         if (!unico) b.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
         cab.appendChild(b);
@@ -623,7 +633,7 @@
         isos.forEach(function (iso) {
           var c = el('div', { style: 'padding:2px;min-width:0' });
           doDia(iso, evs).filter(function (e) { return e.diaTodo; }).forEach(function (e) {
-            var t = el('div', { style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.3;border:1px solid #16233F;background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;cursor:pointer;color:' + textoSobre(preenche(e)) });
+            var t = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.3;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;cursor:pointer;color:' + textoSobre(preenche(e)) });
             t.appendChild(el('span', { text: e.curto || e.titulo, style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' }));
             var plD = planetaDoEvento(e, 10, true); if (plD) t.appendChild(plD);
             t.addEventListener('click', function () { abrirEvento(e); }); c.appendChild(t);
@@ -636,18 +646,19 @@
       if (unico) { /* a régua do lado: ícone do planeta e hora em que a hora planetária começa */
         var gut = el('div', { style: 'position:relative;height:' + altura + 'px' });
         todos[0].forEach(function (s, k) {
-          var l = el('div', { style: 'position:absolute;left:0;right:4px;top:' + (k * H) + 'px;height:' + H + 'px;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:5px;border-top:' + linhaFina + ';font-size:11px;color:#16233F' });
-          l.appendChild(el('span', { text: hhmm(s.ini), style: 'opacity:.75' })); l.appendChild(iconePlaneta(s.planeta, 22, s.noite ? '#1F5FA3' : '#B5852F'));
+          var l = el('div', { style: 'position:absolute;left:0;right:4px;top:' + (k * H) + 'px;height:' + H + 'px;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:5px;border-top:' + linhaFina + ';font-size:11px;color:var(--preto-tinta)' });
+          l.appendChild(el('span', { text: hhmm(s.ini), style: 'opacity:.75' })); l.appendChild(iconePlaneta(s.planeta, 22, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')));
           gut.appendChild(l);
         });
         corpo.appendChild(gut);
       }
       isos.forEach(function (iso, di) {
         var d0 = doIso(iso), d1 = d0 + DIA, segs = todos[di];
-        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + (H - 1) + 'px,rgba(31,95,163,.3) ' + H + 'px)' });
+        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 30%,transparent) ' + (H - 1) + 'px,color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 30%,transparent) ' + H + 'px)' });
+        if (di === isos.length - 1) col.style.borderRight = linhaFina; /* a última coluna fecha a grade do lado direito */
         if (!unico) segs.forEach(function (s, k) { /* na semana cada coluna tem o seu ícone e hora, no cantinho da linha */
-          var m = el('div', { style: 'position:absolute;left:2px;top:' + (k * H + 2) + 'px;display:flex;align-items:center;gap:2px;font-size:9px;color:#16233F;opacity:.7;pointer-events:none' });
-          m.appendChild(iconePlaneta(s.planeta, 13, s.noite ? '#1F5FA3' : '#B5852F')); m.appendChild(el('span', { text: hhmm(s.ini) }));
+          var m = el('div', { style: 'position:absolute;left:2px;top:' + (k * H + 2) + 'px;display:flex;align-items:center;gap:2px;font-size:9px;color:var(--preto-tinta);opacity:.7;pointer-events:none' });
+          m.appendChild(iconePlaneta(s.planeta, 13, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))); m.appendChild(el('span', { text: hhmm(s.ini) }));
           col.appendChild(m);
         });
         col.addEventListener('click', function (ev) {
@@ -660,7 +671,7 @@
         var itens = doDia(iso, evs).filter(function (e) { return !e.diaTodo; }).map(function (e) { return { e: e, i: Math.max(e.ini, d0), f: Math.min(e.fim, d1) }; }).sort(function (p, q) { return p.i - q.i; });
         colunas(itens).forEach(function (x) {
           var top = yDe(segs, x.i, H), alt = Math.max(16, yDe(segs, x.f, H) - top - 1);
-          var b = el('div', { style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid #16233F;background:' + preenche(x.e) + ';padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:' + textoSobre(preenche(x.e)) + ';cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
+          var b = el('div', { class: 'preench', style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid var(--preto-tinta);background:' + preenche(x.e) + ';padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:' + textoSobre(preenche(x.e)) + ';cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
           var tt = el('div', { style: 'font-weight:700' }); if (x.e.meet) tt.appendChild(marcaMeet(unico ? 16 : 12)); tt.appendChild(document.createTextNode(x.e.titulo)); b.appendChild(tt);
           var tam = unico ? Math.max(14, Math.min(34, alt - 8)) : 11, pl = planetaDoEvento(x.e, tam, true); /* no Dia o ícone acompanha a altura do evento (até 34px) */
           if (pl && unico) { pl.style.position = 'absolute'; pl.style.right = '2px'; pl.style.top = '2px'; tt.style.paddingRight = (tam + 12) + 'px'; b.appendChild(pl); }
@@ -674,7 +685,7 @@
           b.addEventListener('click', function (ev) { ev.stopPropagation(); abrirEvento(x.e); });
           col.appendChild(b);
         });
-        if (iso === hoje && segs.length) { var agora = yDe(segs, Date.now(), H); if (agora > 0 && agora < segs.length * H) col.appendChild(bloco('', 'position:absolute;left:0;right:0;top:' + agora + 'px;border-top:2px solid #A03E25;pointer-events:none')); }
+        if (iso === hoje && segs.length) { var agora = yDe(segs, Date.now(), H); if (agora > 0 && agora < segs.length * H) col.appendChild(bloco('', 'position:absolute;left:0;right:0;top:' + agora + 'px;border-top:2px solid var(--terracota);pointer-events:none')); }
         corpo.appendChild(col);
       });
       caixa.appendChild(corpo);
@@ -687,11 +698,11 @@
       for (var i = 0; i < dias; i++) {
         var iso = somaDias(primeiro, i), doDiaL = doDia(iso, evs);
         if (!doDiaL.length) continue;
-        var bloco1 = el('div', { style: 'margin:0 0 14px' }, [el('div', { text: rotuloDia(iso), style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:' + linhaFina })]);
+        var bloco1 = el('div', { style: 'margin:0 0 14px' }, [el('div', { text: rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);padding:6px 0;border-bottom:' + linhaFina })]);
         doDiaL.sort(function (p, q) { return (p.diaTodo ? 0 : 1) - (q.diaTodo ? 0 : 1) || p.ini - q.ini; }).forEach(function (e) {
-          var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid #16233F;background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
-          linha.appendChild(el('span', { text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
-          var nome = el('span', { style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
+          var linha = el('div', { class: 'preench lista-linha', style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
+          linha.appendChild(el('span', { class: 'lista-hora', text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
+          var nome = el('span', { class: 'proj-titulo', style: 'flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
           linha.appendChild(nome); var plL = planetaDoEvento(e, 28, true); if (plL) linha.appendChild(plL); /* no canto direito, do tamanho da linha, como no Dia */
           var aberto = el('div', { class: 'barra-ocre' }); /* o cartão abre aqui embaixo, sem sair de onde você está */
           linha.addEventListener('click', function () { if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, e); });
@@ -724,8 +735,8 @@
     function barrasDe(item, etapas, criado, fim) {
       if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
       var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= new Date().toLocaleDateString('sv-SE')) : !!item[k]; };
-      var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid #1F5FA3;margin:8px 0 0;overflow-x:auto' }, etapas.map(function (e, i) {
-        return el('span', { text: e[1], style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid #1F5FA3;' : '') + (feita(e[0]) ? 'background:#1F5FA3;color:#F3E3B8' : 'color:#A03E25') });
+      var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid var(--azul-egipcio-claro);margin:8px 0 0;overflow-x:auto;overflow-y:hidden' }, etapas.map(function (e, i) {
+        return el('span', { text: e[1], class: feita(e[0]) ? 'preench' : '', style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:var(--vazado,#F3E3B8)' : 'color:var(--terracota)') });
       }));
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }
@@ -738,22 +749,22 @@
           if (!v.no_ar) {
             var dtv = v.datas_etapas || {}, pend = [['roteiro_ok', 'fazer o roteiro', dtv.roteiro_ok], ['gravado', 'gravar', v.data_gravar], ['editado', 'edição grossa', dtv.editado], ['edicao_fina', 'edição fina', dtv.edicao_fina], ['seo_ok', 'fazer o SEO', dtv.seo_ok]]
               .filter(function (e) { return !v[e[0]] && e[2]; })[0];
-            if (pend) { saida.push({ ord: v.numero || 0, quando: doIso(pend[2]), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: pend[1], subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, pend[2]] }); return; }
+            if (pend) { saida.push({ ord: v.numero || 0, quando: doIso(pend[2]), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: pend[1], subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, pend[2]] }); return; }
           }
           /* já no YouTube, mas ainda falta fazer os cortes e depois colocar no blog: fica na lista, sem data enquanto ele não puser a data limite */
           if (v.no_ar && !(v.cortes_feitos && v.blog_ok)) {
             var faltaCortes = !v.cortes_feitos, dl = (faltaCortes ? v.data_cortes : v.data_blog) || '';
-            saida.push({ ord: v.numero || 0, quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, dl] });
+            saida.push({ ord: v.numero || 0, quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, dl] });
             return;
           }
           var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
           var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título');
-          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', subOcre: true, url: link(v), cor: '#1034A6', capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
+          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
         });
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
           var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
-          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · Júpiter', subOcre: true, url: link(v, c.id), cor: '#1034A6', bsp: ['c', c, c.criado_em, c.data] });
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · Júpiter', subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data] });
         });
         return saida;
       }, function () { return []; });
@@ -764,11 +775,11 @@
         (r[0].data || []).forEach(function (p) {
           var meus = passos.filter(function (x) { return x.projeto_id === p.id; }), feitos = meus.filter(function (x) { return x.feito; }).length;
           if (meus.length && feitos === meus.length) return;
-          saida.push({ quando: doIso(p.data_fim), diaTodo: true, titulo: p.nome, sub: 'projeto · ' + feitos + '/' + meus.length + ' passos', url: 'admin-projetos.html', cor: '#A03E25' });
+          saida.push({ quando: doIso(p.data_fim), diaTodo: true, titulo: p.nome, sub: 'projeto · ' + feitos + '/' + meus.length + ' passos', url: 'admin-projetos.html', cor: FdaTema.cor('terracota') });
         });
         (r[2].data || []).forEach(function (e) {
           if (e.encerrado) return;
-          saida.push({ quando: doIso(e.data_fim), diaTodo: true, titulo: e.nome, sub: 'estudo · data final', url: 'admin-estudos.html', cor: '#A03E25' });
+          saida.push({ quando: doIso(e.data_fim), diaTodo: true, titulo: e.nome, sub: 'estudo · data final', url: 'admin-estudos.html', cor: FdaTema.cor('terracota') });
         });
         return saida;
       }, function () { return []; });
@@ -786,7 +797,7 @@
         r[2].forEach(function (q) { var x = resp[q.id], feita = q.tipo === 'multipla' ? !!(x && x.opcao != null) : !!(x && x.texto); if (!feita) falta[q.aula_id] = true; });
         r[1].forEach(function (a) {
           if (!nomes[a.estudo_id] || !a.data || !falta[a.id]) return; /* só estudo aberto com prazo e aula com questão por responder */
-          saida.push({ quando: doIso(String(a.data).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: a.materia + ' · ' + nomes[a.estudo_id], subOcre: true, url: 'admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(a.estudo_id), cor: '#1034A6' });
+          saida.push({ quando: doIso(String(a.data).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: a.materia + ' · ' + nomes[a.estudo_id], subOcre: true, url: 'admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(a.estudo_id), cor: FdaTema.cor('azul-egipcio-escuro') });
         });
         return saida;
       }, function () { return []; });
@@ -824,7 +835,7 @@
         C.from('atividades').select('id,corrigida_em,enviada_em,antiga,somente_leitura,rascunho').then(function (r) { return r.error ? C.from('atividades').select('id,corrigida_em,enviada_em,antiga').then(function (r2) { return r2.error ? [] : (r2.data || []); }) : (r.data || []); }, function () { return []; })
       ]).then(function (r) {
         var saida = [], porId = function (l, id) { return l.filter(function (x) { return x.id === id; })[0]; };
-        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: '#A03E25' }); });
+        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: FdaTema.cor('terracota') }); });
         r[2].forEach(function (x) {
           /* a parte DELE acabou quando o item foi ligado (material, gravação ou atividade disponível para o aluno) */
           if ((x.tipo === 'material' || x.tipo === 'gravacao') && (x.item_id || x.lido_em)) return;
@@ -836,7 +847,7 @@
           }
           if (!quandoPasso) return;
           var t = porId(r[3], x.trilha_id); if (!t) return; var al = porId(r[4], t.aluno_id), c = r[5].filter(function (y) { return y.aluno_id === t.aluno_id; })[0];
-          saida.push({ quando: doIso(quandoPasso), diaTodo: true, titulo: tituloPasso, sub: 'trilha ' + t.nome + ' · ' + (c && c.codigo ? c.codigo + ' · ' : '') + (al ? al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(t.aluno_id) + '&aba=trilha', cor: '#A03E25' });
+          saida.push({ quando: doIso(quandoPasso), diaTodo: true, titulo: tituloPasso, sub: 'trilha ' + t.nome + ' · ' + (c && c.codigo ? c.codigo + ' · ' : '') + (al ? al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(t.aluno_id) + '&aba=trilha', cor: FdaTema.cor('terracota') });
         });
         return saida;
       });
@@ -882,15 +893,15 @@
         /* uma hora livre do planeta por dia (considerando os compromissos, quando a agenda pôde ser lida) e a lista de caixinhas */
         function montar(evs, aviso) {
           resPlan.textContent = '';
-          if (aviso) resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#A03E25', text: aviso }));
+          if (aviso) resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:var(--terracota)', text: aviso }));
           var itens = [], colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
           var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
           for (var i = 0; i < n; i++) {
             var iso = somaDias(hojeI, i), agoraI = iso === hoje0 ? Math.ceil(Date.now() / 300000) * 300000 : 0;
             /* TODAS as horas livres do planeta no dia (uma por hora do planeta, a primeira parte livre dela), dentro de "A partir de" e "Até", com 15 min de folga dos compromissos */
             var vistas = {}, sls = slotsDoDia(iso, evs, planetaSel.value, 30, deT.value || '06:00', ateT.value || '22:00', 15 * 60000, agoraI).sort(function (p, q) { return p.ini - q.ini; }).filter(function (x) { if (vistas[x.hora.ini]) return false; vistas[x.hora.ini] = 1; return true; });
-            if (!sls.length) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
-            resPlan.appendChild(el('div', { text: rotuloDia(iso), style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;margin:14px 0 0' }));
+            if (!sls.length) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:var(--preto-tinta);opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
+            resPlan.appendChild(el('div', { text: rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);margin:14px 0 0' }));
             sls.forEach(function (sl) {
               var it = { iso: iso, hora: hhmm(sl.ini), marcado: false }; itens.push(it);
               resPlan.appendChild(caixinha(hhmm(sl.ini) + ' às ' + hhmm(sl.hora.fim), false, function (m) { it.marcado = m; atualiza(); }).el);
@@ -932,7 +943,7 @@
       botaoAdd.addEventListener('click', adicionar);
       nova.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); adicionar(); } });
       function caixinhaFeito(x, linha, aberto) {
-        var cx = el('button', { type: 'button', role: 'checkbox', 'aria-checked': 'false', 'aria-label': 'Marcar como feito', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid #1F5FA3;border-radius:0;color:#A03E25;font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+        var cx = el('button', { type: 'button', role: 'checkbox', 'aria-checked': 'false', 'aria-label': 'Marcar como feito', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid var(--azul-egipcio-claro);border-radius:0;color:var(--terracota);font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
         cx.addEventListener('click', function () {
           cx.textContent = '✓'; cx.disabled = true;
           var falhou = function () { cx.textContent = ''; cx.disabled = false; alert('Não foi possível salvar.'); };
@@ -961,7 +972,7 @@
         try { var cs = lerCache(); cs.todo = { fora: dados.fora, tarefas: dados.tarefas, feitos: dados.feitos }; gravarCache(cs); } catch (e) { /* só fica sem o guardado */ } /* a cada desenho o guardado acompanha (marcou como feito = não volta ao reabrir) */
         var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
         dados.tarefas.forEach(function (t) {
-          itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data });
+          itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: FdaTema.cor('ocre'), semData: !t.data });
         });
         itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; }); /* no mesmo dia/horário, vídeos em ordem crescente de número */
         if (dados.falhas.length) lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + dados.falhas.join(', ') + '.' }));
@@ -971,20 +982,20 @@
           var iso = x.semData ? '' : isoDia(x.quando), grupo = x.semData ? 'Sem data' : iso < hoje ? 'Atrasados' : iso;
           if (grupo !== grupoAtual) {
             grupoAtual = grupo; bloco1 = el('div', { style: 'margin:0 0 14px' });
-            bloco1.appendChild(el('div', { text: grupo === 'Atrasados' || grupo === 'Sem data' ? grupo : rotuloDia(iso), style: 'font-family:var(--fonte-titulo);font-weight:700;color:#A03E25;padding:6px 0;border-bottom:' + linhaFina }));
+            bloco1.appendChild(el('div', { text: grupo === 'Atrasados' || grupo === 'Sem data' ? grupo : rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);padding:6px 0;border-bottom:' + linhaFina }));
             lista.appendChild(bloco1);
           }
           var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:' + linhaFina });
           var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
           var plT = !x.semData && isFinite(x.quando) ? (x.diaTodo ? planetaDoDia(x.quando, 28, false) : planetaDoInstante(x.quando, 28, false)) : null;
-          var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:#1034A6' })]);
-          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:#B5852F;font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
+          var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:var(--azul-egipcio-escuro)' })]);
+          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:var(--ocre);font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
           var aberto = el('div', { class: 'barra-ocre' });
           texto.addEventListener('click', function () { if (x.url) { try { sessionStorage.setItem('fda_voltar_origem', JSON.stringify({ url: x.url, volta: 'admin-agenda.html' + location.hash })); } catch (e) { /* sem armazenamento */ } location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
           linha.appendChild(barra);
           if (x.capa) { /* a capinha do vídeo fica EM CIMA, do tamanho da coluna, e o texto escreve embaixo dela (no celular não espreme o texto) */
             texto.style.flex = 'none'; texto.style.width = '100%';
-            linha.appendChild(el('div', { style: 'flex:1;min-width:0' }, [el('img', { src: x.capa, alt: '', style: 'display:block;width:100%;max-width:300px;aspect-ratio:16/9;object-fit:cover;border:1px solid #1F5FA3;margin:0 0 8px' }), texto]));
+            linha.appendChild(el('div', { style: 'flex:1;min-width:0' }, [el('img', { src: x.capa, alt: '', style: 'display:block;width:100%;max-width:300px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:0 0 8px' }), texto]));
           } else linha.appendChild(texto);
           if (x.tarefa) {
             var ap = P.botaoApagar('Apagar');
@@ -1018,7 +1029,7 @@
           if (dono) { atendidos.push({ e: e, dono: dono }); return; } /* atendimento de cliente ou encontro de aluno que já terminou (vale também se está como "livre"): ver abaixo se a gravação já foi disponibilizada */
           if (e.livre && !e.aniversario) return; /* compromisso que deixa a agenda livre não entra no To do: só os que deixam ocupada */
           if (!e.aniversario && e.fim <= agora) return; /* compromisso que já terminou sai sozinho; só o que ele precisa resolver fica atrasado */
-          dados.fora.push({ quando: e.ini, diaTodo: e.diaTodo, titulo: e.titulo, sub: e.aniversario ? 'aniversário · mandar a mensagem' : e.calNome, chave: e.aniversario ? 'a|' + e.id + '|' + e.ini : '', /* só aniversário tem caixinha; compromisso sai sozinho quando o horário acaba */ evento: e, cor: e.aniversario ? '#A03E25' : preenche(e) });
+          dados.fora.push({ quando: e.ini, diaTodo: e.diaTodo, titulo: e.titulo, sub: e.aniversario ? 'aniversário · mandar a mensagem' : e.calNome, chave: e.aniversario ? 'a|' + e.id + '|' + e.ini : '', /* só aniversário tem caixinha; compromisso sai sozinho quando o horário acaba */ evento: e, cor: e.aniversario ? 'var(--terracota)' : preenche(e) });
         });
         /* cada gravação disponibilizada (depois do começo do encontro, ou com a data dele em diante) dá o encontro como feito, um encontro por gravação, do mais antigo para o mais novo */
         var usadas = {};
@@ -1028,7 +1039,7 @@
           if (achou >= 0) { usadas[a.dono.chave + achou] = 1; return; }
           var diaSeguinte = meiaNoiteDe(a.e.fim - 1) + DIA; /* o Google demora horas para entregar a gravação (e ele promete em até 3 dias): só aparece a partir do dia seguinte ao encontro, e nesse dia ainda não é atraso */
           if (agora < diaSeguinte) return;
-          dados.fora.push({ quando: diaSeguinte, diaTodo: true, titulo: 'Disponibilizar a gravação', sub: String(a.e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + a.e.id + '|' + a.e.ini, url: a.dono.url, cor: '#1034A6' });
+          dados.fora.push({ quando: diaSeguinte, diaTodo: true, titulo: 'Disponibilizar a gravação', sub: String(a.e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + a.e.id + '|' + a.e.ini, url: a.dono.url, cor: FdaTema.cor('azul-egipcio-escuro') });
         });
         dados.fora = dados.fora.concat(r[2], r[3], r[4]);
         var novoGuardado = { fora: dados.fora, tarefas: dados.tarefas, feitos: dados.feitos }, antigoTexto = guardado ? JSON.stringify({ fora: guardado.fora, tarefas: guardado.tarefas, feitos: guardado.feitos }) : '';
@@ -1048,11 +1059,11 @@
           var fora = iso.slice(0, 7) !== a[0] + '-' + a[1];
           var c = el('div', { style: 'min-height:84px;padding:2px;min-width:0;cursor:pointer;border-right:' + linhaFina + ';border-bottom:' + linhaFina + ';' + (fora ? 'opacity:.45' : '') });
           var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:12px;font-weight:700;display:inline-block;min-width:20px;line-height:20px;text-align:center' });
-          if (iso === hoje) n.style.cssText += ';border:2px solid #B5852F;color:#A03E25';
+          if (iso === hoje) n.style.cssText += ';border:2px solid var(--ocre);color:var(--terracota)';
           c.appendChild(n);
           var lista = doDia(iso, evs);
           lista.slice(0, 3).forEach(function (e) {
-            var ch = el('div', { style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.35;overflow:hidden;background:' + preenche(e) + ';padding:0 2px;margin-top:2px;color:' + textoSobre(preenche(e)) });
+            var ch = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.35;overflow:hidden;background:' + preenche(e) + ';padding:0 2px;margin-top:2px;color:' + textoSobre(preenche(e)) });
             var tx = el('span', { style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' });
             if (e.meet) tx.appendChild(marcaMeet(10));
             if (!e.diaTodo) tx.appendChild(el('span', { text: hhmm(e.ini) + ' ' }));
@@ -1060,7 +1071,7 @@
             var plM = planetaDoEvento(e, 10, true); if (plM) ch.appendChild(plM); /* no fim da linha, do mesmo tamanho do ícone do Meet */
             c.appendChild(ch);
           });
-          if (lista.length > 3) c.appendChild(bloco('+' + (lista.length - 3), 'font-size:10px;color:#A03E25;margin-top:2px'));
+          if (lista.length > 3) c.appendChild(bloco('+' + (lista.length - 3), 'font-size:10px;color:var(--terracota);margin-top:2px'));
           c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
           g.appendChild(c);
         })(somaDias(ini, k));
@@ -1079,7 +1090,7 @@
       for (var m = 1; m <= 12; m++) {
         (function (m) {
           var pri = ano + '-' + p2(m) + '-01', cx = el('div');
-          var nome = el('button', { type: 'button', class: 'rotulo-fixo', text: MESES[m - 1], style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:2px 0;margin-bottom:4px;font-family:Cinzel,serif;font-size:13px;font-weight:700;color:#A03E25;text-transform:lowercase' });
+          var nome = el('button', { type: 'button', class: 'rotulo-fixo', text: MESES[m - 1], style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:2px 0;margin-bottom:4px;font-size:13px;font-weight:700;color:var(--terracota);text-transform:lowercase' });
           nome.addEventListener('click', function () { visao = 'mes'; ancora = pri; atualizar(); });
           cx.appendChild(nome);
           var t = el('div', { style: 'display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px' });
@@ -1087,7 +1098,7 @@
           for (var v = 0; v < diaSem(pri); v++) t.appendChild(el('div'));
           for (var d = 1; d <= diasNoMes(ano, m); d++) {
             var iso = ano + '-' + p2(m) + '-' + p2(d), n = conta[iso] || 0;
-            var c = el('div', { text: String(d), style: 'cursor:pointer;line-height:20px;box-sizing:border-box;color:#16233F;' + (n ? 'font-weight:700;border-bottom:' + (n >= 3 ? 4 : 2) + 'px solid #B5852F;' : '') + (iso === hoje ? 'outline:2px solid #B5852F;outline-offset:-2px;color:#A03E25;' : '') });
+            var c = el('div', { text: String(d), style: 'cursor:pointer;line-height:20px;box-sizing:border-box;color:var(--preto-tinta);' + (n ? 'font-weight:700;border-bottom:' + (n >= 3 ? 4 : 2) + 'px solid var(--ocre);' : '') + (iso === hoje ? 'outline:2px solid var(--ocre);outline-offset:-2px;color:var(--terracota);' : '') });
             (function (iso) { c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); }); })(iso);
             t.appendChild(c);
           }
@@ -1121,7 +1132,7 @@
       var botoesDia = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
       ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
         var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
-        var pinta = function () { var on = marcados.indexOf(DIAS_RRULE[k]) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+        var pinta = function () { var on = marcados.indexOf(DIAS_RRULE[k]) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')) + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
         pinta();
         b.addEventListener('click', function () { var i = marcados.indexOf(DIAS_RRULE[k]); if (i >= 0) { if (marcados.length > 1) marcados.splice(i, 1); } else marcados.push(DIAS_RRULE[k]); [].forEach.call(botoesDia.children, function (x) { x.dispatchEvent(new Event('pinta')); }); pinta(); });
         b.addEventListener('pinta', pinta);
@@ -1221,7 +1232,7 @@
       var cores = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
       [''].concat(Object.keys(CORES_EVENTO)).forEach(function (id) {
         var b = el('button', { type: 'button', title: id ? NOMES_COR[id] : 'Cor da agenda', 'aria-label': id ? NOMES_COR[id] : 'Cor da agenda', text: id ? '' : '∅' });
-        var pinta = function () { var on = String(corSel) === String(id); b.style.cssText = 'width:30px;height:30px;padding:0;border-radius:0;cursor:pointer;color:#16233F;font-size:16px;background:' + (id ? CORES_EVENTO[id] : 'transparent') + ';border:0;font-weight:700'; b.textContent = on ? '\u2713' : (id ? '' : '\u2205'); };
+        var pinta = function () { var on = String(corSel) === String(id); b.style.cssText = 'width:30px;height:30px;padding:0;border-radius:0;cursor:pointer;color:var(--preto-tinta);font-size:16px;background:' + (id ? CORES_EVENTO[id] : 'transparent') + ';border:0;font-weight:700'; b.textContent = on ? '\u2713' : (id ? '' : '\u2205'); };
         pinta(); b.addEventListener('click', function () { corSel = id; [].forEach.call(cores.children, function (x) { x.dispatchEvent(new Event('pinta')); }); }); b.addEventListener('pinta', pinta); cores.appendChild(b);
       });
       var visib = el('select'); [['default', 'Padrão da agenda'], ['public', 'Pública'], ['private', 'Privada']].forEach(function (o) { visib.appendChild(el('option', { value: o[0], text: o[1] })); }); visib.value = e ? e.visib : 'default';
@@ -1361,9 +1372,9 @@
       var f = Math.max(0, Math.min(1, (agora - ini) / (fim - ini))), cor = corTempo(f), pct = agora >= fim ? 100 : Math.floor(f * 100);
       var total = unidade === 'horas' ? Math.round((fim - ini) / 3600000 * 2) / 2 : Math.round((fim - ini) / 60000 * 2) / 2;
       var passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
-      if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade);
-      return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px;color:' + cor }, [el('span', { text: pct + '%', style: 'flex:none;min-width:34px;font-weight:700' }),
-        el('div', { style: 'flex:1;height:4px;border:1px solid ' + cor }, [el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:' + cor })]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, style: 'flex:none;white-space:nowrap' })]);
+      if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade, true);
+      return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:34px;font-weight:700' }),
+        el('div', { class: 'tempo-trilho', style: 'flex:1;height:4px;border:1px solid transparent' }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, class: 'tempo-fim', style: 'flex:none;white-space:nowrap' })]);
     }
     function cabecalhoHoras() {
       var caixa = el('div', { class: 'cab-horas' });
@@ -1373,7 +1384,7 @@
         var h = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0], dia = hs[0], nascer = hs[0].ini, por = hs[12].ini, proximo = hs[23].fim;
         caixa.textContent = '';
         caixa.appendChild(el('div', { class: 'rotulo-fixo', text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:' + (G ? 15 : 12) + 'px;margin:0 0 ' + (G ? 12 : 6) + 'px' }));
-        var rot = function (t) { return el('div', { text: t, style: 'font-family:var(--fonte-titulo);font-size:' + (G ? 13 : 10) + 'px;margin-bottom:' + (G ? 4 : 2) + 'px' }); };
+        var rot = function (t) { return el('div', { text: t, class: 'rotulo-grupo', style: 'font-size:' + (G ? 13 : 10) + 'px;margin-bottom:' + (G ? 4 : 2) + 'px' }); };
         var direita = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px' }, [barraDe(nascer, proximo, agora, 'horas', false)]);
         if (h) {
           direita.appendChild(barraDe(h.ini, h.fim, agora, 'minutos', false));
@@ -1381,8 +1392,8 @@
         }
         caixa.appendChild(el('div', { style: G ? 'display:flex;flex-direction:column;align-items:stretch;gap:14px' : 'display:flex;align-items:center;gap:14px' }, [
           el('div', { style: 'flex:none;display:flex;align-items:flex-end;gap:' + (G ? 34 : 10) + 'px;text-align:center' + (G ? ';justify-content:center' : '') }, [
-            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, G ? 76 : 50, '#A03E25')]),
-            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, G ? 54 : 36, h.noite ? '#1F5FA3' : '#B5852F')]) : null]),
+            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, G ? 76 : 50, FdaTema.cor('terracota'))]),
+            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, G ? 54 : 36, h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))]) : null]),
           direita]));
       }
       caixa.pintar = pintar;
@@ -1399,12 +1410,12 @@
         var cab = function (t, estilo) { return el('span', { class: 'rotulo-fixo', text: t, style: (estilo || '') }); };
         box.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:' + linhaFina }, [cab('', 'flex:none;width:30px'), cab('', 'flex:none;width:24px'), cab('Regente', 'flex:none;width:56px'), cab('Início', 'flex:1;text-align:center'), cab('Término', 'flex:1;text-align:center')]));
         hs.forEach(function (h, i) {
-          var atual = agora >= h.ini && agora < h.fim, cor = atual ? '#A03E25' : '#16233F';
-          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? '#1F5FA3' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
-          var linha = el('div', { style: 'padding:6px 0 8px;border-bottom:' + linhaFina + ';cursor:pointer;' + (atual ? 'border-left:3px solid #A03E25;padding-left:6px;' : '') }, [
+          var atual = agora >= h.ini && agora < h.fim, cor = atual ? FdaTema.cor('terracota') : FdaTema.cor('preto-tinta');
+          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('terracota')) }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
+          var linha = el('div', { style: 'padding:6px 0 8px;border-bottom:' + linhaFina + ';cursor:pointer;' + (atual ? 'border-left:3px solid var(--terracota);padding-left:6px;' : '') }, [
             el('div', { style: 'display:flex;align-items:center;gap:10px;color:' + cor }, [
               el('span', { text: (i % 12 + 1) + 'ª', style: 'flex:none;width:30px;font-weight:700' }), per,
-              el('span', { style: 'flex:none;width:56px' }, [iconePlaneta(h.planeta, 26, h.noite ? '#1F5FA3' : '#B5852F')]),
+              el('span', { style: 'flex:none;width:56px' }, [iconePlaneta(h.planeta, 26, h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))]),
               el('span', { text: hhmm(h.ini), style: 'flex:1;text-align:center;font-weight:700' }), el('span', { text: hhmm(h.fim), style: 'flex:1;text-align:center;font-weight:700' })]),
             el('div', { style: 'margin-top:4px' }, [barraDe(h.ini, h.fim, agora, 'minutos', true)])]);
           linha.addEventListener('click', function () { /* tocar na hora do planeta abre o encaixe, já com o planeta e o horário dela */
@@ -1436,7 +1447,7 @@
       var dow = pre.dow || [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
       ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
         var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
-        var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+        var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')) + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
         pinta();
         b.addEventListener('click', function () { var i = dow.indexOf(k); if (i >= 0) dow.splice(i, 1); else dow.push(k); pinta(); });
         blocoDias.appendChild(b);
@@ -1474,10 +1485,10 @@
         var confirmar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px' }), destinoForm = el('div', { class: 'barra-ocre' });
         var atualizaBotao = function () { var n = itens.filter(function (x) { return x.marcado; }).length; confirmar.textContent = 'Colocar na agenda (' + n + ')'; confirmar.disabled = !n; };
         propostas.forEach(function (p) {
-          if (!p.slot) { res.appendChild(el('p', { class: 'portal-item-data', style: 'color:#16233F;opacity:.6;margin:10px 0 0', text: rotuloDia(p.iso) + ' · sem horário livre' })); return; }
+          if (!p.slot) { res.appendChild(el('p', { class: 'portal-item-data', style: 'color:var(--preto-tinta);opacity:.6;margin:10px 0 0', text: rotuloDia(p.iso) + ' · sem horário livre' })); return; }
           var it = itens.filter(function (x) { return x.iso === p.iso; })[0];
           var cx = caixinha(rotuloDia(p.iso) + ', ' + hhmm(it.ini) + ' às ' + hhmm(it.fim), true, function (m) { it.marcado = m; atualizaBotao(); });
-          var det = el('div', { class: 'portal-item-data', style: 'margin:-6px 0 4px 38px' }, [iconePlaneta(o.planeta, 14, it.hora.noite ? '#1F5FA3' : '#B5852F'), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })]);
+          var det = el('div', { class: 'portal-item-data', style: 'margin:-6px 0 4px 38px' }, [iconePlaneta(o.planeta, 14, it.hora.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })]);
           res.appendChild(cx.el); res.appendChild(det);
         });
         if (!itens.length) return;

@@ -6,7 +6,7 @@
     var LINK_RECORRENTE_NOVO = 'https://invoice.infinitepay.io/plans/cassiopereira_/TnbWjchMtJ'; /* valor atual, para quem entra agora; quem já tinha o link antigo leva o seu na ficha (painel) */
 
     function dinheiro(v) { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-    function rotuloMensalidade(texto) { return el('p', { class: 'impresso', style: 'margin:0 0 4px;font-weight:700;color:#A03E25;font-size:14px', text: texto }); }
+    function rotuloMensalidade(texto) { return el('p', { class: 'impresso', style: 'margin:0 0 4px;font-weight:700;color:var(--terracota,#A03E25);font-size:14px', text: texto }); }
 
     function copiarChavePix(botao) {
       var ok = function () { botao.textContent = 'Chave copiada'; setTimeout(function () { botao.textContent = 'Copiar chave'; }, 2500); };
@@ -32,7 +32,7 @@
         hist.forEach(function (h) {
           caixa.appendChild(el('p', { class: 'portal-item-data', style: 'margin:0 0 4px', text: P.dataBR(String(h.data).slice(0, 10)) + ' · ' + dinheiro(h.valor) + (h.forma ? ' · ' + h.forma : '') }));
         });
-        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid #1F5FA3;margin:16px 0 14px' }));
+        caixa.appendChild(el('hr', { style: 'border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:16px 0 14px' }));
         caixa.appendChild(rotuloMensalidade('Formas de pagamento'));
         caixa.appendChild(el('p', { class: 'impresso', style: 'margin:8px 0 2px;font-weight:700;font-size:13px', text: 'Pix' }));
         caixa.appendChild(el('p', { style: 'margin:0 0 6px', text: 'Chave: ' + CHAVE_PIX + ' (celular)' }));
