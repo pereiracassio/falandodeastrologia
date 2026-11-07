@@ -61,7 +61,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=163"></script>
+  <script src="portal.js?v=164"></script>
   <script src="menu.js?v=63" defer></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script>
@@ -1374,7 +1374,7 @@
       var passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
       if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade, true);
       return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:34px;font-weight:700' }),
-        el('div', { class: 'tempo-trilho', style: 'flex:1;height:4px;border:1px solid transparent' }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct, true)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, class: 'tempo-fim', style: 'flex:none;white-space:nowrap' })]);
+        el('div', { class: 'tempo-trilho', style: 'flex:1;height:4px;border:1px solid transparent' }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, class: 'tempo-fim', style: 'flex:none;white-space:nowrap' })]);
     }
     function cabecalhoHoras() {
       var caixa = el('div', { class: 'cab-horas' });
