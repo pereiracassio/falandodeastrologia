@@ -949,7 +949,7 @@
       var cardsLista = el('div', {});
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
-      cartao.appendChild(fila([1, 1], [campo('Título do vídeo (o do YouTube)', titulo, function () { return titulo.value.trim(); }), campo('Texto da capa', capaTexto, function () { return capaTexto.value.trim(); })]));
+      cartao.appendChild(fila([1, 1], [campo('Título', titulo, function () { return titulo.value.trim(); }), campo('Texto da capa', capaTexto, function () { return capaTexto.value.trim(); })]));
       /* T (temporada), N (número) e Link numa linha só, também no celular; o link vira o ícone depois de colado */
       numero.setAttribute('max', '99'); temporada.setAttribute('max', '99'); link.placeholder = 'Colar o link';
       cartao.appendChild(fila([0.45, 0.45, 2], [campo('T', temporada), campo('N', numero), campo('Link', link)], true));
@@ -1042,7 +1042,7 @@
       /* o roteiro só vira "pronto" quando você disser que terminou (às vezes ainda está sendo escrito) */
       cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' })]));
       cartao.appendChild(linkRoteiro);
-      cartao.appendChild(campo('Texto que vai junto (vai inteiro para a descrição do YouTube)', texto, function () { return texto.value; }));
+      cartao.appendChild(campo('Texto que vai junto', texto, function () { return texto.value; }));
       var botLinha = P.botaoApagar('Adicionar linha'); /* discreto: só põe a linha e Capítulos no fim do texto */
       botLinha.addEventListener('click', function () {
         if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
