@@ -37,6 +37,9 @@
       background:var(--papiro-fundo);background-origin:border-box;background-size:var(--bw,100%) var(--bh,100%);background-position:var(--bx,0) var(--by,0);
       clip-path:polygon(0 0, 100% 0, 100.00% calc(100% - 3px), 97.73% calc(100% - 2px), 95.45% calc(100% - 1px), 93.18% calc(100% - 3px), 90.91% calc(100% - 5px), 88.64% calc(100% - 0px), 86.36% calc(100% - 0px), 84.09% calc(100% - 6px), 81.82% calc(100% - 4px), 79.55% calc(100% - 0px), 77.27% calc(100% - 2px), 75.00% calc(100% - 4px), 72.73% calc(100% - 0px), 70.45% calc(100% - 4px), 68.18% calc(100% - 1px), 65.91% calc(100% - 0px), 63.64% calc(100% - 0px), 61.36% calc(100% - 3px), 59.09% calc(100% - 3px), 56.82% calc(100% - 0px), 54.55% calc(100% - 1px), 52.27% calc(100% - 0px), 50.00% calc(100% - 4px), 47.73% calc(100% - 3px), 45.45% calc(100% - 0px), 43.18% calc(100% - 6px), 40.91% calc(100% - 4px), 38.64% calc(100% - 0px), 36.36% calc(100% - 1px), 34.09% calc(100% - 5px), 31.82% calc(100% - 5px), 29.55% calc(100% - 4px), 27.27% calc(100% - 0px), 25.00% calc(100% - 4px), 22.73% calc(100% - 4px), 20.45% calc(100% - 3px), 18.18% calc(100% - 0px), 15.91% calc(100% - 1px), 13.64% calc(100% - 0px), 11.36% calc(100% - 4px), 9.09% calc(100% - 6px), 6.82% calc(100% - 1px), 4.55% calc(100% - 2px), 2.27% calc(100% - 3px), 0.00% calc(100% - 3px));}
     .barra-agenda{padding-bottom:10px}
+    /* To do: sem a parte presa no topo (ela é da Agenda, para ver o dia enquanto corre a lista) */
+    body.sem-trava h1.portal-titulo,body.sem-trava .cab-horas,body.sem-trava .barra-agenda{position:static!important}
+    body.sem-trava .fundo-presa{display:none!important}
   </style>
 </head>
 <body>
@@ -508,6 +511,7 @@
         P.estado.gravar({ v: visao, d: ancora });
         guardarVisaoCal(visao);
         var modo = modoDe(visao), h1x = document.querySelector('h1.portal-titulo');
+        document.body.classList.toggle('sem-trava', modo === 'todo');
         if (h1x) h1x.textContent = ROTULO[modo]; document.title = ROTULO[modo] + ' - Falando de Astrologia';
         VISOES.forEach(function (v) { botoes[v[0]].style.display = CALV.indexOf(v[0]) >= 0 && modo === 'agenda' ? '' : 'none'; }); /* Horas e To do saíram desta barra: são abas da barra de cima */
         novo.style.display = modo === 'horas' ? 'none' : ''; /* nas Horas só se encaixa: o + de compromisso normal é da Agenda */
