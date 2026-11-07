@@ -1143,6 +1143,32 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     pinta();
     return inp;
   }
+  /* O seletor de data do iPhone/iPad dispara "mudou" com a data de HOJE no instante em que abre, antes de a pessoa escolher nada: tudo que grava ao mudar guardava
+     "hoje" sozinho (e a lista pulava). Uma vez para o site todo: se o valor virou hoje logo depois de tocar no campo (ninguém escolhe uma data em menos de 1,2 s),
+     o evento é descartado e o campo volta ao que era; só vale a escolha de verdade. Fase de captura: roda antes de qualquer tratamento da página. */
+  (function seletorDeDataNaoEscolheSozinho() {
+    var abertura = new WeakMap();
+    function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+    function ehData(t) { return t && t.tagName === 'INPUT' && t.type === 'date'; }
+    function marca(ev) {
+      var t = ev.target; if (!ehData(t)) return;
+      var a = abertura.get(t);
+      if (ev.type === 'focusin' && a && Date.now() - a.quando < 2000) return; /* o foco que vem logo depois do toque não refaz a marca (o valor já pode ser o "hoje" do seletor) */
+      abertura.set(t, { quando: Date.now(), antes: t.value });
+    }
+    ['pointerdown', 'touchstart', 'focusin'].forEach(function (n) { document.addEventListener(n, marca, true); });
+    ['change', 'input'].forEach(function (n) {
+      document.addEventListener(n, function (ev) {
+        var t = ev.target; if (!ehData(t)) return;
+        var a = abertura.get(t); if (!a) return;
+        if (a.bloqueado && Date.now() - a.bloqueado < 400) { ev.stopImmediatePropagation(); return; } /* o "mudou" que vem junto com o "input" do mesmo gesto */
+        if (Date.now() - a.quando < 1200 && t.value === hojeISO() && t.value !== a.antes) {
+          ev.stopImmediatePropagation();
+          t.value = a.antes; a.bloqueado = Date.now();
+        }
+      }, true);
+    });
+  })();
   function todasDatas(raiz) { [].forEach.call((raiz.querySelectorAll ? raiz.querySelectorAll('input[type=date]:not(.data-caderno-input)') : []), dataCaderno); }
   function ligarDatas() {
     todasDatas(document);

@@ -43,7 +43,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=165"></script>
+  <script src="portal.js?v=166"></script>
   <script src="conversa.js?v=10"></script>
   <script src="atividades.js?v=44"></script>
   <script>
@@ -416,13 +416,17 @@
             var sel = el('select', { style: 'max-width:100%' }, [el('option', { value: '', text: tipo === 'material' ? 'Escolha o material' : tipo === 'gravacao' ? 'Escolha a gravação' : 'Escolha a atividade' }), el('option', { value: '__prep', text: 'Ainda não criado (em preparação)' })].concat(
               fonte.slice().reverse().map(function (i) { return el('option', { value: i.id, text: i.titulo + (tipo === 'atividade' && i.data_atividade ? ' · ' + P.dataBR(String(i.data_atividade).slice(0, 10)) : '') + (usados.indexOf(i.id) >= 0 ? ' · já ligada a outro passo' : '') }); })));
             if (!fonte.length) areaLigar.appendChild(el('p', { class: 'portal-msg erro', text: tipo === 'atividade' ? 'Este aluno não tem nenhuma atividade cadastrada.' : tipo === 'gravacao' ? 'Este aluno não tem nenhuma gravação na aba Gravações.' : 'Este aluno não tem nenhum material na aba Materiais.' }));
-            sel.addEventListener('change', function () {
+            /* escolher na lista NÃO liga nada: só o botão Ligar grava (o seletor do iPhone/iPad dispara "mudou" enquanto a roda gira, e ligava a coisa errada sozinho) */
+            var ligarBt = mini('Ligar', function () {
               if (!sel.value) return;
+              ligarBt.disabled = true;
               var campos = { tipo: tipo, item_id: null, atividade_id: null, lido_em: null, feito: false, feito_em: null };
               if (sel.value !== '__prep') campos[campoId] = sel.value;
-              P.client.from('aluno_trilha_passos').update(campos).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível ligar.'); else carregar(); });
+              P.client.from('aluno_trilha_passos').update(campos).eq('id', x.id).then(function (r) { if (r.error) { ligarBt.disabled = false; alert('Não foi possível ligar.'); } else carregar(); });
             });
-            areaLigar.appendChild(el('div', { style: 'margin-top:8px' }, [sel]));
+            ligarBt.style.display = 'none';
+            sel.addEventListener('change', function () { ligarBt.style.display = sel.value ? '' : 'none'; });
+            areaLigar.appendChild(el('div', { style: 'margin-top:8px;display:flex;gap:16px;align-items:center;flex-wrap:wrap' }, [sel, ligarBt]));
             }
           }
           /* link dos fatos (retificação): opcional, em qualquer passo; salva sozinho e o aluno vê o botão "Preencher os fatos" */
