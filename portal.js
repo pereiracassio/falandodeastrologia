@@ -1596,4 +1596,42 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       });
     }).observe(app, { childList: true, subtree: true });
   })();
+  /* ACENTO SOLTO (07/11/2026): texto copiado de Pages/Notas ou ditado no iPad às vezes chega com o acento separado da letra (I + ´). A Architects Daughter não tem o acento solto,
+     então o Safari o desenha com outra fonte (um rabisco em cima da letra). Aqui, para o site todo: juntar letra e acento (NFC) ao digitar/colar/sair do campo
+     e em todo texto que aparece na tela (inclusive o que já estava salvo assim). */
+  (function juntarAcentos() {
+    if (!String.prototype.normalize) return;
+    var SOLTO = /[\u0300-\u036f]/;
+    function campo(el) {
+      if (!el || !/^(INPUT|TEXTAREA)$/.test(el.tagName)) return;
+      if (el.tagName === 'INPUT' && !/^(text|search|email|url|tel|)$/i.test(el.type || '')) return;
+      var v = el.value; if (!v || !SOLTO.test(v)) return;
+      var n = v.normalize('NFC'); if (n === v) return;
+      var ini = null; try { ini = el.selectionStart; } catch (e) {}
+      el.value = n;
+      if (ini != null) { try { var pos = v.slice(0, ini).normalize('NFC').length; el.setSelectionRange(pos, pos); } catch (e) {} }
+    }
+    ['input', 'change', 'focusout'].forEach(function (ev) { document.addEventListener(ev, function (e) { campo(e.target); }, true); });
+    function texto(raiz) {
+      if (!raiz) return;
+      if (raiz.nodeType === 3) { var v = raiz.nodeValue; if (v && SOLTO.test(v)) { var n = v.normalize('NFC'); if (n !== v) raiz.nodeValue = n; } return; }
+      if (raiz.nodeType !== 1 || /^(SCRIPT|STYLE|TEXTAREA)$/.test(raiz.tagName)) return;
+      var w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, null), no, lista = [];
+      while ((no = w.nextNode())) { if (no.nodeValue && SOLTO.test(no.nodeValue)) lista.push(no); }
+      lista.forEach(texto);
+      if (/^(INPUT)$/.test(raiz.tagName)) campo(raiz);
+      Array.prototype.forEach.call(raiz.querySelectorAll ? raiz.querySelectorAll('input,textarea') : [], campo);
+    }
+    function iniciar() {
+      texto(document.body);
+      if (!window.MutationObserver) return;
+      new MutationObserver(function (muts) {
+        muts.forEach(function (m) {
+          if (m.type === 'characterData') texto(m.target);
+          else Array.prototype.forEach.call(m.addedNodes, texto);
+        });
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+    if (document.body) iniciar(); else document.addEventListener('DOMContentLoaded', iniciar);
+  })();
 })();
