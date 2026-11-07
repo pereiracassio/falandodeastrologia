@@ -267,7 +267,8 @@
       app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, botoes));
     }
 
-    /* arquivo { "projetos": [ { "nome", "passos": [ { "titulo", "nota", "feito" } ], "projetos": [ subprojetos, do mesmo jeito ] } ] }: projeto que já existe (mesmo nome, no mesmo lugar) só ganha os passos que faltam, sem mexer nos que já estão */
+    /* arquivo { "projetos": [ { "nome", "data_fim", "passos": [ { "titulo", "nota", "feito", "data" } ], "projetos": [ subprojetos, do mesmo jeito ] } ] } (datas AAAA-MM-DD, opcionais): projeto que já existe (mesmo nome, no mesmo lugar) só ganha os passos que faltam, sem mexer nos que já estão */
+    function dataValida(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')); }
     function importarArquivo(f) {
       f.text().then(function (txt) {
         var dados;
@@ -283,7 +284,7 @@
           else {
             var ordemNoPai = null;
             if (pai) ordemNoPai = Math.max(passos.filter(function (x) { return x.projeto_id === pai.id; }).reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0), filhosDe(pai.id).reduce(function (m, y) { return Math.max(m, y.ordem_no_pai || 0); }, 0)) + 1;
-            var reg = { nome: nome, ordem: ++ordemProj }; if (pai) { reg.projeto_pai_id = pai.id; reg.ordem_no_pai = ordemNoPai; }
+            var reg = { nome: nome, ordem: ++ordemProj }; if (dataValida(item.data_fim)) reg.data_fim = item.data_fim; if (dataValida(item.data_inicio)) reg.data_inicio = item.data_inicio; if (pai) { reg.projeto_pai_id = pai.id; reg.ordem_no_pai = ordemNoPai; }
             pronto = C.from('projetos').insert(reg).select('id').then(function (r) { if (r.error) throw r.error; var novo = { id: r.data[0].id, nome: nome, projeto_pai_id: pai ? pai.id : null, ordem_no_pai: ordemNoPai }; projetos.push(novo); return novo; });
           }
           return pronto.then(function (proj) {
@@ -291,7 +292,7 @@
             var ordem = Math.max(jaTem.reduce(function (m, y) { return Math.max(m, y.ordem || 0); }, 0), filhosDe(proj.id).reduce(function (m, y) { return Math.max(m, y.ordem_no_pai || 0); }, 0));
             var titulos = jaTem.map(function (x) { return x.titulo.toLowerCase(); });
             var novos = (item.passos || []).filter(function (x) { return x && String(x.titulo || '').trim() && titulos.indexOf(String(x.titulo).trim().toLowerCase()) < 0; }).map(function (x) {
-              return { projeto_id: proj.id, titulo: String(x.titulo).trim(), nota: x.nota ? String(x.nota).trim() : null, feito: !!x.feito, feito_em: x.feito ? new Date().toISOString() : null, ordem: ++ordem };
+              return { projeto_id: proj.id, titulo: String(x.titulo).trim(), nota: x.nota ? String(x.nota).trim() : null, feito: !!x.feito, feito_em: x.feito ? new Date().toISOString() : null, data: dataValida(x.data) ? x.data : null, ordem: ++ordem };
             });
             var gravou = novos.length ? C.from('projeto_passos').insert(novos).then(function (r) { if (r.error) throw r.error; }) : Promise.resolve();
             return gravou.then(function () { return (item.projetos || []).reduce(function (cadeia, filho) { return cadeia.then(function () { return importarItem(filho, proj); }); }, Promise.resolve()); });
