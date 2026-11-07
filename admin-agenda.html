@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=86">
   <link rel="stylesheet" href="portal.css?v=32">
-  <link rel="stylesheet" href="tema-paginas.css?v=6">
+  <link rel="stylesheet" href="tema-paginas.css?v=7">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
@@ -734,7 +734,7 @@
       if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
       var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= new Date().toLocaleDateString('sv-SE')) : !!item[k]; };
       var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid var(--azul-egipcio-claro);margin:8px 0 0;overflow-x:auto' }, etapas.map(function (e, i) {
-        return el('span', { text: e[1], style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:var(--vazado,#F3E3B8)' : 'color:var(--terracota)') });
+        return el('span', { text: e[1], class: feita(e[0]) ? 'preench' : '', style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:var(--vazado,#F3E3B8)' : 'color:var(--terracota)') });
       }));
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }

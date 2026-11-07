@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=86">
   <link rel="stylesheet" href="portal.css?v=32">
-  <link rel="stylesheet" href="tema-paginas.css?v=6">
+  <link rel="stylesheet" href="tema-paginas.css?v=7">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <style>
@@ -726,7 +726,7 @@
           el('span', { class: 'prod-nome', text: s.nome }),
           periodo ? el('span', { class: 'prod-data', style: 'display:block', text: periodo }) : null,
           el('span', { class: 'prod-info', style: 'display:block', text: rotuloAcesso(s) + ' · ' + resumoSerie(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }),
-          el('div', { class: 'prod-barra' }, [el('i', { style: 'width:' + pct + '%' })])
+          el('div', { class: 'prod-barra' }, [el('i', { class: 'preench', style: 'width:' + pct + '%' })])
         ]);
         var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:200px' }, [corpo])]);
         linha.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') { abaSerieDe = null; forcarAbaSerie = null; irPara('series', s.id); } });
