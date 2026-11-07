@@ -1,5 +1,5 @@
 /* SUPERFÍCIES dos temas Claro, Escuro e Sulfite nas páginas do painel, do aluno e do cliente.
-   As cores vêm de temas.css; aqui só se tira o papiro: toda peça que usa o papiro (folha, menu, janelas, barra presa)
+   As cores vêm de temas.css; aqui só se tira o papel (a moldura de meandro fica em todos os temas): toda peça que usa o papiro (folha, menu, janelas, barra presa)
    lê estas variáveis, então trocar elas troca tudo de uma vez. Papiro = sem classe, nada muda. */
 :root.tema-claro, :root.tema-escuro, :root.tema-sulfite {
     --papiro-topo: var(--fundo-creme);
@@ -11,7 +11,3 @@
     --papiro-fundo-simples: var(--fundo-creme);
 }
 :root.tema-escuro { color-scheme: dark; }
-/* a moldura de meandro é do papiro */
-:is(.tema-claro, .tema-escuro, .tema-sulfite) :is(.folha-pagina, .papiro-moldura)::after { display: none; }
-:is(.tema-claro, .tema-escuro, .tema-sulfite) .fundo-presa { filter: none; }
-:is(.tema-claro, .tema-escuro, .tema-sulfite) .fundo-presa i { border-image: none; border-width: 0; }
