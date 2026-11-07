@@ -44,6 +44,8 @@
     /* To do: sem a parte presa no topo (ela é da Agenda, para ver o dia enquanto corre a lista) */
     body.sem-trava h1.portal-titulo,body.sem-trava .cab-horas,body.sem-trava .barra-agenda{position:static!important}
     body.sem-trava .fundo-presa{display:none!important}
+      /* o texto NUNCA escapa do campo: no celular a hora vai numa linha só dela e o título ganha a largura toda */
+    @media (max-width:560px){.lista-linha{flex-wrap:wrap;row-gap:2px}.lista-linha>.lista-hora{flex:0 0 100% !important;min-width:0 !important}}
   </style>
 </head>
 <body>
@@ -698,9 +700,9 @@
         if (!doDiaL.length) continue;
         var bloco1 = el('div', { style: 'margin:0 0 14px' }, [el('div', { text: rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);padding:6px 0;border-bottom:' + linhaFina })]);
         doDiaL.sort(function (p, q) { return (p.diaTodo ? 0 : 1) - (q.diaTodo ? 0 : 1) || p.ini - q.ini; }).forEach(function (e) {
-          var linha = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
-          linha.appendChild(el('span', { text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
-          var nome = el('span', { class: 'proj-titulo', style: 'flex:1;min-width:0;font-weight:700' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
+          var linha = el('div', { class: 'preench lista-linha', style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
+          linha.appendChild(el('span', { class: 'lista-hora', text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
+          var nome = el('span', { class: 'proj-titulo', style: 'flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
           linha.appendChild(nome); var plL = planetaDoEvento(e, 28, true); if (plL) linha.appendChild(plL); /* no canto direito, do tamanho da linha, como no Dia */
           var aberto = el('div', { class: 'barra-ocre' }); /* o cartão abre aqui embaixo, sem sair de onde você está */
           linha.addEventListener('click', function () { if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, e); });
