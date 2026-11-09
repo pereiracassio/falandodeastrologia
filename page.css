@@ -345,3 +345,30 @@ html body .pagina-papiro .data-legenda .portal-apagar,html body .pagina-papiro .
 .pagina-papiro .portal-topo .portal-grupo>*:hover{border-width:0 0 0 2px!important;padding:9px 14px!important;color:var(--azul-egipcio-escuro,#1034A6)!important}
 .pagina-papiro .portal-topo .portal-grupo>*:first-child:hover{border-left-width:0!important}
 .pagina-papiro .portal-topo .portal-grupo>[aria-current="page"]:hover{color:var(--ocre,#B5852F)!important}
+
+/* ===== Páginas de texto (serviços, mentoria, curso, Quem sou eu): cada peça tem a sua classe, uma definição só ===== */
+.pagina-papiro .folha-pagina .texto-servico{line-height:1.6;margin:0 auto;max-width:700px}
+.pagina-papiro .folha-pagina .texto-servico.texto-largo{line-height:1.8}
+.pagina-papiro .folha-pagina h1.titulo-grande{color:var(--terracota,#A03E25);font-size:28px;text-align:center}
+.pagina-papiro .folha-pagina p.texto{font-size:16px;text-align:justify!important}
+.pagina-papiro .folha-pagina p.texto-intro{font-size:15px!important;text-align:justify!important}
+.pagina-papiro .folha-pagina ul.lista-texto{font-size:16px;padding-left:20px}
+.pagina-papiro .folha-pagina h2.subtitulo-secao{border-bottom:none!important;margin:30px 0 12px!important;padding:0!important}
+.pagina-papiro .folha-pagina div.quadro-valor{background:none!important;border:0!important;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;border-radius:0!important;box-shadow:none!important;padding:26px 0 0!important}
+.pagina-papiro .folha-pagina div.quadro-aviso{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+.pagina-papiro .preco{color:var(--terracota,#A03E25);font-size:34px;font-weight:700}
+.pagina-papiro .preco-pequeno{color:var(--terracota,#A03E25);font-weight:700}
+.pagina-papiro .preco-sufixo{color:var(--azul-noite,#16233F);font-size:18px;font-weight:400}
+.pagina-papiro .texto-nota{font-size:13px}
+.pagina-papiro .texto-aviso{font-size:14px}
+.pagina-papiro .texto-pequeno{font-size:15px}
+.pagina-papiro .texto-destaque{font-size:18px}
+.pagina-papiro .rotulo-aviso{color:var(--terracota,#A03E25);font-size:15px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.pagina-papiro .botao-carrinho{box-sizing:border-box;display:inline-block;font-weight:700;max-width:320px;padding:14px 20px;text-align:center;width:100%}
+.pagina-papiro .link-forte{color:var(--azul-egipcio-claro,#1F5FA3);font-weight:700;text-decoration:none}
+.pagina-papiro .link-whats{color:#4A7C59;font-weight:700;text-decoration:none;white-space:nowrap}
+@media(min-width:701px){
+  .pagina-papiro .folha-pagina>.texto-servico{max-width:none!important}
+  .pagina-papiro .folha-pagina h1.titulo-grande{font-size:clamp(28px,2.5vw,38px)!important}
+  .pagina-papiro .folha-pagina p.texto,.pagina-papiro .folha-pagina p.texto-intro,.pagina-papiro .folha-pagina ul.lista-texto,.pagina-papiro .folha-pagina .texto-servico li{font-size:clamp(17px,1.55vw,23px)!important}
+}
