@@ -38,7 +38,7 @@
     /* ---------- ferramentas ---------- */
     var ferr = 'mao', cores = { caneta: '#1A1410', marca: '#F2C230', texto: '#1A1410' };
     /* as cores do site (papiro): preto de tinta, azul egípcio escuro e claro, terracota, ocre, verde, laranja, marrom e cinza */
-    var SITE = ['#1A1410', '#1034A6', '#1F5FA3', '#A03E25', '#B5852F', '#2E7D4F', '#D0610F', '#734028', '#6B7780'];
+    var SITE = ['#1A1410', '#1034A6', '#1F5FA3', '#A03E25', '#B5852F', '#4A7C59', '#D0610F', '#734028', '#6B7780'];
     var PALETA = { caneta: SITE, marca: ['#F2C230', '#7CC47C', '#F08FB0'], texto: SITE };
     var NOMES = [['mao', 'Mover'], ['caneta', 'Caneta'], ['marca', 'Marca-texto'], ['laser', 'Laser'], ['borracha', 'Borracha'], ['texto', 'Texto']];
     var botoes = {};
