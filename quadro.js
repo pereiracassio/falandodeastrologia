@@ -27,7 +27,7 @@
     function barra(topo) {
       var d = el('div');
       d.style.cssText = 'display:flex;flex-wrap:nowrap;align-items:center;gap:0 4px;padding:2px 6px;background:#e6d3a0;flex:none;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;'
-        + (topo ? 'padding-top:calc(2px + env(safe-area-inset-top));border-bottom:1px solid ' + AZUL + ';' : 'padding-bottom:calc(2px + env(safe-area-inset-bottom));border-top:1px solid ' + AZUL + ';');
+        + (topo ? 'border-bottom:1px solid ' + AZUL + ';' : 'padding-bottom:calc(2px + env(safe-area-inset-bottom));border-top:1px solid ' + AZUL + ';');
       return d;
     }
 
@@ -51,6 +51,10 @@
         bolas.appendChild(b);
       });
     }
+    /* a marca em cima, centralizada: é o que aparece para quem assiste a live */
+    var marca = el('div'); marca.style.cssText = 'flex:none;display:flex;justify-content:center;background:#e6d3a0;padding:calc(6px + env(safe-area-inset-top)) 0 2px';
+    var logo = el('img', { src: '/img/logo-menu.svg?v=3', alt: 'Falando de Astrologia Helenística' }); logo.style.cssText = 'height:54px;width:auto;display:block';
+    marca.appendChild(logo); tela.appendChild(marca);
     var barraTopo = barra(true);
     barraTopo.appendChild(voltar());
     NOMES.forEach(function (n) { botoes[n[0]] = btn(n[1], function () { escolher(n[0]); }); barraTopo.appendChild(botoes[n[0]]); });

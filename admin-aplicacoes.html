@@ -134,7 +134,11 @@
           b.addEventListener('click', function () { aba = d[0]; lista(); });
           abas.appendChild(b);
         });
-        cartao.appendChild(abas); cartao.appendChild(corpo); pintar();
+        /* as abas nunca encolhem: cada uma do tamanho do nome, e a barra corre para o lado (com setinha) */
+        var rola = el('div', { class: 'portal-abas-rola' }, [abas]);
+        cartao.appendChild(P.comSetas(rola)); cartao.appendChild(corpo); pintar();
+        var ativa = abas.querySelector('.ativa');
+        if (ativa) rola.scrollLeft = Math.max(0, ativa.offsetLeft - (rola.clientWidth - ativa.offsetWidth) / 2);
       });
     }
 
