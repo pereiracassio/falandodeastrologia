@@ -406,6 +406,33 @@
       }).then(null, function (e) { corpo.textContent = ''; corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro((e && e.message) || '') })); });
     }
 
+    /* ---------- aula ao vivo -> compromisso no Google Agenda (agenda principal), achado pelo marcador da aula ---------- */
+    function gcal(caminho, opc) {
+      return P.tokenGoogle().then(function (token) {
+        opc = opc || {}; opc.headers = Object.assign({ Authorization: 'Bearer ' + token }, opc.headers || {});
+        return fetch('https://www.googleapis.com/calendar/v3' + caminho, opc);
+      }).then(function (r) { if (r.status === 204) return {}; return r.json().then(function (j) { if (!r.ok) throw new Error((j.error && j.error.message) || 'Google ' + r.status); return j; }); });
+    }
+    function eventoDaAula(aulaId) {
+      return gcal('/calendars/primary/events?showDeleted=false&privateExtendedProperty=' + encodeURIComponent('fda_aula=' + aulaId)).then(function (j) { return (j.items || [])[0] || null; });
+    }
+    function somaMin(hhmm, m) { var p = hhmm.split(':'), t = (+p[0]) * 60 + (+p[1]) + m; t = Math.max(0, Math.min(23 * 60 + 59, t)); return ('0' + Math.floor(t / 60)).slice(-2) + ':' + ('0' + (t % 60)).slice(-2); }
+    /* devolve o link do Meet (o que ele colou, ou o que o Google criou) */
+    function sincronizarAula(aulaId, titulo, dia, ini, fim, link) {
+      return eventoDaAula(aulaId).then(function (ev) {
+        if (!dia || !ini) return ev ? gcal('/calendars/primary/events/' + encodeURIComponent(ev.id), { method: 'DELETE' }).then(function () { return link; }) : link;
+        if (fim <= ini) fim = somaMin(ini, 60);
+        var corpo = { summary: 'Aula ao vivo: ' + titulo, start: { dateTime: dia + 'T' + ini + ':00', timeZone: 'America/Sao_Paulo' }, end: { dateTime: dia + 'T' + fim + ':00', timeZone: 'America/Sao_Paulo' },
+          extendedProperties: { private: { fda_aula: aulaId } } };
+        var params = '?conferenceDataVersion=1';
+        if (link) { corpo.location = link; corpo.description = 'Link da aula: ' + link; }
+        else if (!ev || !ev.hangoutLink) corpo.conferenceData = { createRequest: { requestId: 'fda-aula-' + Date.now(), conferenceSolutionKey: { type: 'hangoutsMeet' } } };
+        var pedido = ev ? gcal('/calendars/primary/events/' + encodeURIComponent(ev.id) + params, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+          : gcal('/calendars/primary/events' + params, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+        return pedido.then(function (e) { return link || e.hangoutLink || ''; });
+      });
+    }
+
     /* capítulos = itens do primeiro nível do índice (marcadores) do PDF */
     function capitulosDoPdf(driveId) {
       if (!window.pdfjsLib) return Promise.reject(new Error('pdfjs'));
@@ -437,6 +464,7 @@
         var vt = el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]); corpo.parentNode.insertBefore(vt, corpo);
         P.voltarNoFim(app, voltar);
         var tit = el('input', { type: 'text', value: m.titulo });
+        var dApostila = el('input', { type: 'date', style: 'width:auto' }); dApostila.value = m.data_apostila || '';
         var apNome = m.apostila_nome, apId = m.apostila_drive_id, apOk = !!m.apostila_ok;
         var apTxt = el('span', { text: apNome || 'Nenhuma' });
         var escolher = texto('Escolher o PDF no Drive');
@@ -456,7 +484,7 @@
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome do módulo.', 'erro'); return; }
-          C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null, apostila_ok: apOk }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
+          C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null, apostila_ok: apOk, data_apostila: dApostila.value || null }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
         var cartao = el('div', { class: 'portal-cartao' }, [].concat(
           [el('h2', { text: m.ordem === 0 ? 'Introdução' : 'Módulo ' + m.ordem })], campo('Nome', tit),
@@ -465,6 +493,7 @@
           cartao.insertBefore(barra(contModulo(D, m)), cartao.children[1]);
           var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = apOk;
           cb.addEventListener('change', function () { apOk = cb.checked; salvar.click(); setTimeout(recarregar, 600); });
+          cartao.insertBefore(P.colunaData(dApostila, 'Data: apostila pronta'), cartao.children[2]);
           cartao.insertBefore(el('div', { class: 'proj-passo' + (apOk ? ' feito' : ''), style: 'border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [cb, el('div', { style: 'flex:1' }, [el('span', { class: 'proj-titulo', text: 'Apostila pronta' })])]), msgAp);
         }
         corpo.appendChild(cartao); P.salvarSozinho(salvar);
@@ -567,8 +596,10 @@
           var dh = new Date(a.data_hora).toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }); /* AAAA-MM-DD HH:MM:SS */
           dataV.value = dh.slice(0, 10); horaV.value = dh.slice(11, 16);
         }
+        var fimV = el('input', { type: 'time', style: 'width:auto;min-height:36px;min-width:120px' });
+        if (aoVivoA) eventoDaAula(a.id).then(function (ev) { if (ev && ev.end && ev.end.dateTime) fimV.value = new Date(ev.end.dateTime).toLocaleTimeString('sv-SE', { timeZone: 'America/Sao_Paulo' }).slice(0, 5); }, function () { });
         var meet = el('input', { type: 'text', value: a.link_meet || '', placeholder: 'Link do Google Meet', autocomplete: 'off' });
-        var vivoBloco = el('div', {}, [].concat([P.linhaDatas([P.colunaData(dataV, 'Dia'), el('div', {}, [el('label', { text: 'Hora' }), horaV])])], campo('Link do Meet', meet)));
+        var vivoBloco = el('div', {}, [].concat([P.linhaDatas([P.colunaData(dataV, 'Dia'), el('div', {}, [el('label', { text: 'Começa às' }), horaV]), el('div', {}, [el('label', { text: 'Termina às' }), fimV])])], campo('Link do Meet', meet)));
         var prev = el('div', { style: 'margin:0 0 12px' });
         function previa() {
           prev.textContent = '';
@@ -583,17 +614,31 @@
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
-          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origem.value, video_codigo: cod.value.trim() || null, video_teste: teste.checked, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
-            .then(function (x) { if (x.error) msgErro(msg, x.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
+          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origem.value, video_codigo: cod.value.trim() || null, video_teste: teste.checked, datas_etapas: datasEt, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
+            .then(function (x) {
+              if (x.error) { msgErro(msg, x.error); return; }
+              if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
+              sincronizarAula(id, tit.value.trim(), dataV.value, horaV.value, fimV.value || (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
+                if (lk && lk !== meet.value.trim()) { meet.value = lk; C.from('curso_aulas').update({ link_meet: lk }).eq('id', id).then(function () { }); }
+                P.mensagem(msg, dataV.value && horaV.value ? 'Salvo e na sua agenda do Google.' : 'Salvo.', 'ok');
+              }, function (e) { P.mensagem(msg, 'Salvo, mas não consegui colocar na agenda do Google (' + ((e && e.message) || 'erro') + ').', 'erro'); });
+            });
         });
         var partes = [].concat([el('h2', { text: (aoVivoA ? 'Aula ao vivo ' : 'Aula ') + a.ordem })]);
         if (curso.construindo !== false) partes.push(etapasDaAula(a, curso, null, null));
+        var datasEt = Object.assign({}, a.datas_etapas || {}), camposEt = [];
+        if (curso.construindo !== false) etapasDe(curso).filter(function (k) { return k !== 'upload'; }).forEach(function (k) {
+          var di = el('input', { type: 'date', style: 'width:auto' }); di.value = datasEt[k] || '';
+          di.addEventListener('change', function () { datasEt[k] = di.value || null; });
+          camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
+        });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          partes, campo('Nome', tit), aoVivoA ? [vivoBloco, el('p', { class: 'proj-grupo', text: 'Gravação' })] : [], campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
+          partes, campo('Nome', tit), aoVivoA ? [vivoBloco, el('p', { class: 'proj-grupo', text: 'Gravação' })] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
-          C.from('curso_aulas').delete().eq('id', id).then(function (x) { if (x.error) msgErro(msg, x.error); else voltar(); });
+          var apaga = function () { C.from('curso_aulas').delete().eq('id', id).then(function (x) { if (x.error) msgErro(msg, x.error); else voltar(); }); };
+          if (aoVivoA) sincronizarAula(id, '', '', '', '', '').then(apaga, apaga); else apaga();
         });
         P.apagarNoFim(app, apagar);
       });
