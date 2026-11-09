@@ -61,7 +61,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=168"></script>
-  <script src="curso.js?v=6"></script>
+  <script src="curso.js?v=7"></script>
   <script src="menu.js?v=64" defer></script>
   <script>
   (function () {
@@ -544,7 +544,7 @@
         if (!aulas.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }));
         aulas.forEach(function (a, i) {
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
-            el('span', { class: 'prod-titulo', style: 'display:block', text: a.ordem + '. ' + a.titulo }),
+            el('span', { class: 'prod-titulo', style: 'display:block', text: a.ordem + '. ' + (a.tipo === 'ao_vivo' ? 'Aula ao vivo' : a.titulo) }),
             el('span', { class: 'prod-sub', style: 'display:block', text: (a.tipo === 'ao_vivo' ? 'ao vivo' + (a.data_hora ? ' · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + ' · ' : '') + (!a.video_codigo ? 'sem vídeo' : 'vídeo') })
           ]);
           abrir.addEventListener('click', function () { abrirAula(a.id); });
@@ -564,9 +564,8 @@
         });
         var aoVivo = el('button', { type: 'button', class: 'portal-btn', text: '+ Ao vivo' });
         aoVivo.addEventListener('click', function () {
-          var t = (window.prompt('Nome da aula ao vivo') || '').trim(); if (!t) return;
           var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
-          C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t, tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
+          C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: 'Aula ao vivo', tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
         var acoesN = intro ? [aoVivo] : [nova, aoVivo];
         caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
@@ -633,7 +632,7 @@
             .then(function (x) {
               if (x.error) { msgErro(msg, x.error); return; }
               if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
-              sincronizarAula(id, tit.value.trim(), dataV.value, horaV.value, fimV.value || (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
+              sincronizarAula(id, aoVivoA ? 'Aula ao vivo' : tit.value.trim(), dataV.value, horaV.value, fimV.value || (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
                 if (lk && lk !== meet.value.trim()) { meet.value = lk; C.from('curso_aulas').update({ link_meet: lk }).eq('id', id).then(function () { }); }
                 P.mensagem(msg, dataV.value && horaV.value ? 'Salvo e na sua agenda do Google.' : 'Salvo.', 'ok');
               }, function (e) { P.mensagem(msg, 'Salvo, mas não consegui colocar na agenda do Google (' + ((e && e.message) || 'erro') + ').', 'erro'); });
@@ -648,7 +647,7 @@
           camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
         });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          partes, campo('Nome', tit), aoVivoA ? [vivoBloco] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação' : 'Link do vídeo', cod), [prev, msg, el('div', { style: 'display:none' }, [salvar])]))); P.salvarSozinho(salvar);
+          partes, aoVivoA ? [] : campo('Nome', tit), aoVivoA ? [vivoBloco] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação' : 'Link do vídeo', cod), [prev, msg, el('div', { style: 'display:none' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
