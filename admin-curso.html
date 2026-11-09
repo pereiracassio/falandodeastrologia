@@ -324,7 +324,7 @@
         });
         var acoesM = [novoM];
         if (!mods.some(function (x) { return x.ordem === 0; })) {
-          var intro = texto('+ Introdução');
+          var intro = el('button', { type: 'button', class: 'portal-btn', text: '+ Introdução' });
           intro.addEventListener('click', function () {
             C.from('curso_modulos').insert({ curso_id: id, ordem: 0, titulo: 'Introdução' }).select().single().then(function (r) { if (r.error) msgErro(msgM, r.error); else abrirModulo(r.data.id); });
           });
@@ -505,7 +505,7 @@
         var dApostila = el('input', { type: 'date', style: 'width:auto' }); dApostila.value = m.data_apostila || '';
         var apNome = m.apostila_nome, apId = m.apostila_drive_id, apOk = !!m.apostila_ok;
         var apTxt = el('span', { text: apNome || 'Nenhuma' });
-        var escolher = texto('Escolher o PDF no Drive');
+        var escolher = texto('Escolher');
         var msgAp = el('p', { class: 'portal-msg' });
         escolher.addEventListener('click', function () {
           P.escolherDoDrive(function (url, fid, token) {
@@ -562,33 +562,13 @@
           var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
-        var aoVivo = texto('+ Aula ao vivo');
+        var aoVivo = el('button', { type: 'button', class: 'portal-btn', text: '+ Ao vivo' });
         aoVivo.addEventListener('click', function () {
           var t = (window.prompt('Nome da aula ao vivo') || '').trim(); if (!t) return;
           var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t, tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
         var acoesN = intro ? [aoVivo] : [nova, aoVivo];
-        if (apId && !intro) {
-          var caps = texto('Criar uma aula por capítulo');
-          caps.addEventListener('click', function () {
-            caps.disabled = true; P.mensagem(msgN, 'Lendo o índice...', 'ok');
-            puxarCapitulos(id, apId, aulas).then(function (n) {
-              if (n === -1) { P.mensagem(msgN, 'Essa apostila não tem índice para eu ler.', 'erro'); caps.disabled = false; } else recarregar();
-            }, function () { P.mensagem(msgN, 'Não consegui ler a apostila no Drive.', 'erro'); caps.disabled = false; });
-          });
-          acoesN.push(caps);
-        }
-        if (construindo && !intro) {
-          var varias = texto('Criar várias aulas');
-          varias.addEventListener('click', function () {
-            var n = parseInt(window.prompt('Quantas aulas?') || '', 10); if (!(n > 0 && n <= 60)) return;
-            var prox = aulas.length ? aulas[aulas.length - 1].ordem : 0, lote = [];
-            for (var k = 1; k <= n; k++) lote.push({ modulo_id: id, ordem: prox + k, titulo: 'Aula ' + (prox + k) });
-            C.from('curso_aulas').insert(lote).then(function (r) { if (r.error) msgErro(msgN, r.error); else recarregar(); });
-          });
-          acoesN.push(varias);
-        }
         caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
         corpo.appendChild(caixaA);
         if (apId && !intro && !aulas.length && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas).then(function (n) { if (n > 0) recarregar(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
