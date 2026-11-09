@@ -111,9 +111,10 @@
     function aulasDoModulo(D, mid) { return D.aulas.filter(function (a) { return a.modulo_id === mid; }); }
     /* módulo = apostila + "definir as aulas" (conta quando existe ao menos uma) + as etapas de cada aula + passos soltos do módulo */
     function contModulo(D, m) {
-      var et = etapasDe(D.curso), as = aulasDoModulo(D, m.id), ps = D.passos.filter(function (p) { return p.modulo_id === m.id; });
-      var t = 2 + as.length * et.length + ps.length;
-      var f = (m.apostila_ok ? 1 : 0) + (as.length ? 1 : 0) + as.reduce(function (n, a) { return n + et.filter(function (k) { return etapaFeita(a, k); }).length; }, 0) + ps.filter(function (p) { return p.feito; }).length;
+      var et = etapasDe(D.curso), as = aulasDoModulo(D, m.id).filter(function (a) { return a.tipo !== 'ao_vivo'; }), ps = D.passos.filter(function (p) { return p.modulo_id === m.id; });
+      var intro = m.ordem === 0; /* a Introdução é só a aula ao vivo: sem apostila nem aulas gravadas para construir */
+      var t = (intro ? 0 : 2) + as.length * et.length + ps.length;
+      var f = (!intro && m.apostila_ok ? 1 : 0) + (!intro && as.length ? 1 : 0) + as.reduce(function (n, a) { return n + et.filter(function (k) { return etapaFeita(a, k); }).length; }, 0) + ps.filter(function (p) { return p.feito; }).length;
       return { t: t, f: f };
     }
     function contCurso(D) {
@@ -307,7 +308,7 @@
             el('span', { class: 'prod-titulo', style: 'display:block', text: (m.ordem === 0 ? '' : 'Módulo ' + m.ordem + ' · ') + m.titulo }),
             el('span', { class: 'prod-sub', style: 'display:block', text: qtd + (qtd === 1 ? ' aula' : ' aulas') + (m.apostila_nome ? ' · apostila' : '') })
           ]);
-          if (construindo) abrir.appendChild(barra(contModulo(D, m)));
+          if (construindo && m.ordem !== 0) abrir.appendChild(barra(contModulo(D, m)));
           abrir.addEventListener('click', function () { abrirModulo(m.id); });
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
           if (i > 0 && mods[i - 1].ordem !== 0 && m.ordem !== 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_modulos', m, mods[i - 1]).then(recarregar); }); linha.appendChild(sobe); }
@@ -486,10 +487,11 @@
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome do módulo.', 'erro'); return; }
           C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null, apostila_ok: apOk, data_apostila: dApostila.value || null }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
+        var intro = m.ordem === 0;
         var cartao = el('div', { class: 'portal-cartao' }, [].concat(
-          [el('h2', { text: m.ordem === 0 ? 'Introdução' : 'Módulo ' + m.ordem })], campo('Nome', tit),
-          [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
-        if (construindo) {
+          [el('h2', { text: intro ? 'Introdução' : 'Módulo ' + m.ordem })], campo('Nome', tit),
+          intro ? [msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])] : [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
+        if (construindo && !intro) {
           cartao.insertBefore(barra(contModulo(D, m)), cartao.children[1]);
           var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = apOk;
           cb.addEventListener('change', function () { apOk = cb.checked; salvar.click(); setTimeout(recarregar, 600); });
@@ -510,7 +512,7 @@
           if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i - 1]).then(recarregar); }); linha.appendChild(sobe); }
           if (i < aulas.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i + 1]).then(recarregar); }); linha.appendChild(desce); }
           var bloco = el('div', { style: 'margin:0 0 10px' }, [linha]);
-          if (construindo) { var seg = etapasDaAula(a, curso, recarregar, function () { abrirAula(a.id); }); seg.style.marginTop = '-4px'; bloco.appendChild(seg); }
+          if (construindo && a.tipo !== 'ao_vivo') { var seg = etapasDaAula(a, curso, recarregar, function () { abrirAula(a.id); }); seg.style.marginTop = '-4px'; bloco.appendChild(seg); }
           caixaA.appendChild(bloco);
         });
         var msgN = el('p', { class: 'portal-msg' });
@@ -526,8 +528,8 @@
           var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t, tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
-        var acoesN = [nova, aoVivo];
-        if (apId) {
+        var acoesN = intro ? [aoVivo] : [nova, aoVivo];
+        if (apId && !intro) {
           var caps = texto('Criar uma aula por capítulo');
           caps.addEventListener('click', function () {
             caps.disabled = true; P.mensagem(msgN, 'Lendo o índice da apostila...', 'ok');
@@ -543,7 +545,7 @@
           });
           acoesN.push(caps);
         }
-        if (construindo) {
+        if (construindo && !intro) {
           var varias = texto('Criar várias aulas');
           varias.addEventListener('click', function () {
             var n = parseInt(window.prompt('Quantas aulas?') || '', 10); if (!(n > 0 && n <= 60)) return;
@@ -556,7 +558,7 @@
         caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
         corpo.appendChild(caixaA);
 
-        if (construindo) {
+        if (construindo && !intro) {
           var cx = el('div', { class: 'portal-cartao' });
           cx.appendChild(grupo('Outros passos')); cx.appendChild(blocoPassos(D, recarregar, 'modulo', id));
           cx.appendChild(listaFeitos(D, recarregar, id));
@@ -625,9 +627,9 @@
             });
         });
         var partes = [].concat([el('h2', { text: (aoVivoA ? 'Aula ao vivo ' : 'Aula ') + a.ordem })]);
-        if (curso.construindo !== false) partes.push(etapasDaAula(a, curso, null, null));
+        if (curso.construindo !== false && !aoVivoA) partes.push(etapasDaAula(a, curso, null, null));
         var datasEt = Object.assign({}, a.datas_etapas || {}), camposEt = [];
-        if (curso.construindo !== false) etapasDe(curso).filter(function (k) { return k !== 'upload'; }).forEach(function (k) {
+        if (curso.construindo !== false && !aoVivoA) etapasDe(curso).filter(function (k) { return k !== 'upload'; }).forEach(function (k) {
           var di = el('input', { type: 'date', style: 'width:auto' }); di.value = datasEt[k] || '';
           di.addEventListener('change', function () { datasEt[k] = di.value || null; });
           camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
