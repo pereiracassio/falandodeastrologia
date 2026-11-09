@@ -17,8 +17,25 @@
       "<path d='" + M1 + "' stroke='" + azul + "' stroke-width='3.4' stroke-linejoin='miter'/>" +
       "<path d='" + M2 + "' stroke='" + azul + "' stroke-width='3.4' stroke-linejoin='miter'/></svg>";
     var url = 'url("data:image/svg+xml,' + encodeURIComponent(svg).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29') + '")';
-    if (raiz.style.getPropertyValue('--moldura-img') !== url) raiz.style.setProperty('--moldura-img', url);
+    if (svg === ultimoSvg) return;
+    ultimoSvg = svg;
+    /* Enquanto o PNG não fica pronto, vale o SVG. O PNG é o que fica: border-image com SVG "data:" era redesenhado (vetor) em cada pedaço repetido da moldura a cada quadro do zoom,
+       e no iPhone isso derrubava a página ao dar zoom. Imagem pronta (bitmap) é desenhada uma vez só. NUNCA voltar a usar o SVG direto no border-image. */
+    if (!raiz.style.getPropertyValue('--moldura-img')) raiz.style.setProperty('--moldura-img', url);
+    try {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          if (svg !== ultimoSvg) return;
+          var c = document.createElement('canvas'); c.width = 496; c.height = 360;
+          c.getContext('2d').drawImage(img, 0, 0, 496, 360);
+          raiz.style.setProperty('--moldura-img', 'url("' + c.toDataURL('image/png') + '")');
+        } catch (e) { /* fica o SVG */ }
+      };
+      img.src = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    } catch (e) { /* fica o SVG */ }
   }
+  var ultimoSvg = '';
   montar();
   if (window.MutationObserver) new MutationObserver(montar).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('DOMContentLoaded', montar);
