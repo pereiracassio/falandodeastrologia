@@ -67,58 +67,129 @@
         C.from('admins').select('nome').maybeSingle().then(function (rn) {
           nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
           var ent = P.estado.ler();
-          if (ent.livro) {
-            C.from('leitor_livros').select('*').eq('id', ent.livro).maybeSingle().then(function (x) { if (x.data) abrir(x.data); else lista(); });
-          } else lista();
+          lerCaminho().then(function () {
+            if (ent.livro) {
+              C.from('leitor_livros').select('*').eq('id', ent.livro).maybeSingle().then(function (x) { if (x.data) abrir(x.data); else lista(); });
+            } else lista();
+          });
         });
       });
     }
 
-    /* ---------- lista de livros ---------- */
+    /* ---------- estante: as pastas do Drive e, dentro delas, os PDFs como livrinhos (capa + nome) ----------
+       caminho = por onde ele entrou ([{id, nome}], começa em "Meu Drive"); a última pasta fica guardada em site_config.leitor_pasta (vale em qualquer aparelho) */
+    var RAIZ = { id: 'root', nome: 'Meu Drive' }, caminho = [RAIZ], caminhoLido = false, idLista = 0;
+    var PASTA = 'application/vnd.google-apps.folder';
+    function guardarCaminho() { C.from('site_config').upsert({ chave: 'leitor_pasta', valor: JSON.stringify(caminho), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function () {}); }
+    function lerCaminho() {
+      if (caminhoLido) return Promise.resolve();
+      return C.from('site_config').select('valor').eq('chave', 'leitor_pasta').maybeSingle().then(function (r) {
+        caminhoLido = true;
+        try { var v = JSON.parse(r.data && r.data.valor); if (Array.isArray(v) && v.length && v[0].id === 'root') caminho = v; } catch (e) { /* começa no Meu Drive */ }
+      }, function () { caminhoLido = true; });
+    }
+    function listarPasta(token, id) {
+      var itens = [];
+      function pagina(pt) {
+        var q = "'" + id + "' in parents and trashed=false and (mimeType='" + PASTA + "' or mimeType='application/pdf')";
+        var url = 'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=' + encodeURIComponent('nextPageToken,files(id,name,mimeType,thumbnailLink)')
+          + '&orderBy=folder,name_natural&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true' + (pt ? '&pageToken=' + encodeURIComponent(pt) : '');
+        return fetch(url, { headers: { Authorization: 'Bearer ' + token } }).then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
+          .then(function (d) { itens = itens.concat(d.files || []); return d.nextPageToken ? pagina(d.nextPageToken) : itens; });
+      }
+      return pagina('');
+    }
+    function capa(f, token) { /* a capa que o próprio Drive faz do PDF; sem ela, fica a folha só com o contorno */
+      var folha = el('div', { style: 'aspect-ratio:0.707;border:1px solid var(--azul-egipcio-claro,#1F5FA3);background:transparent;overflow:hidden;display:flex' });
+      if (!f.thumbnailLink) return folha;
+      var link = f.thumbnailLink.replace(/=s\d+$/, '=s480'), im = el('img', { alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', style: 'width:100%;height:100%;object-fit:cover;object-position:top;display:block' });
+      var tentou = false;
+      im.addEventListener('error', function () {
+        if (tentou) { im.remove(); return; }
+        tentou = true;
+        fetch(link, { headers: { Authorization: 'Bearer ' + token } }).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { im.src = URL.createObjectURL(b); }).catch(function () { im.remove(); });
+      });
+      im.src = link; folha.appendChild(im);
+      return folha;
+    }
+    function desenhoPasta() {
+      var d = el('div', { style: 'aspect-ratio:0.707;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-claro,#1F5FA3)' });
+      d.innerHTML = '<svg viewBox="0 0 64 64" width="72%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6,16 H24 L30,22 H58 V52 H6 Z"/><line x1="6" y1="28" x2="58" y2="28"/></svg>';
+      return d;
+    }
     function lista() {
       limpar();
       app.appendChild(topo(nomeAdmin));
-      var msg = el('p', { class: 'portal-aviso' });
-      var add = el('button', { type: 'button', class: 'portal-btn', text: '+ Livro do Drive' });
-      add.addEventListener('click', function () {
-        aviso(msg, '');
-        P.escolherDoDrive(function (url, id, token) {
-          if (/\/folders\//.test(url)) { aviso(msg, 'Escolha um arquivo PDF, não uma pasta.'); return; }
-          fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?fields=name,mimeType&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
-            .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
-            .then(function (f) {
-              if (f.mimeType !== 'application/pdf') { aviso(msg, 'Esse arquivo não é um PDF.'); return; }
-              return C.from('leitor_livros').upsert({ drive_id: id, nome: String(f.name).replace(/\.pdf$/i, '') }, { onConflict: 'drive_id' }).select().single()
-                .then(function (x) { if (x.error) throw x.error; abrir(x.data); });
-            }).catch(function (e) { aviso(msg, e && e.message === 'drive' ? 'Não consegui ler esse arquivo no Drive.' : P.traduzErro((e && e.message) || '')); });
-        }, function (t) { aviso(msg, t); }, false);
+      var eu = ++idLista, msg = el('p', { class: 'portal-aviso' });
+      function entrar(novo) { caminho = novo; guardarCaminho(); window.scrollTo(0, 0); lista(); }
+      var dentro = caminho.length > 1, subir = function () { entrar(caminho.slice(0, -1)); };
+      if (dentro) app.appendChild(el('div', { class: 'portal-acoes' }, [P.botaoVoltar(subir)]));
+      var niveis = el('div', { style: 'display:flex;flex-wrap:nowrap;gap:0 18px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 0 14px;white-space:nowrap' });
+      caminho.forEach(function (c, i) {
+        var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: c.nome.length > 28 ? c.nome.slice(0, 27) + '…' : c.nome, style: 'flex:none;padding:6px 0;margin:0;text-decoration:none' });
+        if (i === caminho.length - 1) b.style.setProperty('color', 'var(--ocre,#B5852F)', 'important');
+        else b.addEventListener('click', function () { entrar(caminho.slice(0, i + 1)); });
+        niveis.appendChild(b);
       });
-      app.appendChild(el('div', { class: 'portal-acoes' }, [add]));
-      app.appendChild(msg);
-      var caixa = el('div', { class: 'portal-cartao' }, [el('p', { text: 'Carregando...' })]);
-      app.appendChild(caixa);
-      C.from('leitor_livros').select('*').order('atualizado_em', { ascending: false }).then(function (r) {
-        caixa.textContent = '';
-        if (r.error) { caixa.appendChild(el('p', { text: P.traduzErro(r.error.message) })); return; }
-        if (!r.data.length) { caixa.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum livro ainda.' })); return; }
-        r.data.forEach(function (l) {
-          var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [
-            el('div', {}, [
-              el('span', { class: 'prod-titulo', text: l.nome }),
-              el('span', { class: 'prod-sub', text: 'página ' + l.pagina + (l.total ? ' de ' + l.total : '') })
-            ])
-          ]);
-          var rem = P.botaoApagar('Remover');
-          rem.addEventListener('click', function (e) {
-            e.stopPropagation();
-            if (!confirm('Remover "' + l.nome + '" do Leitor? As marcações também serão apagadas. O arquivo continua no Drive. Não dá para desfazer.')) return;
-            C.from('leitor_livros').delete().eq('id', l.id).then(function (x) { if (x.error) aviso(msg, P.traduzErro(x.error.message)); else lista(); });
+      app.appendChild(niveis); app.appendChild(msg);
+      var grade = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:22px 18px;margin:0 0 26px' });
+      var espera = el('p', { text: 'Carregando...' });
+      app.appendChild(espera); app.appendChild(grade);
+      setTimeout(function () { niveis.scrollLeft = niveis.scrollWidth; }, 0);
+
+      Promise.all([P.tokenGoogle(), C.from('leitor_livros').select('*').order('atualizado_em', { ascending: false })]).then(function (rs) {
+        var token = rs[0], livros = (rs[1] && rs[1].data) || [], porDrive = {};
+        livros.forEach(function (l) { porDrive[l.drive_id] = l; });
+        return listarPasta(token, caminho[caminho.length - 1].id).then(function (arqs) {
+          if (eu !== idLista) return;
+          espera.remove();
+          if (!arqs.length) app.insertBefore(el('p', { class: 'prod-vazio', text: 'Nenhuma pasta nem PDF aqui.' }), grade);
+          arqs.forEach(function (f) {
+            var pasta = f.mimeType === PASTA, nome = pasta ? f.name : String(f.name).replace(/\.pdf$/i, ''), l = porDrive[f.id];
+            var cel = el('div', { role: 'button', tabindex: '0', style: 'cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;min-width:0' }, [
+              pasta ? desenhoPasta() : capa(f, token),
+              el('div', { class: 'prod-titulo', text: nome, style: 'margin-top:6px;font-size:12px;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden' })
+            ]);
+            if (l) cel.appendChild(el('div', { class: 'prod-sub', text: 'página ' + l.pagina + (l.total ? ' de ' + l.total : ''), style: 'font-size:12px' }));
+            cel.addEventListener('click', function () {
+              if (pasta) { entrar(caminho.concat([{ id: f.id, nome: f.name }])); return; }
+              if (l) { abrir(l); return; }
+              C.from('leitor_livros').upsert({ drive_id: f.id, nome: nome }, { onConflict: 'drive_id' }).select().single()
+                .then(function (x) { if (x.error) aviso(msg, P.traduzErro(x.error.message)); else abrir(x.data); });
+            });
+            grade.appendChild(cel);
           });
-          linha.appendChild(rem);
-          linha.addEventListener('click', function () { abrir(l); });
-          caixa.appendChild(linha);
+          abertos(livros, msg);
+          if (dentro) P.voltarNoFim(app, subir);
         });
+      }).catch(function (e) {
+        if (eu !== idLista) return;
+        espera.remove();
+        aviso(msg, e && e.message === 'desconectado' ? 'O Google Drive ainda não está conectado (Configurações).' : 'Não consegui ler o Google Drive. Tente de novo.');
       });
+    }
+    /* os livros já abertos (com a página onde parou e as marcações), o mais recente primeiro */
+    function abertos(livros, msg) {
+      if (!livros.length) return;
+      var caixa = el('div', { class: 'portal-cartao' }, [el('div', { class: 'rotulo-fixo', text: 'Já abertos', style: 'margin:0 0 6px' })]);
+      livros.forEach(function (l) {
+        var linha = el('div', { class: 'prod-linha', style: 'cursor:pointer', role: 'button' }, [
+          el('div', {}, [
+            el('span', { class: 'prod-titulo', text: l.nome }),
+            el('span', { class: 'prod-sub', text: 'página ' + l.pagina + (l.total ? ' de ' + l.total : '') })
+          ])
+        ]);
+        var rem = P.botaoApagar('Remover');
+        rem.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (!confirm('Remover "' + l.nome + '" do Leitor? As marcações também serão apagadas. O arquivo continua no Drive. Não dá para desfazer.')) return;
+          C.from('leitor_livros').delete().eq('id', l.id).then(function (x) { if (x.error) aviso(msg, P.traduzErro(x.error.message)); else lista(); });
+        });
+        linha.appendChild(rem);
+        linha.addEventListener('click', function () { abrir(l); });
+        caixa.appendChild(linha);
+      });
+      app.appendChild(caixa);
     }
 
     /* ---------- leitor (a tela em si mora em leitor.js) ---------- */
