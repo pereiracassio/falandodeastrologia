@@ -334,7 +334,7 @@
         corpo.appendChild(caixaM);
         /* módulo com apostila e sem nenhuma aula: monta as aulas pelo índice da apostila (uma vez por módulo, um de cada vez) */
         window.__puxados = window.__puxados || {};
-        var faltam = mods.filter(function (m) { return m.apostila_drive_id && m.ordem !== 0 && !aulasDoModulo(D, m.id).length && !window.__puxados[m.id]; });
+        var faltam = mods.filter(function (m) { return m.ordem !== 0 && !aulasDoModulo(D, m.id).length && !window.__puxados[m.id]; });
         if (faltam.length) {
           var criou = 0, erroM = '', achou = true;
           P.mensagem(msgM, 'Montando as aulas pelas apostilas...', 'ok');
@@ -342,7 +342,12 @@
             window.__puxados[m.id] = true;
             return cadeia.then(function () {
               var tempo = new Promise(function (_, no) { setTimeout(function () { no(new Error('o Google não respondeu em 25 segundos')); }, 25000); });
-              return Promise.race([puxarCapitulos(m.id, m.apostila_drive_id, []), tempo]);
+              var ligar = m.apostila_drive_id ? Promise.resolve(m.apostila_drive_id) : acharApostila(m.ordem).then(function (f) {
+                if (!f) return null;
+                if (f.parents && f.parents[0]) C.from('drive_pastas').upsert({ chave: 'base_curso', pasta_id: f.parents[0] }, { onConflict: 'chave' }).then(function () { });
+                return C.from('curso_modulos').update({ apostila_drive_id: f.id, apostila_nome: String(f.name).replace(/\.pdf$/i, ''), apostila_ok: true, data_apostila: m.data_apostila || String(f.createdTime).slice(0, 10) }).eq('id', m.id).then(function () { return f.id; });
+              });
+              return Promise.race([ligar.then(function (idPdf) { return idPdf ? puxarCapitulos(m.id, idPdf, []) : 0; }), tempo]);
             }).then(function (n) { if (n > 0) criou += n; else if (n === -1) achou = false; }, function (e) { erroM = (e && e.message) || 'erro'; });
           }, Promise.resolve()).then(function () {
             if (criou) recarregar();
@@ -504,6 +509,18 @@
             return t.length ? t : indiceImpresso(pdf);
           });
         });
+    }
+
+    /* módulo sem apostila ligada: procura no Drive o PDF "Módulo N - ..." e liga (o mais recente, se houver mais de um) */
+    function acharApostila(ordem) {
+      return P.tokenGoogle().then(function (token) {
+        var q = "name contains 'Módulo " + ordem + "' and mimeType='application/pdf' and trashed=false";
+        return fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=50&fields=files(id,name,createdTime,parents)&q=' + encodeURIComponent(q), { headers: { Authorization: 'Bearer ' + token } });
+      }).then(function (r) { if (!r.ok) throw new Error('drive ' + r.status); return r.json(); }).then(function (j) {
+        var re = new RegExp('^\\s*M[óo]dulo\\s*' + ordem + '(\\D|$)', 'i');
+        var f = (j.files || []).filter(function (x) { return re.test(x.name); }).sort(function (a, b) { return String(b.createdTime).localeCompare(String(a.createdTime)); })[0];
+        return f || null;
+      });
     }
 
     /* uma aula por capítulo da apostila (os que já têm aula com o mesmo nome ficam como estão); devolve quantas criou */
