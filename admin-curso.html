@@ -587,9 +587,9 @@
         corpo.parentNode.insertBefore(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]), corpo);
         P.voltarNoFim(app, voltar);
         var tit = el('input', { type: 'text', value: a.titulo });
-        var origem = el('select', {}, [el('option', { value: 'youtube', text: 'YouTube' }), el('option', { value: 'drive', text: 'Google Drive' })]);
-        origem.value = a.video_origem;
-        var cod = el('input', { type: 'text', value: a.video_codigo || '', placeholder: 'Link ou código do vídeo', autocomplete: 'off' });
+        /* sem escolha de onde está: é o Google Drive, salvo vídeo antigo que já era um link do YouTube */
+        var origemDe = function (txt) { return /youtu/i.test(txt) ? 'youtube' : 'drive'; };
+        var cod = el('input', { type: 'text', value: a.video_codigo || '', placeholder: 'Link do Google Drive', autocomplete: 'off' });
         var teste = el('input', { type: 'checkbox' }); teste.checked = !!a.video_teste; teste.style.cssText = 'width:22px;min-width:22px;height:22px;margin:0;flex:none';
         var rotTeste = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:0 0 10px' }, [teste, el('span', { class: 'impresso', text: 'Vídeo de teste' })]);
         var aoVivoA = a.tipo === 'ao_vivo';
@@ -605,18 +605,18 @@
         var prev = el('div', { style: 'margin:0 0 12px' });
         function previa() {
           prev.textContent = '';
-          var u = window.curso.enderecoDoVideo(origem.value, cod.value);
+          var u = window.curso.enderecoDoVideo(origemDe(cod.value), cod.value);
           if (!u) return;
           var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;background:#000' });
           var f = el('iframe', { src: u, allowfullscreen: '', allow: 'encrypted-media; picture-in-picture' }); f.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;border:0';
           caixa.appendChild(f); prev.appendChild(caixa);
         }
-        cod.addEventListener('change', previa); origem.addEventListener('change', previa); previa();
+        cod.addEventListener('change', previa); previa();
         var msg = el('p', { class: 'portal-msg' });
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
-          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origem.value, video_codigo: cod.value.trim() || null, video_teste: teste.checked, datas_etapas: datasEt, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
+          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: teste.checked, datas_etapas: datasEt, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
             .then(function (x) {
               if (x.error) { msgErro(msg, x.error); return; }
               if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
@@ -635,7 +635,7 @@
           camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
         });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          partes, campo('Nome', tit), aoVivoA ? [vivoBloco, el('p', { class: 'proj-grupo', text: 'Gravação' })] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Onde está a gravação' : 'Onde está o vídeo', origem), campo(aoVivoA ? 'Link da gravação (depois da aula)' : 'Vídeo', cod), [aoVivoA ? el('span') : rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
+          partes, campo('Nome', tit), aoVivoA ? [vivoBloco, el('p', { class: 'proj-grupo', text: 'Gravação' })] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação (depois da aula)' : 'Link do vídeo (Google Drive)', cod), [aoVivoA ? el('span') : rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
