@@ -490,7 +490,7 @@
         var intro = m.ordem === 0;
         var cartao = el('div', { class: 'portal-cartao' }, [].concat(
           [el('h2', { text: intro ? 'Introdução' : 'Módulo ' + m.ordem })], campo('Nome', tit),
-          intro ? [msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])] : [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
+          intro ? [msgAp, msg, el('div', { style: 'display:none' }, [salvar])] : [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
         if (construindo && !intro) {
           cartao.insertBefore(barra(contModulo(D, m)), cartao.children[1]);
           var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = apOk;
