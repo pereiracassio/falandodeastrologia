@@ -434,6 +434,28 @@
       });
     }
 
+    /* sem marcadores no PDF: lê o índice impresso nas primeiras páginas ("1. Título ........ 3") */
+    function indiceImpresso(pdf) {
+      var achados = [], p = 1, max = Math.min(pdf.numPages, 8);
+      function consertar(t) { /* ligaturas que o PDF grava como símbolo: ti, fi */
+        return t.replace(/</g, 'ti').replace(/=/g, 'fi').replace(/([a-zà-ú])C(?=[a-zà-ú])/g, '$1ti').replace(/([a-zà-ú])J(?=[a-zà-ú])/g, '$1fi').replace(/(^|\s)J(?=[a-zà-ú]{2})/g, '$1fi');
+      }
+      function pagina() {
+        if (p > max || achados.length) return achados;
+        return pdf.getPage(p++).then(function (pg) { return pg.getTextContent(); }).then(function (tc) {
+          var linhas = {};
+          tc.items.forEach(function (i) { var y = Math.round(i.transform[5]); (linhas[y] = linhas[y] || []).push(i); });
+          Object.keys(linhas).map(Number).sort(function (a, b) { return b - a; }).forEach(function (y) {
+            var txt = linhas[y].sort(function (a, b) { return a.transform[4] - b.transform[4]; }).map(function (i) { return i.str; }).join('');
+            var m = /^\s*\d{1,2}[.)]\s*(.+?)\s*[.·…]{4,}\s*\d+\s*$/.exec(txt);
+            if (m) achados.push(consertar(m[1].replace(/\s+/g, ' ').trim()));
+          });
+          return pagina();
+        });
+      }
+      return Promise.resolve(pagina());
+    }
+
     /* capítulos = itens do primeiro nível do índice (marcadores) do PDF */
     function capitulosDoPdf(driveId) {
       if (!window.pdfjsLib) return Promise.reject(new Error('pdfjs'));
@@ -442,8 +464,12 @@
         return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(driveId) + '?alt=media&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } });
       }).then(function (r) { if (!r.ok) throw new Error('drive'); return r.arrayBuffer(); })
         .then(function (dados) { return pdfjsLib.getDocument({ data: dados }).promise; })
-        .then(function (pdf) { return pdf.getOutline(); })
-        .then(function (itens) { return (itens || []).map(function (i) { return String(i.title || '').replace(/\s+/g, ' ').trim(); }).filter(Boolean); });
+        .then(function (pdf) {
+          return pdf.getOutline().then(function (itens) {
+            var t = (itens || []).map(function (x) { return String(x.title || '').replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+            return t.length ? t : indiceImpresso(pdf);
+          });
+        });
     }
 
     /* uma aula por capítulo da apostila (os que já têm aula com o mesmo nome ficam como estão); devolve quantas criou */
@@ -490,7 +516,7 @@
                 if (f.parents && f.parents[0]) C.from('drive_pastas').upsert({ chave: 'base_curso', pasta_id: f.parents[0] }, { onConflict: 'chave' }).then(function () { }); /* a próxima busca já abre nessa pasta */
                 apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click();
                 P.mensagem(msgAp, 'Lendo o índice...', 'ok');
-                puxarCapitulos(id, fid, aulas).then(null, function () { return 0; }).then(function () { setTimeout(recarregar, 400); });
+                puxarCapitulos(id, fid, aulas).then(function (n) { if (n === -1) P.mensagem(msgAp, 'Não achei o índice dessa apostila.', 'erro'); else setTimeout(recarregar, 400); }, function (e) { P.mensagem(msgAp, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); });
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false, 'base_curso');
         });
@@ -565,7 +591,7 @@
         }
         caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
         corpo.appendChild(caixaA);
-        if (apId && !intro && !aulas.length && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas).then(function (n) { if (n > 0) recarregar(); }, function () { }); }
+        if (apId && !intro && !aulas.length && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas).then(function (n) { if (n > 0) recarregar(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
 
         if (construindo && !intro) {
           var cx = el('div', { class: 'portal-cartao' });
