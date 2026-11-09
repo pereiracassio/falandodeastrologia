@@ -41,7 +41,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=169"></script>
-  <script src="quadro.js?v=6"></script>
+  <script src="quadro.js?v=7"></script>
   <script src="menu.js?v=66" defer></script>
   <script>
   (function () {
@@ -65,10 +65,17 @@
       });
     }
     /* as apresentações (uma para cada cliente, aula, live...): linha "::lista" da tabela quadros. A primeira de todas é a "principal". */
-    var lista = [{ id: 'principal', nome: 'Quadro' }];
+    var lista = [{ id: 'principal', nome: 'Quadro' }], linhas = {};
+    function primeiraTela(q) {
+      var pfx = q.id === 'principal' ? '' : q.id + ':', ind = linhas[pfx + 'indice'], ordem = (ind && ind.ordem) || [];
+      return { dados: linhas[ordem[0]] || linhas[pfx + 'principal'] || {}, total: Math.max(1, ordem.length) };
+    }
     function lerLista() {
-      return C.from('quadros').select('dados').eq('id', '::lista').maybeSingle().then(function (r) {
-        var l = r.data && r.data.dados && r.data.dados.lista;
+      /* lê tudo de uma vez: a lista e a primeira tela de cada apresentação (para a miniatura) */
+      return C.from('quadros').select('id,dados').then(function (r) {
+        linhas = {};
+        (r.data || []).forEach(function (x) { linhas[x.id] = x.dados || {}; });
+        var l = linhas['::lista'] && linhas['::lista'].lista;
         if (Array.isArray(l) && l.length) lista = l;
       });
     }
@@ -77,7 +84,7 @@
     }
     function abrir(q) {
       P.estado.mesclar({ quadro: q.id });
-      window.Quadro.abrir({ id: q.id, voltar: function () { P.estado.mesclar({ quadro: '' }); } });
+      window.Quadro.abrir({ id: q.id, voltar: function () { P.estado.mesclar({ quadro: '' }); setTimeout(function () { lerLista().then(tela); }, 400); } });
     }
     function apagar(q, msg) {
       var filtro = q.id === 'principal' ? C.from('quadros').select('id,dados').not('id', 'like', '%:%') : C.from('quadros').select('id,dados').like('id', q.id + ':%');
@@ -103,10 +110,15 @@
         lista.unshift(q); guardarLista(msg).then(function () { tela(); abrir(q); });
       });
       app.appendChild(el('div', { class: 'portal-acoes' }, [nova])); app.appendChild(msg);
-      var caixa = el('div', { class: 'portal-cartao' });
+      var caixa = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:26px 22px;margin:18px 0 0' });
       if (!lista.length) caixa.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma apresentação ainda.' }));
       lista.forEach(function (q) {
-        var linha = el('div', { class: 'portal-item', style: 'cursor:pointer;display:flex;align-items:center;gap:14px', role: 'button', tabindex: '0' }, [el('div', { style: 'flex:1;min-width:0' }, [el('span', { class: 'portal-item-titulo', text: q.nome })])]);
+        var pt = primeiraTela(q);
+        var cel = el('div', { style: 'cursor:pointer;min-width:0;-webkit-tap-highlight-color:transparent', role: 'button', tabindex: '0' }, [
+          window.Quadro.miniatura(pt.dados),
+          el('div', { class: 'portal-item-titulo', text: q.nome, style: 'margin-top:8px;overflow-wrap:anywhere' }),
+          el('div', { class: 'portal-item-data', text: pt.total + (pt.total === 1 ? ' tela' : ' telas') })
+        ]);
         var ren = P.botaoApagar('Renomear'), rem = P.botaoApagar('Apagar');
         ren.addEventListener('click', function (e) {
           e.stopPropagation();
@@ -118,9 +130,9 @@
           if (!confirm('Apagar a apresentação "' + q.nome + '" inteira, com todas as telas? Não dá para desfazer.')) return;
           apagar(q, msg);
         });
-        linha.appendChild(ren); linha.appendChild(rem);
-        linha.addEventListener('click', function () { abrir(q); });
-        caixa.appendChild(linha);
+        cel.appendChild(el('div', { style: 'display:flex;gap:16px;margin-top:4px' }, [ren, rem]));
+        cel.addEventListener('click', function () { abrir(q); });
+        caixa.appendChild(cel);
       });
       app.appendChild(caixa);
     }

@@ -39,7 +39,9 @@
     var ferr = 'mao', cores = { caneta: '#1A1410', marca: '#F2C230', texto: '#1A1410' };
     /* as cores do site (papiro): preto de tinta, azul egípcio escuro e claro, terracota, ocre, verde, laranja, marrom e cinza */
     var SITE = ['#1A1410', '#1034A6', '#1F5FA3', '#A03E25', '#B5852F', '#4A7C59', '#D0610F', '#734028', '#6B7780'];
-    var PALETA = { caneta: SITE, marca: ['#F2C230', '#7CC47C', '#F08FB0'], texto: SITE };
+    /* UMA paleta só, para tudo que tem cor (caneta, marca-texto e texto): as do site + as três claras de marca-texto */
+    var TODAS = SITE.concat(['#F2C230', '#7CC47C', '#F08FB0']);
+    var PALETA = { caneta: TODAS, marca: TODAS, texto: TODAS };
     var NOMES = [['mao', 'Mover'], ['caneta', 'Caneta'], ['marca', 'Marca-texto'], ['laser', 'Laser'], ['borracha', 'Borracha'], ['texto', 'Texto']];
     var botoes = {};
     var bolas = el('span'); bolas.style.cssText = 'display:inline-flex;gap:6px;align-items:center;margin:0 4px;flex:none';
@@ -454,5 +456,38 @@
     });
   }
 
-  window.Quadro = { abrir: abrir };
+  /* miniatura de uma tela (para a lista de apresentações): a mesma folha, pequena, só para olhar */
+  function miniatura(d) {
+    d = d || {};
+    var folha = el('div'); folha.style.cssText = 'position:relative;aspect-ratio:' + PROPORCAO + ';background:var(--papiro-fundo,#e6d3a0);border:1px solid var(--azul-egipcio-claro,#1F5FA3);overflow:hidden;box-sizing:border-box';
+    var textos = [];
+    (Array.isArray(d.itens) ? d.itens : []).forEach(function (it) {
+      var n;
+      if (it.tipo === 'img') { n = el('img', { src: it.url, alt: '', loading: 'lazy' }); n.style.width = it.w * 100 + '%'; n.style.height = it.h * 100 + '%'; }
+      else { n = el('div', { text: it.texto || '' }); n.style.cssText = 'white-space:pre;line-height:1.3;color:' + it.cor; textos.push([n, it.tam]); }
+      n.style.position = 'absolute'; n.style.left = it.x * 100 + '%'; n.style.top = it.y * 100 + '%'; n.style.pointerEvents = 'none';
+      folha.appendChild(n);
+    });
+    var cv = el('canvas'); cv.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
+    folha.appendChild(cv);
+    var tracos = Array.isArray(d.tracos) ? d.tracos : [];
+    function pintar() {
+      var w = folha.clientWidth, h = folha.clientHeight; if (!w) return;
+      textos.forEach(function (t) { t[0].style.fontSize = Math.max(2, t[1] * h) + 'px'; });
+      var k = Math.max(1, window.devicePixelRatio || 1); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+      var g = cv.getContext('2d'); g.lineCap = 'round'; g.lineJoin = 'round';
+      tracos.forEach(function (s) {
+        g.globalAlpha = s.t === 'm' ? 0.5 : 1; g.strokeStyle = s.c; g.fillStyle = s.c; g.lineWidth = Math.max(0.6, s.w * cv.width);
+        g.beginPath();
+        if (s.p.length === 1) { g.arc(s.p[0][0] * cv.width, s.p[0][1] * cv.height, g.lineWidth / 2, 0, 7); g.fill(); return; }
+        g.moveTo(s.p[0][0] * cv.width, s.p[0][1] * cv.height);
+        for (var i = 1; i < s.p.length; i++) g.lineTo(s.p[i][0] * cv.width, s.p[i][1] * cv.height);
+        g.stroke();
+      });
+    }
+    if (window.ResizeObserver) new ResizeObserver(pintar).observe(folha); else setTimeout(pintar, 0);
+    return folha;
+  }
+
+  window.Quadro = { abrir: abrir, miniatura: miniatura };
 })();
