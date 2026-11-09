@@ -578,14 +578,13 @@
     function campo(rotulo, entrada, pegar) {
       if (!pegar) return el('div', {}, [el('span', { class: 'prod-rotulo prod-fixo', text: rotulo }), entrada]);
       /* campo SEMPRE editável (tocar no texto só edita; tudo que se escreve já salva sozinho); o "Copiar" ao lado do nome é o único lugar que copia */
-      var icone = el('span', {}), cp = el('span', { text: 'Copiar', role: 'button', tabindex: '0', style: 'font-size:12px;opacity:.6;text-decoration:underline;cursor:pointer;margin-left:12px;font-family:var(--fonte-mao)' });
+      var icone = el('span', {}), cp = P.botaoApagar('Copiar'); cp.style.marginLeft = '12px'; /* mesmo botão discreto de Apagar: Cinzel, sublinhado */
       var r = el('span', { class: 'prod-rotulo prod-fixo' }, [document.createTextNode(rotulo), icone, cp]);
       var copiar = function () {
         var txt = pegar(); if (!txt) return;
         copiarTexto(txt).then(function () { avisoFlutuante('Copiado'); icone.innerHTML = SVG_COPIADO; setTimeout(function () { icone.innerHTML = ''; }, 1500); }, function () { avisoFlutuante('Não consegui copiar', true); });
       };
       cp.addEventListener('click', copiar);
-      cp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); copiar(); } });
       return el('div', {}, [r, entrada]);
     }
     function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; guardarEstado(); tela(); window.scrollTo(0, 0); }
