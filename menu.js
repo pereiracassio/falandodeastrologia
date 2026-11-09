@@ -36,6 +36,7 @@
       { label: "Visitas", href: "admin-visitas.html" },
       { label: "Curso", href: "admin-curso.html" },
       { label: "Leitor", href: "admin-leitor.html" },
+      { label: "Quadro", href: "admin-quadro.html" },
       { label: "Estudos", href: "admin-estudos.html" },
       { label: "Produção", href: "admin-producao.html" },
       { label: "Projetos", href: "admin-projetos.html" },
