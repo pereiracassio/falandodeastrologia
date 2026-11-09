@@ -110,16 +110,17 @@
         lista.unshift(q); guardarLista(msg).then(function () { tela(); abrir(q); });
       });
       app.appendChild(el('div', { class: 'portal-acoes' }, [nova])); app.appendChild(msg);
-      var caixa = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:26px 22px;margin:18px 0 0' });
+      var caixa = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:20px 16px;margin:18px 0 0' });
       if (!lista.length) caixa.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma apresentação ainda.' }));
       lista.forEach(function (q) {
         var pt = primeiraTela(q);
         var cel = el('div', { style: 'cursor:pointer;min-width:0;-webkit-tap-highlight-color:transparent', role: 'button', tabindex: '0' }, [
           window.Quadro.miniatura(pt.dados),
-          el('div', { class: 'portal-item-titulo', text: q.nome, style: 'margin-top:8px;overflow-wrap:anywhere' }),
-          el('div', { class: 'portal-item-data', text: pt.total + (pt.total === 1 ? ' tela' : ' telas') })
+          el('div', { class: 'portal-item-titulo', text: q.nome, style: 'margin-top:6px;overflow-wrap:anywhere;font-size:12px;line-height:1.25' }),
+          el('div', { class: 'portal-item-data', text: pt.total + (pt.total === 1 ? ' tela' : ' telas'), style: 'font-size:12px' })
         ]);
         var ren = P.botaoApagar('Renomear'), rem = P.botaoApagar('Apagar');
+        [ren, rem].forEach(function (b) { [['padding', '0'], ['margin', '0'], ['min-height', '0'], ['font-size', '11px'], ['line-height', '1.5']].forEach(function (x) { b.style.setProperty(x[0], x[1], 'important'); }); });
         ren.addEventListener('click', function (e) {
           e.stopPropagation();
           var nome = (prompt('Nome da apresentação', q.nome) || '').trim(); if (!nome || nome === q.nome) return;
@@ -130,7 +131,7 @@
           if (!confirm('Apagar a apresentação "' + q.nome + '" inteira, com todas as telas? Não dá para desfazer.')) return;
           apagar(q, msg);
         });
-        cel.appendChild(el('div', { style: 'display:flex;gap:16px;margin-top:4px' }, [ren, rem]));
+        cel.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:2px' }, [ren, rem]));
         cel.addEventListener('click', function () { abrir(q); });
         caixa.appendChild(cel);
       });
