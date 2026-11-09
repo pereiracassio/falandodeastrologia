@@ -38,14 +38,14 @@
 
     <h2>O que tem em cada módulo</h2>
     <ul>
-      <li style="margin-bottom: 8px;"><strong>Módulo 1:</strong> Introdução à astrologia</li>
-      <li style="margin-bottom: 8px;"><strong>Módulo 2:</strong> O pensamento helenístico</li>
-      <li style="margin-bottom: 8px;"><strong>Módulo 3:</strong> Os planetas</li>
-      <li style="margin-bottom: 8px;"><strong>Módulo 4:</strong> Os signos</li>
-      <li style="margin-bottom: 8px;"><strong>Módulo 5:</strong> As casas e os aspectos</li>
-      <li style="margin-bottom: 8px;"><strong>Módulo 6:</strong> A condição dos planetas</li>
-      <li style="margin-bottom: 8px;"><strong>Módulo 7:</strong> A estrutura do mapa</li>
-      <li style="margin-bottom: 8px;"><strong>Módulo 8:</strong> A leitura do mapa</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 1:</strong> Introdução à astrologia<br>(Sistemas astrológicos, os zodíacos tropical e sideral, a astrologia tradicional e um capítulo para cada fase: helenística, medieval, renascentista e moderna)</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 2:</strong> O pensamento helenístico<br>(O cosmos e o jeito helenístico de olhar o céu, em contraste com o moderno)</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 3:</strong> Os planetas<br>(Natureza, seita diurna e noturna, benéficos e maléficos)</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 4:</strong> Os signos<br>(O que cada signo é e como se interpreta)</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 5:</strong> As casas e os aspectos<br>(Os lugares e a visão entre os planetas)</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 6:</strong> A condição dos planetas<br>(Domicílio, exaltação, triplicidade e termos, cada um com sua função própria)</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 7:</strong> A estrutura do mapa<br>(Ascendente, Partes, predominador e oikodespotes)</li>
+      <li style="margin-bottom: 12px;"><strong>Módulo 8:</strong> A leitura do mapa<br>(Ordem de leitura aplicada a mapas completos)</li>
     </ul>
 
     <h2>Avaliação e certificado</h2>
@@ -56,6 +56,11 @@
     <h2>Lista de espera</h2>
     <p style="text-align: justify;">As vendas ainda não abriram. Deixe o seu nome, WhatsApp e e-mail, e eu aviso você assim que o curso abrir.</p>
     <div class="portal" style="text-align: left;"><div id="espera-form"></div></div>
+
+    <div style="margin-top: 30px; text-align: center;">
+      <p class="duvida-whats">Se tiver alguma dúvida, pode chamar no WhatsApp.</p>
+      <a class="icone-whats" href="https://wa.me/5511970404508?text=Olá!%20Tenho%20dúvidas%20sobre%20o%20curso%20Fundamentos%20da%20Astrologia%20Natal." rel="nofollow" target="_blank" title="WhatsApp" aria-label="WhatsApp"><img src="img/rede-whatsapp.svg" alt="WhatsApp" width="44" height="44"></a>
+    </div>
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -71,7 +76,7 @@
     var msg = el('p', { class: 'portal-msg' });
     var enviar = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar' });
     var cartao = el('div', { class: 'portal-cartao' }, [
-      el('label', { text: 'Nome' }), nome, el('label', { text: 'WhatsApp' }), whats, el('label', { text: 'E-mail' }), email, isca, msg,
+      el('label', { text: 'Nome completo *' }), nome, el('label', { text: 'WhatsApp (com DDD) *' }), whats, el('label', { text: 'Seu e-mail *' }), email, isca, msg,
       el('div', { class: 'portal-acoes' }, [enviar])
     ]);
     raiz.appendChild(cartao);
