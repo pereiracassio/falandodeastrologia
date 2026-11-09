@@ -635,7 +635,7 @@
           camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
         });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          partes, campo('Nome', tit), aoVivoA ? [vivoBloco, el('p', { class: 'proj-grupo', text: 'Gravação' })] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo('Onde está o vídeo', origem), campo('Vídeo', cod), [rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
+          partes, campo('Nome', tit), aoVivoA ? [vivoBloco, el('p', { class: 'proj-grupo', text: 'Gravação' })] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Onde está a gravação' : 'Onde está o vídeo', origem), campo(aoVivoA ? 'Link da gravação (depois da aula)' : 'Vídeo', cod), [aoVivoA ? el('span') : rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
