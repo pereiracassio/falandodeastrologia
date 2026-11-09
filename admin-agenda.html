@@ -802,6 +802,27 @@
         return saida;
       }, function () { return []; });
     }
+    /* curso em construção: a primeira etapa de cada aula que ainda falta e tem data (gravar, editar...) e a apostila de cada módulo */
+    function itensDoCurso() {
+      var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega('cursos', 'id,titulo,construindo,etapas'), pega('curso_modulos', 'id,curso_id,ordem,titulo,apostila_ok,data_apostila'), pega('curso_aulas', 'id,modulo_id,ordem,titulo,gravacao,edicao_grossa,edicao_fina,capa,video_codigo,datas_etapas,tipo')]).then(function (r) {
+        var NOMES = { gravacao: 'gravar', edicao_grossa: 'edição grossa', edicao_fina: 'edição fina', capa: 'fazer a capa', upload: 'colocar o vídeo' }, ORDEM = ['gravacao', 'edicao_grossa', 'edicao_fina', 'capa', 'upload'], saida = [];
+        var cursos = {}; r[0].forEach(function (c) { if (c.construindo !== false) cursos[c.id] = c; });
+        var mods = {}; r[1].forEach(function (m) { if (cursos[m.curso_id]) mods[m.id] = m; });
+        r[1].forEach(function (m) {
+          if (!mods[m.id] || m.apostila_ok || !m.data_apostila) return;
+          saida.push({ quando: doIso(String(m.data_apostila).slice(0, 10)), diaTodo: true, titulo: 'Apostila: ' + (m.ordem === 0 ? '' : 'módulo ' + m.ordem + ' · ') + m.titulo, sub: cursos[m.curso_id].titulo, subOcre: true, url: 'admin-curso.html#modulo=' + encodeURIComponent(m.id), cor: FdaTema.cor('azul-egipcio-escuro') });
+        });
+        r[2].forEach(function (a) {
+          var m = mods[a.modulo_id]; if (!m || a.tipo === 'ao_vivo') return;
+          var ativas = Array.isArray(cursos[m.curso_id].etapas) && cursos[m.curso_id].etapas.length ? cursos[m.curso_id].etapas : ORDEM, dt = a.datas_etapas || {};
+          var pend = ORDEM.filter(function (k) { return ativas.indexOf(k) >= 0 && !(k === 'upload' ? a.video_codigo : a[k]); })[0];
+          if (!pend || !dt[pend]) return;
+          saida.push({ quando: doIso(String(dt[pend]).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: NOMES[pend] + ' · ' + cursos[m.curso_id].titulo, subOcre: true, url: 'admin-curso.html#aula=' + encodeURIComponent(a.id), cor: FdaTema.cor('azul-egipcio-escuro') });
+        });
+        return saida;
+      }, function () { return []; });
+    }
     /* o que a tarefa pode ligar: série, vídeo, corte, projeto ou estudo (tocar na tarefa abre lá) */
     function opcoesDeLigacao() {
       var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
@@ -1019,7 +1040,7 @@
           desenhar(); mostrouGuardado = true;
         } catch (e) { dados.fora = []; dados.tarefas = []; dados.feitos = {}; dados.falhas = []; lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
       }
-      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), Promise.all([itensDeProjetosEEstudos(), itensDeAulasEstudo()]).then(function (x) { return x[0].concat(x[1]); }), itensDePassos(), C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), codigosDosAtendimentos()]).then(function (r) {
+      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), Promise.all([itensDeProjetosEEstudos(), itensDeAulasEstudo(), itensDoCurso()]).then(function (x) { return x[0].concat(x[1], x[2]); }), itensDePassos(), C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), codigosDosAtendimentos()]).then(function (r) {
         if (!vivo()) return;
         dados.fora = []; dados.feitos = r[1] || {}; dados.falhas = r[0].falhas || []; dados.tarefas = r[5];
         var atendidos = [];

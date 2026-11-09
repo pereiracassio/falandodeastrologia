@@ -125,6 +125,11 @@
     function filhosDe(id) { return projetos.filter(function (p) { return p.projeto_pai_id === id; }); }
     function arvore(p) { var r = [p]; filhosDe(p.id).forEach(function (f) { r = r.concat(arvore(f)); }); return r; }
     function passosDaArvore(p) { var ids = {}; arvore(p).forEach(function (x) { ids[x.id] = true; }); return passos.filter(function (x) { return ids[x.projeto_id]; }); }
+    /* data que coloca o subprojeto na lista do pai: a do PRÓXIMO passo com data ainda não feito (em qualquer nível de dentro); sem passo datado pendente, a data final dele */
+    function proximaData(p) {
+      var ds = passosDaArvore(p).filter(function (x) { return !x.feito && x.data; }).map(function (x) { return x.data; }).sort();
+      return ds[0] || p.data_fim || null;
+    }
     function contagem(p) {
       var meus = passos.filter(function (x) { return x.projeto_id === p.id; }), fs = filhosDe(p.id);
       if (!meus.length && !fs.length) return p.projeto_pai_id ? { total: 1, feitos: 0 } : { total: 0, feitos: 0 };
@@ -374,7 +379,7 @@
       }
 
       /* passos e subprojetos na MESMA lista, na ordem que você arrumar */
-      var ordenados = meus.concat(filhosDe(proj.id).map(function (c) { var k = contagem(c); return { filhoProj: c, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai, data: c.data_fim || null, pct: k.total ? Math.floor(k.feitos * 100 / k.total) : 0, /* subprojeto com data final sobe e fica em ordem de data, como o passo com data */ feito: k.total > 0 && k.feitos === k.total, k: k }; }))
+      var ordenados = meus.concat(filhosDe(proj.id).map(function (c) { var k = contagem(c); return { filhoProj: c, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai, data: proximaData(c), pct: k.total ? Math.floor(k.feitos * 100 / k.total) : 0, /* subprojeto com data final sobe e fica em ordem de data, como o passo com data */ feito: k.total > 0 && k.feitos === k.total, k: k }; }))
         .map(function (x, i) { return { x: x, i: i }; }).sort(function (a, b) { return ((a.x.ordem || 0) - (b.x.ordem || 0)) || (a.i - b.i); }).map(function (o) { return o.x; });
       var lista = el('div', { style: 'margin-top:14px' });
       if (!ordenados.length) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum passo ainda.' }));
