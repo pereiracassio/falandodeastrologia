@@ -5,24 +5,26 @@
    Quadro.abrir({ voltar }) */
 (function () {
   var P = window.portal, el = P.el, C = P.client;
-  var PROPORCAO = 1.5, ID = 'principal';
+  var PROPORCAO = 1.5;
 
   function abrir(o) {
     o = o || {};
     var COR = '#A03E25', AZUL = 'var(--azul-egipcio-claro,#1F5FA3)';
+    /* telas (como slides): cada tela é uma linha da tabela quadros; a linha "indice" guarda a ordem. A primeira tela é a linha "principal". */
+    var ordem = ['principal'], pag = 0, telas = {}, ID = 'principal';
     var dados = { itens: [], tracos: [] }, pilha = [], esperaSalvar = null, pendente = false, carregado = false, fechado = false;
     var tela = el('div');
     tela.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;height:100dvh;z-index:99990;background:#e6d3a0;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none';
     var overflowAntes = document.body.style.overflow; document.body.style.overflow = 'hidden';
     document.body.appendChild(tela);
 
-    function semContorno(b) { b.style.setProperty('border', '0', 'important'); b.style.setProperty('box-shadow', 'none', 'important'); b.style.setProperty('border-radius', '0', 'important'); b.style.setProperty('background', 'transparent', 'important'); }
+    function semContorno(b) { b.style.setProperty('border', '0', 'important'); b.style.setProperty('box-shadow', 'none', 'important'); b.style.setProperty('border-radius', '0', 'important'); b.style.setProperty('background', 'transparent', 'important'); b.style.setProperty('outline', '0', 'important'); b.addEventListener('click', function () { b.blur(); }); } /* sem quadro de foco: com o teclado ligado ele aparecia em volta do botão, e o espaço/setas são das telas */
     function btn(txt, fn) {
       var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: txt });
       semContorno(b); b.style.cssText += ';padding:8px 9px;margin:0;font-size:13px;min-width:0;white-space:nowrap;flex:none;text-decoration:none';
       b.addEventListener('click', fn); return b;
     }
-    function discreto(txt, fn) { var b = P.botaoApagar(txt); b.style.cssText += ';flex:none;white-space:nowrap;margin:0 6px'; b.addEventListener('click', fn); return b; }
+    function discreto(txt, fn) { var b = P.botaoApagar(txt); b.style.cssText += ';flex:none;white-space:nowrap;margin:0 6px'; b.style.setProperty('outline', '0', 'important'); b.addEventListener('click', function () { b.blur(); }); b.addEventListener('click', fn); return b; }
     function marcar(b, on) { b.style.setProperty('color', on ? COR : '', 'important'); b.style.textDecoration = on ? 'underline' : 'none'; }
     function barra(topo) {
       var d = el('div');
@@ -76,19 +78,25 @@
 
     var barraBaixo = barra(false), contexto = el('span'); contexto.style.cssText = 'display:inline-flex;align-items:center;gap:0 4px;flex:none';
     var folga = el('span'); folga.style.cssText = 'flex:1 1 auto;min-width:12px';
-    barraBaixo.appendChild(voltar()); barraBaixo.appendChild(contexto); barraBaixo.appendChild(folga);
+    var bAnt = btn('‹', function () { irPara(pag - 1); }), bProx = btn('›', function () { irPara(pag + 1); });
+    bAnt.style.fontSize = bProx.style.fontSize = '22px';
+    var contador = el('span'); contador.style.cssText = 'font-size:14px;color:var(--preto-tinta,#16233F);white-space:nowrap;flex:none;min-width:44px;text-align:center';
+    barraBaixo.appendChild(voltar());
+    [bAnt, contador, bProx, btn('+ Tela', novaTela)].forEach(function (x) { barraBaixo.appendChild(x); });
+    barraBaixo.appendChild(contexto); barraBaixo.appendChild(folga);
     barraBaixo.appendChild(discreto('Apagar os riscos', function () {
       if (!dados.tracos.length) return;
-      if (!confirm('Apagar todos os riscos do quadro? Não dá para desfazer.')) return;
+      if (!confirm('Apagar todos os riscos desta tela? Não dá para desfazer.')) return;
       dados.tracos = []; pilha = []; repintar(); salvar();
     }));
     barraBaixo.appendChild(discreto('Apagar tudo', function () {
       if (!dados.tracos.length && !dados.itens.length) return;
-      if (!confirm('Apagar tudo do quadro (riscos, textos e imagens)? Não dá para desfazer.')) return;
+      if (!confirm('Apagar tudo desta tela (riscos, textos e imagens)? Não dá para desfazer.')) return;
       var arquivos = dados.itens.filter(function (i) { return i.tipo === 'img' && i.arq; }).map(function (i) { return i.arq; });
-      dados = { itens: [], tracos: [] }; pilha = []; selecionar(null); montarItens(); repintar(); salvar();
+      dados = telas[ID] = { itens: [], tracos: [] }; pilha = []; selecionar(null); montarItens(); repintar(); salvar();
       if (arquivos.length) C.storage.from('site').remove(arquivos);
     }));
+    barraBaixo.appendChild(discreto('Apagar esta tela', apagarTela));
     tela.appendChild(barraBaixo);
 
     function voltar() { var v = P.botaoVoltar(fechar); semContorno(v); v.style.setProperty('padding', '8px 9px'); v.style.flex = 'none'; v.style.whiteSpace = 'nowrap'; return v; }
@@ -364,6 +372,8 @@
       if (editando) { if (e.key === 'Escape') pararEdicao(); return; }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selecionado) { e.preventDefault(); apagarItem(selecionado); }
       else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); desfazer(); }
+      else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); irPara(pag + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); irPara(pag - 1); }
     };
     document.addEventListener('keydown', aoTeclar);
 
@@ -373,7 +383,8 @@
       clearTimeout(esperaSalvar);
       if (!pendente) return Promise.resolve();
       pendente = false;
-      return C.from('quadros').upsert({ id: ID, dados: dados, atualizado_em: new Date().toISOString() }).then(function (r) {
+      var qual = ID;
+      return C.from('quadros').upsert({ id: qual, dados: dados, atualizado_em: new Date().toISOString() }).then(function (r) {
         if (r.error) { pendente = true; avisar('Não consegui guardar o quadro: ' + P.traduzErro(r.error.message)); }
       });
     }
@@ -385,14 +396,57 @@
     }
     window.addEventListener('pagehide', function () { if (!fechado) gravarAgora(); });
 
-    pintarFerr(); medir();
-    C.from('quadros').select('dados').eq('id', ID).maybeSingle().then(function (r) {
+    /* ---------- telas ---------- */
+    function pintarTelas() { contador.textContent = (pag + 1) + ' / ' + ordem.length; bAnt.style.opacity = pag > 0 ? '1' : '.3'; bProx.style.opacity = pag < ordem.length - 1 ? '1' : '.3'; }
+    function mostrar() {
+      ID = ordem[pag]; dados = telas[ID] || (telas[ID] = { itens: [], tracos: [] });
+      pilha = []; lasers = []; atual = null; arrasto = null; selecionado = null; editando = null;
+      montarItens(); repintar(); pintarTelas();
+    }
+    function irPara(i) {
+      if (!carregado || i < 0 || i >= ordem.length || i === pag) return;
+      pararEdicao(); gravarAgora();
+      pag = i; mostrar();
+    }
+    function salvarOrdem() {
+      C.from('quadros').upsert({ id: 'indice', dados: { ordem: ordem }, atualizado_em: new Date().toISOString() }).then(function (r) { if (r.error) avisar('Não consegui guardar as telas: ' + P.traduzErro(r.error.message)); });
+    }
+    function novaTela() {
+      if (!carregado) return;
+      pararEdicao(); gravarAgora();
+      var id = 't' + novoId(); telas[id] = { itens: [], tracos: [] };
+      ordem.splice(pag + 1, 0, id); pag += 1; salvarOrdem(); mostrar();
+      pendente = true; gravarAgora();
+    }
+    function apagarTela() {
+      if (!carregado) return;
+      if (!confirm('Apagar esta tela inteira (a ' + (pag + 1) + ' de ' + ordem.length + ')? Não dá para desfazer.')) return;
+      pararEdicao(); clearTimeout(esperaSalvar); pendente = false;
+      var arquivos = dados.itens.filter(function (x) { return x.tipo === 'img' && x.arq; }).map(function (x) { return x.arq; });
+      if (arquivos.length) C.storage.from('site').remove(arquivos);
+      var id = ID;
+      if (ordem.length === 1) { telas[id] = { itens: [], tracos: [] }; mostrar(); pendente = true; gravarAgora(); return; }
+      delete telas[id]; ordem.splice(pag, 1); if (pag >= ordem.length) pag = ordem.length - 1;
+      C.from('quadros').delete().eq('id', id).then(function () {});
+      salvarOrdem(); mostrar();
+    }
+
+    pintarFerr(); medir(); pintarTelas();
+    C.from('quadros').select('id,dados').then(function (r) {
       carregado = true;
       if (r.error) { avisar('Não consegui abrir o quadro guardado: ' + P.traduzErro(r.error.message), true); return; }
       avisar('');
-      var d = r.data && r.data.dados;
-      if (d) dados = { itens: Array.isArray(d.itens) ? d.itens : [], tracos: Array.isArray(d.tracos) ? d.tracos : [] };
-      montarItens(); repintar();
+      var linhas = {};
+      (r.data || []).forEach(function (l) { linhas[l.id] = l.dados || {}; });
+      var o = linhas.indice && linhas.indice.ordem;
+      if (Array.isArray(o) && o.length) ordem = o.filter(function (id) { return id === 'principal' || linhas[id]; });
+      if (!ordem.length) ordem = ['principal'];
+      ordem.forEach(function (id) {
+        var d = linhas[id] || {};
+        telas[id] = { itens: Array.isArray(d.itens) ? d.itens : [], tracos: Array.isArray(d.tracos) ? d.tracos : [] };
+        telas[id].itens.forEach(function (x) { if (x.tipo === 'img' && x.url) { new Image().src = x.url; } }); /* já deixa as imagens de todas as telas prontas, para passar sem esperar */
+      });
+      pag = 0; mostrar();
     });
   }
 
