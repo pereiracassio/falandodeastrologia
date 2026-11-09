@@ -483,15 +483,16 @@
         var msgAp = el('p', { class: 'portal-msg' });
         escolher.addEventListener('click', function () {
           P.escolherDoDrive(function (url, fid, token) {
-            fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fid) + '?fields=name,mimeType&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
+            fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fid) + '?fields=name,mimeType,parents&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
               .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
               .then(function (f) {
                 if (f.mimeType !== 'application/pdf') { P.mensagem(msgAp, 'Esse arquivo não é um PDF.', 'erro'); return; }
+                if (f.parents && f.parents[0]) C.from('drive_pastas').upsert({ chave: 'base_curso', pasta_id: f.parents[0] }, { onConflict: 'chave' }).then(function () { }); /* a próxima busca já abre nessa pasta */
                 apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click();
                 P.mensagem(msgAp, 'Lendo o índice...', 'ok');
                 puxarCapitulos(id, fid, aulas).then(null, function () { return 0; }).then(function () { setTimeout(recarregar, 400); });
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
-          }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false);
+          }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false, 'base_curso');
         });
         var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apOk = false; apTxt.textContent = 'Nenhuma'; salvar.click(); setTimeout(recarregar, 600); });
         var msg = el('p', { class: 'portal-msg' });
