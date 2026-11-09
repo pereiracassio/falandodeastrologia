@@ -91,7 +91,8 @@
       app.appendChild(topo(nomeAdmin));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aplicações' }), el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
       app.appendChild(cartao);
-      P.client.from('aplicacoes_mentoria').select('*').order('criado_em', { ascending: false }).then(function (r) {
+      Promise.all([P.client.from('aplicacoes_mentoria').select('*').order('criado_em', { ascending: false }), P.client.from('curso_lista_espera').select('*').order('criado_em', { ascending: false })]).then(function (rs) {
+        var r = rs[0], espera = rs[1].error ? [] : (rs[1].data || []);
         cartao.textContent = '';
         cartao.appendChild(el('h2', { text: 'Aplicações' }));
         if (r.error) { cartao.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as aplicações.' })); return; }
@@ -99,10 +100,24 @@
         var novasCompletas = todas.filter(function (a) { return a.concluida && a.situacao === 'nova'; });
         var naoConcluidas = todas.filter(function (a) { return !a.concluida && a.situacao === 'nova'; });
         var abas = el('div', { class: 'portal-abas', role: 'tablist' });
-        var defs = [['novas', 'Novas (' + novasCompletas.length + ')'], ['incompletas', 'Não concluídas (' + naoConcluidas.length + ')'], ['todas', 'Todas (' + todas.length + ')']];
+        var defs = [['novas', 'Novas (' + novasCompletas.length + ')'], ['incompletas', 'Não concluídas (' + naoConcluidas.length + ')'], ['todas', 'Todas (' + todas.length + ')'], ['espera', 'Lista de espera (' + espera.length + ')']];
         var corpo = el('div');
+        function pintarEspera() {
+          if (!espera.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Ninguém ainda.' }));
+          espera.forEach(function (x) {
+            var zap = el('a', { href: 'https://wa.me/' + numeroWhats(x.whatsapp), target: '_blank', rel: 'noopener', title: 'WhatsApp', style: 'flex:none' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '32', height: '32' })]);
+            var quem = el('div', { style: 'flex:1;min-width:0' }, [el('span', { class: 'portal-item-titulo', text: x.nome }), el('span', { class: 'portal-item-data', text: x.email + ' · ' + x.whatsapp + ' · ' + dataHora(x.criado_em) })]);
+            var tirar = P.botaoApagar('Tirar');
+            tirar.addEventListener('click', function () {
+              if (!window.confirm('Tirar ' + x.nome + ' da lista? Não dá para desfazer.')) return;
+              P.client.from('curso_lista_espera').delete().eq('id', x.id).then(function (rr) { if (!rr.error) lista(); });
+            });
+            corpo.appendChild(el('div', { class: 'portal-item', style: 'display:flex;align-items:center;gap:10px' }, [quem, zap, tirar]));
+          });
+        }
         function pintar() {
           corpo.textContent = '';
+          if (aba === 'espera') { pintarEspera(); return; }
           var itens = aba === 'novas' ? novasCompletas : aba === 'incompletas' ? naoConcluidas : todas;
           if (!itens.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: aba === 'todas' ? 'Nenhuma aplicação ainda.' : 'Nada por aqui.' }));
           itens.forEach(function (a) {
