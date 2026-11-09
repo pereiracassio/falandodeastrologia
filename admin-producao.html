@@ -1009,8 +1009,8 @@
       function caixaBloco(rotulo, valor, dica, aoMudar, extra) {
         var t = el('textarea', { rows: '6', placeholder: dica }); t.value = valor;
         t.addEventListener('input', function () { aoMudar(t.value); agendarSalvar(); });
-        var c = campo(rotulo, t, function () { return t.value; }); c.firstChild.classList.add('rotulo-ocre');
-        return el('div', {}, [c, extra]); /* cada bloco é sempre editável e salva sozinho; o "Copiar" ao lado do nome copia */
+        var c = campo(rotulo, t); c.firstChild.classList.add('rotulo-ocre');
+        return el('div', {}, [c, extra]); /* cada bloco é editável e salva sozinho; quem copia é o botão Copiar do roteiro inteiro */
       }
       function desenharBlocos() {
         areaBlocos.textContent = '';
@@ -1040,7 +1040,12 @@
       if (usaBlocos) { var rotRot = rotuloCopiavel('Roteiro', roteiroTodo); rotRot.classList.add('rotulo-ocre'); cartao.appendChild(rotRot); desenharBlocos(); cartao.appendChild(areaBlocos); }
       else { var cRot = campo('Roteiro', roteiro, roteiroTodo); cRot.firstChild.classList.add('rotulo-ocre'); cartao.appendChild(cRot); }
       /* o roteiro só vira "pronto" quando você disser que terminou (às vezes ainda está sendo escrito) */
-      cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' })]));
+      var copiarRoteiro = P.botaoApagar('Copiar');
+      copiarRoteiro.addEventListener('click', function () {
+        var txt = roteiroTodo(); if (!txt) return;
+        copiarTexto(txt).then(function () { avisoFlutuante('Roteiro copiado'); }, function () { avisoFlutuante('Não consegui copiar', true); });
+      });
+      cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px;align-items:center;gap:18px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' }), copiarRoteiro]));
       cartao.appendChild(linkRoteiro);
       cartao.appendChild(campo('Texto que vai junto', texto, function () { return texto.value; }));
       var botLinha = P.botaoApagar('Adicionar linha'); /* discreto: só põe a linha e Capítulos no fim do texto */
