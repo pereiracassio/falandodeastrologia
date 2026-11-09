@@ -7,12 +7,9 @@
     100% calc(100% - 3px),92% 100%,78% calc(100% - 7px),60% 100%,40% calc(100% - 8px),20% 100%,5% calc(100% - 6px),0 calc(100% - 2px),
     6px 88%,0 70%,5px 52%,0 34%,7px 18%)}
 /* peças com fundo próprio passam a combinar com o papiro */
-.folha-pagina div[style*="f8f9fa"]{background-color:rgba(255,250,232,.5)!important;border-color:rgba(120,85,40,.35)!important}
 
 body{display:flow-root}
 /* contraste sobre o papiro */
-.folha-pagina h2[style*="B5852F"]{color:#1F5FA3!important}
-.folha-pagina a[style*="25d366"]{color:#4A7C59!important;border-color:#4A7C59!important}
 
 /* cabeçalho fica no céu, acima do papiro (igual à home) */
 body>header{max-width:860px;margin:0 auto!important;padding:18px 44px 14px!important;border-bottom:2px solid color-mix(in srgb,var(--ocre,#B5852F) 75%,transparent)!important}
@@ -62,16 +59,7 @@ body>header a:first-child{color:var(--vazado,#f6e7b4)!important}
 /* Páginas de serviço: o que era azul vira terracota; preto/cinza vira azul-noite;
    campos de fundo mais claro viram só uma linha azul (papiro não tem "cor mais clara") */
 .pagina-servico{--azul:var(--azul-egipcio-claro,#1F5FA3);--azul-noite:var(--preto-tinta,#16233F)}
-.pagina-servico .folha-pagina [style*="border-bottom: 2px solid"]{border-bottom-color:var(--terracota)!important}
-.pagina-servico .folha-pagina p[style*="B5852F"]{color:var(--terracota)!important}
-.pagina-servico .folha-pagina,
-.pagina-servico .folha-pagina [style*="color: #222222"],
-.pagina-servico .folha-pagina [style*="color: #333333"],
-.pagina-servico .folha-pagina [style*="color: #444444"],
-.pagina-servico .folha-pagina [style*="color: #555555"],
-.pagina-servico .folha-pagina [style*="color: #666666"]{color:var(--azul-noite)!important}
-.pagina-servico .folha-pagina div[style*="f8f9fa"],
-.pagina-servico .folha-pagina div[style*="background-color: white"]{background:transparent!important;border:1px solid var(--azul)!important;box-shadow:none!important}
+.pagina-servico .folha-pagina{color:var(--azul-noite)!important}
 
 /* Mesmas mudanças do resto: azul vira terracota, texto em azul-noite, campos claros viram só linha azul */
 .folha-pagina .portal-title{color:var(--terracota,#A03E25)}
@@ -119,21 +107,15 @@ html body:has(.pagina-papiro) .hermes-toggle{
   width:34px!important;height:34px!important}
 html body:has(.pagina-papiro) .hermes-toggle img{width:30px!important;height:30px!important}
 /* texto justificado; subtítulos sem linha, como no blog */
-.pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"]{text-align:justify!important}
-.pagina-papiro .folha-pagina p[style*="font-size: 17px"]{font-size:15px!important}
-.pagina-papiro .folha-pagina h2[style*="border-bottom"]{border-bottom:none!important;font-size:21px!important;margin:30px 0 12px!important;padding:0!important}
 /* computador: mesma proporção do celular (texto de ponta a ponta entre a moldura e os botões; letra cresce com a tela) */
 @media(min-width:701px){
   .pagina-papiro .folha-pagina{padding-left:84px;padding-right:84px}
-  .pagina-papiro .folha-pagina>div[style*="max-width: 700px"],.pagina-papiro .cab-papiro{max-width:none!important}
+  .pagina-papiro .cab-papiro{max-width:none!important}
   .pagina-papiro .cab-logo{max-width:clamp(270px,24vw,420px)}
   .pagina-papiro .cab-logo.cab-logo-menor{max-width:clamp(135px,12vw,210px)}
   .pagina-papiro .cab-nav{font-size:clamp(13px,1.1vw,17px)}
   .pagina-papiro .cab-nav a{padding:clamp(9px,.9vw,14px) 0}
-  .pagina-papiro .folha-pagina h1[style*="font-size: 28px"]{font-size:clamp(28px,2.5vw,38px)!important}
-  .pagina-papiro .folha-pagina h2[style*="border-bottom"]{font-size:clamp(21px,1.8vw,27px)!important}
   .pagina-papiro .folha-pagina h2[style*="text-transform: uppercase"]{font-size:clamp(16px,1.45vw,21px)!important}
-  .pagina-papiro .folha-pagina p[style*="font-size: 17px"],.pagina-papiro .folha-pagina p[style*="font-size: 16px"],.pagina-papiro .folha-pagina ul[style*="font-size: 16px"],.pagina-papiro .folha-pagina li[style*="margin-bottom"]{font-size:clamp(17px,1.55vw,23px)!important}
 }
 /* Alunos e Seu espaço (portal.css) dentro do papiro inteiro: mesma estética, sem canto arredondado, coluna de ponta a ponta */
 .pagina-papiro .portal{max-width:none;font-family:'Cinzel',serif;text-align:left}
@@ -149,8 +131,6 @@ html body:has(.pagina-papiro) .hermes-toggle img{width:30px!important;height:30p
 /* páginas com estilo próprio no body (carrinho, horário confirmado): o papiro inteiro manda */
 body:has(.pagina-papiro){padding:0!important;display:block!important;min-height:0!important}
 /* serviços: nada de quadro dentro de quadro. O investimento e os avisos ficam soltos no papiro; botão só com contorno, sem canto arredondado */
-.pagina-papiro .folha-pagina div[style*="f8f9fa"]{background:none!important;border:0!important;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;border-radius:0!important;box-shadow:none!important;padding:26px 0 0!important}
-.pagina-papiro .folha-pagina div[style*="background-color: white"]{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
 .pagina-papiro .folha-pagina a[href*="carrinho.html"]{background:transparent!important;border:1.5px solid var(--azul-egipcio-escuro,#1034A6)!important;border-radius:0!important;color:var(--terracota,#A03E25)!important}
 .duvida-whats{margin:0 0 10px;color:var(--preto-tinta,#16233F);font-size:15px;text-align:center}
 .horarios-atendimento{margin:24px 0 20px;color:var(--preto-tinta,#16233F);font-size:15px;text-align:justify;hyphens:none}
