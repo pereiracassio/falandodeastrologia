@@ -509,11 +509,12 @@
         var msgAp = el('p', { class: 'portal-msg' });
         escolher.addEventListener('click', function () {
           P.escolherDoDrive(function (url, fid, token) {
-            fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fid) + '?fields=name,mimeType,parents&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
+            fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fid) + '?fields=name,mimeType,parents,createdTime&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } })
               .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
               .then(function (f) {
                 if (f.mimeType !== 'application/pdf') { P.mensagem(msgAp, 'Esse arquivo não é um PDF.', 'erro'); return; }
                 if (f.parents && f.parents[0]) C.from('drive_pastas').upsert({ chave: 'base_curso', pasta_id: f.parents[0] }, { onConflict: 'chave' }).then(function () { }); /* a próxima busca já abre nessa pasta */
+                dApostila.value = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); /* o dia em que a apostila ficou pronta */
                 apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click();
                 P.mensagem(msgAp, 'Lendo o índice...', 'ok');
                 puxarCapitulos(id, fid, aulas).then(function (n) { if (n === -1) P.mensagem(msgAp, 'Não achei o índice dessa apostila.', 'erro'); else setTimeout(recarregar, 400); }, function (e) { P.mensagem(msgAp, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); });
@@ -539,6 +540,14 @@
           cartao.insertBefore(el('div', { class: 'proj-passo' + (apOk ? ' feito' : ''), style: 'border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [cb, el('div', { style: 'flex:1' }, [el('span', { class: 'proj-titulo', text: 'Apostila pronta' })])]), msgAp);
         }
         corpo.appendChild(cartao); P.salvarSozinho(salvar);
+        /* apostila já escolhida antes, sem data: usa o dia em que ela foi para o Drive */
+        if (apId && !dApostila.value && !intro) {
+          P.tokenGoogle().then(function (token) { return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(apId) + '?fields=createdTime&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } }); })
+            .then(function (r) { return r.ok ? r.json() : null; }).then(function (f) {
+              if (!f || !f.createdTime || dApostila.value) return;
+              dApostila.value = new Date(f.createdTime).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); salvar.click();
+            }).then(null, function () { });
+        }
 
         var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aulas' })]);
         if (!aulas.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }));
