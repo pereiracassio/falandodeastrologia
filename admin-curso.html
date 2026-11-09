@@ -505,7 +505,7 @@
         aulas.forEach(function (a, i) {
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
             el('span', { class: 'prod-titulo', style: 'display:block', text: a.ordem + '. ' + a.titulo }),
-            el('span', { class: 'prod-sub', style: 'display:block', text: (a.tipo === 'ao_vivo' ? 'ao vivo' + (a.data_hora ? ' · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + ' · ' : '') + (!a.video_codigo ? 'sem vídeo' : a.video_teste ? 'vídeo de teste' : 'vídeo') })
+            el('span', { class: 'prod-sub', style: 'display:block', text: (a.tipo === 'ao_vivo' ? 'ao vivo' + (a.data_hora ? ' · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + ' · ' : '') + (!a.video_codigo ? 'sem vídeo' : 'vídeo') })
           ]);
           abrir.addEventListener('click', function () { abrirAula(a.id); });
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
@@ -589,9 +589,7 @@
         var tit = el('input', { type: 'text', value: a.titulo });
         /* sem escolha de onde está: é o Google Drive, salvo vídeo antigo que já era um link do YouTube */
         var origemDe = function (txt) { return /youtu/i.test(txt) ? 'youtube' : 'drive'; };
-        var cod = el('input', { type: 'text', value: a.video_codigo || '', placeholder: 'Link do Google Drive', autocomplete: 'off' });
-        var teste = el('input', { type: 'checkbox' }); teste.checked = !!a.video_teste; teste.style.cssText = 'width:22px;min-width:22px;height:22px;margin:0;flex:none';
-        var rotTeste = el('div', { style: 'display:flex;align-items:center;gap:8px;margin:0 0 10px' }, [teste, el('span', { class: 'impresso', text: 'Vídeo de teste' })]);
+        var cod = el('input', { type: 'text', value: a.video_codigo || '', placeholder: '', autocomplete: 'off' });
         var aoVivoA = a.tipo === 'ao_vivo';
         var dataV = el('input', { type: 'date', style: 'width:auto' }), horaV = el('input', { type: 'time', style: 'width:auto;min-height:36px;min-width:120px' });
         if (a.data_hora) {
@@ -600,7 +598,7 @@
         }
         var fimV = el('input', { type: 'time', style: 'width:auto;min-height:36px;min-width:120px' });
         if (aoVivoA) eventoDaAula(a.id).then(function (ev) { if (ev && ev.end && ev.end.dateTime) fimV.value = new Date(ev.end.dateTime).toLocaleTimeString('sv-SE', { timeZone: 'America/Sao_Paulo' }).slice(0, 5); }, function () { });
-        var meet = el('input', { type: 'text', value: a.link_meet || '', placeholder: 'Link do Google Meet', autocomplete: 'off' });
+        var meet = el('input', { type: 'text', value: a.link_meet || '', placeholder: '', autocomplete: 'off' });
         var vivoBloco = el('div', {}, [].concat([P.linhaDatas([P.colunaData(dataV, 'Dia'), el('div', {}, [el('label', { text: 'Começa às' }), horaV]), el('div', {}, [el('label', { text: 'Termina às' }), fimV])])], campo('Link do Meet', meet)));
         var prev = el('div', { style: 'margin:0 0 12px' });
         function previa() {
@@ -616,7 +614,7 @@
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
-          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: teste.checked, datas_etapas: datasEt, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
+          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: false, datas_etapas: datasEt, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
             .then(function (x) {
               if (x.error) { msgErro(msg, x.error); return; }
               if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
@@ -635,7 +633,7 @@
           camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
         });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          partes, campo('Nome', tit), aoVivoA ? [vivoBloco, el('p', { class: 'proj-grupo', text: 'Gravação' })] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação (depois da aula)' : 'Link do vídeo (Google Drive)', cod), [aoVivoA ? el('span') : rotTeste, prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
+          partes, campo('Nome', tit), aoVivoA ? [vivoBloco] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação' : 'Link do vídeo', cod), [prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
