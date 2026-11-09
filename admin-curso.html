@@ -446,6 +446,17 @@
         .then(function (itens) { return (itens || []).map(function (i) { return String(i.title || '').replace(/\s+/g, ' ').trim(); }).filter(Boolean); });
     }
 
+    /* uma aula por capítulo da apostila (os que já têm aula com o mesmo nome ficam como estão); devolve quantas criou */
+    function puxarCapitulos(moduloId, driveId, aulas) {
+      return capitulosDoPdf(driveId).then(function (lista) {
+        var ja = aulas.map(function (x) { return x.titulo.trim().toLowerCase(); });
+        var novas = lista.filter(function (t) { return ja.indexOf(t.trim().toLowerCase()) < 0; });
+        if (!novas.length) return lista.length ? 0 : -1;
+        var prox = aulas.length ? aulas[aulas.length - 1].ordem : 0;
+        return C.from('curso_aulas').insert(novas.map(function (t, k) { return { modulo_id: moduloId, ordem: prox + k + 1, titulo: t }; })).then(function (r) { if (r.error) throw r.error; return novas.length; });
+      });
+    }
+
     /* ---------- um módulo: nome, apostila e aulas ---------- */
     function abrirModulo(id) {
       limpar(); P.estado.gravar({ modulo: id });
@@ -476,7 +487,9 @@
               .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
               .then(function (f) {
                 if (f.mimeType !== 'application/pdf') { P.mensagem(msgAp, 'Esse arquivo não é um PDF.', 'erro'); return; }
-                apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click(); setTimeout(recarregar, 600);
+                apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click();
+                P.mensagem(msgAp, 'Lendo o índice...', 'ok');
+                puxarCapitulos(id, fid, aulas).then(null, function () { return 0; }).then(function () { setTimeout(recarregar, 400); });
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false);
         });
@@ -490,7 +503,7 @@
         var intro = m.ordem === 0;
         var cartao = el('div', { class: 'portal-cartao' }, [].concat(
           [el('h2', { text: intro ? 'Introdução' : 'Módulo ' + m.ordem })], campo('Nome', tit),
-          intro ? [msgAp, msg, el('div', { style: 'display:none' }, [salvar])] : [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { class: 'portal-acoes' }, [salvar])]));
+          intro ? [msgAp, msg, el('div', { style: 'display:none' }, [salvar])] : [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { style: 'display:none' }, [salvar])]));
         if (construindo && !intro) {
           cartao.insertBefore(barra(contModulo(D, m)), cartao.children[1]);
           var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = apOk;
@@ -532,16 +545,10 @@
         if (apId && !intro) {
           var caps = texto('Criar uma aula por capítulo');
           caps.addEventListener('click', function () {
-            caps.disabled = true; P.mensagem(msgN, 'Lendo o índice da apostila...', 'ok');
-            capitulosDoPdf(apId).then(function (lista) {
-              if (!lista.length) { P.mensagem(msgN, 'Essa apostila não tem índice (marcadores de capítulo) para eu ler.', 'erro'); caps.disabled = false; return; }
-              var ja = aulas.map(function (x) { return x.titulo.trim().toLowerCase(); });
-              var novas = lista.filter(function (t) { return ja.indexOf(t.trim().toLowerCase()) < 0; });
-              if (!novas.length) { P.mensagem(msgN, 'Todos os capítulos já viraram aula.', 'ok'); caps.disabled = false; return; }
-              if (!window.confirm('Criar ' + novas.length + (novas.length === 1 ? ' aula' : ' aulas') + ' (uma por capítulo)?\n\n' + novas.join('\n'))) { P.mensagem(msgN, '', 'ok'); caps.disabled = false; return; }
-              var prox = aulas.length ? aulas[aulas.length - 1].ordem : 0;
-              C.from('curso_aulas').insert(novas.map(function (t, k) { return { modulo_id: id, ordem: prox + k + 1, titulo: t }; })).then(function (r) { if (r.error) { msgErro(msgN, r.error); caps.disabled = false; } else recarregar(); });
-            }).then(null, function () { P.mensagem(msgN, 'Não consegui ler a apostila no Drive.', 'erro'); caps.disabled = false; });
+            caps.disabled = true; P.mensagem(msgN, 'Lendo o índice...', 'ok');
+            puxarCapitulos(id, apId, aulas).then(function (n) {
+              if (n === -1) { P.mensagem(msgN, 'Essa apostila não tem índice para eu ler.', 'erro'); caps.disabled = false; } else recarregar();
+            }, function () { P.mensagem(msgN, 'Não consegui ler a apostila no Drive.', 'erro'); caps.disabled = false; });
           });
           acoesN.push(caps);
         }
@@ -557,6 +564,7 @@
         }
         caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
         corpo.appendChild(caixaA);
+        if (apId && !intro && !aulas.length && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas).then(function (n) { if (n > 0) recarregar(); }, function () { }); }
 
         if (construindo && !intro) {
           var cx = el('div', { class: 'portal-cartao' });
@@ -633,7 +641,7 @@
           camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
         });
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
-          partes, campo('Nome', tit), aoVivoA ? [vivoBloco] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação' : 'Link do vídeo', cod), [prev, msg, el('div', { class: 'portal-acoes' }, [salvar])]))); P.salvarSozinho(salvar);
+          partes, campo('Nome', tit), aoVivoA ? [vivoBloco] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação' : 'Link do vídeo', cod), [prev, msg, el('div', { style: 'display:none' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar a aula "' + a.titulo + '"? Não dá para desfazer.')) return;
