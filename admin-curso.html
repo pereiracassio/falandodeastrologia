@@ -336,12 +336,19 @@
         window.__puxados = window.__puxados || {};
         var faltam = mods.filter(function (m) { return m.apostila_drive_id && m.ordem !== 0 && !aulasDoModulo(D, m.id).length && !window.__puxados[m.id]; });
         if (faltam.length) {
-          var criou = 0, erroM = '';
+          var criou = 0, erroM = '', achou = true;
+          P.mensagem(msgM, 'Montando as aulas pelas apostilas...', 'ok');
           faltam.reduce(function (cadeia, m) {
             window.__puxados[m.id] = true;
-            return cadeia.then(function () { return puxarCapitulos(m.id, m.apostila_drive_id, []); }).then(function (n) { if (n > 0) criou += n; }, function (e) { erroM = (e && e.message) || 'erro'; });
+            return cadeia.then(function () {
+              var tempo = new Promise(function (_, no) { setTimeout(function () { no(new Error('o Google não respondeu em 25 segundos')); }, 25000); });
+              return Promise.race([puxarCapitulos(m.id, m.apostila_drive_id, []), tempo]);
+            }).then(function (n) { if (n > 0) criou += n; else if (n === -1) achou = false; }, function (e) { erroM = (e && e.message) || 'erro'; });
           }, Promise.resolve()).then(function () {
-            if (criou) recarregar(); else if (erroM) P.mensagem(msgM, 'Não consegui ler a apostila: ' + P.traduzErro(erroM), 'erro');
+            if (criou) recarregar();
+            else if (erroM) P.mensagem(msgM, 'Não consegui ler a apostila (' + erroM + ').', 'erro');
+            else if (!achou) P.mensagem(msgM, 'Não achei o índice de uma das apostilas.', 'erro');
+            else P.mensagem(msgM, '', 'ok');
           });
         }
 
