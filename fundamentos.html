@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=3">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Fundamentos da Astrologia Natal - Curso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=86">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tipografia.css?v=37">
+<script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="index.html" class="cab-logo"><img src="img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="blog.html">Blog</a><a href="aluno.html">Alunos</a><a href="sobre.html">Cássio</a><a href="index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+
+  <div style="line-height: 1.6; margin: 0 auto; max-width: 700px;">
+    <h1 class="titulo-pagina" style="text-align: center;">Fundamentos da Astrologia Natal</h1>
+    <p class="rotulo-fixo" style="text-align: center; margin: 0 0 18px;">Curso em Astrologia Clássica</p>
+
+    <p style="text-align: justify;">Um curso para entender o mapa natal desde o começo, com calma e na ordem certa. Em oito módulos, você parte das origens da astrologia e chega à leitura do mapa inteiro.</p>
+
+    <h2>Como é o curso</h2>
+    <p style="text-align: justify;">São 8 módulos. Cada módulo tem uma apostila, aulas gravadas (uma para cada capítulo da apostila) e uma avaliação no final.</p>
+    <p style="text-align: justify;">Além das aulas gravadas, o curso tem aulas ao vivo comigo, que seguem até junho. Elas ficam gravadas e disponíveis depois, para você assistir ao longo do curso.</p>
+    <p style="text-align: justify;">Quem compra o curso tem acesso vitalício a tudo.</p>
+
+    <h2>O que tem em cada módulo</h2>
+    <ul>
+      <li style="margin-bottom: 8px;"><strong>Módulo 1:</strong> Introdução à astrologia</li>
+      <li style="margin-bottom: 8px;"><strong>Módulo 2:</strong> O pensamento helenístico</li>
+      <li style="margin-bottom: 8px;"><strong>Módulo 3:</strong> Os planetas</li>
+      <li style="margin-bottom: 8px;"><strong>Módulo 4:</strong> Os signos</li>
+      <li style="margin-bottom: 8px;"><strong>Módulo 5:</strong> As casas e os aspectos</li>
+      <li style="margin-bottom: 8px;"><strong>Módulo 6:</strong> A condição dos planetas</li>
+      <li style="margin-bottom: 8px;"><strong>Módulo 7:</strong> A estrutura do mapa</li>
+      <li style="margin-bottom: 8px;"><strong>Módulo 8:</strong> A leitura do mapa</li>
+    </ul>
+
+    <h2>Avaliação e certificado</h2>
+    <p style="text-align: justify;">Cada módulo termina com uma avaliação. Com nota 7 ou mais, o próximo módulo é liberado. Se a nota não for suficiente, você pode refazer a avaliação quantas vezes precisar.</p>
+    <p style="text-align: justify;">As aulas ao vivo de cada módulo você acompanha mesmo que ainda não tenha liberado aquele módulo nas aulas gravadas.</p>
+    <p style="text-align: justify;">Para receber o certificado, é preciso ter nota 7 ou mais em todos os módulos até dezembro. Quem acompanha o ritmo, liberando cada módulo na hora certa, termina junto com as aulas ao vivo e recebe o certificado em junho.</p>
+
+    <h2>Lista de espera</h2>
+    <p style="text-align: justify;">As vendas ainda não abriram. Deixe o seu nome, WhatsApp e e-mail, e eu aviso você assim que o curso abrir.</p>
+    <div class="portal" style="text-align: left;"><div id="espera-form"></div></div>
+  </div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=168"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, raiz = document.getElementById('espera-form');
+    var nome = el('input', { type: 'text', autocomplete: 'name' });
+    var whats = el('input', { type: 'tel', autocomplete: 'tel', inputmode: 'tel', placeholder: '(11) 99999-9999' });
+    var email = el('input', { type: 'email', autocomplete: 'email', inputmode: 'email', placeholder: 'seunome@gmail.com' });
+    var isca = el('input', { type: 'text', tabindex: '-1', autocomplete: 'off', 'aria-hidden': 'true', name: 'empresa' });
+    isca.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0';
+    var msg = el('p', { class: 'portal-msg' });
+    var enviar = el('button', { type: 'button', class: 'portal-btn', text: 'Entrar' });
+    var cartao = el('div', { class: 'portal-cartao' }, [
+      el('label', { text: 'Nome' }), nome, el('label', { text: 'WhatsApp' }), whats, el('label', { text: 'E-mail' }), email, isca, msg,
+      el('div', { class: 'portal-acoes' }, [enviar])
+    ]);
+    raiz.appendChild(cartao);
+    enviar.addEventListener('click', function () {
+      var n = nome.value.trim(), w = whats.value.trim(), e = email.value.trim();
+      if (n.length < 3) { P.mensagem(msg, 'Escreva o seu nome.', 'erro'); return; }
+      if (w.replace(/\D/g, '').length < 10) { P.mensagem(msg, 'Escreva o seu WhatsApp com DDD.', 'erro'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { P.mensagem(msg, 'Escreva um e-mail válido.', 'erro'); return; }
+      if (isca.value) { cartao.textContent = ''; cartao.appendChild(el('p', { text: 'Pronto, você está na lista.' })); return; }
+      enviar.disabled = true; P.mensagem(msg, 'Enviando...', 'ok');
+      P.client.rpc('lista_espera_entrar', { p_curso: 'fundamentos', p_nome: n, p_whatsapp: w, p_email: e }).then(function (r) {
+        if (r.error) { enviar.disabled = false; P.mensagem(msg, 'Não foi possível enviar agora. Tente de novo.', 'erro'); return; }
+        cartao.textContent = '';
+        cartao.appendChild(el('p', { text: 'Pronto, você está na lista. Eu aviso assim que o curso abrir.' }));
+      }, function () { enviar.disabled = false; P.mensagem(msg, 'Sem conexão. Tente de novo.', 'erro'); });
+    });
+  })();
+  </script>
+  <script src="menu.js?v=65" defer></script>
+</body>
+</html>

@@ -62,7 +62,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=168"></script>
   <script src="curso.js?v=8"></script>
-  <script src="menu.js?v=64" defer></script>
+  <script src="menu.js?v=65" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -207,6 +207,32 @@
     }
 
     /* ---------- cursos ---------- */
+    /* quem entrou na lista de espera pela página do curso */
+    function listaDeEspera() {
+      var cx = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Lista de espera' })]); app.appendChild(cx);
+      C.from('curso_lista_espera').select('*').order('criado_em', { ascending: false }).then(function (r) {
+        if (r.error) { cx.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(r.error.message) })); return; }
+        var itens = r.data || [];
+        cx.firstChild.textContent = 'Lista de espera (' + itens.length + ')';
+        if (!itens.length) { cx.appendChild(el('p', { class: 'prod-vazio', text: 'Ninguém ainda.' })); return; }
+        itens.forEach(function (x) {
+          var d = String(x.whatsapp || '').replace(/\D/g, ''); if (d.length <= 11) d = '55' + d;
+          var zap = el('a', { href: 'https://wa.me/' + d, target: '_blank', rel: 'noopener', title: 'WhatsApp', style: 'flex:none' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: 'WhatsApp', width: '32', height: '32' })]);
+          var quem = el('div', { style: 'flex:1;min-width:0' }, [
+            el('span', { class: 'prod-titulo', style: 'display:block', text: x.nome }),
+            el('span', { class: 'prod-sub', style: 'display:block', text: x.email + ' · ' + x.whatsapp + ' · ' + new Date(x.criado_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) })
+          ]);
+          var tirar = P.botaoApagar('Tirar');
+          tirar.addEventListener('click', function () {
+            if (!window.confirm('Tirar ' + x.nome + ' da lista? Não dá para desfazer.')) return;
+            C.from('curso_lista_espera').delete().eq('id', x.id).then(function (rr) { if (!rr.error) listaDeEspera_recarregar(); });
+          });
+          cx.appendChild(el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:10px;margin:0 0 10px' }, [quem, zap, tirar]));
+        });
+      });
+    }
+    function listaDeEspera_recarregar() { lista(); }
+
     function lista() {
       limpar(); P.estado.gravar({});
       app.appendChild(topo(nomeAdmin));
@@ -224,6 +250,7 @@
       });
       app.appendChild(el('div', { class: 'portal-acoes' }, [novo])); app.appendChild(msg);
       var caixa = el('div', { class: 'portal-cartao' }, [el('p', { text: 'Carregando...' })]); app.appendChild(caixa);
+      listaDeEspera();
       Promise.all([C.from('cursos').select('*').order('criado_em'), C.from('curso_modulos').select('*').order('ordem'), C.from('curso_aulas').select('*'), C.from('curso_passos').select('*')]).then(function (rs) {
         caixa.textContent = '';
         var erro = rs.filter(function (x) { return x.error; })[0];

@@ -193,3 +193,5 @@ html,body{max-width:100%;overflow-x:hidden}
 .barra-topo .cab-logo img{display:block;width:100%;height:auto}
 .barra-topo .cab-nav{margin-top:2px}
 .barra-topo .social-bar{margin-top:14px}
+/* curso Fundamentos: faixa própria, centralizada, acima da Mentoria e dos Alunos */
+@media(min-width:700px){.top-banners.um .curso-destaque{grid-column:1/-1;width:calc(50% - 1.25vw);justify-self:center}}
