@@ -332,6 +332,18 @@
         }
         caixaM.appendChild(msgM); caixaM.appendChild(el('div', { class: 'portal-acoes' }, acoesM));
         corpo.appendChild(caixaM);
+        /* módulo com apostila e sem nenhuma aula: monta as aulas pelo índice da apostila (uma vez por módulo, um de cada vez) */
+        window.__puxados = window.__puxados || {};
+        var faltam = mods.filter(function (m) { return m.apostila_drive_id && m.ordem !== 0 && !aulasDoModulo(D, m.id).length && !window.__puxados[m.id]; });
+        if (faltam.length) {
+          var criou = 0, erroM = '';
+          faltam.reduce(function (cadeia, m) {
+            window.__puxados[m.id] = true;
+            return cadeia.then(function () { return puxarCapitulos(m.id, m.apostila_drive_id, []); }).then(function (n) { if (n > 0) criou += n; }, function (e) { erroM = (e && e.message) || 'erro'; });
+          }, Promise.resolve()).then(function () {
+            if (criou) recarregar(); else if (erroM) P.mensagem(msgM, 'Não consegui ler a apostila: ' + P.traduzErro(erroM), 'erro');
+          });
+        }
 
         /* ----- só enquanto está em construção: depois de pronto, etapas das aulas, feitos e Publicar ----- */
         if (construindo) {
@@ -434,26 +446,41 @@
       });
     }
 
-    /* sem marcadores no PDF: lê o índice impresso nas primeiras páginas ("1. Título ........ 3") */
+    /* sem marcadores no PDF: lê o índice impresso nas primeiras páginas ("1. Título ........ 3") e, para os títulos que o PDF
+       estragou (ti e fi viram símbolo), pega as letras certas do título em maiúsculas de cada capítulo */
     function indiceImpresso(pdf) {
-      var achados = [], p = 1, max = Math.min(pdf.numPages, 8);
-      function consertar(t) { /* ligaturas que o PDF grava como símbolo: ti, fi */
-        return t.replace(/</g, 'ti').replace(/=/g, 'fi').replace(/([a-zà-ú])C(?=[a-zà-ú])/g, '$1ti').replace(/([a-zà-ú])J(?=[a-zà-ú])/g, '$1fi').replace(/(^|\s)J(?=[a-zà-ú]{2})/g, '$1fi');
-      }
-      function pagina() {
-        if (p > max || achados.length) return achados;
-        return pdf.getPage(p++).then(function (pg) { return pg.getTextContent(); }).then(function (tc) {
+      var achados = [], cabecas = {}, p = 1;
+      function linhasDe(pg) {
+        return pg.getTextContent().then(function (tc) {
           var linhas = {};
           tc.items.forEach(function (i) { var y = Math.round(i.transform[5]); (linhas[y] = linhas[y] || []).push(i); });
-          Object.keys(linhas).map(Number).sort(function (a, b) { return b - a; }).forEach(function (y) {
-            var txt = linhas[y].sort(function (a, b) { return a.transform[4] - b.transform[4]; }).map(function (i) { return i.str; }).join('');
-            var m = /^\s*\d{1,2}[.)]\s*(.+?)\s*[.·…]{4,}\s*\d+\s*$/.exec(txt);
-            if (m) achados.push(consertar(m[1].replace(/\s+/g, ' ').trim()));
+          return Object.keys(linhas).map(Number).sort(function (a, b) { return b - a; }).map(function (y) {
+            return linhas[y].sort(function (a, b) { return a.transform[4] - b.transform[4]; }).map(function (i) { return i.str; }).join('');
           });
-          return pagina();
         });
       }
-      return Promise.resolve(pagina());
+      function varrer() {
+        if (p > pdf.numPages) return;
+        return pdf.getPage(p++).then(linhasDe).then(function (ls) {
+          ls.forEach(function (txt) {
+            var m = /^\s*(\d{1,2})[.)]\s*(.+?)\s*[.·…]{4,}\s*\d+\s*$/.exec(txt);
+            if (m && p <= 9) { achados.push({ n: +m[1], t: m[2].replace(/\s+/g, ' ').trim() }); return; }
+            var h = /^\s*(\d{1,2})[.)]\s+(\S.{1,78}?)\s*$/.exec(txt);
+            if (h && !/[.;]$|\.{3}/.test(h[2]) && !cabecas[+h[1]] && achados.length) cabecas[+h[1]] = h[2].replace(/\s+/g, ' ').trim();
+          });
+          return varrer();
+        });
+      }
+      function consertar(t, cab) {
+        if (!/[^A-Za-zÀ-ÿ0-9 ,:;'’\-]|[a-zà-ú][0-9]+[a-zà-ú]/.test(t) || !cab) return t;
+        var pt = t.split(' '), pc = cab.split(' ');
+        if (pt.length !== pc.length) return t;
+        return pt.map(function (w, k) {
+          if (!/[^A-Za-zÀ-ÿ'’\-]/.test(w)) return w;
+          var c = pc[k] === pc[k].toUpperCase() ? pc[k].toLowerCase() : pc[k]; return w.charAt(0) === w.charAt(0).toUpperCase() && /[A-ZÀ-Ú]/.test(w.charAt(0)) ? c.charAt(0).toUpperCase() + c.slice(1) : c.charAt(0).toLowerCase() + c.slice(1);
+        }).join(' ');
+      }
+      return Promise.resolve(varrer()).then(function () { return achados.map(function (a) { return consertar(a.t, cabecas[a.n]); }); });
     }
 
     /* capítulos = itens do primeiro nível do índice (marcadores) do PDF */
