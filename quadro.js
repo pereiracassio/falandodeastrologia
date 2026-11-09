@@ -2,7 +2,7 @@
    Imagens (escolher ou colar com ⌘V), textos, caneta, marca-texto, borracha e laser (risco que some sozinho).
    Tudo fica guardado até ele apagar: tabela quadros (docs/quadro.sql), linha "principal"; as imagens vão para o bucket site (quadro-...).
    Medidas guardadas em fração da folha (0 a 1), para sair igual em qualquer tela.
-   Quadro.abrir({ voltar }) */
+   Quadro.abrir({ id, voltar }): id = qual apresentação (sem id, a primeira) */
 (function () {
   var P = window.portal, el = P.el, C = P.client;
   var PROPORCAO = 1.5;
@@ -11,7 +11,9 @@
     o = o || {};
     var COR = '#A03E25', AZUL = 'var(--azul-egipcio-claro,#1F5FA3)';
     /* telas (como slides): cada tela é uma linha da tabela quadros; a linha "indice" guarda a ordem. A primeira tela é a linha "principal". */
-    var ordem = ['principal'], pag = 0, telas = {}, ID = 'principal';
+    /* várias apresentações: as linhas de cada uma começam com "<id>:" (a primeira de todas, "principal", não tem prefixo); a lista delas é a linha "::lista" (admin-quadro.html) */
+    var PFX = o.id && o.id !== 'principal' ? o.id + ':' : '', PRIM = PFX + 'principal', IND = PFX + 'indice';
+    var ordem = [PRIM], pag = 0, telas = {}, ID = PRIM;
     var dados = { itens: [], tracos: [] }, pilha = [], esperaSalvar = null, pendente = false, carregado = false, fechado = false;
     var tela = el('div');
     tela.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;height:100dvh;z-index:99990;background:#e6d3a0;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none';
@@ -409,12 +411,12 @@
       pag = i; mostrar();
     }
     function salvarOrdem() {
-      C.from('quadros').upsert({ id: 'indice', dados: { ordem: ordem }, atualizado_em: new Date().toISOString() }).then(function (r) { if (r.error) avisar('Não consegui guardar as telas: ' + P.traduzErro(r.error.message)); });
+      C.from('quadros').upsert({ id: IND, dados: { ordem: ordem }, atualizado_em: new Date().toISOString() }).then(function (r) { if (r.error) avisar('Não consegui guardar as telas: ' + P.traduzErro(r.error.message)); });
     }
     function novaTela() {
       if (!carregado) return;
       pararEdicao(); gravarAgora();
-      var id = 't' + novoId(); telas[id] = { itens: [], tracos: [] };
+      var id = PFX + 't' + novoId(); telas[id] = { itens: [], tracos: [] };
       ordem.splice(pag + 1, 0, id); pag += 1; salvarOrdem(); mostrar();
       pendente = true; gravarAgora();
     }
@@ -432,15 +434,15 @@
     }
 
     pintarFerr(); medir(); pintarTelas();
-    C.from('quadros').select('id,dados').then(function (r) {
+    (PFX ? C.from('quadros').select('id,dados').like('id', PFX + '%') : C.from('quadros').select('id,dados').not('id', 'like', '%:%')).then(function (r) {
       carregado = true;
       if (r.error) { avisar('Não consegui abrir o quadro guardado: ' + P.traduzErro(r.error.message), true); return; }
       avisar('');
       var linhas = {};
       (r.data || []).forEach(function (l) { linhas[l.id] = l.dados || {}; });
-      var o = linhas.indice && linhas.indice.ordem;
-      if (Array.isArray(o) && o.length) ordem = o.filter(function (id) { return id === 'principal' || linhas[id]; });
-      if (!ordem.length) ordem = ['principal'];
+      var od = linhas[IND] && linhas[IND].ordem;
+      if (Array.isArray(od) && od.length) ordem = od.filter(function (id) { return id === PRIM || linhas[id]; });
+      if (!ordem.length) ordem = [PRIM];
       ordem.forEach(function (id) {
         var d = linhas[id] || {};
         telas[id] = { itens: Array.isArray(d.itens) ? d.itens : [], tracos: Array.isArray(d.tracos) ? d.tracos : [] };

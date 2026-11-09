@@ -41,7 +41,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=169"></script>
-  <script src="quadro.js?v=4"></script>
+  <script src="quadro.js?v=5"></script>
   <script src="menu.js?v=66" defer></script>
   <script>
   (function () {
@@ -58,16 +58,71 @@
           app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
           return;
         }
-        tela(); abrir();
+        lerLista().then(function () {
+          var ab = P.estado.ler().quadro, qual = lista.filter(function (x) { return x.id === ab; })[0];
+          tela(); if (qual) abrir(qual);
+        });
       });
     }
-    function abrir() { window.Quadro.abrir({}); }
+    /* as apresentações (uma para cada cliente, aula, live...): linha "::lista" da tabela quadros. A primeira de todas é a "principal". */
+    var lista = [{ id: 'principal', nome: 'Quadro' }];
+    function lerLista() {
+      return C.from('quadros').select('dados').eq('id', '::lista').maybeSingle().then(function (r) {
+        var l = r.data && r.data.dados && r.data.dados.lista;
+        if (Array.isArray(l) && l.length) lista = l;
+      });
+    }
+    function guardarLista(msg) {
+      return C.from('quadros').upsert({ id: '::lista', dados: { lista: lista }, atualizado_em: new Date().toISOString() }).then(function (r) { if (r.error && msg) msg.textContent = P.traduzErro(r.error.message); });
+    }
+    function abrir(q) {
+      P.estado.mesclar({ quadro: q.id });
+      window.Quadro.abrir({ id: q.id, voltar: function () { P.estado.mesclar({ quadro: '' }); } });
+    }
+    function apagar(q, msg) {
+      var filtro = q.id === 'principal' ? C.from('quadros').select('id,dados').not('id', 'like', '%:%') : C.from('quadros').select('id,dados').like('id', q.id + ':%');
+      filtro.then(function (r) {
+        if (r.error) { msg.textContent = P.traduzErro(r.error.message); return; }
+        var ids = [], arquivos = [];
+        (r.data || []).forEach(function (l) { ids.push(l.id); ((l.dados && l.dados.itens) || []).forEach(function (x) { if (x.tipo === 'img' && x.arq) arquivos.push(x.arq); }); });
+        if (arquivos.length) C.storage.from('site').remove(arquivos);
+        (ids.length ? C.from('quadros').delete().in('id', ids) : Promise.resolve({})).then(function () {
+          lista = lista.filter(function (x) { return x !== q; });
+          guardarLista(msg).then(tela);
+        });
+      });
+    }
     function tela() {
       limpar();
       app.appendChild(topo(''));
-      var b = el('button', { type: 'button', class: 'portal-btn', text: 'Abrir o quadro' });
-      b.addEventListener('click', abrir);
-      app.appendChild(el('div', { class: 'portal-cartao' }, [b]));
+      var msg = el('p', { class: 'portal-aviso' });
+      var nova = el('button', { type: 'button', class: 'portal-btn', text: '+ Apresentação' });
+      nova.addEventListener('click', function () {
+        var nome = (prompt('Nome da apresentação') || '').trim(); if (!nome) return;
+        var q = { id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), nome: nome };
+        lista.unshift(q); guardarLista(msg).then(function () { tela(); abrir(q); });
+      });
+      app.appendChild(el('div', { class: 'portal-acoes' }, [nova])); app.appendChild(msg);
+      var caixa = el('div', { class: 'portal-cartao' });
+      if (!lista.length) caixa.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma apresentação ainda.' }));
+      lista.forEach(function (q) {
+        var linha = el('div', { class: 'portal-item', style: 'cursor:pointer;display:flex;align-items:center;gap:14px', role: 'button', tabindex: '0' }, [el('div', { style: 'flex:1;min-width:0' }, [el('span', { class: 'portal-item-titulo', text: q.nome })])]);
+        var ren = P.botaoApagar('Renomear'), rem = P.botaoApagar('Apagar');
+        ren.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var nome = (prompt('Nome da apresentação', q.nome) || '').trim(); if (!nome || nome === q.nome) return;
+          q.nome = nome; guardarLista(msg).then(tela);
+        });
+        rem.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (!confirm('Apagar a apresentação "' + q.nome + '" inteira, com todas as telas? Não dá para desfazer.')) return;
+          apagar(q, msg);
+        });
+        linha.appendChild(ren); linha.appendChild(rem);
+        linha.addEventListener('click', function () { abrir(q); });
+        caixa.appendChild(linha);
+      });
+      app.appendChild(caixa);
     }
     C.auth.getSession().then(function (r) {
       var sessao = r.data && r.data.session;
