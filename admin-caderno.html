@@ -176,6 +176,11 @@
     .cad.v-embed .pag,.cad.v-embed .dobra{visibility:hidden}
     .cad .abas.dir .aba:not(.peq){font-size:13px}
     @media (max-width:820px){.cad .logo-topo{width:165px}.cad .grade-mes .cel .chip{font-size:9px}.cad .cel .n{font-size:12px}.cad .anos{gap:6px 10px}.cad .mm .g button{font-size:11px;padding:2px 0 5px}}
+    .cad .folha.vf .pag.dir{animation:entraDir .32s ease-out}.cad .folha.vf .pag.esq{animation:entraFade .24s ease-out}
+    .cad .folha.vt .pag.esq{animation:entraEsq .32s ease-out}.cad .folha.vt .pag.dir{animation:entraFade .24s ease-out}
+    @keyframes entraDir{from{transform:translateX(46px);opacity:0}to{transform:none;opacity:1}}
+    @keyframes entraEsq{from{transform:translateX(-46px);opacity:0}to{transform:none;opacity:1}}
+    @keyframes entraFade{from{opacity:.35}to{opacity:1}}
     .cad .troca{display:none}
     @media (max-width:820px){
       .cad .troca{display:flex;position:absolute;left:14px;right:14px;bottom:10px;height:44px;gap:3px}
@@ -241,8 +246,8 @@
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['projetos', 'passos'], estudos: ['estudos', 'aulas'] };
-    var visao = 'dia', cacheAno = {};
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'] };
+    var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null;
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
     function p2(n) { return String(n).padStart(2, '0'); }
@@ -430,9 +435,19 @@
     }
 
     /* ---------- as outras visões da folha: Semana, Mês, Ano e Lista ---------- */
-    function irPara(v) {
-      visao = v; var x = ABAS.filter(function (y) { return y[0] === v; })[0] || ABAS[0];
-      Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { b.classList.toggle('aberta', b.getAttribute('data-v') === v); });
+    /* VIRAR A PÁGINA: cada entrada (tocar num marcador ou num item) vira a página; o que estava ali fica na esquerda e o novo na direita.
+       Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
+    var hist = [], hpos = -1, aplicando = false;
+    function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, estSel: estSel, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, embed: urlForcada }; }
+    function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); hist.push(snapshot()); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } }
+    function virar(sentido) { var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
+    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; estSel = sn.estSel; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
+    function voltarPagina() { if (hpos <= 0) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
+    function avancarPagina() { if (hpos >= hist.length - 1) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
+    function irPara(v) { visao = v; empurrar(); mostrarVisao(); virar('frente'); }
+    function entrarPagina(redesenhar) { empurrar(); redesenhar(); virar('frente'); } /* quem chama já mudou o estado (o item tocado) */
+    function mostrarVisao() {
+      var v = visao; Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { b.classList.toggle('aberta', b.getAttribute('data-v') === v); });
       try { history.replaceState(null, '', '#v=' + v + '&d=' + ancora); } catch (e) { /* sem histórico */ }
       desenhar();
     }
@@ -443,7 +458,6 @@
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
       document.getElementById('troca').style.display = embutida ? 'none' : '';
       pedido++;
-      if (visao !== 'producao') { prodSerie = null; prodVideo = null; prodCorte = null; }
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos })[visao]();
@@ -559,7 +573,7 @@
     }
 
     /* ---------- To do: tudo o que precisa ser feito, em duas páginas (as fontes são as do To do da Agenda: todo-dados.js) ---------- */
-    var TD = null, urlForcada = null, todoDados = null;
+    var TD = null, todoDados = null;
     function tdPronto() { if (!TD) TD = window.TodoDados({ P: P, C: C, el: el, HP: HP, FdaTema: window.FdaTema, lat: LAT, lon: LON }); TD.setLugar(LAT, LON); return TD; }
     function abrirTela(url) { /* a tela de antes que cabe no caderno abre dentro dele; as outras (alunos, clientes, curso) abrem como sempre */
       var m = /admin-(projetos|estudos|producao)\.html/.exec(url || '');
@@ -768,7 +782,7 @@
 
     /* ---------- Produção, de página em página: séries → (série à esquerda, vídeos à direita) → (vídeo à esquerda, cortes à direita) → (corte à esquerda, cortes do vídeo à direita).
        Aqui se navega e se vê; mudar os dados (marcar etapa, datas, textos) abre a Produção de antes dentro do caderno ---------- */
-    var prodSerie = null, prodVideo = null, prodCorte = null, prodDados = null;
+    var prodDados = null;
     function dataCurta(s) { var iso = String(s).slice(0, 10); return SEMANA[diaSem(iso)].slice(0, 3) + ' ' + (+iso.slice(8)) + '/' + (+iso.slice(5, 7)); }
     function vistaProducao() {
       var eu = pedido, o = preparaOut(); carregando(o[0]);
@@ -792,8 +806,8 @@
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' });
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' })); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD);
       document.getElementById('t1').textContent = nivel === 0 ? 'próximos' : nivel === 1 ? 'série' : nivel === 2 ? 'vídeo' : 'corte'; document.getElementById('t2').textContent = nivel === 0 ? 'séries' : nivel === 1 ? 'vídeos' : 'cortes';
-      function ir(se, vi, co) { prodSerie = se; prodVideo = vi; prodCorte = co; renderProducao(); if (co) paginaCel('p1'); else if (vi || se) paginaCel('p2'); else paginaCel('p1'); }
-      function voltar() { if (prodCorte) ir(prodSerie, prodVideo, null); else if (prodVideo) ir(prodSerie, null, null); else ir(null, null, null); }
+      function ir(se, vi, co) { prodSerie = se; prodVideo = vi; prodCorte = co; entrarPagina(renderProducao); if (co) paginaCel('p1'); else paginaCel('p2'); }
+      function voltar() { if (!voltarPagina()) { if (prodCorte) { prodCorte = null; } else if (prodVideo) { prodVideo = null; } else prodSerie = null; renderProducao(); } }
       function titulo(t, cor) { return el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--terracota)') + ';padding:2px 0 4px', text: t }); }
       function nome(t, grande) { return el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:' + (grande ? 20 : 17) + 'px;overflow-wrap:anywhere' + (grande ? ';color:var(--terracota);margin:2px 0 4px' : ''), text: t }); }
       function sub(t) { return el('div', { class: 'det', style: 'font-size:13px;opacity:.75;color:inherit', text: t }); }
@@ -864,17 +878,18 @@
       cortesDe.forEach(function (c) { rolaD.appendChild(linhaCorte(c, nivel === 3 && c.id === corte.id)); });
     }
 
-    /* ---------- Projetos: a lista dos projetos (esquerda) e os passos do projeto escolhido (direita). Criar, renomear, datas e subprojetos: tela de antes, dentro do caderno ---------- */
-    var projSel = null, projVerConcl = false;
+    /* ---------- Projetos, de página em página: (próximos passos · projetos) → (o projeto · os passos dele) → (o subprojeto · os passos dele). Criar, renomear, datas e subprojetos: tela de antes, dentro do caderno ---------- */
+    var projVerConcl = false;
     function vistaProjetos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      cabVista(esq, 'projetos');
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
-      Promise.all([C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio,projeto_pai_id,ordem_no_pai').order('ordem').order('criado_em'), C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em')]).then(function (res) {
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      var COLS = 'id,projeto_id,titulo,nota,feito,feito_em,ordem,data';
+      Promise.all([C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio,projeto_pai_id,ordem_no_pai').order('ordem').order('criado_em'), C.from('projeto_passos').select(COLS).order('ordem').order('criado_em')]).then(function (res) {
         if (eu !== pedido) return;
         if (res[0].error || res[1].error) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os projetos.' })); return; }
         var projetos = res[0].data || [], passos = res[1].data || [];
-        function recarregar() { C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em').then(function (r) { if (eu !== pedido || r.error) return; passos = r.data || []; desenharTudo(); }); }
+        function recarregar() { C.from('projeto_passos').select(COLS).order('ordem').order('criado_em').then(function (r) { if (eu !== pedido || r.error) return; passos = r.data || []; desenharTudo(); }); }
         var filhosDe = function (id) { return projetos.filter(function (p) { return p.projeto_pai_id === id; }); };
         var arvore = function (p) { var r = [p]; filhosDe(p.id).forEach(function (f) { r = r.concat(arvore(f)); }); return r; };
         var passosDaArvore = function (p) { var ids = {}; arvore(p).forEach(function (x) { ids[x.id] = true; }); return passos.filter(function (x) { return ids[x.projeto_id]; }); };
@@ -894,80 +909,82 @@
           return { pct: Math.floor(f * 100), cor: corTempo(f), texto: passou + '/' + total + ' dias' };
         };
         function barras(p) { var c = contagem(p), t = tempoDe(p), l = [P.barraLinha(pctProj(p), null, c.feitos + '/' + c.total, false)]; if (t) l.push(P.barraLinha(t.pct, t.cor, t.texto, true)); return l; }
+        function entrar(id) { projSel = id; entrarPagina(desenharTudo); paginaCel('p2'); }
+        function rotulo(onde, t, cor) { onde.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--ocre)') + ';padding:12px 0 4px', text: t })); }
+        function linhaPasso(x, feito, comProjeto) {
+          var cx = el('button', { type: 'button', class: 'cx', 'aria-label': feito ? 'Desmarcar' : 'Marcar como feito', text: feito ? '✓' : '' });
+          cx.addEventListener('click', function (ev) { ev.stopPropagation(); cx.disabled = true; C.from('projeto_passos').update(feito ? { feito: false, feito_em: null } : { feito: true, feito_em: new Date().toISOString() }).eq('id', x.id).then(function (g) { if (g.error) { cx.disabled = false; alert('Não foi possível salvar.'); return; } recarregar(); }); });
+          var dono = comProjeto ? projetos.filter(function (p) { return p.id === x.projeto_id; })[0] : null;
+          var l = el('div', { class: 'tarefa', style: (feito ? 'opacity:.6;' : '') + (dono ? 'cursor:pointer' : '') }, [cx, el('div', { style: 'flex:1;min-width:0' }, [x.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(x.data) }) : null, el('div', { class: 'nome', style: feito ? 'text-decoration:line-through' : '', text: x.titulo }), dono ? el('div', { class: 'det', style: 'color:var(--ocre);font-weight:700', text: dono.nome }) : (x.nota ? el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: x.nota }) : null)].filter(Boolean))]);
+          if (dono) l.addEventListener('click', function () { entrar(dono.id); }); return l;
+        }
         function desenharTudo() {
           if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
-          var raizes = projetos.filter(function (p) { return !p.projeto_pai_id; }), ativos = porNumero(raizes.filter(function (p) { return !concluido(p); })), concl = porNumero(raizes.filter(concluido));
-          if (!projSel || !projetos.some(function (p) { return p.id === projSel; })) projSel = ativos.length ? ativos[0].id : (concl.length ? concl[0].id : null);
-          rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Projetos' }));
-          if (!ativos.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum projeto ainda.' }));
-          function linhaProjeto(p) {
-            var raizSel = projetos.filter(function (x) { return x.id === projSel; })[0]; while (raizSel && raizSel.projeto_pai_id) { var pai = raizSel.projeto_pai_id; raizSel = projetos.filter(function (x) { return x.id === pai; })[0]; }
-            var marcada = raizSel && raizSel.id === p.id;
-            var bol = p.prioridade == null ? null : el('span', { style: 'flex:none;width:26px;height:26px;border:1.5px solid var(--azul-egipcio-claro);border-radius: 50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700', text: String(p.prioridade) });
-            var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [el('div', { style: 'display:flex;align-items:center;gap:10px' }, [bol, el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: p.nome })].filter(Boolean))].concat(barras(p)));
-            l.addEventListener('click', function () { projSel = p.id; desenharTudo(); if (cad.classList.contains('p1')) paginaCel('p2'); }); return l;
+          var proj = projSel ? projetos.filter(function (p) { return p.id === projSel; })[0] : null; if (projSel && !proj) projSel = null;
+          document.getElementById('t1').textContent = proj ? 'projeto' : 'próximos'; document.getElementById('t2').textContent = proj ? 'passos' : 'projetos';
+          if (!proj) {
+            /* esquerda: os próximos passos de todos os projetos · direita: a lista dos projetos */
+            var raizes = projetos.filter(function (p) { return !p.projeto_pai_id; }), ativos = porNumero(raizes.filter(function (p) { return !concluido(p); })), concl = porNumero(raizes.filter(concluido));
+            var prox = passos.filter(function (x) { return !x.feito && x.data; }).sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; }).slice(0, 14);
+            rotulo(rolaE, 'Próximos passos', 'var(--terracota)'); if (!prox.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum passo com data.' }));
+            prox.forEach(function (x) { rolaE.appendChild(linhaPasso(x, false, true)); });
+            rotulo(rolaD, 'Projetos', 'var(--terracota)'); if (!ativos.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum projeto ainda.' }));
+            var linhaProjeto = function (p) {
+              var bol = p.prioridade == null ? null : el('span', { style: 'flex:none;width:26px;height:26px;border:1.5px solid var(--azul-egipcio-claro);border-radius: 50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700', text: String(p.prioridade) });
+              var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { style: 'display:flex;align-items:center;gap:10px' }, [bol, el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: p.nome })].filter(Boolean))].concat(barras(p)));
+              l.addEventListener('click', function () { entrar(p.id); }); return l;
+            };
+            ativos.forEach(function (p) { rolaD.appendChild(linhaProjeto(p)); });
+            if (concl.length) { var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: projVerConcl ? 'Esconder concluídos' : 'Concluídos (' + concl.length + ')' }); vc.addEventListener('click', function () { projVerConcl = !projVerConcl; desenharTudo(); }); rolaD.appendChild(vc); if (projVerConcl) concl.forEach(function (p) { rolaD.appendChild(linhaProjeto(p)); }); }
+            var completa = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo projeto e mais opções' }); completa.addEventListener('click', function () { abrirTela('admin-projetos.html'); }); rolaD.appendChild(completa);
+            return;
           }
-          ativos.forEach(function (p) { rolaE.appendChild(linhaProjeto(p)); });
-          if (concl.length) {
-            var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: (projVerConcl ? 'Esconder concluídos' : 'Concluídos (' + concl.length + ')') }); vc.addEventListener('click', function () { projVerConcl = !projVerConcl; desenharTudo(); }); rolaE.appendChild(vc);
-            if (projVerConcl) concl.forEach(function (p) { rolaE.appendChild(linhaProjeto(p)); });
-          }
-          var completa = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo projeto e mais opções' }); completa.addEventListener('click', function () { abrirTela('admin-projetos.html'); }); rolaE.appendChild(completa);
-          /* direita: os passos do projeto escolhido */
-          var proj = projetos.filter(function (p) { return p.id === projSel; })[0]; if (!proj) return;
-          if (proj.projeto_pai_id) { var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' }); voltar.addEventListener('click', function () { projSel = proj.projeto_pai_id; desenharTudo(); }); rolaD.appendChild(voltar); }
-          rolaD.appendChild(el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:20px;color:var(--terracota);margin:2px 0 4px;overflow-wrap:anywhere', text: proj.nome }));
-          barras(proj).forEach(function (b) { rolaD.appendChild(b); });
-          var meus = passos.filter(function (x) { return x.projeto_id === proj.id; });
+          /* esquerda: o projeto (e o que já foi feito) · direita: os passos dele */
+          var vb = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:0 0 6px', text: '← Voltar' }); vb.addEventListener('click', function () { if (!voltarPagina()) { projSel = proj.projeto_pai_id || null; desenharTudo(); } }); rolaE.appendChild(vb);
+          rolaE.appendChild(el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:20px;color:var(--terracota);margin:2px 0 4px;overflow-wrap:anywhere', text: proj.nome }));
+          barras(proj).forEach(function (b) { rolaE.appendChild(b); });
+          [['Início', proj.data_inicio || (proj.criado_em ? String(proj.criado_em).slice(0, 10) : '')], ['Data final', proj.data_fim || '']].forEach(function (c) { if (c[1]) rolaE.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:3px 0' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:110px', text: c[0] }), el('span', { text: dataCurta(c[1]) + ' · ' + String(c[1]).slice(0, 4) })])); });
+          var meus = passos.filter(function (x) { return x.projeto_id === proj.id; }), feitos = meus.filter(function (x) { return x.feito; });
+          if (feitos.length) { rotulo(rolaE, 'Feitos'); feitos.forEach(function (x) { rolaE.appendChild(linhaPasso(x, true, false)); }); }
+          var edita = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Editar este projeto' }); edita.addEventListener('click', function () { abrirTela('admin-projetos.html#projeto=' + encodeURIComponent(proj.id)); }); rolaE.appendChild(edita);
           var itens = meus.filter(function (x) { return !x.feito; }).map(function (x) { return { passo: x, data: x.data || null, ordem: x.ordem || 0 }; });
           filhosDe(proj.id).forEach(function (c) { var k = contagem(c); if (k.total && k.feitos === k.total) return; itens.push({ filho: c, data: proximaData(c), pct: k.total ? Math.floor(k.feitos * 100 / k.total) : 0, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai }); });
-          var grupo = function (x) { return x.data ? 0 : x.filho ? 1 : 2; }; /* 1º o que tem data; 2º subprojetos sem data (do mais concluído); 3º passos comuns na ordem */
+          var grupo = function (x) { return x.data ? 0 : x.filho ? 1 : 2; };
           itens.sort(function (a, b) { var ga = grupo(a), gb = grupo(b); if (ga !== gb) return ga - gb; if (ga === 0) return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; if (ga === 1) return b.pct - a.pct; return a.ordem - b.ordem; });
-          function rotulo(t, cor) { rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--ocre)') + ';padding:12px 0 4px', text: t })); }
-          function linhaPasso(x, feito) {
-            var cx = el('button', { type: 'button', class: 'cx', 'aria-label': feito ? 'Desmarcar' : 'Marcar como feito', text: feito ? '✓' : '' });
-            cx.addEventListener('click', function () { cx.disabled = true; C.from('projeto_passos').update(feito ? { feito: false, feito_em: null } : { feito: true, feito_em: new Date().toISOString() }).eq('id', x.id).then(function (g) { if (g.error) { cx.disabled = false; alert('Não foi possível salvar.'); return; } recarregar(); }); });
-            return el('div', { class: 'tarefa', style: feito ? 'opacity:.6' : '' }, [cx, el('div', { style: 'flex:1;min-width:0' }, [x.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(x.data) }) : null, el('div', { class: 'nome', style: feito ? 'text-decoration:line-through' : '', text: x.titulo }), x.nota ? el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: x.nota }) : null].filter(Boolean))]);
-          }
           if (!itens.length && !meus.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum passo ainda.' }));
           itens.forEach(function (it, i) {
-            if (i === 0) rotulo('Próximo passo'); else if (i === 1) rotulo('Depois');
-            if (it.passo) { rolaD.appendChild(linhaPasso(it.passo, false)); return; }
-            var c = it.filho, k = contagem(c), l = el('div', { class: 'tarefa', style: 'cursor:pointer' }, [el('span', { class: 'cx', style: 'border-color:transparent' }), el('div', { style: 'flex:1;min-width:0' }, [it.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }) : null, el('div', { class: 'nome', text: c.nome })].filter(Boolean).concat(barras(c)))]);
-            l.addEventListener('click', function () { projSel = c.id; desenharTudo(); }); rolaD.appendChild(l);
+            if (i === 0) rotulo(rolaD, 'Próximo passo'); else if (i === 1) rotulo(rolaD, 'Depois');
+            if (it.passo) { rolaD.appendChild(linhaPasso(it.passo, false, false)); return; }
+            var c = it.filho, l = el('div', { class: 'tarefa', style: 'cursor:pointer' }, [el('span', { class: 'cx', style: 'border-color:transparent' }), el('div', { style: 'flex:1;min-width:0' }, [it.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }) : null, el('div', { class: 'nome', text: c.nome })].filter(Boolean).concat(barras(c)))]);
+            l.addEventListener('click', function () { entrar(c.id); }); rolaD.appendChild(l);
           });
-          var feitos = meus.filter(function (x) { return x.feito; });
-          if (feitos.length) { rotulo('Feitos'); feitos.forEach(function (x) { rolaD.appendChild(linhaPasso(x, true)); }); }
-          /* novo passo, rápido */
           var campo = el('input', { type: 'text', placeholder: 'Novo passo', 'aria-label': 'Novo passo', style: 'width:100%;box-sizing:border-box' }), add = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:8px', text: 'Adicionar passo' });
           function adicionar() { var t = campo.value.trim(); if (!t) return; add.disabled = true; var ordem = meus.reduce(function (m, x) { return Math.max(m, x.ordem || 0); }, 0) + 1; C.from('projeto_passos').insert({ projeto_id: proj.id, titulo: t, ordem: ordem }).then(function (g) { add.disabled = false; if (g.error) { alert('Não foi possível salvar.'); return; } campo.value = ''; recarregar(); }); }
           add.addEventListener('click', adicionar); campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); adicionar(); } });
-          var edita = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-left:14px', text: 'Editar este projeto' }); edita.addEventListener('click', function () { abrirTela('admin-projetos.html#projeto=' + encodeURIComponent(proj.id)); });
-          rolaD.appendChild(el('div', { class: 'portal', style: 'margin-top:16px' }, [campo, el('div', { style: 'display:flex;align-items:center' }, [add, edita])]));
+          rolaD.appendChild(el('div', { class: 'portal', style: 'margin-top:16px' }, [campo, add]));
         }
         desenharTudo();
       }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
     }
 
-    /* ---------- Estudos: a lista dos estudos (esquerda) e as aulas do estudo escolhido (direita). Responder a aula (questões, quadro da conta), importar, caderno e encerrar: tela de antes, dentro do caderno ---------- */
-    var estSel = null, estVerEnc = false;
+    /* ---------- Estudos, de página em página: (próximas aulas · estudos) → (o estudo · as aulas dele) → (a aula · as questões dela). Responder a aula, importar, caderno e encerrar: tela de antes, dentro do caderno ---------- */
+    var estVerEnc = false;
     function vistaEstudos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      cabVista(esq, 'estudos');
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
-      Promise.all([C.from('estudos').select('*').order('criado_em'), C.from('estudo_aulas').select('id,estudo_id,data,materia,titulo').order('data').order('criado_em'), C.from('estudo_questoes').select('id,aula_id,tipo,correta'), C.from('estudo_respostas').select('questao_id,opcao,texto')]).then(function (rs) {
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      Promise.all([C.from('estudos').select('*').order('criado_em'), C.from('estudo_aulas').select('id,estudo_id,data,materia,titulo').order('data').order('criado_em'), C.from('estudo_questoes').select('id,aula_id,ordem,tipo,correta,enunciado').order('ordem'), C.from('estudo_respostas').select('questao_id,opcao,texto')]).then(function (rs) {
         if (eu !== pedido) return; rolaE.textContent = '';
         var erro = rs[0].error || rs[1].error || rs[2].error || rs[3].error;
         if (erro) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os estudos (' + erro.message + ').' })); return; }
-        var estudos = rs[0].data || [], aulas = rs[1].data || [], resp = {}, prog = {};
+        var estudos = rs[0].data || [], aulas = rs[1].data || [], questoes = rs[2].data || [], resp = {}, prog = {};
         (rs[3].data || []).forEach(function (x) { resp[x.questao_id] = x; });
-        (rs[2].data || []).forEach(function (q) {
+        questoes.forEach(function (q) {
           var p = prog[q.aula_id] = prog[q.aula_id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 }, r = resp[q.id]; p.total++;
           if (q.tipo === 'multipla') { p.multiplas++; if (r && r.opcao != null) { p.feitas++; if (r.opcao === q.correta) p.certas++; } } else if (r && r.texto) p.feitas++;
         });
         var filhosDe = function (id) { return estudos.filter(function (e) { return e.estudo_pai_id === id; }); };
         var arvoreDe = function (e) { var r = [e]; filhosDe(e.id).forEach(function (f) { r = r.concat(arvoreDe(f)); }); return r; };
-        var raizDe = function (id) { var q = estudos.filter(function (x) { return x.id === id; })[0]; while (q && q.estudo_pai_id) { var pai = q.estudo_pai_id; q = estudos.filter(function (x) { return x.id === pai; })[0]; } return q; };
         var concluida = function (a) { var p = prog[a.id]; return !!p && p.total > 0 && p.feitas === p.total; };
         var aulasDa = function (e) { var ids = {}; arvoreDe(e).forEach(function (x) { ids[x.id] = true; }); return aulas.filter(function (a) { return ids[a.estudo_id]; }); };
         var tempoDe = function (e) {
@@ -977,41 +994,62 @@
           return { pct: Math.floor(f * 100), cor: corTempo(f), texto: passou + '/' + total + ' dias' };
         };
         var barras = function (e) { var l = aulasDa(e), feitas = l.filter(concluida).length, out = [P.barraLinha(l.length ? Math.floor(feitas * 100 / l.length) : 0, null, feitas + '/' + l.length, false)], t = tempoDe(e); if (t) out.push(P.barraLinha(t.pct, t.cor, t.texto, true)); return out; };
+        function entrar(estudoId, aulaId) { estSel = estudoId; estAula = aulaId || null; entrarPagina(desenharTudo); paginaCel('p2'); }
+        function rotulo(onde, t, cor) { onde.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--ocre)') + ';padding:12px 0 4px', text: t })); }
+        function nome(t, grande) { return el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:' + (grande ? 20 : 17) + 'px;overflow-wrap:anywhere' + (grande ? ';color:var(--terracota);margin:2px 0 4px' : ''), text: t }); }
+        function infoAula(a) { var p = prog[a.id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 }; return p.total ? p.feitas + ' de ' + p.total + ' respondidas' + (p.multiplas ? ' · ' + p.certas + ' certas' : '') : 'sem questões'; }
+        var hoje = isoDia(Date.now());
+        function linhaAula(a, feita, comEstudo) {
+          var dia = String(a.data).slice(0, 10), atrasada = !feita && dia < hoje, dono = comEstudo ? estudos.filter(function (e) { return e.id === a.estudo_id; })[0] : null;
+          var l = el('div', { class: 'tarefa', style: 'cursor:pointer' + (feita ? ';opacity:.65' : '') }, [el('span', { class: 'cx', style: 'border-color:transparent;color:var(--terracota)', text: feita ? '✓' : '' }), el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'det', style: 'color:' + (atrasada ? 'var(--terracota)' : 'var(--azul-egipcio-escuro)'), text: (+dia.slice(8)) + ' de ' + MES3[+dia.slice(5, 7) - 1] + (atrasada ? ' · atrasada' : '') }), el('div', { class: 'nome', text: a.titulo }), el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: a.materia + ' · ' + infoAula(a) + (dono ? ' · ' + dono.nome : '') })])]);
+          l.addEventListener('click', function () { entrar(a.estudo_id, a.id); }); return l;
+        }
         function desenharTudo() {
           if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
-          var raizes = estudos.filter(function (e) { return !e.estudo_pai_id; }), ativos = raizes.filter(function (e) { return !e.encerrado; }), enc = raizes.filter(function (e) { return e.encerrado; });
-          if (!estSel || !estudos.some(function (e) { return e.id === estSel; })) estSel = ativos.length ? ativos[0].id : (enc.length ? enc[0].id : null);
-          var rz = estSel ? raizDe(estSel) : null;
-          rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Estudos' }));
-          if (!ativos.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum estudo ainda.' }));
-          function linhaEstudo(e) {
-            var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (rz && rz.id === e.id ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: e.nome })].concat(barras(e)));
-            l.addEventListener('click', function () { estSel = e.id; desenharTudo(); if (cad.classList.contains('p1')) paginaCel('p2'); }); return l;
+          var est = estSel ? estudos.filter(function (e) { return e.id === estSel; })[0] : null; if (estSel && !est) { estSel = null; estAula = null; }
+          var aula = est && estAula ? aulas.filter(function (a) { return a.id === estAula; })[0] : null; if (estAula && !aula) estAula = null;
+          document.getElementById('t1').textContent = aula ? 'aula' : est ? 'estudo' : 'próximas'; document.getElementById('t2').textContent = aula ? 'questões' : est ? 'aulas' : 'estudos';
+          if (!est) {
+            /* esquerda: as próximas aulas de todos os estudos · direita: a lista dos estudos */
+            var raizes = estudos.filter(function (e) { return !e.estudo_pai_id; }), ativos = raizes.filter(function (e) { return !e.encerrado; }), enc = raizes.filter(function (e) { return e.encerrado; });
+            var abertos = {}; ativos.forEach(function (e) { arvoreDe(e).forEach(function (x) { abertos[x.id] = true; }); });
+            var prox = aulas.filter(function (a) { return abertos[a.estudo_id] && !concluida(a); }).sort(function (a, b) { return String(a.data) < String(b.data) ? -1 : 1; }).slice(0, 12);
+            rotulo(rolaE, 'Próximas aulas', 'var(--terracota)'); if (!prox.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma aula para fazer.' }));
+            prox.forEach(function (a) { rolaE.appendChild(linhaAula(a, false, true)); });
+            rotulo(rolaD, 'Estudos', 'var(--terracota)'); if (!ativos.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum estudo ainda.' }));
+            var linhaEstudo = function (e) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(e.nome)].concat(barras(e))); l.addEventListener('click', function () { entrar(e.id, null); }); return l; };
+            ativos.forEach(function (e) { rolaD.appendChild(linhaEstudo(e)); });
+            if (enc.length) { var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: estVerEnc ? 'Esconder encerrados' : 'Encerrados (' + enc.length + ')' }); vc.addEventListener('click', function () { estVerEnc = !estVerEnc; desenharTudo(); }); rolaD.appendChild(vc); if (estVerEnc) enc.forEach(function (e) { rolaD.appendChild(linhaEstudo(e)); }); }
+            var completo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo estudo, importar aulas e mais' }); completo.addEventListener('click', function () { abrirTela('admin-estudos.html'); }); rolaD.appendChild(completo);
+            return;
           }
-          ativos.forEach(function (e) { rolaE.appendChild(linhaEstudo(e)); });
-          if (enc.length) {
-            var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: estVerEnc ? 'Esconder encerrados' : 'Encerrados (' + enc.length + ')' }); vc.addEventListener('click', function () { estVerEnc = !estVerEnc; desenharTudo(); }); rolaE.appendChild(vc);
-            if (estVerEnc) enc.forEach(function (e) { rolaE.appendChild(linhaEstudo(e)); });
+          var vb = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:0 0 6px', text: '← Voltar' });
+          vb.addEventListener('click', function () { if (!voltarPagina()) { if (estAula) estAula = null; else estSel = est.estudo_pai_id || null; desenharTudo(); } }); rolaE.appendChild(vb);
+          if (aula) {
+            /* esquerda: a aula · direita: as questões dela */
+            var dia = String(aula.data).slice(0, 10);
+            rolaE.appendChild(nome(aula.titulo, true)); rolaE.appendChild(el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: aula.materia + ' · ' + est.nome }));
+            rolaE.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:6px 0 3px' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:110px', text: 'Data' }), el('span', { text: (+dia.slice(8)) + ' de ' + MESES[+dia.slice(5, 7) - 1] })]));
+            rolaE.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:3px 0' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:110px', text: 'Situação' }), el('span', { text: infoAula(aula) })]));
+            var resp1 = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px', text: concluida(aula) ? 'Rever esta aula' : 'Fazer esta aula' }); resp1.addEventListener('click', function () { abrirTela('admin-estudos.html#aula=' + encodeURIComponent(aula.id) + '&estudo=' + encodeURIComponent(est.id)); }); rolaE.appendChild(resp1);
+            var qs = questoes.filter(function (q) { return q.aula_id === aula.id; });
+            rotulo(rolaD, 'Questões', 'var(--terracota)'); if (!qs.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Sem questões.' }));
+            qs.forEach(function (q, i) {
+              var r = resp[q.id], feita = q.tipo === 'multipla' ? !!(r && r.opcao != null) : !!(r && r.texto), certa = q.tipo === 'multipla' && feita && r.opcao === q.correta;
+              var estado = !feita ? 'por responder' : q.tipo !== 'multipla' ? 'respondida' : certa ? 'certa' : 'errada', txt = String(q.enunciado || '').replace(/\s+/g, ' ').trim();
+              var l = el('div', { class: 'tarefa', style: 'cursor:pointer' }, [el('span', { class: 'cx', style: 'border-color:transparent;color:' + (certa ? 'var(--azul-egipcio-escuro)' : 'var(--terracota)'), text: !feita ? '' : (q.tipo === 'multipla' ? (certa ? '✓' : '✗') : '✓') }), el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: 'questão ' + (i + 1) + ' · ' + estado }), el('div', { style: 'overflow-wrap:anywhere', text: txt.length > 110 ? txt.slice(0, 110) + '…' : txt })])]);
+              l.addEventListener('click', function () { abrirTela('admin-estudos.html#aula=' + encodeURIComponent(aula.id) + '&estudo=' + encodeURIComponent(est.id)); }); rolaD.appendChild(l);
+            });
+            return;
           }
-          var completo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo estudo, importar aulas e mais' }); completo.addEventListener('click', function () { abrirTela('admin-estudos.html'); }); rolaE.appendChild(completo);
-          /* direita: as aulas do estudo escolhido */
-          var est = estudos.filter(function (e) { return e.id === estSel; })[0]; if (!est) return;
-          if (est.estudo_pai_id) { var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' }); voltar.addEventListener('click', function () { estSel = est.estudo_pai_id; desenharTudo(); }); rolaD.appendChild(voltar); }
-          rolaD.appendChild(el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:20px;color:var(--terracota);margin:2px 0 4px;overflow-wrap:anywhere', text: est.nome }));
-          barras(est).forEach(function (b) { rolaD.appendChild(b); });
-          function rotulo(t) { rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--ocre);padding:12px 0 4px', text: t })); }
-          var menores = filhosDe(est.id);
-          if (menores.length) { rotulo('Estudos menores'); menores.forEach(function (m) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', text: m.nome })].concat(barras(m))); l.addEventListener('click', function () { estSel = m.id; desenharTudo(); }); rolaD.appendChild(l); }); }
-          var minhas = aulas.filter(function (a) { return a.estudo_id === est.id; }), pend = minhas.filter(function (a) { return !concluida(a); }), feitas = minhas.filter(concluida), hoje = isoDia(Date.now());
-          function linhaAula(a, feita) {
-            var p = prog[a.id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 }, info = p.total ? p.feitas + ' de ' + p.total + ' respondidas' + (p.multiplas ? ' · ' + p.certas + ' certas' : '') : 'sem questões', dia = String(a.data).slice(0, 10), atrasada = !feita && dia < hoje;
-            var l = el('div', { class: 'tarefa', style: 'cursor:pointer' + (feita ? ';opacity:.65' : '') }, [el('span', { class: 'cx', style: 'border-color:transparent;color:var(--terracota)', text: feita ? '✓' : '' }), el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'det', style: 'color:' + (atrasada ? 'var(--terracota)' : 'var(--azul-egipcio-escuro)'), text: (+dia.slice(8)) + ' de ' + MES3[+dia.slice(5, 7) - 1] + (atrasada ? ' · atrasada' : '') }), el('div', { class: 'nome', text: a.titulo }), el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: a.materia + ' · ' + info })])]);
-            l.addEventListener('click', function () { abrirTela('admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(est.id)); }); return l;
-          }
-          if (!minhas.length && !menores.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhuma aula ainda.' }));
-          if (pend.length) { rotulo('Para fazer'); pend.forEach(function (a) { rolaD.appendChild(linhaAula(a, false)); }); }
-          if (feitas.length) { rotulo('Feitas'); feitas.forEach(function (a) { rolaD.appendChild(linhaAula(a, true)); }); }
-          var abre = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Abrir este estudo completo' }); abre.addEventListener('click', function () { abrirTela('admin-estudos.html#estudo=' + encodeURIComponent(est.id)); }); rolaD.appendChild(abre);
+          /* esquerda: o estudo (e as aulas feitas) · direita: as aulas para fazer e os estudos menores */
+          rolaE.appendChild(nome(est.nome, true)); barras(est).forEach(function (b) { rolaE.appendChild(b); });
+          var minhas = aulas.filter(function (a) { return a.estudo_id === est.id; }), pend = minhas.filter(function (a) { return !concluida(a); }), feitas = minhas.filter(concluida), menores = filhosDe(est.id);
+          if (feitas.length) { rotulo(rolaE, 'Feitas'); feitas.forEach(function (a) { rolaE.appendChild(linhaAula(a, true, false)); }); }
+          var abre = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Editar este estudo' }); abre.addEventListener('click', function () { abrirTela('admin-estudos.html#estudo=' + encodeURIComponent(est.id)); }); rolaE.appendChild(abre);
+          if (menores.length) { rotulo(rolaD, 'Estudos menores', 'var(--terracota)'); menores.forEach(function (m) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(m.nome)].concat(barras(m))); l.addEventListener('click', function () { entrar(m.id, null); }); rolaD.appendChild(l); }); }
+          rotulo(rolaD, 'Para fazer', 'var(--terracota)'); if (!pend.length) rolaD.appendChild(el('p', { class: 'vazio', text: minhas.length ? 'Tudo feito.' : 'Nenhuma aula ainda.' }));
+          pend.forEach(function (a) { rolaD.appendChild(linhaAula(a, false, false)); });
         }
         desenharTudo();
       }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
@@ -1047,6 +1085,11 @@
     document.getElementById('t1').addEventListener('click', function () { paginaCel('p1'); });
     document.getElementById('t2').addEventListener('click', function () { paginaCel('p2'); });
     document.getElementById('tMais').addEventListener('click', novaTarefa);
+    (function () { /* o dedo vira a página: para a direita volta, para a esquerda avança */
+      var folha = cad.querySelector('.folha'), x0 = 0, y0 = 0, t0 = 0, ativo = false;
+      folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; if (ev.touches.length !== 1 || t.touchType === 'stylus' || (ev.target.closest && ev.target.closest('input,textarea,select,[style*="overflow-x"]'))) { ativo = false; return; } x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; }, { passive: true });
+      folha.addEventListener('touchend', function (ev) { if (!ativo) return; ativo = false; var t = ev.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 800 || Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return; if (dx > 0) voltarPagina(); else avancarPagina(); }, { passive: true });
+    })();
     C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
   })();
   </script>
