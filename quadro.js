@@ -88,7 +88,9 @@
     bAnt.style.fontSize = bProx.style.fontSize = '22px';
     var contador = el('span'); contador.style.cssText = 'font-size:14px;color:var(--preto-tinta,#16233F);white-space:nowrap;flex:none;min-width:44px;text-align:center';
     barraBaixo.appendChild(voltar());
-    [bAnt, contador, bProx, btn('+ Tela', novaTela)].forEach(function (x) { barraBaixo.appendChild(x); });
+    var bMenos = btn('−', function () { zoomPor(1 / 1.4); }), bMais = btn('+', function () { zoomPor(1.4); });
+    bMenos.style.fontSize = bMais.style.fontSize = '22px'; bMenos.setAttribute('aria-label', 'Diminuir o zoom'); bMais.setAttribute('aria-label', 'Aumentar o zoom');
+    [bAnt, contador, bProx, btn('+ Tela', novaTela), bMenos, bMais].forEach(function (x) { barraBaixo.appendChild(x); });
     barraBaixo.appendChild(contexto); barraBaixo.appendChild(folga);
     barraBaixo.appendChild(discreto('Apagar os riscos', function () {
       if (!dados.tracos.length) return;
@@ -110,13 +112,29 @@
 
     /* ---------- medidas ---------- */
     var dpr = Math.max(1, window.devicePixelRatio || 1), W = 1, H = 1;
-    function medir() {
+    /* zoom: dois dedos (pinça) aumentam e arrastam a folha; com zoom, um dedo arrasta (a caneta continua riscando). No teclado/trackpad: pinça do trackpad ou os botões − e +. */
+    var zoom = 1, esq = 0, cima = 0, esperaLonas = null;
+    function posicionar() { /* só o tamanho e o lugar da folha (barato: roda a cada movimento da pinça) */
       var aw = area.clientWidth, ah = area.clientHeight;
-      W = Math.min(aw, ah * PROPORCAO); H = W / PROPORCAO;
-      folha.style.left = (aw - W) / 2 + 'px'; folha.style.top = (ah - H) / 2 + 'px'; folha.style.width = W + 'px'; folha.style.height = H + 'px';
-      [cvMarca, cvTinta, cvLaser].forEach(function (c) { c.width = Math.max(1, Math.round(W * dpr)); c.height = Math.max(1, Math.round(H * dpr)); });
-      repintar(); dados.itens.forEach(posicionarItem);
+      W = Math.min(aw, ah * PROPORCAO) * zoom; H = W / PROPORCAO;
+      esq = W <= aw ? (aw - W) / 2 : Math.min(0, Math.max(aw - W, esq));
+      cima = H <= ah ? (ah - H) / 2 : Math.min(0, Math.max(ah - H, cima));
+      folha.style.left = esq + 'px'; folha.style.top = cima + 'px'; folha.style.width = W + 'px'; folha.style.height = H + 'px';
+      dados.itens.forEach(posicionarItem);
     }
+    function pintarLonas() { /* refaz os riscos no tamanho novo (nítidos com zoom) */
+      var r = Math.min(dpr, Math.sqrt(8e6 / Math.max(1, W * H)));
+      [cvMarca, cvTinta, cvLaser].forEach(function (c) { c.width = Math.max(1, Math.round(W * r)); c.height = Math.max(1, Math.round(H * r)); });
+      repintar(); if (atual && atual.p && !atual.laser && !atual.borracha) desenhar(atual);
+    }
+    function medir() { posicionar(); pintarLonas(); }
+    function zoomPor(k, cx, cy) {
+      var aw = area.clientWidth, ah = area.clientHeight; cx = cx == null ? aw / 2 : cx; cy = cy == null ? ah / 2 : cy;
+      var u = (cx - esq) / W, v = (cy - cima) / H, novo = Math.max(1, Math.min(5, zoom * k));
+      zoom = novo; W = Math.min(aw, ah * PROPORCAO) * zoom; H = W / PROPORCAO; esq = cx - u * W; cima = cy - v * H;
+      posicionar(); clearTimeout(esperaLonas); esperaLonas = setTimeout(pintarLonas, 160);
+    }
+    function arrastarFolha(dx, dy) { esq += dx; cima += dy; posicionar(); }
     var aoRedimensionar = function () { medir(); };
     window.addEventListener('resize', aoRedimensionar);
 
@@ -156,7 +174,8 @@
         var idade = r.fim ? agora - r.fim : 0;
         g.globalAlpha = idade <= DURA ? 1 : Math.max(0, 1 - (idade - DURA) / SOME);
         [[5, '#E2231A', 10], [1.6, '#FFB3A6', 0]].forEach(function (q) {
-          g.lineWidth = q[0] * dpr; g.strokeStyle = q[1]; g.fillStyle = q[1]; g.shadowColor = '#E2231A'; g.shadowBlur = q[2] * dpr;
+          var kl = cvLaser.width / Math.max(1, W);
+          g.lineWidth = q[0] * kl; g.strokeStyle = q[1]; g.fillStyle = q[1]; g.shadowColor = '#E2231A'; g.shadowBlur = q[2] * kl;
           g.beginPath();
           if (r.p.length === 1) { g.arc(r.p[0][0] * cvLaser.width, r.p[0][1] * cvLaser.height, g.lineWidth / 2, 0, 7); g.fill(); return; }
           g.moveTo(r.p[0][0] * cvLaser.width, r.p[0][1] * cvLaser.height);
@@ -319,6 +338,27 @@
       apagou = (apagou || []).concat(tira); repintar();
     }
     area.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    /* dedos: dois = pinça (zoom e arrasto da folha); com zoom, um dedo fora de um item (ou com a caneta em uso) arrasta a folha */
+    var toques = {}, pinca = null, gestoPinca = false, mao = null;
+    function largarTudo() { /* o segundo dedo desceu: o que o primeiro começou não vale */
+      if (atual) {
+        if (atual.laser) lasers = lasers.filter(function (x) { return x !== atual; });
+        else if (atual.borracha) { dados.tracos = dados.tracos.concat(apagou || []); apagou = null; }
+        atual = null; repintar();
+      }
+      if (arrasto) { if (arrasto.mexeu) salvar(); arrasto = null; }
+      mao = null;
+    }
+    function comecarPinca() {
+      var ids = Object.keys(toques), a = toques[ids[0]], b = toques[ids[1]], ar = area.getBoundingClientRect();
+      pinca = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, cx: (a.x + b.x) / 2 - ar.left, cy: (a.y + b.y) / 2 - ar.top }; gestoPinca = true;
+    }
+    area.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var ar = area.getBoundingClientRect();
+      if (e.ctrlKey || e.metaKey) zoomPor(Math.exp(-e.deltaY / 120), e.clientX - ar.left, e.clientY - ar.top);
+      else if (zoom > 1) arrastarFolha(-e.deltaX, -e.deltaY);
+    }, { passive: false });
     area.addEventListener('pointerdown', function (e) {
       if (!carregado) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -326,6 +366,18 @@
       if (editando && editando.contains(e.target)) return; /* dentro do texto que está sendo escrito: o toque é do texto */
       e.preventDefault();
       var it = itemDe(e.target);
+      if (e.pointerType === 'touch') {
+        toques[e.pointerId] = { x: e.clientX, y: e.clientY };
+        if (Object.keys(toques).length >= 2) { largarTudo(); comecarPinca(); return; }
+        if (gestoPinca) return;
+        var risca = ferr !== 'mao' && ferr !== 'texto';
+        if (zoom > 1 && ((risca && viuCaneta) || (ferr === 'mao' && !it))) {
+          if (ferr === 'mao') { pararEdicao(); selecionar(null); }
+          mao = { id: e.pointerId, x: e.clientX, y: e.clientY };
+          try { area.setPointerCapture(e.pointerId); } catch (x) { /* ok */ }
+          return;
+        }
+      }
       if (ferr === 'texto') {
         if (it && it.tipo === 'txt') editar(it); else if (editando) pararEdicao(); else novoTexto(pontoDe(e));
         return;
@@ -347,6 +399,19 @@
       desenhar(atual);
     });
     area.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch' && toques[e.pointerId]) {
+        toques[e.pointerId].x = e.clientX; toques[e.pointerId].y = e.clientY;
+        var ids = Object.keys(toques);
+        if (pinca && ids.length >= 2) {
+          var a = toques[ids[0]], b = toques[ids[1]], ar = area.getBoundingClientRect();
+          var d = Math.hypot(a.x - b.x, a.y - b.y) || 1, cx = (a.x + b.x) / 2 - ar.left, cy = (a.y + b.y) / 2 - ar.top;
+          esq += cx - pinca.cx; cima += cy - pinca.cy;
+          zoomPor(d / pinca.d, cx, cy);
+          pinca.d = d; pinca.cx = cx; pinca.cy = cy;
+          return;
+        }
+      }
+      if (mao && mao.id === e.pointerId) { arrastarFolha(e.clientX - mao.x, e.clientY - mao.y); mao.x = e.clientX; mao.y = e.clientY; return; }
       if (arrasto && arrasto.id === e.pointerId) {
         var it = arrasto.it, dx = (e.clientX - arrasto.x) / W, dy = (e.clientY - arrasto.y) / H;
         if (!arrasto.mexeu && Math.abs(e.clientX - arrasto.x) + Math.abs(e.clientY - arrasto.y) < 3) return;
@@ -365,6 +430,13 @@
       });
     });
     function soltar(e) {
+      if (e.pointerType === 'touch') {
+        delete toques[e.pointerId];
+        var resto = Object.keys(toques).length;
+        if (resto < 2) pinca = null;
+        if (!resto) gestoPinca = false;
+      }
+      if (mao && mao.id === e.pointerId) { mao = null; return; }
       if (arrasto && arrasto.id === e.pointerId) { if (arrasto.mexeu) salvar(); arrasto = null; return; }
       if (!atual || atual.id !== e.pointerId) return;
       if (atual.laser) atual.fim = Date.now();
@@ -407,6 +479,7 @@
     function mostrar() {
       ID = ordem[pag]; dados = telas[ID] || (telas[ID] = { itens: [], tracos: [] });
       pilha = []; lasers = []; atual = null; arrasto = null; selecionado = null; editando = null;
+      if (zoom !== 1) { zoom = 1; medir(); }
       montarItens(); repintar(); pintarTelas();
     }
     function irPara(i) {
