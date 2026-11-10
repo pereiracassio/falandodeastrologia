@@ -1,0 +1,1483 @@
+/* AGENDA do CADERNO (admin-caderno.html): o código COMPLETO da Agenda (admin-agenda.html) como módulo, para o caderno abrir o compromisso (ver, editar com
+   repetição, lembretes, cor, convidados, Meet, apagar) e criar um novo direto na folha. CÓPIA da tela de antes: mexeu lá, mexa aqui. */
+window.AgendaCaderno = function (ctx) {
+    var P = ctx.P, el = P.el, C = ctx.C, app = ctx.app, HP = window.horaPlanetaria;
+    var LAT = -23.3053, LON = -45.9658; /* lugar das horas planetárias: vem de Configurações (site_config.prod_local_horas); padrão Jacareí */
+    var lugarNome = 'Jacareí';
+    var CAL = 'https://www.googleapis.com/calendar/v3';
+    var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    var SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    /* o que fazer -> em qual hora planetária (mude aqui se quiser outra combinação) */
+    var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno']]; /* a lista só sugere: ele pode escrever qualquer outra coisa */
+    var nomeAdmin = '', aniversarios = [], producao = { videos: [], cortes: [] }, calendarios = [], todosCalendarios = [], eventos = [], DIAS_BUSCA = 7;
+    var DIA = 86400000, HORA_PX = 48, ATIVA = null;
+    var SEM_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    var VISOES = [['horas', 'Horas'], ['todo', 'To Do'], ['lista', 'Lista'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
+    /* Horas e To do são abas do Hellenic Daily (na barra de cima), junto com a Agenda; a Agenda abre na última aba de dentro que ficou aberta */
+    var CALV = ['lista', 'dia', 'semana', 'mes', 'ano'], ROTULO = { agenda: 'Agenda', horas: 'Horas', todo: 'To do' };
+    function modoDe(v) { return v === 'horas' ? 'horas' : v === 'todo' ? 'todo' : 'agenda'; }
+    function ultimaVisaoCal() { try { var v = localStorage.getItem('fda_agenda_visao'); return CALV.indexOf(v) >= 0 ? v : 'semana'; } catch (e) { return 'semana'; } }
+    function guardarVisaoCal(v) { try { if (CALV.indexOf(v) >= 0) localStorage.setItem('fda_agenda_visao', v); } catch (e) { /* sem armazenamento */ } }
+    function visaoDoEndereco() { var v = P.estado.ler().v; return ['horas', 'todo'].concat(CALV).indexOf(v) >= 0 ? v : ultimaVisaoCal(); }
+    var visao = visaoDoEndereco(), ancora = '', areaForm = null, atualizar = function () {}, formTodoEl = null;
+
+    function limpar() { app.textContent = ''; }
+    function sair() { C.auth.signOut().then(mostrarLogin); }
+    var modoBarra = null;
+    function topo(texto) { modoBarra = modoDe(visao); return P.navAdmin(modoBarra, texto, sair); }
+    function mostrarLogin() { limpar(); P.montarLogin(app, iniciar); }
+    function p2(n) { return String(n).padStart(2, '0'); }
+    /* tudo em horário de Brasília: "local" = ms deslocado, lido com os métodos UTC */
+    function loc(ms) { return new Date(ms + HP.FUSO); }
+    function hhmm(ms) { var d = loc(ms); return p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()); }
+    function isoDia(ms) { var d = loc(ms); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
+    function doIso(dia, hora) { var a = dia.split('-'), h = (hora || '00:00').split(':'); return Date.UTC(+a[0], +a[1] - 1, +a[2], +h[0], +h[1]) - HP.FUSO; }
+    function meiaNoiteDe(ms) { return doIso(isoDia(ms), '00:00'); }
+    function rotuloDia(iso) {
+      var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2]));
+      var hoje = isoDia(Date.now()), amanha = isoDia(Date.now() + 86400000);
+      var nome = iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEMANA[d.getUTCDay()].replace(/^./, function (c) { return c.toUpperCase(); });
+      return nome + ', ' + (+a[2]) + ' de ' + MESES[+a[1] - 1];
+    }
+    function duracaoTxt(min) { return min < 60 ? min + ' min' : (min % 60 ? Math.floor(min / 60) + ' h ' + (min % 60) + ' min' : min / 60 + ' h'); }
+
+    /* ---------- Google Agenda (a mesma conexão permanente do Drive) ---------- */
+    function gapi(caminho, opcoes, jaTentou) {
+      return P.tokenGoogle().then(function (token) {
+        opcoes = opcoes || {};
+        opcoes.headers = Object.assign({ Authorization: 'Bearer ' + token }, opcoes.headers || {});
+        return fetch(CAL + caminho, opcoes);
+      }).then(function (r) {
+        if (r.status === 401 && !jaTentou) { try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ } return gapi(caminho, opcoes, true); }
+        if (r.status === 403) return r.json().then(function (j) { var e = new Error('permissao'); e.detalhe = JSON.stringify(j).slice(0, 200); throw e; }, function () { throw new Error('permissao'); });
+        if (r.status === 204) return null;
+        if (!r.ok) return r.text().then(function (t) { throw new Error('Google ' + r.status + ': ' + t.slice(0, 160)); });
+        return r.json();
+      });
+    }
+    function cartaoConectar(texto, botao) {
+      var msg = el('p', { class: 'portal-msg' });
+      var b = el('button', { type: 'button', class: 'portal-btn', text: botao });
+      b.addEventListener('click', function () {
+        b.disabled = true;
+        C.auth.getSession().then(function (r) {
+          return fetch('https://falandodeastrologia.vercel.app/api/drive?acao=iniciar&volta=' + encodeURIComponent('/admin-agenda.html'), { headers: { Authorization: 'Bearer ' + r.data.session.access_token } });
+        }).then(function (r) { if (!r.ok) throw new Error('iniciar'); return r.json(); })
+          .then(function (d) { location.href = d.url; })
+          .catch(function () { b.disabled = false; P.mensagem(msg, 'Não foi possível iniciar. Tente de novo.', 'erro'); });
+      });
+      return el('div', { class: 'portal-cartao' }, [el('p', { text: texto }), el('div', { class: 'portal-acoes' }, [b]), msg]);
+    }
+
+    /* as cores de compromisso do Google Agenda */
+    var CORES_EVENTO = { 1: '#7986cb', 2: '#33b679', 3: '#8e24aa', 4: '#e67c73', 5: '#f6bf26', 6: '#f4511e', 7: '#039be5', 8: '#616161', 9: '#3f51b5', 10: '#0b8043', 11: '#d50000' };
+    var NOMES_COR = { 1: 'Lavanda', 2: 'Sálvia', 3: 'Uva', 4: 'Flamingo', 5: 'Banana', 6: 'Tangerina', 7: 'Pavão', 8: 'Grafite', 9: 'Mirtilo', 10: 'Manjericão', 11: 'Tomate' };
+    /* compromisso PREENCHIDO: ocre, ou a cor que ele escolheu; o texto escuro ou claro conforme a cor, para ler bem por cima da grade */
+    function preenche(e) { return e.cor || e.calCor || FdaTema.cor('ocre'); }
+    function textoSobre(hex) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 120 ? FdaTema.cor('preto-tinta') : '#FFFFFF'; }
+    function normalizar(e, cal) {
+      if (e.status === 'cancelled') return null;
+      var diaTodo = !!(e.start && e.start.date);
+      var ini = diaTodo ? doIso(e.start.date, '00:00') : Date.parse(e.start.dateTime);
+      var fim = diaTodo ? doIso(e.end.date, '00:00') : Date.parse(e.end.dateTime);
+      var recusou = (e.attendees || []).some(function (a) { return a.self && a.responseStatus === 'declined'; });
+      return { id: e.id, calId: cal.id, calNome: cal.summary, titulo: e.summary || '(sem título)', ini: ini, fim: fim, diaTodo: diaTodo, link: e.htmlLink, meet: e.hangoutLink || ((e.conferenceData && e.conferenceData.entryPoints || []).filter(function (p) { return p.entryPointType === 'video'; })[0] || {}).uri || '', local: e.location || '', descricao: e.description || '', convRaw: e.attendees || [], convidados: (e.attendees || []).filter(function (p) { return !p.self && !p.resource; }).map(function (p) { return p.email; }),
+        ocupa: !diaTodo && e.transparency !== 'transparent' && !recusou, editavel: (cal.accessRole === 'owner' || cal.accessRole === 'writer'),
+        recorrenteId: e.recurringEventId || '', recorrencia: e.recurrence || null, livre: e.transparency === 'transparent', visib: e.visibility || 'default',
+        corId: e.colorId || '', cor: CORES_EVENTO[e.colorId] || '', calCor: cal.backgroundColor || '', lembPadrao: !e.reminders || e.reminders.useDefault !== false, lembretes: (e.reminders && e.reminders.overrides) || [], padraoAgenda: cal.defaultReminders || [] };
+    }
+    /* lugar das horas planetárias e lista de agendas: uma vez só */
+    var prontoP = null, CACHE = 'fda_agenda_cache_v1';
+    function lerCache() { try { return JSON.parse(localStorage.getItem(CACHE) || 'null') || {}; } catch (e) { return {}; } }
+    function gravarCache(c) { try { localStorage.setItem(CACHE, JSON.stringify(c)); } catch (e) { /* sem armazenamento: só fica mais lento */ } }
+    /* clientes e alunos que têm a data de nascimento no cadastro */
+    function carregarAniversarios() {
+      var pega = function (tabela, tipo, tabCod, colCod) {
+        return Promise.all([
+          C.from(tabela).select('id,nome,whatsapp,nascimento,email').not('nascimento', 'is', null).then(function (r) { return r.data || []; }, function () { return []; }),
+          C.from(tabCod).select(colCod + ',codigo').then(function (r) { return r.data || []; }, function () { return []; })
+        ]).then(function (r) { var cods = {}; r[1].forEach(function (c) { cods[c[colCod]] = c.codigo; }); return r[0].map(function (x) { x.tipo = tipo; x.codigo = cods[x.id] || ''; return x; }); });
+      };
+      return Promise.all([pega('clientes', 'cliente', 'cliente_codigos', 'cliente_id'), pega('alunos', 'aluno', 'aluno_codigos', 'aluno_id')]).then(function (r) { var vistos = {}; /* a mesma pessoa em clientes e em alunos conta uma vez só (pelo e-mail; sem e-mail, pelo nome e a data) */
+        aniversarios = r[0].concat(r[1]).filter(function (x) {
+          if (!/^\d{4}-\d{2}-\d{2}/.test(x.nascimento || '')) return false;
+          var k = x.email ? String(x.email).toLowerCase() : String(x.nome).toLowerCase() + '|' + x.nascimento;
+          if (vistos[k]) { if (!vistos[k].whatsapp && x.whatsapp) vistos[k].whatsapp = x.whatsapp; if (!vistos[k].codigo && x.codigo) vistos[k].codigo = x.codigo; return false; }
+          vistos[k] = x; return true;
+        }); }, function () { aniversarios = []; });
+    }
+    /* os aniversários que caem no período como compromissos de dia inteiro (29/02 vira 28/02 nos anos sem 29) */
+    function aniversariosEntre(de, ate) {
+      var saida = [], a0 = +isoDia(de).slice(0, 4), a1 = +isoDia(ate).slice(0, 4);
+      aniversarios.forEach(function (p) {
+        var m = +p.nascimento.slice(5, 7), d = +p.nascimento.slice(8, 10), ano0 = +p.nascimento.slice(0, 4);
+        for (var y = a0; y <= a1; y++) {
+          var bi = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0, dd = (m === 2 && d === 29 && !bi) ? 28 : d, iso = y + '-' + p2(m) + '-' + p2(dd), ini = doIso(iso);
+          if (ini < de || ini >= ate) continue;
+          saida.push({ id: 'aniv-' + p.nome + y, calId: '', calNome: 'Aniversários', titulo: 'Aniversário de ' + (p.codigo ? p.codigo + ' · ' : '') + p.nome, curto: (p.codigo ? p.codigo + ' · ' : '') + p.nome, ini: ini, fim: ini + DIA, diaTodo: true, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: FdaTema.cor('terracota'), calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, aniversario: { nome: p.nome, whatsapp: p.whatsapp || '', idade: y - ano0, tipo: p.tipo } });
+        }
+      });
+      return saida;
+    }
+    /* os vídeos e cortes da Produção entram na agenda como compromissos LIVRES (não bloqueiam horário), cada um nas horas de Júpiter do dia dele (o horário que a Produção sugere para postar):
+       vídeo pela data em que fica público (só de membros: a data dos membros, igual ao To do da Produção), cortes pela data de cada um (juntos por dia). O To do da Produção não foi mexido */
+    function carregarProducao() {
+      return Promise.all([
+        C.from('prod_videos').select('id,numero,titulo,data_postar,data_publico,acesso,hora_jupiter').then(function (r) { return r.data || []; }, function () { return []; }),
+        C.from('prod_cortes').select('id,titulo,data,video_id,hora_jupiter').not('data', 'is', null).then(function (r) { return r.data || []; }, function () { return []; })
+      ]).then(function (r) { producao = { videos: r[0], cortes: r[1] }; });
+    }
+    function producaoEntre(de, ate) {
+      var saida = [];
+      /* uma hora de Júpiter só por item: a que ele escolheu na Produção (hora_jupiter); sem escolha, vídeo = a mais perto das 16h, corte = a primeira */
+      function naHoraDeJupiter(idBase, titulo, iso, linhas, escolha, ehVideo) {
+        var d0 = doIso(iso), pa = iso.split('-');
+        /* o dia planetário começa no nascer do sol: as horas de Júpiter do dia são as 24 horas que COMEÇAM no nascer desse dia (as da madrugada seguinte são deste dia, não do próximo) */
+        var hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === 'Júpiter'; });
+        if (!hs.length) return;
+        var h = escolha != null ? hs[Math.min(escolha, hs.length - 1)] : ehVideo ? hs.slice().sort(function (x, y) { return Math.abs(x.ini - (d0 + 16 * 3600000)) - Math.abs(y.ini - (d0 + 16 * 3600000)); })[0] : hs[0];
+        if (h.fim <= de || h.ini >= ate) return;
+        var ini = h.ini, fim = h.fim;
+        saida.push({ id: idBase, calId: '', calNome: 'Produção', titulo: titulo, curto: titulo, ini: ini, fim: fim, diaTodo: false, meet: '', local: '', descricao: '', convRaw: [], convidados: [], recorrenteId: '', recorrencia: null, livre: true, visib: 'default', corId: '', cor: FdaTema.cor('azul-egipcio-claro'), calCor: '', lembPadrao: true, lembretes: [], padraoAgenda: [], ocupa: false, editavel: false, producao: { linhas: linhas } });
+      }
+      producao.videos.forEach(function (v) {
+        var iso = (v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar; if (!iso) return;
+        naHoraDeJupiter('prod-v-' + v.id, 'Vídeo ' + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'Vídeo'), iso, [], v.hora_jupiter, true);
+      });
+      producao.cortes.forEach(function (c) {
+        var v = producao.videos.filter(function (x) { return x.id === c.video_id; })[0];
+        naHoraDeJupiter('prod-c-' + c.id, c.titulo || 'Corte' + (v ? ' de ' + (v.numero ? v.numero + '. ' : '') + v.titulo : ''), c.data, [], c.hora_jupiter, false);
+      });
+      return saida;
+    }
+    function preparar() {
+      if (prontoP) return prontoP;
+      var valorDe = function (chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); };
+      /* tudo ao mesmo tempo: lugar, agendas escolhidas e a lista do Google */
+      prontoP = Promise.all([valorDe('prod_local_horas'), valorDe('agenda_ocultas'), gapi('/users/me/calendarList?minAccessRole=freeBusyReader'), carregarAniversarios(), carregarProducao()]).then(function (r) {
+        var v = r[0], ocultas = r[1] || [];
+        if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; lugarNome = String(v.nome || 'outro lugar'); }
+        todosCalendarios = r[2].items || [];
+        calendarios = todosCalendarios.filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* só as agendas marcadas em Configurações são lidas: nem aparecem, nem bloqueiam horário */
+        var c = lerCache(); c.cal = calendarios; c.todos = todosCalendarios; c.lat = LAT; c.lon = LON; c.nome = lugarNome; gravarCache(c);
+      });
+      prontoP.catch(function () { prontoP = null; });
+      return prontoP;
+    }
+    /* compromissos de todas as agendas marcadas, entre dois instantes (ms) */
+    function pausa(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+    /* uma agenda: tenta de novo se o Google falhar (são muitas agendas, o Google limita pedidos de uma vez) */
+    function eventosDe(c, de, ate, tentativa) {
+      return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
+        .then(function (r) { return (r.items || []).map(function (e) { return normalizar(e, c); }); }, function (er) {
+          if (tentativa < 3) return pausa(600 * (tentativa + 1)).then(function () { return eventosDe(c, de, ate, tentativa + 1); });
+          throw er;
+        });
+    }
+    /* compromissos de todas as agendas, no máximo 4 pedidos ao mesmo tempo; o que NÃO foi lido vai em .falhas (nunca some em silêncio) */
+    function eventosEntre(de, ate, comOcultas) {
+      return preparar().then(function () {
+        var fila = calendarios.slice(), saida = [], falhas = []; /* só as agendas que ele escolheu em Configurações */
+        function trabalhador() {
+          var c = fila.shift(); if (!c) return Promise.resolve();
+          return eventosDe(c, de, ate, 0).then(function (l) { saida = saida.concat(l); }, function () { falhas.push(c.summaryOverride || c.summary || c.id); }).then(trabalhador);
+        }
+        return Promise.all([trabalhador(), trabalhador(), trabalhador(), trabalhador(), trabalhador(), trabalhador()]).then(function () {
+          var lista = saida.filter(Boolean).sort(function (a, b) { return a.ini - b.ini; });
+          lista.falhas = falhas;
+          return lista;
+        });
+      });
+    }
+
+    /* ---------- tela ---------- */
+    function iniciar(user) {
+      limpar();
+      Promise.all([C.rpc('sou_admin'), C.from('admins').select('nome').maybeSingle()]).then(function (rs) {
+        var r = rs[0], rn = rs[1];
+        if (r.error || r.data !== true) {
+          app.appendChild(topo(user.email));
+          app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })]));
+          return;
+        }
+        nomeAdmin = rn.data && rn.data.nome ? 'Olá, ' + rn.data.nome + '!' : user.email;
+        if (/[?&]drive=ok/.test(location.search)) { try { sessionStorage.removeItem('fda_drive_token'); localStorage.removeItem(CACHE); history.replaceState(null, '', location.pathname); } catch (e) { /* sem armazenamento */ } }
+        tela();
+      });
+    }
+
+    function mostraErroAbrir(corpo, e) {
+      corpo.textContent = '';
+      if (e.message === 'desconectado') corpo.appendChild(cartaoConectar('Para ver a sua agenda, conecte o Google uma vez. Depois disso não pede mais.', 'Conectar o Google'));
+      else if (e.message === 'permissao') corpo.appendChild(cartaoConectar('O Google ainda não deixou o site ver a sua agenda. É só dar essa permissão uma vez.', 'Permitir o Google Agenda'));
+      else corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível abrir a agenda agora (' + e.message + ').' }));
+    }
+    function tela() {
+      limpar();
+      app.appendChild(topo(nomeAdmin));
+      var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
+      app.appendChild(corpo);
+      var c = lerCache();
+      if (c.cal && c.cal.length) { /* já conhecida: abre na hora com o que viu da última vez e atualiza por trás */
+        calendarios = c.cal; todosCalendarios = c.todos || c.cal; if (isFinite(c.lat) && isFinite(c.lon)) { LAT = c.lat; LON = c.lon; lugarNome = c.nome || lugarNome; }
+        corpo.textContent = ''; montar(corpo);
+        var antes = calendarios.map(function (x) { return x.id; }).join('|'), qtdAniv = aniversarios.length;
+        preparar().then(function () { if (calendarios.map(function (x) { return x.id; }).join('|') !== antes || aniversarios.length !== qtdAniv) { if (visao === 'todo' && formTodoEl && document.body.contains(formTodoEl) && formTodoEl.style.display !== 'none') return; /* não refaz a tela por baixo de quem está preenchendo o To do (isso apagava o formulário e a lista de horários) */ atualizar(); } }, function () { /* o erro aparece quando os compromissos não carregam */ });
+        return;
+      }
+      preparar().then(function () { corpo.textContent = ''; montar(corpo); }, function (e) { mostraErroAbrir(corpo, e); });
+    }
+
+    /* ---------- datas (texto "AAAA-MM-DD", sempre no horário de Brasília) ---------- */
+    function somaDias(iso, n) { var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2] + n)); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
+    function somaMeses(iso, n) {
+      var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1 + n, 1)), dim = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+      return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(Math.min(+a[2], dim));
+    }
+    function diaSem(iso) { var a = iso.split('-'); return new Date(Date.UTC(+a[0], +a[1] - 1, +a[2])).getUTCDay(); }
+    function diasNoMes(a, m) { return new Date(Date.UTC(a, m, 0)).getUTCDate(); }
+    function intervalo() { /* [de, ate) em ms do que a tela atual mostra */
+      var a = ancora.split('-'), ini;
+      if (visao === 'dia') return [doIso(ancora), doIso(somaDias(ancora, 1))];
+      if (visao === 'semana') { ini = somaDias(ancora, -diaSem(ancora)); return [doIso(ini), doIso(somaDias(ini, 7))]; }
+      if (visao === 'mes') { var pri = a[0] + '-' + a[1] + '-01'; ini = somaDias(pri, -diaSem(pri)); return [doIso(ini), doIso(somaDias(ini, 42))]; }
+      if (visao === 'lista') return [doIso(ancora), doIso(somaDias(ancora, 31))];
+      return [doIso(a[0] + '-01-01'), doIso((+a[0] + 1) + '-01-01')];
+    }
+    function curto(iso) { var a = iso.split('-'); return (+a[2]) + ' de ' + MES_CURTO[+a[1] - 1]; }
+    function tituloPeriodo() {
+      if (visao === 'horas') return rotuloDia(ancora);
+      var a = ancora.split('-');
+      if (visao === 'dia') return rotuloDia(ancora);
+      if (visao === 'semana') { var ini = somaDias(ancora, -diaSem(ancora)), fim = somaDias(ini, 6); return curto(ini) + ' a ' + curto(fim) + (fim.slice(0, 4) === isoDia(Date.now()).slice(0, 4) ? '' : ' de ' + fim.slice(0, 4)); }
+      if (visao === 'mes') return MESES[+a[1] - 1] + ' de ' + a[0];
+      if (visao === 'lista') return curto(ancora) + ' a ' + curto(somaDias(ancora, 30));
+      return a[0];
+    }
+    /* caixinha só com contorno (igual ao resto do painel): devolve { el, valor() } */
+    function caixinha(rotulo, inicial, aoMudar) {
+      var marcada = !!inicial;
+      var cx = el('button', { type: 'button', role: 'checkbox', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid var(--azul-egipcio-claro);border-radius:0;color:var(--terracota);font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+      var nome = el('span', { class: 'rotulo-fixo', text: rotulo, style: 'cursor:pointer' });
+      var pinta = function () { cx.textContent = marcada ? '\u2713' : ''; cx.setAttribute('aria-checked', marcada ? 'true' : 'false'); if (aoMudar) aoMudar(marcada); };
+      var alterna = function () { marcada = !marcada; pinta(); };
+      cx.addEventListener('click', alterna); nome.addEventListener('click', alterna);
+      pinta();
+      return { el: el('div', { style: 'display:flex;align-items:center;gap:12px;margin:14px 0 10px' }, [cx, nome]), valor: function () { return marcada; } };
+    }
+    /* abre no lugar onde ele está (nunca leva para o topo): uma folha por cima da tela, que some sozinha quando o conteúdo é fechado ou salvo */
+    function abrirFolha() {
+      var antiga = document.getElementById('folha-agenda'); if (antiga) antiga.remove();
+      var fundo = el('div', { id: 'folha-agenda', style: 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:99990;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:84px 10px 4vh;box-sizing:border-box;background:color-mix(in srgb,var(--preto-tinta,#16233F) 35%,transparent);display:flex;flex-direction:column' });
+      var corpo = el('div', { class: 'barra-ocre', style: 'width:100%;max-width:600px;margin:auto;box-sizing:border-box;border:2px solid var(--azul-egipcio-claro);border-left:6px solid var(--ocre);padding:4px 14px 14px;background:var(--papiro-fundo-simples,#e6d3a0)' });
+      fundo.appendChild(corpo); corpo.className += ' portal'; (document.querySelector('.cad') ? document.querySelector('.cad').parentNode : document.body).appendChild(fundo);
+      var obs = new MutationObserver(function () { if (!corpo.firstChild) { obs.disconnect(); fundo.remove(); } });
+      obs.observe(corpo, { childList: true });
+      fundo.addEventListener('click', function (ev) { if (ev.target === fundo) corpo.textContent = ''; });
+      return corpo;
+    }
+    function abrirEvento(e) { detalhe(abrirFolha(), e); }
+    /* tocar num compromisso só MOSTRA; o lápis abre a edição. Cores: título terracota, horário azul, o resto preto */
+    function detalheAniversario(destino, e) {
+      var p = e.aniversario, dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
+      var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas! 🎈🎂\nDe presente, você tem 10% de desconto em qualquer um dos meus serviços disponíveis no site (https://falandodeastrologia.com.br), por 30 dias. É só usar o cupom aniversário no carrinho. Aproveite para fazer a sua Revolução Solar. Um abraço 🫂';
+      var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
+      fechar.addEventListener('click', function () { destino.textContent = ''; });
+      var acoes = [];
+      if (dig) { var w = el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]); acoes.push(w); }
+      acoes.push(fechar);
+      destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:var(--terracota)' }), el('p', { text: rotuloDia(isoDia(e.ini)) + ' · faz ' + p.idade + ' anos', style: 'margin:10px 0 0' }), el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes)]));
+    }
+    function detalhe(destino, e) {
+      destino.textContent = '';
+      if (e.aniversario) { detalheAniversario(destino, e); return; }
+      if (e.producao) { var fx = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' }); fx.addEventListener('click', function () { destino.textContent = ''; }); destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:var(--terracota)' }), el('p', { text: rotuloDia(isoDia(e.ini)), style: 'margin:10px 0 0' })].concat(e.producao.linhas.map(function (l) { return el('p', { text: l, style: 'margin:6px 0 0' }); }), [el('div', { style: 'margin-top:14px' }, [fx])]))); return; }
+      var ultimo = isoDia(Math.max(e.ini, e.fim - 1)), quando = e.diaTodo ? (isoDia(e.ini) === ultimo ? 'o dia todo' : 'de ' + curto(isoDia(e.ini)) + ' a ' + curto(ultimo)) : 'das ' + hhmm(e.ini) + ' às ' + hhmm(e.fim);
+      var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
+      fechar.addEventListener('click', function () { destino.textContent = ''; });
+      var acoes = [];
+      if (e.meet) acoes.push(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: P.linkSeguro(e.meet) || e.meet, target: '_blank', rel: 'noopener', title: 'Entrar no Meet', 'aria-label': 'Entrar no Meet' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' })]));
+      acoes.push(fechar);
+      var topo = el('div', { style: 'display:flex;align-items:flex-start;justify-content:space-between;gap:10px' }, [el('h2', { text: e.titulo, style: 'margin:0;flex:1;color:var(--terracota)' })]);
+      if (e.editavel) {
+        var lapis = el('button', { type: 'button', title: 'Editar', 'aria-label': 'Editar', text: '✎', style: 'flex:none;width:34px;height:34px;padding:0;background:transparent;border:0;border-radius:0;color:var(--azul-egipcio-escuro);font-size:28px;line-height:1;cursor:pointer' });
+        lapis.addEventListener('click', function () { formulario(destino, e, {}); });
+        topo.appendChild(lapis);
+      }
+      var filhos = [topo, el('p', { style: 'margin:10px 0 0' }, [el('span', { text: rotuloDia(isoDia(e.ini)) + ', ' }), el('span', { text: quando, style: 'color:var(--azul-egipcio-escuro);font-weight:700' })])];
+      if (e.recorrenteId || e.recorrencia) filhos.push(el('p', { text: 'Compromisso que se repete.', style: 'margin:6px 0 0' }));
+      if (e.local) filhos.push(el('p', { text: e.local, style: 'margin:6px 0 0' }));
+      if (e.convidados.length) filhos.push(el('p', { text: 'Com ' + e.convidados.join(', '), style: 'margin:6px 0 0' }));
+      var nota = String(e.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
+      if (nota) filhos.push(el('p', { text: nota.length > 600 ? nota.slice(0, 600) + '…' : nota, style: 'white-space:pre-line;margin:10px 0 0' }));
+      /* título "0123 - Fulano": acha cliente ou aluno pelo código; põe o sino (aviso no app) e o WhatsApp com o lembrete pronto (quem envia é ele) */
+      var mc = !e.diaTodo && e.fim > Date.now() && /^\s*(\d{3,6})(?!\d)/.exec(e.titulo || '');
+      if (mc) {
+        var cod = mc[1], semZ = cod.replace(/^0+/, ''), cods = [cod, semZ, semZ.padStart(4, '0')];
+        var achar = function (tabelaCod, campo, tabela, para) {
+          return P.client.from(tabelaCod).select(campo + ',codigo').in('codigo', cods).limit(1).then(function (rc) {
+            var lig = rc && rc.data && rc.data[0];
+            if (!lig) return null;
+            return P.client.from(tabela).select('id,nome,whatsapp').eq('id', lig[campo]).maybeSingle().then(function (rl) { return rl && rl.data ? { para: para, p: rl.data } : null; });
+          });
+        };
+        Promise.all([achar('cliente_codigos', 'cliente_id', 'clientes', 'cliente'), achar('aluno_codigos', 'aluno_id', 'alunos', 'aluno')]).then(function (r) {
+          var f = r[0] || r[1];
+          if (!f) return;
+          var primeiro = String(f.p.nome || '').trim().split(/\s+/)[0];
+          var dia = isoDia(e.ini), hora = hhmm(e.ini).replace(':00', 'h').replace(':', 'h');
+          var quandoTxt = dia === isoDia(Date.now()) ? 'hoje' : dia === isoDia(Date.now() + DIA) ? 'amanhã' : 'no dia ' + curto(dia);
+          var sino = el('button', { type: 'button', title: 'Avisar no aplicativo', 'aria-label': 'Avisar no aplicativo', style: 'background:transparent;border:0;border-radius:0;padding:0;line-height:0;cursor:pointer' });
+          sino.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--terracota)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>';
+          sino.addEventListener('click', function () {
+            sino.disabled = true;
+            P.avisos.manual(f.para, f.p.id, 'Oi, ' + primeiro + '! Passando para lembrar do seu ' + (f.para === 'aluno' ? 'encontro' : 'atendimento') + ' ' + quandoTxt + ', às ' + hora + '.').then(function (x) {
+              sino.disabled = false;
+              if (!x.ok) { alert((x.dados && x.dados.erro) || 'Não foi possível enviar agora.'); return; }
+              sino.innerHTML = '<span style="font-size:28px;line-height:36px;color:var(--terracota);font-weight:700">✓</span>';
+              sino.title = x.dados.enviados ? 'Aviso enviado' : 'Guardado na lista dele (avisos não ativados no celular)';
+            }, function () { sino.disabled = false; alert('Não foi possível enviar agora.'); });
+          });
+          linhaAcoes.insertBefore(sino, linhaAcoes.firstChild);
+          var dig = String(f.p.whatsapp || '').replace(/\D/g, '');
+          if (dig) {
+            if (dig.length === 10 || dig.length === 11) dig = '55' + dig;
+            var msg = 'Oi ' + primeiro + '. Tudo bem?\n\nPassando para lembrar da nossa consulta ' + quandoTxt + ', às ' + hora + '. Você consegue confirmar para mim?';
+            var zap = el('a', { class: 'icone-whats', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(msg), target: '_blank', rel: 'noopener', title: 'Lembrar pelo WhatsApp', 'aria-label': 'Lembrar pelo WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]);
+            linhaAcoes.insertBefore(zap, sino.nextSibling);
+          }
+        }).then(function () {}, function () {});
+      }
+      var linhaAcoes = el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes);
+      filhos.push(linhaAcoes);
+      destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
+    }
+    /* compromisso NOVO com "0123 - Fulano" no título: a pessoa (cliente ou aluno, achada pelo código) recebe o aviso da marcação; editar não avisa */
+    function avisarMarcacao(tituloEv, corpo) {
+      var mc = /^\s*(\d{3,6})(?!\d)/.exec(tituloEv || '');
+      if (!mc || !corpo.start || !corpo.start.dateTime) return;
+      var cod = mc[1], semZ = cod.replace(/^0+/, ''), cods = [cod, semZ, semZ.padStart(4, '0')], ini = Date.parse(corpo.start.dateTime);
+      var achar = function (tabelaCod, campo, tabela, para) {
+        return P.client.from(tabelaCod).select(campo + ',codigo').in('codigo', cods).limit(1).then(function (rc) {
+          var lig = rc && rc.data && rc.data[0];
+          if (!lig) return null;
+          return P.client.from(tabela).select('id,nome').eq('id', lig[campo]).maybeSingle().then(function (rl) { return rl && rl.data ? { para: para, p: rl.data } : null; });
+        });
+      };
+      Promise.all([achar('cliente_codigos', 'cliente_id', 'clientes', 'cliente'), achar('aluno_codigos', 'aluno_id', 'alunos', 'aluno')]).then(function (r) {
+        var f = r[0] || r[1];
+        if (!f) return;
+        var primeiro = String(f.p.nome || '').trim().split(/\s+/)[0], dia = isoDia(ini), hora = hhmm(ini).replace(':00', 'h').replace(':', 'h');
+        return P.avisos.manual(f.para, f.p.id, 'Oi, ' + primeiro + '! Marquei o seu ' + (f.para === 'aluno' ? 'encontro' : 'atendimento') + ' para o dia ' + curto(dia) + ', às ' + hora + '.');
+      }).then(function () {}, function () {});
+    }
+    function doDia(iso, evs) { var d0 = doIso(iso), d1 = d0 + DIA; return evs.filter(function (e) { return e.ini < d1 && e.fim > d0 && (e.diaTodo || e.fim > e.ini || e.ini >= d0); }); }
+    var linhaFina = '1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 35%,transparent)';
+    /* o ícone ocre do Meet (o mesmo da página do aluno), pequeno, na frente do título */
+    function marcaMeet(px) { return el('img', { src: 'img/rede-meet.svg', alt: 'Meet', width: String(px), height: String(px), style: 'vertical-align:middle;margin-right:3px' }); }
+    function bloco(texto, estilo) { var d = el('div', { text: texto }); d.style.cssText = estilo; return d; }
+
+    /* ---------- tela com as quatro visões ---------- */
+    /* título (altura do menu e do sino) + barra de visões presos no topo; sem sticky puro porque a posição depende de onde o menu está */
+    function prenderTitulo(corpo) {
+      var h1 = document.querySelector('h1.portal-titulo'), horas = corpo.querySelector('.cab-horas'), barra = corpo.querySelector('.barra-agenda'), folha = document.querySelector('.folha-pagina');
+      if (!h1 || !horas || !barra || !folha) return;
+      var miolo = document.createElement('i'), fundo = document.createElement('div'); fundo.className = 'fundo-presa'; fundo.appendChild(miolo); corpo.insertBefore(fundo, corpo.firstChild); /* dentro da mesma camada das peças presas, senão ficava por cima delas */
+      function medir() {
+        var t = document.querySelector('.sidemenu-toggle'), r = t ? t.getBoundingClientRect() : null, alt = h1.offsetHeight;
+        var topo = r && r.height ? Math.max(0, r.top + r.height / 2 - alt / 2) : 0, topoHoras = topo + alt, topoBarra = topoHoras + (horas.style.position === 'static' ? 0 : horas.offsetHeight);
+        h1.style.top = topo + 'px'; horas.style.top = topoHoras + 'px'; barra.style.top = topoBarra + 'px';
+        var presa = h1.getBoundingClientRect().top <= topo + 0.5, f = folha.getBoundingClientRect();
+        fundo.style.display = presa ? 'block' : 'none';
+        if (!presa) return;
+        fundo.style.left = f.left + 'px'; fundo.style.width = f.width + 'px'; fundo.style.height = (topoBarra + barra.offsetHeight) + 'px';
+        /* o papiro da folha de cima = o papiro da folha de baixo, no mesmo lugar da tela */
+        miolo.style.setProperty('--bw', folha.clientWidth + 'px'); miolo.style.setProperty('--bh', folha.clientHeight + 'px');
+        miolo.style.setProperty('--bx', (f.left + folha.clientLeft - f.left) + 'px'); miolo.style.setProperty('--by', (f.top + folha.clientTop) + 'px');
+      }
+      var espera = false;
+      function rolou() { if (espera) return; espera = true; requestAnimationFrame(function () { espera = false; medir(); }); }
+      if (window.__prenderFim) window.__prenderFim();
+      window.addEventListener('scroll', rolou, { passive: true }); window.addEventListener('resize', medir);
+      window.__prenderFim = function () { window.removeEventListener('scroll', rolou); window.removeEventListener('resize', medir); };
+      if (window.ResizeObserver) new ResizeObserver(medir).observe(horas);
+      medir(); setTimeout(medir, 600); setTimeout(medir, 2000); /* o menu entra depois da página */
+    }
+    function montar(corpo) {
+      var ent = P.estado.ler();
+      ancora = /^\d{4}-\d{2}-\d{2}$/.test(ent.d || '') ? ent.d : isoDia(Date.now());
+      visao = visaoDoEndereco(); /* abre onde ficou: horas, to do ou a última aba da agenda */
+      areaForm = el('div');
+      var vista = el('div'), titulo = el('h2', { style: 'margin:6px 0 4px;text-align:center;flex:1;min-width:0;font-size:12.5px;line-height:1.15' }), encaixe = el('div');
+      var novo = el('button', { type: 'button', title: 'Novo', 'aria-label': 'Novo', text: '+', style: 'flex:none;width:40px;height:40px;padding:0;background:transparent;border:0;border-radius:0;color:var(--terracota);font-size:34px;line-height:1;font-weight:700;cursor:pointer' });
+      novo.addEventListener('click', function () { if (visao === 'todo') { if (alternarFormTodo) alternarFormTodo(); return; } formulario(abrirFolha(), null, { dia: visao === 'dia' ? ancora : undefined }); });
+      var abas = el('div', { class: 'portal-abas', role: 'tablist', style: 'margin-top:0' }), botoes = {};
+      VISOES.forEach(function (v) {
+        var b = el('button', { type: 'button', class: 'portal-aba', text: v[1] });
+        b.addEventListener('click', function () { visao = v[0]; mudou(); window.scrollTo(0, 0); /* a aba nova abre no topo, não na altura da anterior */ });
+        botoes[v[0]] = b; abas.appendChild(b);
+      });
+      var passo = function (n) { if (visao === 'todo') return; ancora = visao === 'dia' || visao === 'horas' ? somaDias(ancora, n) : visao === 'semana' ? somaDias(ancora, 7 * n) : visao === 'lista' ? somaDias(ancora, 31 * n) : visao === 'mes' ? somaMeses(ancora, n) : somaMeses(ancora, 12 * n); mudou(); };
+      var estSeta = 'flex:none;background:transparent;border:0;border-radius:0;color:var(--azul-egipcio-escuro);font-size:30px;line-height:1;padding:0 6px;cursor:pointer;font-family:inherit';
+      var ant = el('button', { type: 'button', text: '‹', 'aria-label': 'Anterior', style: estSeta }), prox = el('button', { type: 'button', text: '›', 'aria-label': 'Próximo', style: estSeta });
+      /* a data em terracota fica entre ‹ e › na mesma linha; só no Dia (e nas Horas) tocar nela abre o calendário para buscar a data. O seletor do iPad dispara "mudou" com a data de HOJE assim que abre,
+         por isso o campo só guarda o valor, e só o botão Ir leva até lá (nada redesenha com o seletor aberto) */
+      var hoje = titulo;
+      var buscaData = function () {
+        var corpoF = abrirFolha();
+        var campo = el('input', { type: 'date', value: ancora, style: 'min-height:36px;min-width:160px;width:100%;box-sizing:border-box;margin:10px 0' });
+        var ir = el('button', { type: 'button', class: 'portal-btn', text: 'Ir' }), diaHoje = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Hoje' }), cancela = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+        var escolhida = ancora;
+        campo.addEventListener('change', function () { if (/^\d{4}-\d{2}-\d{2}$/.test(campo.value)) escolhida = campo.value; }); /* só guarda */
+        ir.addEventListener('click', function () { var d = /^\d{4}-\d{2}-\d{2}$/.test(campo.value) ? campo.value : escolhida; corpoF.textContent = ''; ancora = d; mudou(); window.scrollTo(0, 0); });
+        diaHoje.addEventListener('click', function () { corpoF.textContent = ''; ancora = isoDia(Date.now()); mudou(); window.scrollTo(0, 0); });
+        cancela.addEventListener('click', function () { corpoF.textContent = ''; });
+        corpoF.appendChild(el('h2', { text: 'Ir para o dia' })); corpoF.appendChild(campo);
+        corpoF.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:center' }, [ir, diaHoje, cancela]));
+      };
+      titulo.addEventListener('click', function () { if (visao === 'dia' || visao === 'horas') buscaData(); });
+      ant.addEventListener('click', function () { passo(-1); window.scrollTo(0, 0); }); prox.addEventListener('click', function () { passo(1); window.scrollTo(0, 0); });
+      var diasSemana = el('div', { style: 'display:none' });
+      var linhaTitulo = el('div', { style: 'display:flex;align-items:center;justify-content:center;gap:4px' }, [ant, titulo, prox]);
+      var blocoTitulo = el('div', {}, [linhaTitulo, diasSemana]);
+                        var controles = el('div', { style: 'display:flex;align-items:center;gap:4px;flex:none' }, [novo]); /* os botões moram na linha das abas, para o título ocupar a largura inteira (na semana, cada dia cai em cima da sua coluna) */
+      var cabH = cabecalhoHoras(); corpo.appendChild(cabH); corpo.appendChild(areaForm); corpo.appendChild(el('div', { class: 'barra-agenda' }, [el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('div', { style: 'flex:1;min-width:0' }, [P.comSetas(el('div', { class: 'portal-abas-rola' }, [abas])) /* cada aba com o tamanho do próprio nome; as outras ficam para o lado */]), controles]), blocoTitulo])); corpo.appendChild(vista); prenderTitulo(corpo);
+      /* o formulário "Onde encaixar uma tarefa" só entra depois que a grade aparece: antes, ele ficava sozinho na tela por um instante e parecia um compromisso aberto */
+      var encaixePronto = false;
+      function mostrarEncaixe() { /* o encaixe agora abre ao tocar numa hora da aba Horas */ }
+
+      var pedido = 0;
+      function mudou() {
+        VISOES.forEach(function (v) { botoes[v[0]].className = 'portal-aba' + (v[0] === visao ? ' ativa' : ''); botoes[v[0]].setAttribute('aria-selected', v[0] === visao ? 'true' : 'false'); });
+        P.estado.gravar({ v: visao, d: ancora });
+        guardarVisaoCal(visao);
+        var modo = modoDe(visao), h1x = document.querySelector('h1.portal-titulo');
+        document.body.classList.toggle('sem-trava', modo === 'todo' || modo === 'horas');
+        if (h1x) h1x.textContent = ROTULO[modo]; document.title = ROTULO[modo] + ' - Falando de Astrologia';
+        VISOES.forEach(function (v) { botoes[v[0]].style.display = CALV.indexOf(v[0]) >= 0 && modo === 'agenda' ? '' : 'none'; }); /* Horas e To do saíram desta barra: são abas da barra de cima */
+        novo.style.display = modo === 'horas' ? 'none' : ''; /* nas Horas só se encaixa: o + de compromisso normal é da Agenda */
+        cabH.grande = modo === 'horas'; cabH.style.position = cabH.grande ? 'static' : ''; if (cabH.pintar) cabH.pintar();
+        if (modo !== modoBarra) { modoBarra = modo; P.navAdmin(modo, nomeAdmin, sair); } /* a aba marcada na barra de cima acompanha */
+        titulo.textContent = ''; titulo.style.cursor = visao === 'dia' || visao === 'horas' ? 'pointer' : 'default'; diasSemana.textContent = '';
+        if (visao === 'semana') { /* na semana o título são os próprios dias (Dom 15, Seg 16...), não o período por extenso */
+          var ini0 = somaDias(ancora, -diaSem(ancora)), hojeIso = isoDia(Date.now());
+          titulo.textContent = tituloPeriodo(); diasSemana.style.cssText = 'display:grid;grid-template-columns:repeat(7, minmax(0, 1fr))';
+          for (var k = 0; k < 7; k++) (function (iso) {
+            var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:0;font-family:var(--fonte-mao);color:var(--terracota);text-align:center;line-height:1.1' });
+            b.appendChild(el('div', { class: 'rotulo-fixo', text: SEM_CURTO[diaSem(iso)], style: 'font-size:10px' }));
+            var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:15px;font-weight:700;display:inline-block;min-width:22px;line-height:22px' });
+            if (iso === hojeIso) n.style.cssText += ';border:2px solid var(--ocre);color:var(--terracota)';
+            b.appendChild(n);
+            b.addEventListener('click', function () { visao = 'dia'; ancora = iso; mudou(); });
+            diasSemana.appendChild(b);
+          })(somaDias(ini0, k));
+        } else { diasSemana.style.display = 'none'; titulo.textContent = visao === 'todo' ? '' : tituloPeriodo(); }
+        blocoTitulo.style.display = visao === 'todo' ? 'none' : ''; /* escondido de verdade (não só invisível): senão ele roubava a largura das abas no celular */
+        var rol = abas.parentNode, at = botoes[visao]; if (rol && at && (at.offsetLeft < rol.scrollLeft || at.offsetLeft + at.offsetWidth > rol.scrollLeft + rol.clientWidth)) rol.scrollLeft = Math.max(0, at.offsetLeft - (rol.clientWidth - at.offsetWidth) / 2); /* a aba aberta sempre aparece na barra */
+        if (visao === 'horas') { ++pedido; vista.textContent = ''; vistaHoras(vista); return; }
+        if (visao === 'todo') { var minha = ++pedido; mostrarEncaixe(); vistaTodo(vista, function () { return minha === pedido; }); return; }
+        var meu = ++pedido, iv = intervalo(), chave = visao + '|' + iv[0], cache = lerCache(), guardado = visao !== 'ano' && cache.ev && cache.ev[chave] ? cache.ev[chave].evs : null;
+        var desenha = function (evs0) {
+          var evs = evs0.concat(aniversariosEntre(iv[0], iv[1]), producaoEntre(iv[0], iv[1])); evs.falhas = evs0.falhas; var rolou = window.scrollY;
+          eventos = evs; vista.textContent = ''; mostrarEncaixe();
+          if (evs.falhas && evs.falhas.length) vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + evs.falhas.join(', ') + '. Tente de novo.' }));
+          if (visao === 'dia' || visao === 'semana') vistaGrade(vista, visao === 'dia' ? [ancora] : [0, 1, 2, 3, 4, 5, 6].map(function (k) { return somaDias(somaDias(ancora, -diaSem(ancora)), k); }), evs);
+          else if (visao === 'mes') vistaMes(vista, evs); else if (visao === 'lista') vistaLista(vista, evs); else vistaAno(vista, evs);
+          if (visao === 'lista') window.scrollTo(0, rolou);
+        };
+        if (guardado) desenha(guardado); else { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
+        eventosEntre(iv[0], iv[1]).then(function (evs) {
+          if (meu !== pedido) return;
+          if (visao !== 'ano') { var c2 = lerCache(); c2.ev = c2.ev || {}; c2.ev[chave] = { ts: Date.now(), evs: evs }; var ks = Object.keys(c2.ev).sort(function (p, q) { return c2.ev[q].ts - c2.ev[p].ts; }); ks.slice(8).forEach(function (k) { delete c2.ev[k]; }); gravarCache(c2); }
+          if (guardado && !(evs.falhas && evs.falhas.length) && JSON.stringify(guardado) === JSON.stringify(evs)) return; /* igual ao que já está na tela */
+          desenha(evs);
+        }, function (e) { if (meu === pedido) { mostrarEncaixe(); if (e.message === 'desconectado' || e.message === 'permissao') { mostraErroAbrir(vista, e); } else if (!guardado) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); } } });
+      }
+      atualizar = mudou;
+      window.fdaAgendaIr = function (modo) { visao = modo === 'agenda' ? ultimaVisaoCal() : modo; if (visao === 'dia') ancora = isoDia(Date.now()); mudou(); window.scrollTo(0, 0); };
+      window.addEventListener('hashchange', function () { var e = P.estado.ler(); if (e.v && e.v !== visao && ['horas', 'todo'].concat(CALV).indexOf(e.v) >= 0) { visao = e.v; mudou(); window.scrollTo(0, 0); } });
+      mudou();
+    }
+
+    /* coloca os compromissos lado a lado quando se sobrepõem */
+    function colunas(lista) {
+      var res = [], grupo = [], fimGrupo = 0;
+      function fechar() { var n = 0; grupo.forEach(function (g) { n = Math.max(n, g.col + 1); }); grupo.forEach(function (g) { g.cols = n; }); res = res.concat(grupo); grupo = []; fimGrupo = 0; }
+      lista.forEach(function (x) {
+        if (grupo.length && x.i >= fimGrupo) fechar();
+        var usados = {}; grupo.forEach(function (g) { if (g.f > x.i) usados[g.col] = 1; });
+        var c = 0; while (usados[c]) c++;
+        x.col = c; grupo.push(x); fimGrupo = Math.max(fimGrupo, x.f);
+      });
+      fechar(); return res;
+    }
+
+    /* ícone do planeta: a fonte AstroIcones do site (a mesma do blog e das atividades; Sol U+E000, Lua, Mercúrio, Vênus, Marte, Júpiter, Saturno em seguida) */
+    var ORDEM_ICONES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno'];
+    function iconePlaneta(nome, px, cor) {
+      return el('span', { text: String.fromCharCode(0xE000 + ORDEM_ICONES.indexOf(nome)), title: nome, 'aria-label': nome,
+        style: 'display:inline-block;font-family:AstroIcones,sans-serif!important;font-size:' + px + 'px;line-height:1;color:' + (cor || FdaTema.cor('azul-egipcio-claro')) + ';vertical-align:middle;flex:none' });
+    }
+    /* as horas planetárias de um dia civil, cortadas na meia-noite: cada uma vira uma linha da grade */
+    function segmentosDoDia(iso) {
+      var d0 = doIso(iso), d1 = d0 + DIA;
+      return HP.horasEntre(d0, d1, LAT, LON).map(function (h) { return { ini: Math.max(h.ini, d0), fim: Math.min(h.fim, d1), planeta: h.planeta, noite: h.noite }; }).filter(function (s) { return s.fim > s.ini; });
+    }
+    /* o planeta da hora em que um instante cai: ocre nas horas do dia, azul nas da noite (a lista do dia é guardada por lugar) */
+    var cacheHorasDia = {};
+    function horaDoInstante(ms) {
+      var iso = isoDia(ms) + '|' + LAT + '|' + LON, segs = cacheHorasDia[iso] || (cacheHorasDia[iso] = segmentosDoDia(isoDia(ms)));
+      for (var k = 0; k < segs.length; k++) if (ms >= segs[k].ini && ms < segs[k].fim) return segs[k];
+      return null;
+    }
+    function comPecaClara(ic, comFundo) { /* peça clarinha atrás, para ler em cima da cor de qualquer agenda */
+      return comFundo ? el('span', { style: 'display:inline-flex;flex:none;align-items:center;justify-content:center;background:var(--vazado,#F3E3B8);padding:1px 2px;line-height:1' }, [ic]) : ic;
+    }
+    function planetaDoInstante(ms, px, comFundo) {
+      var s = horaDoInstante(ms); if (!s) return null;
+      return comPecaClara(iconePlaneta(s.planeta, px, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')), comFundo);
+    }
+    var REGENTE_DO_DIA = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno']; /* domingo a sábado */
+    function planetaDoDia(ms, px, comFundo) { return comPecaClara(iconePlaneta(REGENTE_DO_DIA[diaSem(isoDia(ms))], px, FdaTema.cor('terracota')), comFundo); } /* o planeta do DIA é terracota */
+    /* evento com hora = planeta da hora em que começa; evento de dia todo = planeta do dia */
+    function planetaDoEvento(e, px, comFundo) { return e.diaTodo ? planetaDoDia(e.ini, px, comFundo) : planetaDoInstante(e.ini, px, comFundo); }
+    function yDe(segs, t, H) { /* onde, na coluna, fica um instante: dentro da linha da hora planetária em que ele cai */
+      for (var k = 0; k < segs.length; k++) if (t < segs[k].fim) return k * H + Math.max(0, (t - segs[k].ini)) / (segs[k].fim - segs[k].ini) * H;
+      return segs.length * H;
+    }
+
+    /* Dia e Semana: as linhas são as HORAS PLANETÁRIAS (não as horas do relógio); em cada linha o ícone do planeta e a hora em que ela começa */
+    function vistaGrade(vista, isos, evs) {
+      var unico = isos.length === 1, hoje = isoDia(Date.now()), H = unico ? 56 : 50;
+      var todos = isos.map(segmentosDoDia), linhasMax = Math.max.apply(null, todos.map(function (s) { return s.length; }));
+      var altura = linhasMax * H, modelo = (unico ? '78px ' : '') + 'repeat(' + isos.length + ', minmax(0, 1fr))';
+      var caixa = el('div');
+      var cab = el('div', { style: 'display:grid;grid-template-columns:' + modelo }); if (unico) cab.appendChild(el('div'));
+      isos.forEach(function (iso) {
+        var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:6px 0;font-family:var(--fonte-mao);color:var(--preto-tinta);text-align:center' });
+        b.appendChild(el('div', { class: 'rotulo-fixo', text: SEM_CURTO[diaSem(iso)], style: 'font-size:11px' }));
+        var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:16px;font-weight:700;display:inline-block;min-width:26px;line-height:26px' });
+        if (iso === hoje) n.style.cssText += ';border:2px solid var(--ocre);color:var(--terracota)';
+        b.appendChild(n);
+        if (!unico) b.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
+        cab.appendChild(b);
+      });
+      if (unico) caixa.appendChild(cab); /* na semana os dias ficam no título preso lá em cima */
+      if (evs.some(function (e) { return e.diaTodo; })) {
+        var linhaTodo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina }); if (unico) linhaTodo.appendChild(el('div'));
+        isos.forEach(function (iso) {
+          var c = el('div', { style: 'padding:2px;min-width:0' });
+          doDia(iso, evs).filter(function (e) { return e.diaTodo; }).forEach(function (e) {
+            var t = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.3;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';padding:1px 3px;margin-bottom:2px;overflow:hidden;cursor:pointer;color:' + textoSobre(preenche(e)) });
+            t.appendChild(el('span', { text: e.curto || e.titulo, style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' }));
+            var plD = planetaDoEvento(e, 10, true); if (plD) t.appendChild(plD);
+            t.addEventListener('click', function () { abrirEvento(e); }); c.appendChild(t);
+          });
+          linhaTodo.appendChild(c);
+        });
+        caixa.appendChild(linhaTodo);
+      }
+      var corpo = el('div', { style: 'display:grid;grid-template-columns:' + modelo + ';border-top:' + linhaFina });
+      if (unico) { /* a régua do lado: ícone do planeta e hora em que a hora planetária começa */
+        var gut = el('div', { style: 'position:relative;height:' + altura + 'px' });
+        todos[0].forEach(function (s, k) {
+          var l = el('div', { style: 'position:absolute;left:0;right:4px;top:' + (k * H) + 'px;height:' + H + 'px;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-end;gap:5px;border-top:' + linhaFina + ';font-size:11px;color:var(--preto-tinta)' });
+          l.appendChild(el('span', { text: hhmm(s.ini), style: 'opacity:.75' })); l.appendChild(iconePlaneta(s.planeta, 22, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')));
+          gut.appendChild(l);
+        });
+        corpo.appendChild(gut);
+      }
+      isos.forEach(function (iso, di) {
+        var d0 = doIso(iso), d1 = d0 + DIA, segs = todos[di];
+        var col = el('div', { style: 'position:relative;height:' + altura + 'px;border-left:' + linhaFina + ';cursor:pointer;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ' + (H - 1) + 'px,color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 30%,transparent) ' + (H - 1) + 'px,color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 30%,transparent) ' + H + 'px)' });
+        if (di === isos.length - 1) col.style.borderRight = linhaFina; /* a última coluna fecha a grade do lado direito */
+        if (!unico) segs.forEach(function (s, k) { /* na semana cada coluna tem o seu ícone e hora, no cantinho da linha */
+          var m = el('div', { style: 'position:absolute;left:2px;top:' + (k * H + 2) + 'px;display:flex;align-items:center;gap:2px;font-size:9px;color:var(--preto-tinta);opacity:.7;pointer-events:none' });
+          m.appendChild(iconePlaneta(s.planeta, 13, s.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))); m.appendChild(el('span', { text: hhmm(s.ini) }));
+          col.appendChild(m);
+        });
+        col.addEventListener('click', function (ev) {
+          var y = ev.clientY - col.getBoundingClientRect().top, k = Math.min(segs.length - 1, Math.max(0, Math.floor(y / H)));
+          if (!segs.length) return;
+          var t0 = segs[k].ini + (y / H - k) * (segs[k].fim - segs[k].ini); t0 = Math.floor(t0 / 300000) * 300000;
+          var t1 = Math.min(t0 + 3600000, d1 - 60000);
+          formulario(abrirFolha(), null, { dia: iso, ini: hhmm(t0), fim: hhmm(t1) });
+        });
+        var itens = doDia(iso, evs).filter(function (e) { return !e.diaTodo; }).map(function (e) { return { e: e, i: Math.max(e.ini, d0), f: Math.min(e.fim, d1) }; }).sort(function (p, q) { return p.i - q.i; });
+        colunas(itens).forEach(function (x) {
+          var top = yDe(segs, x.i, H), alt = Math.max(16, yDe(segs, x.f, H) - top - 1);
+          var b = el('div', { class: 'preench', style: 'position:absolute;box-sizing:border-box;overflow:hidden;border:1px solid var(--preto-tinta);background:' + preenche(x.e) + ';padding:1px 3px;font-size:' + (unico ? 13 : 10) + 'px;line-height:1.25;color:' + textoSobre(preenche(x.e)) + ';cursor:pointer;top:' + top + 'px;height:' + alt + 'px;left:' + (x.col / x.cols * 100) + '%;width:' + (100 / x.cols) + '%' });
+          var tt = el('div', { style: 'font-weight:700' }); if (x.e.meet) tt.appendChild(marcaMeet(unico ? 16 : 12)); tt.appendChild(document.createTextNode(x.e.titulo)); b.appendChild(tt);
+          var tam = unico ? Math.max(14, Math.min(34, alt - 8)) : 11, pl = planetaDoEvento(x.e, tam, true); /* no Dia o ícone acompanha a altura do evento (até 34px) */
+          if (pl && unico) { pl.style.position = 'absolute'; pl.style.right = '2px'; pl.style.top = '2px'; tt.style.paddingRight = (tam + 12) + 'px'; b.appendChild(pl); }
+          else if (pl) { /* Semana: como no Mês, o título numa linha e o planeta no fim dela */
+            var corpoT = tt.cloneNode(true); b.removeChild(tt);
+            tt = el('div', { style: 'display:flex;align-items:center;gap:2px;font-weight:700' });
+            var tx = el('span', { style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' }); while (corpoT.firstChild) tx.appendChild(corpoT.firstChild);
+            tt.appendChild(tx); tt.appendChild(pl); b.insertBefore(tt, b.firstChild);
+          }
+          if (alt >= 34) b.appendChild(el('div', { text: unico ? hhmm(x.e.ini) + ' às ' + hhmm(x.e.fim) : hhmm(x.e.ini), style: 'font-size:' + (unico ? 11 : 9) + 'px' }));
+          b.addEventListener('click', function (ev) { ev.stopPropagation(); abrirEvento(x.e); });
+          col.appendChild(b);
+        });
+        if (iso === hoje && segs.length) { var agora = yDe(segs, Date.now(), H); if (agora > 0 && agora < segs.length * H) col.appendChild(bloco('', 'position:absolute;left:0;right:0;top:' + agora + 'px;border-top:2px solid var(--terracota);pointer-events:none')); }
+        corpo.appendChild(col);
+      });
+      caixa.appendChild(corpo);
+      vista.appendChild(caixa);
+    }
+
+    /* Lista: todos os compromissos do período, um dia embaixo do outro (só os dias que têm compromisso) */
+    function vistaLista(vista, evs) {
+      var caixa = el('div'), primeiro = ancora, dias = 31;
+      for (var i = 0; i < dias; i++) {
+        var iso = somaDias(primeiro, i), doDiaL = doDia(iso, evs);
+        if (!doDiaL.length) continue;
+        var bloco1 = el('div', { style: 'margin:0 0 14px' }, [el('div', { text: rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);padding:6px 0;border-bottom:' + linhaFina })]);
+        doDiaL.sort(function (p, q) { return (p.diaTodo ? 0 : 1) - (q.diaTodo ? 0 : 1) || p.ini - q.ini; }).forEach(function (e) {
+          var linha = el('div', { class: 'preench lista-linha', style: 'display:flex;align-items:center;gap:10px;box-sizing:border-box;border:1px solid var(--preto-tinta);background:' + preenche(e) + ';color:' + textoSobre(preenche(e)) + ';padding:8px 10px;margin-top:6px;cursor:pointer' });
+          linha.appendChild(el('span', { class: 'lista-hora', text: e.diaTodo ? 'o dia todo' : hhmm(e.ini) + ' às ' + hhmm(e.fim), style: 'flex:none;min-width:92px;font-size:13px' }));
+          var nome = el('span', { class: 'proj-titulo', style: 'flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere' }); if (e.meet) nome.appendChild(marcaMeet(16)); nome.appendChild(document.createTextNode(e.curto ? e.titulo : e.titulo));
+          linha.appendChild(nome); var plL = planetaDoEvento(e, 28, true); if (plL) linha.appendChild(plL); /* no canto direito, do tamanho da linha, como no Dia */
+          var aberto = el('div', { class: 'barra-ocre' }); /* o cartão abre aqui embaixo, sem sair de onde você está */
+          linha.addEventListener('click', function () { if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, e); });
+          bloco1.appendChild(linha); bloco1.appendChild(aberto);
+        });
+        caixa.appendChild(bloco1);
+      }
+      vista.appendChild(caixa);
+    }
+
+    /* ---------- To Do: tudo que tem data, na ordem em que acontece ---------- */
+    var alternarFormTodo = null, TODO_DIAS_ATRAS = 14, TODO_DIAS_FRENTE = 60;
+    function valorSite(chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); }
+    /* a hora de Júpiter do dia isoD mais perto de alvoMin (minutos desde a meia-noite); manha = só as que começam antes do meio-dia, se houver */
+    function horaJupiter(iso, alvoMin, manha, escolha) {
+      /* a hora que ele escolheu na Produção (hora_jupiter) vale sempre: é o índice entre as horas de Júpiter do dia planetário, igual à Agenda */
+      if (escolha != null) {
+        var pa = iso.split('-'), hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === 'Júpiter'; });
+        if (hs.length) return hs[Math.min(escolha, hs.length - 1)].ini;
+      }
+      var js =segmentosDoDia(iso).filter(function (s) { return s.planeta === 'Júpiter'; }).map(function (s) { return { ini: s.ini, mi: (s.ini - doIso(iso)) / 60000 }; });
+      if (manha) { var m = js.filter(function (j) { return j.mi < 720; }); if (m.length) js = m; }
+      if (!js.length) return doIso(iso, p2(Math.floor(alvoMin / 60)) + ':' + p2(alvoMin % 60));
+      js.sort(function (a, b) { return Math.abs(a.mi - alvoMin) - Math.abs(b.mi - alvoMin); });
+      return js[0].ini;
+    }
+    /* as mesmas duas barras da Produção (etapas feitas em azul com o nome vazado + o tempo até a data); montadas na hora de desenhar, para o To do poder ser guardado pronto */
+    var ETV = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
+    var ETC = [['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
+    function barrasDe(item, etapas, criado, fim) {
+      if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
+      var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= new Date().toLocaleDateString('sv-SE')) : !!item[k]; };
+      var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid var(--azul-egipcio-claro);margin:8px 0 0;overflow-x:auto;overflow-y:hidden' }, etapas.map(function (e, i) {
+        return el('span', { text: e[1], class: feita(e[0]) ? 'preench' : '', style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:var(--vazado,#F3E3B8)' : 'color:var(--terracota)') });
+      }));
+      return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
+    }
+    function itensDaProducao() {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok,datas_etapas,hora_jupiter'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,hora_jupiter,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
+        var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
+        var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
+        videos.forEach(function (v) {
+          /* cada etapa pode ter a sua data; o vídeo aparece na data da PRIMEIRA etapa que ainda falta e tem data (roteiro, gravar, edições, SEO). Só depois de feita ela, vem a próxima */
+          if (!v.no_ar) {
+            var dtv = v.datas_etapas || {}, pend = [['roteiro_ok', 'fazer o roteiro', dtv.roteiro_ok], ['gravado', 'gravar', v.data_gravar], ['editado', 'edição grossa', dtv.editado], ['edicao_fina', 'edição fina', dtv.edicao_fina], ['seo_ok', 'fazer o SEO', dtv.seo_ok]]
+              .filter(function (e) { return !v[e[0]] && e[2]; })[0];
+            if (pend) { saida.push({ ord: v.numero || 0, quando: doIso(pend[2]), diaTodo: true, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: pend[1], subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, pend[2]] }); return; }
+          }
+          /* já no YouTube, mas ainda falta fazer os cortes e depois colocar no blog: fica na lista, sem data enquanto ele não puser a data limite */
+          if (v.no_ar && !(v.cortes_feitos && v.blog_ok)) {
+            var faltaCortes = !v.cortes_feitos, dl = (faltaCortes ? v.data_cortes : v.data_blog) || '';
+            saida.push({ ord: v.numero || 0, quando: dl ? doIso(dl) : Infinity, diaTodo: true, semData: !dl, titulo: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: faltaCortes ? 'fazer os cortes' : 'colocar no blog', subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, dl] });
+            return;
+          }
+          var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
+          var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título');
+          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · Júpiter', subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
+        });
+        cortes.forEach(function (c) {
+          var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
+          var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · Júpiter', subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data] });
+        });
+        return saida;
+      }, function () { return []; });
+    }
+    function itensDeProjetosEEstudos() {
+      return Promise.all([C.from('projetos').select('id,nome,data_fim').not('data_fim', 'is', null), C.from('projeto_passos').select('projeto_id,feito'), C.from('estudos').select('id,nome,data_fim,encerrado').not('data_fim', 'is', null)]).then(function (r) {
+        var passos = r[1].data || [], saida = [];
+        (r[0].data || []).forEach(function (p) {
+          var meus = passos.filter(function (x) { return x.projeto_id === p.id; }), feitos = meus.filter(function (x) { return x.feito; }).length;
+          if (meus.length && feitos === meus.length) return;
+          saida.push({ quando: doIso(p.data_fim), diaTodo: true, titulo: p.nome, sub: 'projeto · ' + feitos + '/' + meus.length + ' passos', url: 'admin-projetos.html', cor: FdaTema.cor('terracota') });
+        });
+        (r[2].data || []).forEach(function (e) {
+          if (e.encerrado) return;
+          saida.push({ quando: doIso(e.data_fim), diaTodo: true, titulo: e.nome, sub: 'estudo · data final', url: 'admin-estudos.html', cor: FdaTema.cor('terracota') });
+        });
+        return saida;
+      }, function () { return []; });
+    }
+    /* cada aula dos Estudos aparece no To do na data dela, até todas as questões estarem respondidas */
+    function itensDeAulasEstudo() {
+      var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega('estudos', 'id,nome,encerrado,data_fim,estudo_pai_id'), pega('estudo_aulas', 'id,estudo_id,data,materia,titulo'), pega('estudo_questoes', 'id,aula_id,tipo'), pega('estudo_respostas', 'questao_id,opcao,texto')]).then(function (r) {
+        var nomes = {}, resp = {}, falta = {}, saida = [];
+        /* estudo SEM data final (ou dentro de um grande sem data final) é "no meu tempo": as aulas dele não entram no To do */
+        var porId = {}; r[0].forEach(function (e) { porId[e.id] = e; });
+        var temPrazo = function (e) { var n = 0; while (e && n++ < 20) { if (e.data_fim) return true; e = porId[e.estudo_pai_id]; } return false; };
+        r[0].forEach(function (e) { if (!e.encerrado && temPrazo(e)) nomes[e.id] = e.nome; });
+        r[3].forEach(function (x) { resp[x.questao_id] = x; });
+        r[2].forEach(function (q) { var x = resp[q.id], feita = q.tipo === 'multipla' ? !!(x && x.opcao != null) : !!(x && x.texto); if (!feita) falta[q.aula_id] = true; });
+        r[1].forEach(function (a) {
+          if (!nomes[a.estudo_id] || !a.data || !falta[a.id]) return; /* só estudo aberto com prazo e aula com questão por responder */
+          saida.push({ quando: doIso(String(a.data).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: a.materia + ' · ' + nomes[a.estudo_id], subOcre: true, url: 'admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(a.estudo_id), cor: FdaTema.cor('azul-egipcio-escuro') });
+        });
+        return saida;
+      }, function () { return []; });
+    }
+    /* curso em construção: a primeira etapa de cada aula que ainda falta e tem data (gravar, editar...) e a apostila de cada módulo */
+    function itensDoCurso() {
+      var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega('cursos', 'id,titulo,construindo,etapas'), pega('curso_modulos', 'id,curso_id,ordem,titulo,apostila_ok,data_apostila'), pega('curso_aulas', 'id,modulo_id,ordem,titulo,gravacao,edicao_grossa,edicao_fina,capa,video_codigo,datas_etapas,tipo')]).then(function (r) {
+        var NOMES = { gravacao: 'gravar', edicao_grossa: 'edição grossa', edicao_fina: 'edição fina', capa: 'fazer a capa', upload: 'colocar o vídeo' }, ORDEM = ['gravacao', 'edicao_grossa', 'edicao_fina', 'capa', 'upload'], saida = [];
+        var cursos = {}; r[0].forEach(function (c) { if (c.construindo !== false) cursos[c.id] = c; });
+        var mods = {}; r[1].forEach(function (m) { if (cursos[m.curso_id]) mods[m.id] = m; });
+        r[1].forEach(function (m) {
+          if (!mods[m.id] || m.apostila_ok || !m.data_apostila) return;
+          saida.push({ quando: doIso(String(m.data_apostila).slice(0, 10)), diaTodo: true, titulo: 'Apostila: ' + (m.ordem === 0 ? '' : 'módulo ' + m.ordem + ' · ') + m.titulo, sub: cursos[m.curso_id].titulo, subOcre: true, url: 'admin-curso.html#modulo=' + encodeURIComponent(m.id), cor: FdaTema.cor('azul-egipcio-escuro') });
+        });
+        r[2].forEach(function (a) {
+          var m = mods[a.modulo_id]; if (!m || a.tipo === 'ao_vivo') return;
+          var ativas = Array.isArray(cursos[m.curso_id].etapas) && cursos[m.curso_id].etapas.length ? cursos[m.curso_id].etapas : ORDEM, dt = a.datas_etapas || {};
+          var pend = ORDEM.filter(function (k) { return ativas.indexOf(k) >= 0 && !(k === 'upload' ? a.video_codigo : a[k]); })[0];
+          if (!pend || !dt[pend]) return;
+          saida.push({ quando: doIso(String(dt[pend]).slice(0, 10)), diaTodo: true, titulo: a.titulo, sub: NOMES[pend] + ' · ' + cursos[m.curso_id].titulo, subOcre: true, url: 'admin-curso.html#aula=' + encodeURIComponent(a.id), cor: FdaTema.cor('azul-egipcio-escuro') });
+        });
+        return saida;
+      }, function () { return []; });
+    }
+    /* o que a tarefa pode ligar: série, vídeo, corte, projeto ou estudo (tocar na tarefa abre lá) */
+    function opcoesDeLigacao() {
+      var pega = function (t, c) { return C.from(t).select(c).then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega('prod_series', 'id,nome'), pega('prod_videos', 'id,serie_id,numero,titulo'), pega('prod_cortes', 'id,video_id,ordem,titulo'), pega('projetos', 'id,nome'), pega('estudos', 'id,nome,encerrado'), pega('alunos', 'id,nome'), pega('clientes', 'id,nome'), pega('aluno_codigos', 'aluno_id,codigo'), pega('cliente_codigos', 'cliente_id,codigo')]).then(function (r) {
+        var o = [], base = function (v) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos'); };
+        var add = function (rotulo, url) { o.push({ valor: rotulo, rotulo: rotulo, busca: rotulo.toLowerCase(), url: url }); };
+        r[0].forEach(function (x) { add('Série: ' + x.nome, 'admin-producao.html#aba=series&serie=' + encodeURIComponent(x.id)); });
+        r[1].forEach(function (v) { add('Vídeo ' + (v.numero ? v.numero + ', ' : '') + (v.titulo || 'sem título'), base(v) + '&video=' + encodeURIComponent(v.id)); });
+        r[2].forEach(function (c) { var v = r[1].filter(function (x) { return x.id === c.video_id; })[0]; if (v) add((c.titulo || 'Corte ' + c.ordem) + ' · vídeo ' + (v.numero ? v.numero + ', ' : '') + (v.titulo || ''), base(v) + '&video=' + encodeURIComponent(v.id) + '&vt=cortes'); });
+        r[3].forEach(function (x) { add('Projeto: ' + x.nome, 'admin-projetos.html'); });
+        r[4].filter(function (x) { return !x.encerrado; }).forEach(function (x) { add('Estudo: ' + x.nome, 'admin-estudos.html'); });
+        var codDe = function (lista, col, id) { var c = lista.filter(function (x) { return x[col] === id; })[0]; return c && c.codigo ? c.codigo + ' · ' : ''; }; /* dá para achar pelo código: 0157 */
+        r[5].forEach(function (a) {
+          var u = 'admin-alunos.html#aluno=' + encodeURIComponent(a.id) + '&aba=', n = codDe(r[7], 'aluno_id', a.id) + a.nome;
+          add('Aluno: ' + n, u + 'acompanhamento'); add('Trilha do aluno ' + n, u + 'acompanhamento'); add('Atividade do aluno ' + n, u + 'atividades'); add('Material do aluno ' + n, u + 'materiais'); add('Gravação do aluno ' + n, u + 'gravacoes');
+        });
+        r[6].forEach(function (c) {
+          var u = 'admin-clientes.html#cliente=' + encodeURIComponent(c.id) + '&aba=servicos', n = codDe(r[8], 'cliente_id', c.id) + c.nome;
+          add('Cliente: ' + n, u); add('Gravação do cliente ' + n, u); add('Material complementar do cliente ' + n, u); add('Atendimento do cliente ' + n, u);
+        });
+        return o;
+      });
+    }
+    /* passos de projetos e de trilhas de alunos que têm data e ainda não foram feitos */
+    function itensDePassos() {
+      var pega = function (q) { return q.then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; }); };
+      return Promise.all([
+        pega(C.from('projeto_passos').select('id,titulo,data,feito,projeto_id').not('data', 'is', null).eq('feito', false)), pega(C.from('projetos').select('id,nome')),
+        pega(C.from('aluno_trilha_passos').select('titulo,data,feito,trilha_id,tipo,item_id,atividade_id,lido_em,link').or('data.not.is.null,atividade_id.not.is.null').eq('feito', false)),
+        pega(C.from('aluno_trilhas').select('id,nome,aluno_id')), pega(C.from('alunos').select('id,nome')), pega(C.from('aluno_codigos').select('aluno_id,codigo')),
+        C.from('atividades').select('id,corrigida_em,enviada_em,antiga,somente_leitura,rascunho').then(function (r) { return r.error ? C.from('atividades').select('id,corrigida_em,enviada_em,antiga').then(function (r2) { return r2.error ? [] : (r2.data || []); }) : (r.data || []); }, function () { return []; })
+      ]).then(function (r) {
+        var saida = [], porId = function (l, id) { return l.filter(function (x) { return x.id === id; })[0]; };
+        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id); saida.push({ passoId: x.id, quando: doIso(x.data), diaTodo: true, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: FdaTema.cor('terracota') }); });
+        r[2].forEach(function (x) {
+          /* a parte DELE acabou quando o item foi ligado (material, gravação ou atividade disponível para o aluno) */
+          if ((x.tipo === 'material' || x.tipo === 'gravacao') && (x.item_id || x.lido_em)) return;
+          if (x.link && (!x.tipo || x.tipo === 'comum')) return; /* já passei o link (ex.: dos fatos da vida): agora é com o aluno */
+          var quandoPasso = x.data, tituloPasso = x.titulo;
+          if (x.tipo === 'atividade' && x.atividade_id) { /* atividade ligada: só volta ao To do para CORRIGIR, no dia em que o aluno enviou (atrasa se não corrigir) */
+            var at = porId(r[6], x.atividade_id); if (!at || !at.enviada_em || at.corrigida_em || at.antiga || at.somente_leitura || at.rascunho) return; /* antiga/já feita/rascunho nunca entram para corrigir */
+            quandoPasso = new Date(at.enviada_em).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); tituloPasso = 'Corrigir: ' + x.titulo;
+          }
+          if (!quandoPasso) return;
+          var t = porId(r[3], x.trilha_id); if (!t) return; var al = porId(r[4], t.aluno_id), c = r[5].filter(function (y) { return y.aluno_id === t.aluno_id; })[0];
+          saida.push({ quando: doIso(quandoPasso), diaTodo: true, titulo: tituloPasso, sub: 'trilha ' + t.nome + ' · ' + (c && c.codigo ? c.codigo + ' · ' : '') + (al ? al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(t.aluno_id) + '&aba=trilha', cor: FdaTema.cor('terracota') });
+        });
+        return saida;
+      });
+    }
+    /* código (sem zeros à esquerda) -> cliente ou aluno dono dele (com o endereço da ficha), mais as gravações já disponibilizadas a cada um */
+    function codigosDosAtendimentos() {
+      var pega = function (q) { return q.then(function (r) { return r.data || []; }, function () { return []; }); };
+      return Promise.all([pega(C.from('cliente_codigos').select('cliente_id,codigo')), pega(C.from('aluno_codigos').select('aluno_id,codigo')),
+        pega(C.from('entregas').select('cliente_id,data,criado_em').not('gravacao_link', 'is', null).order('criado_em', { ascending: false }).limit(1000)),
+        pega(C.from('itens').select('aluno_id,data,criado_em').eq('bloco', 'gravacoes').order('criado_em', { ascending: false }).limit(1000))]).then(function (r) {
+        var mapa = {}, gravs = {};
+        r[0].forEach(function (c) { if (c.codigo) mapa[String(parseInt(c.codigo, 10))] = { chave: 'c|' + c.cliente_id, url: 'admin-clientes.html#cliente=' + encodeURIComponent(c.cliente_id) + '&aba=servicos' }; });
+        r[1].forEach(function (c) { if (c.codigo) mapa[String(parseInt(c.codigo, 10))] = { chave: 'a|' + c.aluno_id, url: 'admin-alunos.html#aluno=' + encodeURIComponent(c.aluno_id) + '&aba=gravacoes' }; });
+        r[2].forEach(function (g) { (gravs['c|' + g.cliente_id] = gravs['c|' + g.cliente_id] || []).push({ t: Date.parse(g.criado_em), dia: g.data ? String(g.data).slice(0, 10) : '' }); });
+        r[3].forEach(function (g) { (gravs['a|' + g.aluno_id] = gravs['a|' + g.aluno_id] || []).push({ t: Date.parse(g.criado_em), dia: g.data ? String(g.data).slice(0, 10) : '' }); });
+        return { mapa: mapa, gravs: gravs };
+      });
+    }
+    function vistaTodo(vista, vivo) {
+      vista.textContent = '';
+      var agora = Date.now(), de = meiaNoiteDe(agora) - TODO_DIAS_ATRAS * DIA, ate = meiaNoiteDe(agora) + (TODO_DIAS_FRENTE + 1) * DIA;
+      var dados = { fora: [], tarefas: [], feitos: {}, falhas: [] };
+      /* tarefas dele: escreve, põe dia e hora se quiser, e marca quando concluir */
+      var nova = el('input', { type: 'text', placeholder: 'O que fazer', 'aria-label': 'O que fazer', style: 'width:100%;box-sizing:border-box' });
+      var dia = el('input', { type: 'date', style: 'height:44px;box-sizing:border-box;min-width:150px' }), hora = el('input', { type: 'time', style: 'height:44px;box-sizing:border-box;min-width:110px' });
+      var botaoAdd = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), msg = el('p', { class: 'portal-msg' });
+      var opcoes = [], ligacao = null, ligar = el('input', { type: 'text', placeholder: 'Ligar a (opcional)', 'aria-label': 'Ligar a', style: 'width:100%;box-sizing:border-box;margin-top:8px' });
+      var escolhido = el('div', { style: 'display:none;margin:6px 0;font-size:14px' }), tirarLig = P.botaoApagar('Tirar a ligação');
+      var caixaLigar = P.combo(ligar, function () { return opcoes; }, function (i) { ligacao = i; ligar.value = ''; escolhido.textContent = ''; escolhido.appendChild(document.createTextNode('Ligada a: ' + i.rotulo + ' ')); escolhido.appendChild(tirarLig); escolhido.style.display = ''; }, false);
+      tirarLig.addEventListener('click', function () { ligacao = null; escolhido.style.display = 'none'; });
+      opcoesDeLigacao().then(function (o) { opcoes = o; });
+      /* pela hora planetária: escolhe o planeta e quantos dias à frente; mostra a primeira hora livre daquele planeta em cada dia e coloca todas as marcadas como tarefas */
+      var planetaSel = el('select', { 'aria-label': 'Hora do planeta' }); planetaSel.appendChild(el('option', { value: '', text: 'Nenhum' })); HP.CALDEIA.forEach(function (n) { planetaSel.appendChild(el('option', { value: n, text: n })); });
+      var diasN = el('input', { type: 'number', min: '1', max: '60', value: '7', style: 'width:90px' }), verHoras = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ver horários' }), resPlan = el('div');
+      var deT = el('input', { type: 'time', value: '06:00', style: 'min-height:36px;min-width:110px' }), ateT = el('input', { type: 'time', value: '22:00', style: 'min-height:36px;min-width:110px' });
+      verHoras.addEventListener('click', function () {
+        resPlan.textContent = '';
+        var t = nova.value.trim(); if (!t) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Escreva primeiro o que fazer (o campo de cima).' })); nova.focus(); return; }
+        if (!planetaSel.value) { resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Escolha o planeta.' })); return; }
+        var n = Math.max(1, Math.min(60, +diasN.value || 7)), hoje0 = isoDia(Date.now()), hojeI = /^\d{4}-\d{2}-\d{2}$/.test(dia.value) && dia.value > hoje0 ? dia.value : hoje0; /* começa no dia que você pôs em "Dia" (nunca antes de hoje) */
+        resPlan.appendChild(el('p', { class: 'portal-vazio', text: 'Procurando...' }));
+        var mostrarErro = function (e) { resPlan.textContent = ''; resPlan.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui montar os horários: ' + ((e && e.message) || e || 'erro') })); }; /* o erro de verdade aparece aqui, logo embaixo do botão */
+        /* uma hora livre do planeta por dia (considerando os compromissos, quando a agenda pôde ser lida) e a lista de caixinhas */
+        function montar(evs, aviso) {
+          resPlan.textContent = '';
+          if (aviso) resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:var(--terracota)', text: aviso }));
+          var itens = [], colocar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:12px' });
+          var atualiza = function () { var q = itens.filter(function (x) { return x.marcado; }).length; colocar.textContent = 'Adicionar (' + q + ')'; colocar.disabled = !q; };
+          for (var i = 0; i < n; i++) {
+            var iso = somaDias(hojeI, i), agoraI = iso === hoje0 ? Math.ceil(Date.now() / 300000) * 300000 : 0;
+            /* TODAS as horas livres do planeta no dia (uma por hora do planeta, a primeira parte livre dela), dentro de "A partir de" e "Até", com 15 min de folga dos compromissos */
+            var vistas = {}, sls = slotsDoDia(iso, evs, planetaSel.value, 30, deT.value || '06:00', ateT.value || '22:00', 15 * 60000, agoraI).sort(function (p, q) { return p.ini - q.ini; }).filter(function (x) { if (vistas[x.hora.ini]) return false; vistas[x.hora.ini] = 1; return true; });
+            if (!sls.length) { resPlan.appendChild(el('p', { class: 'portal-item-data', style: 'color:var(--preto-tinta);opacity:.6;margin:8px 0 0', text: rotuloDia(iso) + ' · sem horário livre' })); continue; }
+            resPlan.appendChild(el('div', { text: rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);margin:14px 0 0' }));
+            sls.forEach(function (sl) {
+              var it = { iso: iso, hora: hhmm(sl.ini), marcado: false }; itens.push(it);
+              resPlan.appendChild(caixinha(hhmm(sl.ini) + ' às ' + hhmm(sl.hora.fim), false, function (m) { it.marcado = m; atualiza(); }).el);
+            });
+          }
+          if (!itens.length) return;
+          atualiza(); resPlan.appendChild(colocar);
+          colocar.addEventListener('click', function () {
+            colocar.disabled = true;
+            var linhas = itens.filter(function (x) { return x.marcado; }).map(function (x) { return { titulo: t, data: x.iso, hora: x.hora, url: ligacao ? ligacao.url : null, url_rotulo: ligacao ? ligacao.rotulo : null }; });
+            C.from('todo_tarefas').insert(linhas).select('*').then(function (r) {
+              if (r.error) { colocar.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); return; }
+              (r.data || []).forEach(function (x) { dados.tarefas.push(x); }); nova.value = ''; ligacao = null; escolhido.style.display = 'none'; resPlan.textContent = ''; form.style.display = 'none'; desenhar();
+            }, function () { colocar.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); });
+          });
+        }
+        /* se a agenda não puder ser lida (ou algo falhar com os compromissos), mostra mesmo assim as horas do planeta, avisando que não conferiu a agenda */
+        var semAgenda = 'Não consegui conferir a sua agenda agora: estes são só os horários do planeta, sem checar compromissos.';
+        preparar().then(function () { return eventosEntre(doIso(hojeI), doIso(somaDias(hojeI, n))); }).then(function (evs) {
+          try { montar(evs, evs.falhas && evs.falhas.length ? 'Não consegui ler: ' + evs.falhas.join(', ') + '. Confira esses horários na agenda.' : ''); }
+          catch (e) { try { montar([], semAgenda); } catch (e2) { mostrarErro(e2); } }
+        }, function () { try { montar([], semAgenda); } catch (e) { mostrarErro(e); } });
+      });
+      var blocoPlaneta = el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Na hora de (opcional)' }), planetaSel, el('label', { text: 'Quantos dias à frente' }), diasN, P.linhaDatas([el('div', {}, [el('label', { text: 'A partir de' }), deT]), el('div', {}, [el('label', { text: 'Até' }), ateT])]), el('div', { style: 'margin-top:8px' }, [verHoras]), resPlan]);
+      var form = el('div', { style: 'display:none;margin:0 0 16px' }, [nova, caixaLigar[0], caixaLigar[1], escolhido, P.linhaDatas([P.colunaData(dia, 'Dia (opcional)'), P.colunaData(hora, 'Hora (opcional)')]), blocoPlaneta, el('div', { style: 'margin-top:8px' }, [botaoAdd]), msg]);
+      var lista = el('div'); vista.appendChild(form); vista.appendChild(lista);
+      formTodoEl = form;
+      alternarFormTodo = function () { var abre = form.style.display === 'none'; form.style.display = abre ? '' : 'none'; if (abre) nova.focus(); };
+      lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
+      function adicionar() {
+        var t = nova.value.trim(); if (!t) { nova.focus(); return; }
+        botaoAdd.disabled = true;
+        C.from('todo_tarefas').insert({ titulo: t, data: dia.value || null, hora: dia.value && hora.value ? hora.value : null, url: ligacao ? ligacao.url : null, url_rotulo: ligacao ? ligacao.rotulo : null }).select('*').single().then(function (r) {
+          botaoAdd.disabled = false;
+          if (r.error) { P.mensagem(msg, 'Não foi possível salvar.', 'erro'); return; }
+          dados.tarefas.push(r.data); nova.value = ''; dia.value = ''; hora.value = ''; ligacao = null; escolhido.style.display = 'none'; P.mensagem(msg, '', 'ok'); form.style.display = 'none'; desenhar();
+        }, function () { botaoAdd.disabled = false; P.mensagem(msg, 'Não foi possível salvar.', 'erro'); });
+      }
+      botaoAdd.addEventListener('click', adicionar);
+      nova.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); adicionar(); } });
+      function caixinhaFeito(x, linha, aberto) {
+        var cx = el('button', { type: 'button', role: 'checkbox', 'aria-checked': 'false', 'aria-label': 'Marcar como feito', style: 'flex:none;width:26px;height:26px;padding:0;margin:0;background:transparent;border:2px solid var(--azul-egipcio-claro);border-radius:0;color:var(--terracota);font-size:18px;line-height:20px;font-weight:700;cursor:pointer;text-align:center' });
+        cx.addEventListener('click', function () {
+          cx.textContent = '✓'; cx.disabled = true;
+          var falhou = function () { cx.textContent = ''; cx.disabled = false; alert('Não foi possível salvar.'); };
+          if (x.passoId) { /* passo de projeto: marcado como feito na tabela dos projetos (continua igual lá) */
+            C.from('projeto_passos').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.passoId).then(function (g) {
+              if (g.error) return falhou(); dados.fora = dados.fora.filter(function (i) { return i !== x; }); desenhar();
+            }, falhou);
+            return;
+          }
+          if (x.tarefa) { /* tarefa dele: concluída na própria tabela */
+            C.from('todo_tarefas').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.tarefa.id).then(function (g) {
+              if (g.error) return falhou(); dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenhar();
+            }, falhou);
+            return;
+          }
+          valorSite('todo_feitos').then(function (atual) {
+            atual = atual || {}; atual[x.chave] = Date.now();
+            Object.keys(atual).forEach(function (k) { if (Date.now() - atual[k] > 90 * DIA) delete atual[k]; });
+            return C.from('site_config').upsert({ chave: 'todo_feitos', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' });
+          }).then(function (g) { if (g.error) throw g.error; dados.feitos[x.chave] = 1; desenhar(); }, falhou);
+        });
+        return cx;
+      }
+      function desenhar() {
+        lista.textContent = '';
+        try { var cs = lerCache(); cs.todo = { fora: dados.fora, tarefas: dados.tarefas, feitos: dados.feitos }; gravarCache(cs); } catch (e) { /* só fica sem o guardado */ } /* a cada desenho o guardado acompanha (marcou como feito = não volta ao reabrir) */
+        var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
+        dados.tarefas.forEach(function (t) {
+          itens.push({ tarefa: t, quando: t.data ? doIso(t.data, t.hora || '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: FdaTema.cor('ocre'), semData: !t.data });
+        });
+        itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; }); /* no mesmo dia/horário, vídeos em ordem crescente de número */
+        if (dados.falhas.length) lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não consegui ler: ' + dados.falhas.join(', ') + '.' }));
+        if (!itens.length) { lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nada para fazer.' })); return; }
+        var hoje = isoDia(Date.now()), grupoAtual = '', bloco1 = null;
+        itens.forEach(function (x) {
+          var iso = x.semData ? '' : isoDia(x.quando), grupo = x.semData ? 'Sem data' : iso < hoje ? 'Atrasados' : iso;
+          if (grupo !== grupoAtual) {
+            grupoAtual = grupo; bloco1 = el('div', { style: 'margin:0 0 14px' });
+            bloco1.appendChild(el('div', { text: grupo === 'Atrasados' || grupo === 'Sem data' ? grupo : rotuloDia(iso), class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota);padding:6px 0;border-bottom:' + linhaFina }));
+            lista.appendChild(bloco1);
+          }
+          var linha = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:' + linhaFina });
+          var barra = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
+          var plT = !x.semData && isFinite(x.quando) ? (x.diaTodo ? planetaDoDia(x.quando, 28, false) : planetaDoInstante(x.quando, 28, false)) : null;
+          var quando = x.semData ? null : el('div', { style: 'display:flex;align-items:center;gap:6px;margin-bottom:2px' }, [el('span', { text: (grupo === 'Atrasados' ? curto(iso) + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando)), style: 'font-size:13px;color:var(--azul-egipcio-escuro)' })]);
+          var texto = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando, el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-weight:700' }), x.sub ? el('span', { text: x.sub, style: x.subOcre ? 'display:block;font-size:13px;color:var(--ocre);font-weight:700' : 'display:block;font-size:12px;opacity:.7' }) : null].concat(x.bsp ? barrasDe(x.bsp[1], x.bsp[0] === 'v' ? ETV : ETC, x.bsp[2], x.bsp[3]) : []));
+          var aberto = el('div', { class: 'barra-ocre' });
+          texto.addEventListener('click', function () { if (x.url) { try { sessionStorage.setItem('fda_voltar_origem', JSON.stringify({ url: x.url, volta: 'admin-agenda.html' + location.hash })); } catch (e) { /* sem armazenamento */ } location.href = x.url; return; } if (!x.evento) return; if (aberto.firstChild) aberto.textContent = ''; else detalhe(aberto, x.evento); });
+          linha.appendChild(barra);
+          if (x.capa) { /* a capinha do vídeo fica EM CIMA, do tamanho da coluna, e o texto escreve embaixo dela (no celular não espreme o texto) */
+            texto.style.flex = 'none'; texto.style.width = '100%';
+            linha.appendChild(el('div', { style: 'flex:1;min-width:0' }, [el('img', { src: x.capa, alt: '', style: 'display:block;width:100%;max-width:300px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:0 0 8px' }), texto]));
+          } else linha.appendChild(texto);
+          if (x.tarefa) {
+            var ap = P.botaoApagar('Apagar');
+            ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (g) { if (g.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenhar(); }); });
+            linha.appendChild(ap);
+          }
+          /* dois lugares FIXOS, sempre os mesmos: a caixa de marcar (mais para dentro) e o planeta no canto direito, com ou sem o outro */
+          var lugarCaixa = el('span', { style: 'flex:none;width:26px;display:flex;align-items:center;justify-content:center' });
+          if (x.chave || x.tarefa || x.passoId) lugarCaixa.appendChild(caixinhaFeito(x, linha, aberto)); /* compromisso e aniversário saem da lista quando ele marca; o resto sai sozinho quando é resolvido na própria tela */
+          var lugarPlaneta = el('span', { style: 'flex:none;width:30px;display:flex;align-items:center;justify-content:center' });
+          if (plT) lugarPlaneta.appendChild(plT);
+          linha.appendChild(lugarCaixa); linha.appendChild(lugarPlaneta);
+          bloco1.appendChild(linha); bloco1.appendChild(aberto);
+        });
+      }
+      /* To do guardado pronto: abre na hora com o que viu da última vez e atualiza por trás (só redesenha se mudou) */
+      var guardado = lerCache().todo, mostrouGuardado = false;
+      if (guardado && guardado.fora) {
+        try {
+          dados.fora = guardado.fora.map(function (x) { if (x.quando === null) x.quando = Infinity; return x; }); dados.tarefas = guardado.tarefas || []; dados.feitos = guardado.feitos || {}; dados.falhas = [];
+          desenhar(); mostrouGuardado = true;
+        } catch (e) { dados.fora = []; dados.tarefas = []; dados.feitos = {}; dados.falhas = []; lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
+      }
+      Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), itensDaProducao(), Promise.all([itensDeProjetosEEstudos(), itensDeAulasEstudo(), itensDoCurso()]).then(function (x) { return x[0].concat(x[1], x[2]); }), itensDePassos(), C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), codigosDosAtendimentos()]).then(function (r) {
+        if (!vivo()) return;
+        dados.fora = []; dados.feitos = r[1] || {}; dados.falhas = r[0].falhas || []; dados.tarefas = r[5];
+        var atendidos = [];
+        r[0].concat(aniversariosEntre(de, ate)).forEach(function (e) {
+          if (/holiday|addressbook#contacts/.test(e.calId || '')) return; /* feriados não entram; aniversários vêm da lista de clientes e alunos */
+          var mg = !e.aniversario && !e.diaTodo && e.fim <= agora && /^\s*(\d{3,6})(?!\d)/.exec(e.titulo || ''), dono = mg && r[6].mapa[String(parseInt(mg[1], 10))];
+          if (dono) { atendidos.push({ e: e, dono: dono }); return; } /* atendimento de cliente ou encontro de aluno que já terminou (vale também se está como "livre"): ver abaixo se a gravação já foi disponibilizada */
+          if (e.livre && !e.aniversario) return; /* compromisso que deixa a agenda livre não entra no To do: só os que deixam ocupada */
+          if (!e.aniversario && e.fim <= agora) return; /* compromisso que já terminou sai sozinho; só o que ele precisa resolver fica atrasado */
+          dados.fora.push({ quando: e.ini, diaTodo: e.diaTodo, titulo: e.titulo, sub: e.aniversario ? 'aniversário · mandar a mensagem' : e.calNome, chave: e.aniversario ? 'a|' + e.id + '|' + e.ini : '', /* só aniversário tem caixinha; compromisso sai sozinho quando o horário acaba */ evento: e, cor: e.aniversario ? 'var(--terracota)' : preenche(e) });
+        });
+        /* cada gravação disponibilizada (depois do começo do encontro, ou com a data dele em diante) dá o encontro como feito, um encontro por gravação, do mais antigo para o mais novo */
+        var usadas = {};
+        atendidos.sort(function (p, q) { return p.e.ini - q.e.ini; }).forEach(function (a) {
+          var lista = (r[6].gravs[a.dono.chave] || []).slice().sort(function (p, q) { return p.t - q.t; }), dia0 = isoDia(a.e.ini), achou = -1;
+          for (var k = 0; k < lista.length; k++) { if (!usadas[a.dono.chave + k] && (lista[k].t >= a.e.ini || (lista[k].dia && lista[k].dia >= dia0))) { achou = k; break; } }
+          if (achou >= 0) { usadas[a.dono.chave + achou] = 1; return; }
+          var diaSeguinte = meiaNoiteDe(a.e.fim - 1) + DIA; /* o Google demora horas para entregar a gravação (e ele promete em até 3 dias): só aparece a partir do dia seguinte ao encontro, e nesse dia ainda não é atraso */
+          if (agora < diaSeguinte) return;
+          dados.fora.push({ quando: diaSeguinte, diaTodo: true, titulo: 'Disponibilizar a gravação', sub: String(a.e.titulo).replace(/^\s*\d{3,6}\s*[-–:·]?\s*/, ''), chave: 'g|' + a.e.id + '|' + a.e.ini, url: a.dono.url, cor: FdaTema.cor('azul-egipcio-escuro') });
+        });
+        dados.fora = dados.fora.concat(r[2], r[3], r[4]);
+        var novoGuardado = { fora: dados.fora, tarefas: dados.tarefas, feitos: dados.feitos }, antigoTexto = guardado ? JSON.stringify({ fora: guardado.fora, tarefas: guardado.tarefas, feitos: guardado.feitos }) : '';
+        var cc = lerCache(); cc.todo = novoGuardado; gravarCache(cc);
+        if (mostrouGuardado && !dados.falhas.length && JSON.stringify(novoGuardado) === antigoTexto) return; /* igual ao que já está na tela */
+        desenhar();
+      }, function (e) { if (vivo()) { lista.textContent = ''; lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + (e.message || 'erro') + ').' })); } });
+    }
+    /* Mês */
+    function vistaMes(vista, evs) {
+      var a = ancora.split('-'), pri = a[0] + '-' + a[1] + '-01', ini = somaDias(pri, -diaSem(pri)), hoje = isoDia(Date.now());
+      var linhas = Math.ceil((diaSem(pri) + diasNoMes(+a[0], +a[1])) / 7);
+      var g = el('div', { style: 'display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:' + linhaFina + ';border-left:' + linhaFina });
+      SEM_CURTO.forEach(function (s) { var d = bloco(s, 'font-size:11px;text-align:center;padding:4px 0;border-right:' + linhaFina + ';border-bottom:' + linhaFina); d.className = 'rotulo-fixo'; g.appendChild(d); });
+      for (var k = 0; k < linhas * 7; k++) {
+        (function (iso) {
+          var fora = iso.slice(0, 7) !== a[0] + '-' + a[1];
+          var c = el('div', { style: 'min-height:84px;padding:2px;min-width:0;cursor:pointer;border-right:' + linhaFina + ';border-bottom:' + linhaFina + ';' + (fora ? 'opacity:.45' : '') });
+          var n = el('div', { text: String(+iso.slice(8)), style: 'font-size:12px;font-weight:700;display:inline-block;min-width:20px;line-height:20px;text-align:center' });
+          if (iso === hoje) n.style.cssText += ';border:2px solid var(--ocre);color:var(--terracota)';
+          c.appendChild(n);
+          var lista = doDia(iso, evs);
+          lista.slice(0, 3).forEach(function (e) {
+            var ch = el('div', { class: 'preench', style: 'display:flex;align-items:center;gap:2px;font-size:10px;line-height:1.35;overflow:hidden;background:' + preenche(e) + ';padding:0 2px;margin-top:2px;color:' + textoSobre(preenche(e)) });
+            var tx = el('span', { style: 'flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis' });
+            if (e.meet) tx.appendChild(marcaMeet(10));
+            if (!e.diaTodo) tx.appendChild(el('span', { text: hhmm(e.ini) + ' ' }));
+            tx.appendChild(document.createTextNode(e.curto || e.titulo)); ch.appendChild(tx);
+            var plM = planetaDoEvento(e, 10, true); if (plM) ch.appendChild(plM); /* no fim da linha, do mesmo tamanho do ícone do Meet */
+            c.appendChild(ch);
+          });
+          if (lista.length > 3) c.appendChild(bloco('+' + (lista.length - 3), 'font-size:10px;color:var(--terracota);margin-top:2px'));
+          c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); });
+          g.appendChild(c);
+        })(somaDias(ini, k));
+      }
+      vista.appendChild(g);
+    }
+
+    /* Ano: os 12 meses de uma vez; dia com compromisso ganha uma barrinha ocre (mais grossa quando tem mais) */
+    function vistaAno(vista, evs) {
+      var ano = +ancora.split('-')[0], hoje = isoDia(Date.now()), conta = {};
+      evs.forEach(function (e) {
+        var d = isoDia(e.ini), ultimo = isoDia(Math.max(e.ini, e.fim - 1));
+        for (var n = 0; d <= ultimo && n < 40; n++) { conta[d] = (conta[d] || 0) + 1; d = somaDias(d, 1); }
+      });
+      var g = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:18px 14px' });
+      for (var m = 1; m <= 12; m++) {
+        (function (m) {
+          var pri = ano + '-' + p2(m) + '-01', cx = el('div');
+          var nome = el('button', { type: 'button', class: 'rotulo-fixo', text: MESES[m - 1], style: 'background:transparent;border:0;border-radius:0;cursor:pointer;padding:2px 0;margin-bottom:4px;font-size:13px;font-weight:700;color:var(--terracota);text-transform:lowercase' });
+          nome.addEventListener('click', function () { visao = 'mes'; ancora = pri; atualizar(); });
+          cx.appendChild(nome);
+          var t = el('div', { style: 'display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px' });
+          ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (s) { t.appendChild(bloco(s, 'opacity:.6;padding:1px 0')); });
+          for (var v = 0; v < diaSem(pri); v++) t.appendChild(el('div'));
+          for (var d = 1; d <= diasNoMes(ano, m); d++) {
+            var iso = ano + '-' + p2(m) + '-' + p2(d), n = conta[iso] || 0;
+            var c = el('div', { text: String(d), style: 'cursor:pointer;line-height:20px;box-sizing:border-box;color:var(--preto-tinta);' + (n ? 'font-weight:700;border-bottom:' + (n >= 3 ? 4 : 2) + 'px solid var(--ocre);' : '') + (iso === hoje ? 'outline:2px solid var(--ocre);outline-offset:-2px;color:var(--terracota);' : '') });
+            (function (iso) { c.addEventListener('click', function () { visao = 'dia'; ancora = iso; atualizar(); }); })(iso);
+            t.appendChild(c);
+          }
+          cx.appendChild(t); g.appendChild(cx);
+        })(m);
+      }
+      vista.appendChild(g);
+    }
+
+    /* criar / editar um compromisso (novo vai para a agenda principal) */
+    /* ---------- repetição ---------- */
+    var DIAS_RRULE = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    function lerRegra(linhas) { /* devolve null (não repete), { complexa:true } (algo que o editor não cobre: fica como está) ou a regra simples */
+      if (!linhas || !linhas.length) return null;
+      var r = linhas.filter(function (l) { return /^RRULE:/i.test(l); });
+      if (r.length !== 1 || linhas.length !== 1) return { complexa: true };
+      var o = {}; r[0].replace(/^RRULE:/i, '').split(';').forEach(function (p) { var k = p.split('='); o[k[0]] = k[1]; });
+      if (Object.keys(o).some(function (k) { return ['FREQ', 'INTERVAL', 'BYDAY', 'UNTIL', 'COUNT', 'WKST'].indexOf(k) < 0; })) return { complexa: true };
+      if (['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].indexOf(o.FREQ) < 0 || (o.BYDAY && o.FREQ !== 'WEEKLY')) return { complexa: true };
+      var ate = null;
+      if (o.UNTIL) { var u = o.UNTIL, ms = /T/.test(u) ? Date.UTC(+u.slice(0, 4), +u.slice(4, 6) - 1, +u.slice(6, 8), +u.slice(9, 11), +u.slice(11, 13), +u.slice(13, 15)) : Date.UTC(+u.slice(0, 4), +u.slice(4, 6) - 1, +u.slice(6, 8), 12); ate = isoDia(ms); }
+      return { freq: o.FREQ, n: +(o.INTERVAL || 1), dias: o.BYDAY ? o.BYDAY.split(',') : null, ate: ate, vezes: o.COUNT ? +o.COUNT : null };
+    }
+    function editorRepeticao(regra, diaRef, diaTodo) {
+      var complexa = regra && regra.complexa, r = (regra && !complexa) ? regra : null;
+      var freq = el('select'); [['', 'Não se repete'], ['DAILY', 'Todos os dias'], ['WEEKLY', 'Toda semana'], ['MONTHLY', 'Todo mês'], ['YEARLY', 'Todo ano']].forEach(function (o) { freq.appendChild(el('option', { value: o[0], text: o[1] })); });
+      freq.value = r ? r.freq : '';
+      var cada = el('input', { type: 'number', min: '1', value: String(r ? r.n : 1) });
+      var unidade = el('span', { text: '' });
+      var marcados = (r && r.dias) || [DIAS_RRULE[diaSem(diaRef)]];
+      var botoesDia = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
+      ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
+        var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
+        var pinta = function () { var on = marcados.indexOf(DIAS_RRULE[k]) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')) + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+        pinta();
+        b.addEventListener('click', function () { var i = marcados.indexOf(DIAS_RRULE[k]); if (i >= 0) { if (marcados.length > 1) marcados.splice(i, 1); } else marcados.push(DIAS_RRULE[k]); [].forEach.call(botoesDia.children, function (x) { x.dispatchEvent(new Event('pinta')); }); pinta(); });
+        b.addEventListener('pinta', pinta);
+        botoesDia.appendChild(b);
+      });
+      var fim = el('select'); [['nunca', 'Nunca'], ['em', 'Em uma data'], ['vezes', 'Depois de um número de vezes']].forEach(function (o) { fim.appendChild(el('option', { value: o[0], text: o[1] })); });
+      fim.value = r && r.ate ? 'em' : r && r.vezes ? 'vezes' : 'nunca';
+      var data = el('input', { type: 'date', value: (r && r.ate) || somaDias(diaRef, 30) });
+      var vezes = el('input', { type: 'number', min: '1', value: String((r && r.vezes) || 10) });
+      var caixa = el('div');
+      var opcoes = el('div');
+      var rotulo = function (t) { return el('label', { text: t }); };
+      var colData = P.colunaData(data, 'Termina em');
+      [rotulo('A cada'), cada, unidade, botoesDia, rotulo('Termina'), fim, colData, vezes].forEach(function (n) { opcoes.appendChild(n); });
+      var mostrar = function () {
+        opcoes.style.display = freq.value ? '' : 'none';
+        unidade.textContent = { DAILY: 'dia(s)', WEEKLY: 'semana(s)', MONTHLY: 'mês(es)', YEARLY: 'ano(s)' }[freq.value] || '';
+        botoesDia.style.display = freq.value === 'WEEKLY' ? 'flex' : 'none';
+        colData.style.display = fim.value === 'em' ? '' : 'none'; vezes.style.display = fim.value === 'vezes' ? '' : 'none';
+      };
+      freq.addEventListener('change', mostrar); fim.addEventListener('change', mostrar); mostrar();
+      if (!complexa) { caixa.appendChild(rotulo('Repetir')); caixa.appendChild(freq); caixa.appendChild(opcoes); }
+      return { el: caixa, mantida: !!complexa, regra: function () { /* '' = não repete; senão a linha RRULE */
+        if (!freq.value) return '';
+        var p = ['FREQ=' + freq.value], n = Math.max(1, parseInt(cada.value, 10) || 1);
+        if (n > 1) p.push('INTERVAL=' + n);
+        if (freq.value === 'WEEKLY' && marcados.length) p.push('BYDAY=' + marcados.join(','));
+        if (fim.value === 'em' && data.value) p.push('UNTIL=' + (diaTodo() ? data.value.replace(/-/g, '') : new Date(doIso(data.value, '23:59') + 59000).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')));
+        else if (fim.value === 'vezes') p.push('COUNT=' + Math.max(1, parseInt(vezes.value, 10) || 1));
+        return 'RRULE:' + p.join(';');
+      } };
+    }
+
+    /* ---------- lembretes ---------- */
+    var UNIDADES = [['minutos', 1], ['horas', 60], ['dias', 1440], ['semanas', 10080]];
+    function textoLembrete(l) { var u = UNIDADES.slice().reverse().filter(function (x) { return l.minutes % x[1] === 0; })[0] || UNIDADES[0]; return (l.minutes / u[1]) + ' ' + u[0] + ' antes'; }
+    function editorLembretes(e, padraoAgenda) {
+      var padrao = e ? e.lembPadrao : true, itens = (e && !e.lembPadrao ? e.lembretes : []).map(function (l) { return { minutes: l.minutes, method: l.method }; });
+      var caixa = el('div');
+      function desenhar() {
+        caixa.textContent = '';
+        caixa.appendChild(el('label', { text: 'Lembretes' }));
+        if (padrao) {
+          caixa.appendChild(el('p', { text: padraoAgenda.length ? 'Padrão da agenda: ' + padraoAgenda.map(textoLembrete).join(', ') + '.' : 'Padrão da agenda (nenhum).', style: 'margin:4px 0' }));
+          var pers = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Personalizar' });
+          pers.addEventListener('click', function () { padrao = false; itens = padraoAgenda.map(function (l) { return { minutes: l.minutes, method: l.method }; }); desenhar(); });
+          caixa.appendChild(el('div', { class: 'portal-acoes' }, [pers]));
+          return;
+        }
+        if (!itens.length) caixa.appendChild(el('p', { text: 'Sem lembretes.', style: 'margin:4px 0' }));
+        itens.forEach(function (it, k) {
+          var u = UNIDADES.slice().reverse().filter(function (x) { return it.minutes % x[1] === 0; })[0] || UNIDADES[0];
+          var num = el('input', { type: 'number', min: '0', value: String(it.minutes / u[1]), style: 'width:90px' });
+          var uni = el('select', { style: 'width:auto' }); UNIDADES.forEach(function (x) { uni.appendChild(el('option', { value: String(x[1]), text: x[0] })); }); uni.value = String(u[1]);
+          var via = el('select', { style: 'width:auto' }); [['popup', 'Notificação'], ['email', 'E-mail']].forEach(function (x) { via.appendChild(el('option', { value: x[0], text: x[1] })); }); via.value = it.method === 'email' ? 'email' : 'popup';
+          var atualiza = function () { it.minutes = Math.max(0, parseInt(num.value, 10) || 0) * parseInt(uni.value, 10); it.method = via.value; };
+          [num, uni, via].forEach(function (c) { c.addEventListener('change', atualiza); c.addEventListener('input', atualiza); });
+          var rem = P.botaoApagar('Remover'); rem.addEventListener('click', function () { itens.splice(k, 1); desenhar(); });
+          caixa.appendChild(el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0' }, [num, uni, el('span', { text: 'antes' }), via, rem]));
+        });
+        var mais = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Adicionar lembrete' });
+        mais.addEventListener('click', function () { itens.push({ minutes: 30, method: 'popup' }); desenhar(); });
+        var volta = P.botaoApagar('Usar o padrão da agenda'); volta.addEventListener('click', function () { padrao = true; desenhar(); });
+        caixa.appendChild(el('div', { class: 'portal-acoes', style: 'align-items:center' }, [mais, volta]));
+      }
+      desenhar();
+      return { el: caixa, valor: function () { return padrao ? { useDefault: true } : { useDefault: false, overrides: itens.filter(function (x) { return x.minutes >= 0; }).map(function (x) { return { method: x.method || 'popup', minutes: x.minutes }; }) }; } };
+    }
+
+    /* ---------- criar / editar um compromisso ---------- */
+    function formulario(destino, e, pre) {
+      destino.textContent = '';
+      var serie = !!(e && e.recorrenteId), mestre = null, escopo = 'este';
+      var titulo = el('input', { type: 'text', placeholder: 'O que é', value: e ? e.titulo : (pre.titulo || '') });
+      var dia = el('input', { type: 'date', value: e ? isoDia(e.ini) : (pre.dia || isoDia(Date.now())) });
+      var ate = el('input', { type: 'date', value: e && e.diaTodo ? isoDia(Math.max(e.ini, e.fim - 1)) : (pre.dia || isoDia(Date.now())) });
+      var ini = el('input', { type: 'time', style: 'width:100%;max-width:100%;min-width:0;box-sizing:border-box', value: e && !e.diaTodo ? hhmm(e.ini) : (pre.ini || '09:00') });
+      var fim = el('input', { type: 'time', style: 'width:100%;max-width:100%;min-width:0;box-sizing:border-box', value: e && !e.diaTodo ? hhmm(e.fim) : (pre.fim || '10:00') });
+      var local = el('input', { type: 'text', placeholder: 'Endereço ou lugar', value: e ? e.local : '' });
+      var convidados = el('input', { type: 'text', placeholder: 'E-mails separados por vírgula', value: e ? e.convidados.join(', ') : '' });
+      var descricao = el('textarea', { rows: '3', placeholder: 'Anotações' });
+      descricao.value = e ? String(e.descricao || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '') : '';
+      var msg = el('p', { class: 'portal-msg' });
+      var blocoData = el('div'), blocoHora = el('div'), blocoAte = el('div');
+      var campo = function (r, c) { return [el('label', { text: r }), c]; };
+      var todo = caixinha('O dia todo', e ? e.diaTodo : !!pre.todo, function (m) { blocoHora.style.display = m ? 'none' : ''; blocoAte.style.display = m ? '' : 'none'; });
+      var meet = caixinha('Google Meet', e ? !!e.meet : !!pre.meet);
+      blocoData.appendChild(P.colunaData(dia, 'Dia'));
+      campo('Início', ini).concat(campo('Fim', fim)).forEach(function (n) { blocoHora.appendChild(n); });
+      blocoAte.appendChild(P.colunaData(ate, 'Até o dia'));
+      /* repetição, lembretes, cor, visibilidade, disponibilidade */
+      var cal = e ? calendarios.filter(function (c) { return c.id === e.calId; })[0] : null;
+      var repet = e ? editorRepeticao(e.recorrencia ? lerRegra(e.recorrencia) : null, isoDia(e.ini), todo.valor) : editorRepeticao(null, dia.value || isoDia(Date.now()), todo.valor);
+      var blocoRepet = el('div'); blocoRepet.appendChild(repet.el);
+      var lemb = editorLembretes(e, e ? e.padraoAgenda : []);
+      var corSel = e ? e.corId : '';
+      var cores = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
+      [''].concat(Object.keys(CORES_EVENTO)).forEach(function (id) {
+        var b = el('button', { type: 'button', title: id ? NOMES_COR[id] : 'Cor da agenda', 'aria-label': id ? NOMES_COR[id] : 'Cor da agenda', text: id ? '' : '∅' });
+        var pinta = function () { var on = String(corSel) === String(id); b.style.cssText = 'width:30px;height:30px;padding:0;border-radius:0;cursor:pointer;color:var(--preto-tinta);font-size:16px;background:' + (id ? CORES_EVENTO[id] : 'transparent') + ';border:0;font-weight:700'; b.textContent = on ? '\u2713' : (id ? '' : '\u2205'); };
+        pinta(); b.addEventListener('click', function () { corSel = id; [].forEach.call(cores.children, function (x) { x.dispatchEvent(new Event('pinta')); }); }); b.addEventListener('pinta', pinta); cores.appendChild(b);
+      });
+      var visib = el('select'); [['default', 'Padrão da agenda'], ['public', 'Pública'], ['private', 'Privada']].forEach(function (o) { visib.appendChild(el('option', { value: o[0], text: o[1] })); }); visib.value = e ? e.visib : 'default';
+      var ocupado = el('select'); [['ocupado', 'Ocupado'], ['livre', 'Livre']].forEach(function (o) { ocupado.appendChild(el('option', { value: o[0], text: o[1] })); }); ocupado.value = e && e.livre ? 'livre' : 'ocupado';
+      /* agenda onde o compromisso novo nasce (as que deixam escrever) */
+      var qual = el('select');
+      calendarios.filter(function (c) { return c.accessRole === 'owner' || c.accessRole === 'writer'; }).forEach(function (c) { qual.appendChild(el('option', { value: c.id, text: c.summaryOverride || c.summary || c.id })); });
+      var principal = calendarios.filter(function (c) { return c.primary; })[0]; if (principal) qual.value = principal.id;
+      if (e && [].some.call(qual.options, function (o) { return o.value === e.calId; })) qual.value = e.calId; /* editando: começa na agenda em que o compromisso está */
+      /* compromisso que faz parte de uma série: vale só para este ou para todos */
+      var escopoSel = el('select'); [['este', 'Só este compromisso'], ['todos', 'Todos da série']].forEach(function (o) { escopoSel.appendChild(el('option', { value: o[0], text: o[1] })); });
+      function aplicarEscopo() {
+        escopo = escopoSel.value;
+        blocoData.style.display = escopo === 'todos' ? 'none' : '';
+        blocoRepet.style.display = (!serie || escopo === 'todos') ? '' : 'none';
+        if (blocoAte.parentNode) blocoAte.firstChild && (blocoAte.style.opacity = escopo === 'todos' ? '.5' : '');
+      }
+      escopoSel.addEventListener('change', function () {
+        if (escopoSel.value === 'todos' && !mestre) {
+          escopoSel.disabled = true;
+          gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(e.recorrenteId)).then(function (m) {
+            mestre = m; escopoSel.disabled = false;
+            var nova = editorRepeticao(lerRegra(m.recurrence), m.start.date || isoDia(Date.parse(m.start.dateTime)), todo.valor);
+            blocoRepet.textContent = ''; blocoRepet.appendChild(nova.el); repet = nova; aplicarEscopo();
+          }, function (er) { escopoSel.disabled = false; escopoSel.value = 'este'; P.mensagem(msg, 'Não consegui abrir a série (' + er.message + ').', 'erro'); });
+        } else aplicarEscopo();
+      });
+      todo.valor(); aplicarEscopo();
+      if (pre.serie) [blocoData, todo.el, blocoHora, blocoAte, blocoRepet].forEach(function (b) { b.style.display = 'none'; });
+      var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
+      var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+      cancelar.addEventListener('click', function () { destino.textContent = ''; });
+      salvar.addEventListener('click', function () {
+        var t = titulo.value.trim(), corpo, todos = serie && escopo === 'todos' && mestre;
+        if (!t || (!todos && !dia.value)) { P.mensagem(msg, 'Preencha o nome e o dia.', 'erro'); return; }
+        var diaBase = todos ? (mestre.start.date || isoDia(Date.parse(mestre.start.dateTime))) : dia.value;
+        if (todo.valor()) {
+          var duracao = Math.max(0, Math.round((doIso(ate.value || dia.value) - doIso(dia.value)) / DIA));
+          if (!todos && (!ate.value || ate.value < dia.value)) { P.mensagem(msg, 'O "até o dia" precisa ser o mesmo dia ou depois.', 'erro'); return; }
+          corpo = { summary: t, start: { date: diaBase, dateTime: null }, end: { date: somaDias(somaDias(diaBase, duracao), 1), dateTime: null } };
+        } else {
+          if (!ini.value || !fim.value) { P.mensagem(msg, 'Preencha os dois horários.', 'erro'); return; }
+          var a1 = doIso(diaBase, ini.value), b1 = doIso(diaBase, fim.value);
+          if (b1 <= a1) { P.mensagem(msg, 'O fim precisa ser depois do início.', 'erro'); return; }
+          corpo = { summary: t, start: { dateTime: new Date(a1).toISOString(), date: null, timeZone: 'America/Sao_Paulo' }, end: { dateTime: new Date(b1).toISOString(), date: null, timeZone: 'America/Sao_Paulo' } };
+        }
+        corpo.location = local.value.trim(); corpo.description = descricao.value;
+        corpo.visibility = visib.value; corpo.transparency = ocupado.value === 'livre' ? 'transparent' : 'opaque';
+        corpo.colorId = corSel ? String(corSel) : null;
+        corpo.reminders = lemb.valor();
+        if (!repet.mantida && (!serie || todos)) { var rg = repet.regra(); corpo.recurrence = rg ? [rg] : (e && (e.recorrencia || todos) ? [] : undefined); if (corpo.recurrence === undefined) delete corpo.recurrence; }
+        /* convidados: só mexe se mudou (quem já respondeu continua como estava) e então o Google avisa */
+        var emails = convidados.value.split(/[,;\s]+/).filter(function (x) { return /@/.test(x); });
+        var antes = e ? e.convidados.slice().sort().join(',') : '', agora = emails.slice().sort().join(',');
+        var params = ['conferenceDataVersion=1'];
+        if (agora !== antes) {
+          var raw = e ? e.convRaw : [];
+          corpo.attendees = raw.filter(function (p) { return p.self || p.resource; }).concat(emails.map(function (em) { return raw.filter(function (p) { return p.email === em; })[0] || { email: em }; }));
+          params.push('sendUpdates=all');
+        }
+        if (meet.valor() && !(e && e.meet)) corpo.conferenceData = { createRequest: { requestId: 'fda-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), conferenceSolutionKey: { type: 'hangoutsMeet' } } };
+        else if (!meet.valor() && e && e.meet) corpo.conferenceData = null;
+        salvar.disabled = true;
+        if (pre.serie && !e) { /* um compromisso por dia da série, 3 de cada vez */
+          var fila = pre.serie.slice(), erros = 0, qid = encodeURIComponent(qual.value || 'primary');
+          var um = function () {
+            var s = fila.shift(); if (!s) return Promise.resolve();
+            var c1 = JSON.parse(JSON.stringify(corpo)); delete c1.recurrence;
+            c1.start = { dateTime: new Date(s.ini).toISOString(), date: null, timeZone: 'America/Sao_Paulo' }; c1.end = { dateTime: new Date(s.fim).toISOString(), date: null, timeZone: 'America/Sao_Paulo' };
+            return gapi('/calendars/' + qid + '/events?' + params.join('&'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c1) }).then(null, function () { erros++; }).then(um);
+          };
+          Promise.all([um(), um(), um()]).then(function () { if (erros) { salvar.disabled = false; P.mensagem(msg, 'Não consegui criar ' + erros + ' compromisso(s).', 'erro'); } else { destino.textContent = ''; } atualizar(); });
+          return;
+        }
+        var opc = function (m) { return { method: m, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }; };
+        var idAlvo = todos ? e.recorrenteId : (e ? e.id : null);
+        var cham = e ? gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(idAlvo) + '?' + params.join('&'), opc('PATCH'))
+          : gapi('/calendars/' + encodeURIComponent(qual.value || 'primary') + '/events?' + params.join('&'), opc('POST'));
+        if (e && qual.value && qual.value !== e.calId) { /* trocou de agenda: salva e depois move o compromisso (ou a série toda) para a outra agenda */
+          cham = cham.then(function () { return gapi('/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(idAlvo) + '/move?destination=' + encodeURIComponent(qual.value), { method: 'POST' }); });
+        }
+        cham.then(function () { if (!e) avisarMarcacao(t, corpo); destino.textContent = ''; atualizar(); }, function (er) { salvar.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + er.message + ').', 'erro'); });
+      });
+      var filhos = [el('h2', { text: e ? 'Editar compromisso' : pre.serie ? pre.serie.length + ' compromissos' : 'Novo compromisso' })];
+      if (serie) filhos = filhos.concat(campo('Esta mudança vale para', escopoSel));
+      filhos = filhos.concat(campo('Nome', titulo), [blocoData, todo.el, blocoHora, blocoAte, blocoRepet], campo('Mostrar como', ocupado), campo('Local', local), [meet.el], campo('Convidados', convidados), [lemb.el], campo('Cor', cores), campo('Visibilidade', visib), campo('Anotações', descricao));
+      if (qual.options.length > 1) filhos = filhos.concat(campo('Agenda', qual));
+      filhos = filhos.concat([el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [salvar, cancelar]), msg]);
+      if (e) {
+        var ap = P.botaoApagar('Apagar'), caixaAp = el('div', { style: 'margin:28px 0 4px;text-align:center' }, [ap]);
+        var erroAp = function (er) { P.mensagem(msg, 'Não foi possível apagar (' + er.message + ').', 'erro'); };
+        var feito = function () { destino.textContent = ''; atualizar(); };
+        var url = function (id) { return '/calendars/' + encodeURIComponent(e.calId) + '/events/' + encodeURIComponent(id); };
+        /* "este e os seguintes": a série passa a terminar na véspera deste compromisso (se for o primeiro, apaga a série inteira) */
+        function apagarSeguintes() {
+          return gapi(url(e.recorrenteId)).then(function (m) {
+            var ini0 = m.start.dateTime ? Date.parse(m.start.dateTime) : doIso(m.start.date);
+            if (e.ini <= ini0) return gapi(url(e.recorrenteId), { method: 'DELETE' });
+            var ate = e.diaTodo ? somaDias(isoDia(e.ini), -1).replace(/-/g, '') : new Date(e.ini - 1000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+            var regras = (m.recurrence || []).map(function (r) { return /^RRULE:/i.test(r) ? r.replace(/;(COUNT|UNTIL)=[^;]*/gi, '') + ';UNTIL=' + ate : r; });
+            return gapi(url(e.recorrenteId), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrence: regras }) });
+          });
+        }
+        function apagarComo(modo) {
+          var frase = modo === 'todos' ? 'Apagar TODA a série "' + e.titulo + '"?' : modo === 'seguintes' ? 'Apagar "' + e.titulo + '" e todos os seguintes?' : 'Apagar só este "' + e.titulo + '"?';
+          if (!confirm(frase + ' Não dá para desfazer.')) return;
+          var pedido = modo === 'seguintes' ? apagarSeguintes() : gapi(url(modo === 'todos' ? e.recorrenteId : e.id), { method: 'DELETE' });
+          pedido.then(feito, erroAp);
+        }
+        ap.addEventListener('click', function () {
+          if (!serie) { apagarComo('este'); return; }
+          caixaAp.textContent = '';
+          [['Só este', 'este'], ['Este e os seguintes', 'seguintes'], ['Todos da série', 'todos']].forEach(function (o) {
+            var b = P.botaoApagar(o[0]); b.style.display = 'block'; b.style.margin = '10px auto';
+            b.addEventListener('click', function () { apagarComo(o[1]); }); caixaAp.appendChild(b);
+          });
+        });
+        filhos.push(caixaAp);
+      }
+      destino.appendChild(el('div', { class: 'portal-cartao' }, filhos));
+    }
+
+
+    /* ---------- cabeçalho (sempre no topo) e aba Horas ---------- */
+    function corTempo(f) { /* azul no começo, ocre no meio, terracota no fim: a mesma dos prazos do site */
+      var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, t = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
+      return 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')';
+    }
+    function numPt(n) { return String(n).replace('.', ','); }
+    /* as 24 horas do dia planetário que contém o instante dado (o dia vai de um nascer do sol ao outro) */
+    function diaPlanetarioDe(ms) {
+      var d = loc(ms), hs = HP.horasDoDia(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), LAT, LON);
+      if (!hs.length || ms < hs[0].ini) { var o = loc(ms - DIA); hs = HP.horasDoDia(o.getUTCFullYear(), o.getUTCMonth() + 1, o.getUTCDate(), LAT, LON); }
+      return hs;
+    }
+    function barraDe(ini, fim, agora, unidade, fino) { /* "62% [barra] 12/23 dias": porcentagem antes, o tanto depois */
+      var f = Math.max(0, Math.min(1, (agora - ini) / (fim - ini))), cor = corTempo(f), pct = agora >= fim ? 100 : Math.floor(f * 100);
+      var total = unidade === 'horas' ? Math.round((fim - ini) / 3600000 * 2) / 2 : Math.round((fim - ini) / 60000 * 2) / 2;
+      var passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
+      if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade, true);
+      return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:34px;font-weight:700' }),
+        el('div', { class: 'tempo-trilho', style: 'flex:1;height:4px;border:1px solid transparent' }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, class: 'tempo-fim', style: 'flex:none;white-space:nowrap' })]);
+    }
+    function cabecalhoHoras() {
+      var caixa = el('div', { class: 'cab-horas' });
+      function pintar() {
+        if (!document.body.contains(caixa) && caixa.firstChild) { clearInterval(window.__cabHoras); return; }
+        var G = !!caixa.grande, agora = Date.now(), hs = diaPlanetarioDe(agora); if (hs.length < 24) return;
+        var h = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0], dia = hs[0], nascer = hs[0].ini, por = hs[12].ini, proximo = hs[23].fim;
+        caixa.textContent = '';
+        caixa.appendChild(el('div', { class: 'rotulo-fixo', text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:' + (G ? 15 : 12) + 'px;margin:0 0 ' + (G ? 12 : 6) + 'px' }));
+        var rot = function (t) { return el('div', { text: t, class: 'rotulo-grupo', style: 'font-size:' + (G ? 13 : 10) + 'px;margin-bottom:' + (G ? 4 : 2) + 'px' }); };
+        var direita = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px' }, [barraDe(nascer, proximo, agora, 'horas', false)]);
+        if (h) {
+          direita.appendChild(barraDe(h.ini, h.fim, agora, 'minutos', false));
+          direita.appendChild(el('div', { class: 'rotulo-fixo', text: (hs.indexOf(h) % 12 + 1) + 'ª hora · ' + hhmm(h.ini) + ' às ' + hhmm(h.fim), style: 'text-align:center;font-size:' + (G ? 15 : 12) + 'px' }));
+        }
+        caixa.appendChild(el('div', { style: G ? 'display:flex;flex-direction:column;align-items:stretch;gap:14px' : 'display:flex;align-items:center;gap:14px' }, [
+          el('div', { style: 'flex:none;display:flex;align-items:flex-end;gap:' + (G ? 34 : 10) + 'px;text-align:center' + (G ? ';justify-content:center' : '') }, [
+            el('div', {}, [rot('Dia'), iconePlaneta(dia.planeta, G ? 76 : 50, FdaTema.cor('terracota'))]),
+            h ? el('div', {}, [rot('Hora'), iconePlaneta(h.planeta, G ? 54 : 36, h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))]) : null]),
+          direita]));
+      }
+      caixa.pintar = pintar;
+      clearInterval(window.__cabHoras);
+      preparar().then(function () { pintar(); window.__cabHoras = setInterval(function () { if (document.visibilityState === 'visible') pintar(); }, 30000); }, function () { /* o erro aparece nas outras partes da tela */ });
+      return caixa;
+    }
+    var SVG_SOL = '<svg viewBox="0 0 64 64" width="16" height="16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><circle cx="32" cy="32" r="10"/><path d="M32 8v8M32 48v8M8 32h8M48 32h8M15 15l6 6M43 43l6 6M49 15l-6 6M21 43l-6 6"/></svg>';
+    var SVG_LUA = '<svg viewBox="0 0 64 64" width="16" height="16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M44 10a24 24 0 1 0 10 34A20 20 0 0 1 44 10z"/></svg>';
+    function vistaHoras(vista) {
+      preparar().then(function () {
+        var a = ancora.split('-'), hs = HP.horasDoDia(+a[0], +a[1], +a[2], LAT, LON), agora = Date.now(), box = el('div');
+        if (hs.length < 24) { vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível calcular as horas deste dia neste lugar.' })); return; }
+        var cab = function (t, estilo) { return el('span', { class: 'rotulo-fixo', text: t, style: (estilo || '') }); };
+        box.appendChild(el('div', { style: 'display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:' + linhaFina }, [cab('', 'flex:none;width:30px'), cab('', 'flex:none;width:24px'), cab('Regente', 'flex:none;width:56px'), cab('Início', 'flex:1;text-align:center'), cab('Término', 'flex:1;text-align:center')]));
+        hs.forEach(function (h, i) {
+          var atual = agora >= h.ini && agora < h.fim, cor = atual ? FdaTema.cor('terracota') : FdaTema.cor('preto-tinta');
+          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('terracota')) }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
+          var linha = el('div', { style: 'padding:6px 0 8px;border-bottom:' + linhaFina + ';cursor:pointer;' + (atual ? 'border-left:3px solid var(--terracota);padding-left:6px;' : '') }, [
+            el('div', { style: 'display:flex;align-items:center;gap:10px;color:' + cor }, [
+              el('span', { text: (i % 12 + 1) + 'ª', style: 'flex:none;width:30px;font-weight:700' }), per,
+              el('span', { style: 'flex:none;width:56px' }, [iconePlaneta(h.planeta, 26, h.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre'))]),
+              el('span', { text: hhmm(h.ini), style: 'flex:1;text-align:center;font-weight:700' }), el('span', { text: hhmm(h.fim), style: 'flex:1;text-align:center;font-weight:700' })]),
+            el('div', { style: 'margin-top:4px' }, [barraDe(h.ini, h.fim, agora, 'minutos', true)])]);
+          linha.addEventListener('click', function () { /* tocar na hora do planeta abre o encaixe, já com o planeta e o horário dela */
+            var ini = new Date(h.ini + HP.FUSO), fm = new Date(Math.min(h.fim, doIso(ancora) + DIA) + HP.FUSO), fimMin = fm.getUTCHours() * 60 + fm.getUTCMinutes() + 60;
+            var pre = { planeta: h.planeta, dia: ancora, dow: [diaSem(ancora)], hDe: hhmm(Math.max(h.ini, doIso(ancora))), hAte: fimMin >= 1440 ? '23:59' : p2(Math.floor(fimMin / 60)) + ':' + p2(fimMin % 60) };
+            abrirFolha().appendChild(painelEncaixe(pre));
+          });
+          box.appendChild(linha);
+        });
+        vista.textContent = ''; vista.appendChild(box);
+      }, function (e) { vista.textContent = ''; vista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar (' + e.message + ').' })); });
+    }
+
+    /* ---------- encaixar uma tarefa pela hora planetária ---------- */
+    function painelEncaixe(pre) {
+      pre = pre || {};
+      /* campo comum onde se escreve o que quiser, com a lista de sugestões embaixo (a mesma peça do Financeiro: P.combo) */
+      var o = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Escreva ou escolha na lista' });
+      var planeta = el('select'); HP.CALDEIA.forEach(function (n) { planeta.appendChild(el('option', { value: n, text: n })); });
+      planeta.value = pre.planeta || 'Mercúrio';
+      var doPreset = function (txt) { var t = TAREFAS.filter(function (x) { return x[0].toLowerCase() === String(txt).trim().toLowerCase(); })[0]; if (t) planeta.value = t[1]; };
+      o.addEventListener('input', function () { doPreset(o.value); });
+      var caixaTarefa = P.combo(o, function () { return TAREFAS.map(function (t) { return { valor: t[0], rotulo: t[0], busca: t[0].toLowerCase() }; }); }, function (i) { o.value = i.valor; doPreset(i.valor); }, true);
+      var dur = el('select'); [30, 45, 60, 90, 120, 180].forEach(function (m) { dur.appendChild(el('option', { value: String(m), text: duracaoTxt(m) })); }); dur.value = '60';
+      var folga = el('select'); [[0, 'Nenhuma'], [15, '15 minutos'], [30, '30 minutos'], [45, '45 minutos'], [60, '1 hora']].forEach(function (x) { folga.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); folga.value = '30';
+      var hoje = isoDia(Date.now());
+      var de = el('input', { type: 'date', value: pre.dia || hoje }), ate = el('input', { type: 'date', value: somaDias(pre.dia || hoje, 6) });
+      /* dias da semana: ele marca quais */
+      var dow = pre.dow || [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
+      ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
+        var b = el('button', { type: 'button', text: rot, 'aria-label': ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][k] });
+        var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')) + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+        pinta();
+        b.addEventListener('click', function () { var i = dow.indexOf(k); if (i >= 0) dow.splice(i, 1); else dow.push(k); pinta(); });
+        blocoDias.appendChild(b);
+      });
+      var hDe = el('input', { type: 'time', value: pre.hDe || '06:00' }), hAte = el('input', { type: 'time', value: pre.hAte || '22:00' });
+      var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Ver horários' });
+      var res = el('div');
+      botao.addEventListener('click', function () { sugerir(res, { tarefa: o.value.trim(), planeta: planeta.value, minutos: +dur.value, de: de.value, ate: ate.value, dow: dow.slice(), hDe: hDe.value, hAte: hAte.value, folga: +folga.value }); });
+      var campo = function (r, c) { return [el('label', { text: r }), c]; };
+      return el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Onde encaixar uma tarefa' })].concat(
+        [el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga),
+        [P.linhaDatas([P.colunaData(de, 'Do dia'), P.colunaData(ate, 'Até o dia')])], [el('label', { text: 'Nos dias' }), blocoDias], campo('Não antes de', hDe), campo('Não depois de', hAte),
+        [el('div', { class: 'portal-acoes', style: 'margin-top:12px' }, [botao]), res]));
+    }
+
+    /* mostra, dia a dia do período, onde a tarefa encaixa (um horário por dia); ele tira os que não quer e coloca tudo de uma vez */
+    function sugerir(res, o) {
+      res.textContent = '';
+      if (!o.de || !o.ate) return;
+      var ini = o.de, fim = o.ate; if (fim < ini) { var t = ini; ini = fim; fim = t; }
+      var total = Math.min(366, Math.round((doIso(fim) - doIso(ini)) / DIA) + 1);
+      res.appendChild(el('p', { class: 'portal-vazio', style: 'margin-top:12px', text: 'Procurando...' }));
+      eventosEntre(doIso(ini), doIso(somaDias(ini, total))).then(function (evs) {
+        res.textContent = '';
+        if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; }
+        var hojeIso = isoDia(Date.now()), fg = o.folga * 60000, propostas = [];
+        for (var i = 0; i < total; i++) {
+          var iso = somaDias(ini, i);
+          if (iso < hojeIso || o.dow.indexOf(diaSem(iso)) < 0) continue;
+          var agora = iso === hojeIso ? Math.ceil(Date.now() / 300000) * 300000 : 0;
+          var slots = slotsDoDia(iso, evs, o.planeta, o.minutos, o.hDe, o.hAte, fg, agora).sort(function (p, q) { return p.ini - q.ini; });
+          propostas.push({ iso: iso, slot: slots[0] || null });
+        }
+        var itens = propostas.filter(function (p) { return p.slot; }).map(function (p) { return { iso: p.iso, ini: p.slot.ini, fim: p.slot.ini + o.minutos * 60000, hora: p.slot.hora, marcado: true }; });
+        var confirmar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px' }), destinoForm = el('div', { class: 'barra-ocre' });
+        var atualizaBotao = function () { var n = itens.filter(function (x) { return x.marcado; }).length; confirmar.textContent = 'Colocar na agenda (' + n + ')'; confirmar.disabled = !n; };
+        propostas.forEach(function (p) {
+          if (!p.slot) { res.appendChild(el('p', { class: 'portal-item-data', style: 'color:var(--preto-tinta);opacity:.6;margin:10px 0 0', text: rotuloDia(p.iso) + ' · sem horário livre' })); return; }
+          var it = itens.filter(function (x) { return x.iso === p.iso; })[0];
+          var cx = caixinha(rotuloDia(p.iso) + ', ' + hhmm(it.ini) + ' às ' + hhmm(it.fim), true, function (m) { it.marcado = m; atualizaBotao(); });
+          var det = el('div', { class: 'portal-item-data', style: 'margin:-6px 0 4px 38px' }, [iconePlaneta(o.planeta, 14, it.hora.noite ? FdaTema.cor('azul-egipcio-claro') : FdaTema.cor('ocre')), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })]);
+          res.appendChild(cx.el); res.appendChild(det);
+        });
+        if (!itens.length) return;
+        atualizaBotao();
+        confirmar.addEventListener('click', function () {
+          var esc = itens.filter(function (x) { return x.marcado; });
+          if (!esc.length) return;
+          formulario(destinoForm, null, { titulo: o.tarefa, dia: esc[0].iso, ini: hhmm(esc[0].ini), fim: hhmm(esc[0].fim), serie: esc.map(function (x) { return { ini: x.ini, fim: x.fim }; }) });
+        });
+        res.appendChild(el('div', { class: 'portal-acoes' }, [confirmar])); res.appendChild(destinoForm);
+      }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'portal-msg erro', style: 'margin-top:12px', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+    }
+
+    /* os horários da hora do planeta que cabem num dia (a tarefa COMEÇA dentro da hora do planeta e cabe inteira num trecho livre) */
+    function slotsDoDia(dia, eventos, planeta, minutos, deHora, ateHora, fg, agora) {
+      var achados = [], ja = Math.max(doIso(dia, deHora), agora), fimJ = doIso(dia, ateHora);
+      if (fimJ <= ja) return achados;
+      var ocupado = eventos.filter(function (e) { return e.ocupa && e.fim + fg > ja && e.ini - fg < fimJ; }).map(function (e) { return [Math.max(e.ini - fg, ja), Math.min(e.fim + fg, fimJ)]; });
+      var livres = [], cursor = ja;
+      ocupado.sort(function (a, b) { return a[0] - b[0]; }).forEach(function (b) { if (b[0] > cursor) livres.push([cursor, b[0]]); cursor = Math.max(cursor, b[1]); });
+      if (cursor < fimJ) livres.push([cursor, fimJ]);
+      HP.horasEntre(ja, fimJ, LAT, LON).filter(function (h) { return h.planeta === planeta; }).forEach(function (h) {
+        livres.forEach(function (l) {
+          var s = Math.ceil(Math.max(l[0], h.ini) / 60000) * 60000; /* minuto inteiro */
+          if (s < h.fim && s + minutos * 60000 <= l[1]) achados.push({ dia: dia, ini: s, limite: l[1], hora: h });
+        });
+      });
+      return achados;
+    }
+    return {
+      eventosEntre: eventosEntre, preparar: preparar, formulario: formulario, detalhe: detalhe, abrirFolha: abrirFolha,
+      abrirEvento: function (e) { detalhe(abrirFolha(), e); },
+      novo: function (pre) { formulario(abrirFolha(), null, pre || {}); },
+      aoAtualizar: function (f) { atualizar = f; }
+    };
+};

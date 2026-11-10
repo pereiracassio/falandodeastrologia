@@ -247,6 +247,7 @@
   <script src="caderno-leitor.js?v=1"></script>
   <script src="caderno-producao.js?v=1"></script>
   <script src="caderno-projetos.js?v=1"></script>
+  <script src="caderno-agenda.js?v=1"></script>
   <script src="leitor.js?v=10"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=3"></script>
@@ -318,7 +319,12 @@
           throw er;
         });
     }
-    function eventosEntre(de, ate) { /* se alguma agenda não puder ser lida, vai em .falhas (nunca some em silêncio) */
+    var agMod = null;
+    function modAgenda() { if (!agMod) { agMod = window.AgendaCaderno({ P: P, C: C, app: el('div') }); agMod.aoAtualizar(function () { cacheAno = {}; desenhar(); }); } return agMod; }
+    function eventosEntre(de, ate) { /* a Agenda completa lê (com tudo o que a edição precisa); aqui só se acerta a cor */
+      return modAgenda().eventosEntre(de, ate).then(function (l) { l.forEach(function (x) { x.cor = x.cor || x.calCor || '#B5852F'; }); return l; });
+    }
+    function eventosEntreAntigo(de, ate) { /* (antigo, sem uso) */
       return preparar().then(function () {
         var fila = calendarios.slice(), saida = [], falhas = [];
         function trab() { var c = fila.shift(); if (!c) return Promise.resolve(); return eventosDe(c, de, ate, 0).then(function (l) { saida = saida.concat(l); }, function () { falhas.push(c.summaryOverride || c.summary || c.id); }).then(trab); }
@@ -370,7 +376,7 @@
       dir.appendChild(el('div', { class: 'vao' }));
       var eng = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Capa', 'aria-label': 'Capa' }, [el('span', { text: '⚙' })]); eng.addEventListener('click', escolherCapa); dir.appendChild(eng);
       var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); desenhar(); }); dir.appendChild(hj);
-      var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Nova tarefa', 'aria-label': 'Nova tarefa', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', novaTarefa); dir.appendChild(mais);
+      var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); }); dir.appendChild(mais);
     }
     function desenharDia() {
       var a = ancora.split('-'), ano = +a[0], mes = +a[1], dia = +a[2], hojeIso = isoDia(Date.now()), eu = ++pedido;
@@ -413,7 +419,8 @@
         evs.forEach(function (e) {
           if (e.diaTodo) { var bl = el('span', { class: 'bloco', text: e.titulo }); bl.style.background = e.cor; bl.style.color = textoSobre(e.cor.length === 7 ? e.cor : '#B5852F'); todo.appendChild(bl); return; }
           var ini = Math.max(e.ini, d0), fim = Math.min(e.fim, d1); if (fim <= ini) return;
-          var cor = e.cor.length === 7 ? e.cor : '#B5852F', b = el('a', { class: 'ev', href: e.link || '#', target: '_blank', rel: 'noopener', style: 'top:' + pct(ini) + ';height:calc(' + ((fim - ini) / (d1 - d0) * 100).toFixed(3) + '% - 2px);margin-top:1px;background:' + cor + ';color:' + textoSobre(cor) }, [el('span', { text: e.titulo }), el('small', { text: hhmm(e.ini) + ' às ' + hhmm(e.fim) })]);
+          var cor = e.cor.length === 7 ? e.cor : '#B5852F', b = el('a', { class: 'ev', href: '#', style: 'top:' + pct(ini) + ';height:calc(' + ((fim - ini) / (d1 - d0) * 100).toFixed(3) + '% - 2px);margin-top:1px;background:' + cor + ';color:' + textoSobre(cor) }, [el('span', { text: e.titulo }), el('small', { text: hhmm(e.ini) + ' às ' + hhmm(e.fim) })]);
+          b.addEventListener('click', function (ev) { ev.preventDefault(); modAgenda().abrirEvento(e); });
           linha.appendChild(b);
         });
         if (!todo.firstChild) todo.appendChild(el('span', { class: 'rotulo-fixo', text: 'dia todo' }));
@@ -500,7 +507,8 @@
     function meiaNoite(ms) { return doIso(isoDia(ms)); }
     function corDe(e) { return e.cor && e.cor.length === 7 ? e.cor : '#B5852F'; }
     function linhaEv(e) {
-      var a = el('a', { class: 'lev', href: e.link || '#', target: '_blank', rel: 'noopener' }, [e.diaTodo ? null : el('small', { text: hhmm(e.ini) }), el('i', { style: 'background:' + corDe(e) }), el('span', { text: e.titulo })].filter(Boolean));
+      var a = el('a', { class: 'lev', href: '#' }, [e.diaTodo ? null : el('small', { text: hhmm(e.ini) }), el('i', { style: 'background:' + corDe(e) }), el('span', { text: e.titulo })].filter(Boolean));
+      a.addEventListener('click', function (ev) { ev.preventDefault(); modAgenda().abrirEvento(e); });
       return a;
     }
     function cabVista(esq, titulo, ant, prox) {
@@ -556,7 +564,7 @@
         rola.textContent = ''; var m = porDia(evs, ini, 42), algum = false;
         Object.keys(cels).forEach(function (iso) {
           var l = m[iso] || [], cel = cels[iso];
-          l.slice(0, 3).forEach(function (e) { var c = corDe(e); cel.appendChild(el('a', { class: 'chip', href: e.link || '#', target: '_blank', rel: 'noopener', text: e.titulo, style: 'background:' + c + ';color:' + textoSobre(c) })); });
+          l.slice(0, 3).forEach(function (e) { var c = corDe(e); (function () { var ch = el('a', { class: 'chip', href: '#', text: e.titulo, style: 'background:' + c + ';color:' + textoSobre(c) }); ch.addEventListener('click', function (ev) { ev.preventDefault(); modAgenda().abrirEvento(e); }); cel.appendChild(ch); })(); });
           if (l.length > 3) cel.appendChild(el('span', { class: 'mais', text: '+' + (l.length - 3) }));
           if (iso.slice(0, 7) === primeiro.slice(0, 7) && l.length) { algum = true; var bl = el('div', { class: 'dia-lista' }, [el('button', { type: 'button', class: 'dsem-cab botao-fixo' + (iso === hojeIso ? ' eh-hoje' : ''), text: SEMANA[diaSem(iso)].split('-')[0] + ' ' + (+iso.slice(8)) })]); bl.firstChild.addEventListener('click', function () { irAoDia(iso); }); l.forEach(function (e) { bl.appendChild(linhaEv(e)); }); rola.appendChild(bl); }
         });
@@ -647,7 +655,7 @@
             if (caixa.tagName === 'BUTTON') caixa.addEventListener('click', function () { marcarFeito(x, caixa, dados, desenharItens); });
             var quando = x.semData || !isFinite(x.quando) ? '' : (g.nome === 'Atrasados' ? (+it.iso.slice(8)) + ' de ' + MES3[+it.iso.slice(5, 7) - 1] + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando));
             var meio = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro);margin:0 0 1px', text: quando }) : null, el('div', { class: 'nome', text: x.titulo }), x.sub ? el('div', { class: 'det', style: x.subOcre ? 'color:var(--ocre);font-weight:700' : 'opacity:.75;color:inherit', text: x.sub }) : null].filter(Boolean).concat(x.bsp ? tdPronto().barrasDe(x.bsp[1], x.bsp[0] === 'v' ? tdPronto().ETV : tdPronto().ETC, x.bsp[2], x.bsp[3]) : []));
-            meio.addEventListener('click', function () { if (x.url) { abrirTela(x.url); return; } if (x.evento && x.evento.link) window.open(x.evento.link, '_blank', 'noopener'); });
+            meio.addEventListener('click', function () { if (x.url) { abrirTela(x.url); return; } if (x.evento && !x.evento.aniversario) modAgenda().abrirEvento(x.evento); });
             var linha = el('div', { class: 'tarefa' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor }), caixa, meio]);
             if (x.tarefa) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (r) { if (r.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenharItens(); }); }); linha.appendChild(ap); }
             if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? '#1F5FA3' : '#B5852F') : '#A03E25'), text: icone(pl) })); }
@@ -1017,7 +1025,7 @@
     window.addEventListener('resize', function () { if (leitorAtual && leitorAtual.aoRedimensionar) leitorAtual.aoRedimensionar(); });
     document.getElementById('t1').addEventListener('click', function () { paginaCel('p1'); });
     document.getElementById('t2').addEventListener('click', function () { paginaCel('p2'); });
-    document.getElementById('tMais').addEventListener('click', novaTarefa);
+    document.getElementById('tMais').addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); });
     (function () { /* o dedo vira a página: para a direita volta, para a esquerda avança */
       var folha = cad.querySelector('.folha'), x0 = 0, y0 = 0, t0 = 0, ativo = false;
       folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; if (ev.touches.length !== 1 || t.touchType === 'stylus' || (ev.target.closest && (ev.target.closest('input,textarea,select,[style*="overflow-x"]') || (ev.target.closest('canvas') && !ev.target.closest('.lp'))))) { ativo = false; return; } x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; }, { passive: true });
