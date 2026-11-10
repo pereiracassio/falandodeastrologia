@@ -21,6 +21,7 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <link rel="stylesheet" href="caderno-financeiro.css?v=1">
+  <link rel="stylesheet" href="caderno-producao.css?v=1">
   <style>
     /* CADERNO do Hellenic Daily: uma folha aberta (duas páginas) dentro de uma capa de cor escolhida, com marcadores dos dois lados.
        Só desenho: os dados são os mesmos da Agenda (Google, To do, horas planetárias). */
@@ -187,6 +188,10 @@
     .cad.v-livro .leitor-barra{display:flex}
     .cad.v-livro .pag,.cad.v-livro .pag.dir{padding-bottom:calc(130px*var(--moldura-m) + 46px);padding-top:calc(130px*var(--moldura-m) + 6px)}
     .cad.v-livro .logo-topo{display:none}
+    .cad .portal-cartao{border-top:0!important;padding-top:4px!important}
+    .cad .rola.portal{padding:0 2px;overflow-x:hidden;margin:0!important;width:100%!important;max-width:100%!important}
+    .cad .rola .portal-cartao{width:100%;max-width:100%;box-sizing:border-box;min-width:0;overflow-x:clip}
+    .cad .rola .portal-cartao>div,.cad .rola .portal-cartao>form{min-width:0;max-width:100%}
     .cad .troca{display:none}
     @media (max-width:820px){
       .cad .troca{display:flex;position:absolute;left:14px;right:14px;bottom:10px;height:44px;gap:3px}
@@ -239,6 +244,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="caderno-leitor.js?v=1"></script>
+  <script src="caderno-producao.js?v=1"></script>
   <script src="todo-dados.js?v=1"></script>
   <script src="carrinho.js?v=6"></script>
   <script src="caderno-financeiro.js?v=1"></script>
@@ -793,134 +799,22 @@
       }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
     }
 
-    /* ---------- Produção, de página em página: séries → (série à esquerda, vídeos à direita) → (vídeo à esquerda, cortes à direita) → (corte à esquerda, cortes do vídeo à direita).
-       Aqui se navega e se vê; mudar os dados (marcar etapa, datas, textos) abre a Produção de antes dentro do caderno ---------- */
-    var prodDados = null;
+    /* ---------- Produção: a tela COMPLETA (caderno-producao.js), encaixada de página em página:
+       próximos · séries → série · vídeos → vídeo (editor inteiro) · cortes → corte (editor) · cortes do vídeo ---------- */
+    var prodMod = null, prodCtx = { P: P, C: C, app: el('div'), esq: null, dir: null,
+      entrar: function (fn) { var e = prodMod.estado(); prodSerie = e.serie; prodVideo = e.video; prodCorte = e.corte; entrarPagina(fn); paginaCel('p2'); },
+      rotulos: function (a, b) { document.getElementById('t1').textContent = a; document.getElementById('t2').textContent = b; } };
     function dataCurta(s) { var iso = String(s).slice(0, 10); return SEMANA[diaSem(iso)].slice(0, 3) + ' ' + (+iso.slice(8)) + '/' + (+iso.slice(5, 7)); }
     function vistaProducao() {
-      var eu = pedido, o = preparaOut(); carregando(o[0]);
-      Promise.all([C.from('prod_series').select('*').order('criado_em'), C.from('prod_videos').select('*').order('numero').order('criado_em'), C.from('prod_cortes').select('*').order('ordem').order('criado_em')]).then(function (r) {
-        if (eu !== pedido) return;
-        if (r[0].error || r[1].error || r[2].error) { o[0].textContent = ''; o[0].appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir a Produção.' })); return; }
-        prodDados = { series: r[0].data || [], videos: r[1].data || [], cortes: r[2].data || [] }; renderProducao();
-      }, function (er) { if (eu === pedido) { o[0].textContent = ''; o[0].appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
-    }
-    function renderProducao() {
-      var D = prodDados, eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], td = tdPronto();
-      var achar = function (lista, id) { for (var i = 0; i < lista.length; i++) if (lista[i].id === id) return lista[i]; return null; };
-      var acesso = function (v) { return (v && v.acesso) === 'membros' ? 'membros' : 'público'; };
-      var fimDoVideo = function (v) { return (acesso(v) === 'público' && v.data_publico) || v.data_postar || null; };
-      var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
-      var serie = prodSerie && prodSerie !== 'soltos' ? achar(D.series, prodSerie) : null, video = prodVideo ? achar(D.videos, prodVideo) : null, corte = prodCorte ? achar(D.cortes, prodCorte) : null;
-      if (prodCorte && !corte) { prodCorte = null; corte = null; } if (prodVideo && !video) { prodVideo = null; prodCorte = null; video = null; corte = null; } if (prodSerie && prodSerie !== 'soltos' && !serie) { prodSerie = null; prodVideo = null; prodCorte = null; serie = null; video = null; corte = null; }
-      var nivel = corte ? 3 : video ? 2 : prodSerie ? 1 : 0;
-      var nomeVideo = function (v) { var s = v.serie_id ? achar(D.series, v.serie_id) : null; return (s ? s.nome + ' · ' : '') + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
-      var tituloVideo = function (v) { return (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' });
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' })); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD);
-      /* as etapas MARCAM direto aqui (mesmas regras da Produção): Capa, Membros e Público se marcam sozinhas; SEO do vídeo só com tudo preenchido; no corte, SEO marca Legenda e YouTube Shorts marca Legenda e SEO */
-      function aviso(t) { var a = el('div', { class: 'cad-aviso', text: t }); cad.parentNode.appendChild(a); setTimeout(function () { a.remove(); }, 3800); }
-      function faltaParaSeo(v) {
-        var falta = [], vazio = function (x) { return !String(x == null ? '' : x).trim(); };
-        var rb = v.roteiro_blocos, temRoteiro = !vazio(v.roteiro) || !!(rb && (!vazio(rb.gancho) || !vazio(rb.conclusao) || (rb.blocos || []).some(function (b) { return !vazio(b); })));
-        var t = String(v.texto_postagem || ''), k = t.indexOf('✨ Atendimentos'), corpo = (k >= 0 ? t.slice(0, k) : t).trim();
-        if (vazio(v.titulo) || /^Vídeo \d+$/.test(String(v.titulo).trim())) falta.push('título');
-        if (vazio(v.capa_texto)) falta.push('texto da capa');
-        if (!v.numero) falta.push('número na série');
-        if (!v.data_postar) falta.push('data para membros');
-        if (!temRoteiro) falta.push('roteiro');
-        if (!corpo) falta.push('texto que vai junto');
-        if (vazio(v.tags)) falta.push('tags');
-        return falta;
-      }
-      var repintando = {}; /* o mesmo vídeo ou corte aparece em mais de uma barra (esquerda e direita): marcou numa, repinta todas */
-      function etapas(item, tipo, fim) {
-        var lista = tipo === 'v' ? td.ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }) : td.ETC;
-        var par = td.barrasDe(item, tipo === 'v' ? td.ETV : td.ETC, item.criado_em, fim), spans = [].slice.call(par[0].children);
-        var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= isoDia(Date.now())) : !!item[k]; };
-        var chave = tipo + item.id; (repintando[chave] = repintando[chave] || []).push(function () { repintar(); });
-        function repintar() { spans.forEach(function (sp, i) { var on = feita(lista[i][0]); sp.className = on ? 'preench' : ''; sp.style.background = on ? 'var(--azul-egipcio-claro)' : ''; sp.style.color = on ? 'var(--vazado,#F3E3B8)' : 'var(--terracota)'; }); }
-        function alternar(k) {
-          var novo = !item[k], campos = {}; campos[k] = novo;
-          if (tipo === 'v' && k === 'seo_ok' && novo) { var falta = faltaParaSeo(item); if (falta.length) { aviso('Falta preencher: ' + falta.join(', ')); return; } }
-          if (tipo === 'c' && novo) ({ seo_ok: ['legenda_ok'], shorts: ['legenda_ok', 'seo_ok'] }[k] || []).forEach(function (x) { if (!item[x]) campos[x] = true; });
-          var antes = {}; Object.keys(campos).forEach(function (x) { antes[x] = item[x]; item[x] = campos[x]; }); repintando[chave].forEach(function (f) { f(); });
-          C.from(tipo === 'v' ? 'prod_videos' : 'prod_cortes').update(campos).eq('id', item.id).then(function (r) { if (r.error) { Object.keys(antes).forEach(function (x) { item[x] = antes[x]; }); repintando[chave].forEach(function (f) { f(); }); aviso('Não consegui salvar.'); } });
-        }
-        spans.forEach(function (sp, i) { var k = lista[i][0]; if (tipo === 'v' && (k === 'capa' || k === 'no_ar' || k === 'publico_ok')) return; sp.style.cursor = 'pointer'; sp.addEventListener('click', function (ev) { ev.stopPropagation(); alternar(k); }); });
-        return par;
-      }
-      document.getElementById('t1').textContent = nivel === 0 ? 'próximos' : nivel === 1 ? 'série' : nivel === 2 ? 'vídeo' : 'corte'; document.getElementById('t2').textContent = nivel === 0 ? 'séries' : nivel === 1 ? 'vídeos' : 'cortes';
-      function ir(se, vi, co) { prodSerie = se; prodVideo = vi; prodCorte = co; entrarPagina(renderProducao); if (co) paginaCel('p1'); else paginaCel('p2'); }
-      function voltar() { if (!voltarPagina()) { if (prodCorte) { prodCorte = null; } else if (prodVideo) { prodVideo = null; } else prodSerie = null; renderProducao(); } }
-      function titulo(t, cor) { return el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--terracota)') + ';padding:2px 0 4px', text: t }); }
-      function nome(t, grande) { return el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:' + (grande ? 20 : 17) + 'px;overflow-wrap:anywhere' + (grande ? ';color:var(--terracota);margin:2px 0 4px' : ''), text: t }); }
-      function sub(t) { return el('div', { class: 'det', style: 'font-size:13px;opacity:.75;color:inherit', text: t }); }
-      function campo(r, v) { return v ? el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:3px 0' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:150px', text: r }), el('span', { text: v })]) : null; }
-      function botaoVoltar() { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:0 0 6px', text: '← Voltar' }); b.addEventListener('click', voltar); return b; }
-      function botaoEditar(t, url) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:12px', text: t }); b.addEventListener('click', function () { abrirTela(url); }); return b; }
-      var resumo = function (lista) { var n = lista.length, conta = function (c) { return lista.filter(function (v) { return v[c]; }).length; }; return n ? conta('roteiro_ok') + ' roteiros · ' + conta('gravado') + ' gravados · ' + conta('no_ar') + ' no ar · ' + conta('blog_ok') + ' no blog' : 'Nenhum vídeo ainda'; };
-      function linhaVideo(v, marcada) {
-        var fim = fimDoVideo(v), l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [fim ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(fim) }) : null, nome(tituloVideo(v)), sub(acesso(v) + (v.no_ar ? ' · no ar' : ''))].filter(Boolean).concat(etapas(v, 'v', fim)));
-        l.addEventListener('click', function () { ir(v.serie_id || 'soltos', v.id, null); }); return l;
-      }
-      function linhaCorte(c, marcada) {
-        var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [c.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(c.data) }) : null, nome(c.titulo || 'Corte ' + c.ordem)].filter(Boolean).concat(etapas(c, 'c', c.data)));
-        l.addEventListener('click', function () { ir(prodSerie, c.video_id, c.id); }); return l;
-      }
-      if (nivel === 0) {
-        /* próximos (esquerda) · séries e fila do blog (direita) */
-        var itens = [];
-        D.videos.forEach(function (v) { if (v.no_ar) return; var fim = fimDoVideo(v); if (!fim) return; var s = v.serie_id ? achar(D.series, v.serie_id) : null; itens.push({ data: String(fim).slice(0, 10), nome: tituloVideo(v), sub: s ? s.nome : 'Vídeo solto', barras: etapas(v, 'v', fim), ir: [v.serie_id || 'soltos', v.id, null] }); });
-        D.cortes.forEach(function (c) { if ((c.instagram && c.tiktok) || !c.data) return; var v = achar(D.videos, c.video_id); if (!v) return; itens.push({ data: String(c.data).slice(0, 10), nome: c.titulo || 'Corte sem título', sub: 'corte · ' + nomeVideo(v), barras: etapas(c, 'c', c.data), ir: [v.serie_id || 'soltos', v.id, c.id] }); });
-        itens.sort(function (x, y) { return x.data < y.data ? -1 : x.data > y.data ? 1 : 0; });
-        rolaE.appendChild(titulo('Próximos')); if (!itens.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada em andamento.' }));
-        itens.forEach(function (it) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }), nome(it.nome), sub(it.sub)].concat(it.barras)); l.addEventListener('click', function () { ir(it.ir[0], it.ir[1], it.ir[2]); }); rolaE.appendChild(l); });
-        rolaD.appendChild(titulo('Séries'));
-        D.series.forEach(function (s) {
-          var lista = D.videos.filter(function (v) { return v.serie_id === s.id; }), previstos = Math.max(s.total || 0, lista.length), noAr = lista.filter(function (v) { return v.no_ar; }).length, pct = previstos ? Math.round(100 * noAr / previstos) : 0;
-          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(s.nome), sub(acesso(s) + ' · ' + resumo(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '')), P.barraLinha(pct, null, noAr + '/' + previstos, false)]);
-          l.addEventListener('click', function () { ir(s.id, null, null); }); rolaD.appendChild(l);
-        });
-        var soltos = D.videos.filter(function (v) { return !v.serie_id; }), ls = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome('Vídeos soltos'), sub(resumo(soltos))]); ls.addEventListener('click', function () { ir('soltos', null, null); }); rolaD.appendChild(ls);
-        var fila = D.videos.filter(function (v) { return v.no_ar && !v.blog_ok; }); rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:12px 0 4px', text: 'Fila do blog' }));
-        if (!fila.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nada esperando para virar postagem.' }));
-        fila.forEach(function (v) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(tituloVideo(v)), v.data_blog ? P.barraTempoDias(String(v.criado_em).slice(0, 10), String(v.data_blog).slice(0, 10)) : null].filter(Boolean)); l.addEventListener('click', function () { ir(v.serie_id || 'soltos', v.id, null); }); rolaD.appendChild(l); });
-        rolaD.appendChild(botaoEditar('Abrir a produção completa', 'admin-producao.html'));
-        return;
-      }
-      if (nivel === 1) {
-        /* a série (esquerda) · os vídeos dela (direita) */
-        var lista1 = D.videos.filter(function (v) { return (v.serie_id || 'soltos') === prodSerie; }), nomeSerie = serie ? serie.nome : 'Vídeos soltos', noAr1 = lista1.filter(function (v) { return v.no_ar; }).length, previstos1 = Math.max(serie && serie.total || 0, lista1.length);
-        var datas = lista1.map(function (v) { return v.data_postar; }).filter(Boolean).sort();
-        rolaE.appendChild(botaoVoltar()); rolaE.appendChild(nome(nomeSerie, true));
-        if (serie) { rolaE.appendChild(campo('Acesso', acesso(serie))); rolaE.appendChild(campo('Previstos', serie.total ? String(serie.total) : '')); }
-        rolaE.appendChild(campo('Período', datas.length ? dataCurta(datas[0]) + (datas.length > 1 && datas[datas.length - 1] !== datas[0] ? ' até ' + dataCurta(datas[datas.length - 1]) : '') : ''));
-        rolaE.appendChild(campo('Situação', resumo(lista1)));
-        if (previstos1) rolaE.appendChild(P.barraLinha(Math.round(100 * noAr1 / previstos1), null, noAr1 + '/' + previstos1, false));
-        rolaE.appendChild(botaoEditar(serie ? 'Editar esta série' : 'Editar os vídeos soltos', 'admin-producao.html#aba=series&serie=' + encodeURIComponent(prodSerie)));
-        rolaD.appendChild(titulo('Vídeos')); if (!lista1.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum vídeo ainda.' }));
-        lista1.forEach(function (v) { rolaD.appendChild(linhaVideo(v, false)); });
-        return;
-      }
-      /* níveis 2 e 3: o vídeo (ou o corte) à esquerda · os cortes do vídeo à direita */
-      var cortesDe = D.cortes.filter(function (c) { return c.video_id === video.id; }), fim2 = fimDoVideo(video);
-      rolaE.appendChild(botaoVoltar());
-      if (nivel === 2) {
-        rolaE.appendChild(nome(tituloVideo(video), true)); rolaE.appendChild(sub(video.serie_id ? (achar(D.series, video.serie_id) || {}).nome || '' : 'Vídeo solto'));
-        if (video.capa_url) rolaE.appendChild(el('img', { src: video.capa_url, alt: '', style: 'display:block;width:100%;max-width:300px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:8px 0' }));
-        [campo('Acesso', acesso(video)), campo('Gravar em', video.data_gravar ? dataCurta(video.data_gravar) : ''), campo(acesso(video) === 'membros' ? 'Disponível aos membros' : 'Fica público em', fim2 ? dataCurta(fim2) : ''), campo('Cortes até', video.data_cortes ? dataCurta(video.data_cortes) : ''), campo('Blog até', video.data_blog ? dataCurta(video.data_blog) : '')].forEach(function (c) { if (c) rolaE.appendChild(c); });
-        etapas(video, 'v', fim2).forEach(function (b) { rolaE.appendChild(b); });
-        rolaE.appendChild(botaoEditar('Editar este vídeo', link(video)));
-      } else {
-        rolaE.appendChild(nome(corte.titulo || 'Corte ' + corte.ordem, true)); rolaE.appendChild(sub('corte · ' + nomeVideo(video)));
-        [campo('Data', corte.data ? dataCurta(corte.data) : '')].forEach(function (c) { if (c) rolaE.appendChild(c); });
-        etapas(corte, 'c', corte.data).forEach(function (b) { rolaE.appendChild(b); });
-        rolaE.appendChild(botaoEditar('Editar este corte', link(video, corte.id)));
-      }
-      rolaD.appendChild(titulo(nivel === 2 ? 'Cortes' : 'Cortes do vídeo ' + (video.numero || '')));
-      if (!cortesDe.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum corte ainda.' }));
-      cortesDe.forEach(function (c) { rolaD.appendChild(linhaCorte(c, nivel === 3 && c.id === corte.id)); });
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      if (!prodMod) prodMod = window.ProducaoCaderno(prodCtx);
+      prodCtx.esq = rolaE; prodCtx.dir = rolaD;
+      prodMod.carregar().then(function () {
+        if (eu !== pedido) return; rolaE.textContent = '';
+        prodMod.ir(prodSerie || prodVideo ? 'series' : 'hoje', prodSerie, prodVideo, prodCorte); prodMod.tela();
+      }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir a Produção.' })); } });
     }
 
     /* ---------- Projetos, de página em página: (próximos passos · projetos) → (o projeto · os passos dele) → (o subprojeto · os passos dele). Criar, renomear, datas e subprojetos: tela de antes, dentro do caderno ---------- */

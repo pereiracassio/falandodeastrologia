@@ -11,6 +11,7 @@ const EXCECOES = {
   'portal.js': 'janelas (alert/confirm/prompt) e sanfona, componentes com CSS próprio',
   'menu.js': 'menu lateral, componente com CSS próprio', 'conversa.js': 'balões das Dúvidas, componente com CSS próprio',
   'admin-producao.html': 'teleprompter e etapas (já cobertos por classe; fonte do prompter)',
+  'caderno-producao.js': 'cópia da Produção (mesmas exceções: teleprompter, avisos)',
   'carrinho.html': 'checkout', 'horario-confirmado.html': 'checkout', 'agenda.html': 'agendamento público',
   'privacidade.html': 'política', 'aluno.html': 'link "Tire suas dúvidas"', 'admin-projetos.html': '.proj-grupo (coberto por tipografia.css)',
   'blog.css': 'estilos do blog', 'home.css': 'home', 'page.css': 'estilos de página', 'portal.css': 'estilos do portal',
