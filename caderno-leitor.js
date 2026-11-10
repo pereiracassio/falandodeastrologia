@@ -21,7 +21,7 @@ window.LeitorCaderno = function (P) {
     function criarPagina(host) {
       host.textContent = '';
       host.style.cssText += ';overflow:auto;-webkit-overflow-scrolling:touch;position:relative;min-height:0';
-      var janela = el('div'); janela.style.cssText = 'position:relative;overflow:hidden;margin:auto;flex:none;touch-action:pan-x pan-y;background:#fff';
+      var janela = el('div', { class: 'lp' }); janela.style.cssText = 'position:relative;overflow:hidden;margin:auto;flex:none;touch-action:pan-x pan-y;background:#fff';
       var holder = el('div'); holder.style.cssText = 'position:absolute;background:#fff';
       function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;' + (css || ''); holder.appendChild(c); return c; }
       var cvPdf = lona(), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();

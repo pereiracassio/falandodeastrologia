@@ -247,6 +247,10 @@
   <script src="caderno-leitor.js?v=1"></script>
   <script src="caderno-producao.js?v=1"></script>
   <script src="caderno-projetos.js?v=1"></script>
+  <script src="leitor.js?v=10"></script>
+  <script src="caderno.js?v=11"></script>
+  <script src="caderno-estudos.js?v=3"></script>
+  <script src="caderno-estudos-tela.js?v=1"></script>
   <script src="todo-dados.js?v=1"></script>
   <script src="carrinho.js?v=6"></script>
   <script src="caderno-financeiro.js?v=1"></script>
@@ -457,10 +461,10 @@
     /* VIRAR A PÁGINA: cada entrada (tocar num marcador ou num item) vira a página; o que estava ali fica na esquerda e o novo na direita.
        Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
     var hist = [], hpos = -1, aplicando = false;
-    function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, projVer: projVer, estSel: estSel, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
+    function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, projVer: projVer, estSel: estSel, estVer: estVer, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
     function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); hist.push(snapshot()); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } }
     function virar(sentido) { var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
-    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
+    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function voltarPagina() { if (hpos <= 0) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (hpos >= hist.length - 1) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
     function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
@@ -833,92 +837,18 @@
       projMod.carregar().then(function () { if (eu !== pedido) return; }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os projetos.' })); } });
     }
 
-    /* ---------- Estudos, de página em página: (próximas aulas · estudos) → (o estudo · as aulas dele) → (a aula · as questões dela). Responder a aula, importar, caderno e encerrar: tela de antes, dentro do caderno ---------- */
-    var estVerEnc = false;
+    /* ---------- Estudos: a tela COMPLETA (caderno-estudos-tela.js), de página em página: próximas aulas · estudos → estudo · aulas → aula · questões ---------- */
+    var estMod = null, estVer = null, estCtx = { P: P, C: C, app: el('div'), esq: null, dir: null,
+      entrar: function (fn) { var e = estMod.estado(); estSel = e.aberto; estVer = e.ver; estAula = e.aula; entrarPagina(fn); paginaCel('p2'); },
+      voltar: function () { return voltarPagina(); },
+      rotulos: function (a, b) { document.getElementById('t1').textContent = a; document.getElementById('t2').textContent = b; } };
     function vistaEstudos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
-      Promise.all([C.from('estudos').select('*').order('criado_em'), C.from('estudo_aulas').select('id,estudo_id,data,materia,titulo').order('data').order('criado_em'), C.from('estudo_questoes').select('id,aula_id,ordem,tipo,correta,enunciado').order('ordem'), C.from('estudo_respostas').select('questao_id,opcao,texto')]).then(function (rs) {
-        if (eu !== pedido) return; rolaE.textContent = '';
-        var erro = rs[0].error || rs[1].error || rs[2].error || rs[3].error;
-        if (erro) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os estudos (' + erro.message + ').' })); return; }
-        var estudos = rs[0].data || [], aulas = rs[1].data || [], questoes = rs[2].data || [], resp = {}, prog = {};
-        (rs[3].data || []).forEach(function (x) { resp[x.questao_id] = x; });
-        questoes.forEach(function (q) {
-          var p = prog[q.aula_id] = prog[q.aula_id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 }, r = resp[q.id]; p.total++;
-          if (q.tipo === 'multipla') { p.multiplas++; if (r && r.opcao != null) { p.feitas++; if (r.opcao === q.correta) p.certas++; } } else if (r && r.texto) p.feitas++;
-        });
-        var filhosDe = function (id) { return estudos.filter(function (e) { return e.estudo_pai_id === id; }); };
-        var arvoreDe = function (e) { var r = [e]; filhosDe(e.id).forEach(function (f) { r = r.concat(arvoreDe(f)); }); return r; };
-        var concluida = function (a) { var p = prog[a.id]; return !!p && p.total > 0 && p.feitas === p.total; };
-        var aulasDa = function (e) { var ids = {}; arvoreDe(e).forEach(function (x) { ids[x.id] = true; }); return aulas.filter(function (a) { return ids[a.estudo_id]; }); };
-        var tempoDe = function (e) {
-          if (!e.data_fim) return null;
-          var fim = new Date(String(e.data_fim).slice(0, 10) + 'T23:59:59'), ini = new Date(String(e.data_inicio || e.criado_em).slice(0, 10) + 'T00:00:00'), agora = new Date(), f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
-          var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
-          return { pct: Math.floor(f * 100), cor: corTempo(f), texto: passou + '/' + total + ' dias' };
-        };
-        var barras = function (e) { var l = aulasDa(e), feitas = l.filter(concluida).length, out = [P.barraLinha(l.length ? Math.floor(feitas * 100 / l.length) : 0, null, feitas + '/' + l.length, false)], t = tempoDe(e); if (t) out.push(P.barraLinha(t.pct, t.cor, t.texto, true)); return out; };
-        function entrar(estudoId, aulaId) { estSel = estudoId; estAula = aulaId || null; entrarPagina(desenharTudo); paginaCel('p2'); }
-        function rotulo(onde, t, cor) { onde.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--ocre)') + ';padding:12px 0 4px', text: t })); }
-        function nome(t, grande) { return el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:' + (grande ? 20 : 17) + 'px;overflow-wrap:anywhere' + (grande ? ';color:var(--terracota);margin:2px 0 4px' : ''), text: t }); }
-        function infoAula(a) { var p = prog[a.id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 }; return p.total ? p.feitas + ' de ' + p.total + ' respondidas' + (p.multiplas ? ' · ' + p.certas + ' certas' : '') : 'sem questões'; }
-        var hoje = isoDia(Date.now());
-        function linhaAula(a, feita, comEstudo) {
-          var dia = String(a.data).slice(0, 10), atrasada = !feita && dia < hoje, dono = comEstudo ? estudos.filter(function (e) { return e.id === a.estudo_id; })[0] : null;
-          var l = el('div', { class: 'tarefa', style: 'cursor:pointer' + (feita ? ';opacity:.65' : '') }, [el('span', { class: 'cx', style: 'border-color:transparent;color:var(--terracota)', text: feita ? '✓' : '' }), el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'det', style: 'color:' + (atrasada ? 'var(--terracota)' : 'var(--azul-egipcio-escuro)'), text: (+dia.slice(8)) + ' de ' + MES3[+dia.slice(5, 7) - 1] + (atrasada ? ' · atrasada' : '') }), el('div', { class: 'nome', text: a.titulo }), el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: a.materia + ' · ' + infoAula(a) + (dono ? ' · ' + dono.nome : '') })])]);
-          l.addEventListener('click', function () { entrar(a.estudo_id, a.id); }); return l;
-        }
-        function desenharTudo() {
-          if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
-          var est = estSel ? estudos.filter(function (e) { return e.id === estSel; })[0] : null; if (estSel && !est) { estSel = null; estAula = null; }
-          var aula = est && estAula ? aulas.filter(function (a) { return a.id === estAula; })[0] : null; if (estAula && !aula) estAula = null;
-          document.getElementById('t1').textContent = aula ? 'aula' : est ? 'estudo' : 'próximas'; document.getElementById('t2').textContent = aula ? 'questões' : est ? 'aulas' : 'estudos';
-          if (!est) {
-            /* esquerda: as próximas aulas de todos os estudos · direita: a lista dos estudos */
-            var raizes = estudos.filter(function (e) { return !e.estudo_pai_id; }), ativos = raizes.filter(function (e) { return !e.encerrado; }), enc = raizes.filter(function (e) { return e.encerrado; });
-            var abertos = {}; ativos.forEach(function (e) { arvoreDe(e).forEach(function (x) { abertos[x.id] = true; }); });
-            var prox = aulas.filter(function (a) { return abertos[a.estudo_id] && !concluida(a); }).sort(function (a, b) { return String(a.data) < String(b.data) ? -1 : 1; }).slice(0, 12);
-            rotulo(rolaE, 'Próximas aulas', 'var(--terracota)'); if (!prox.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma aula para fazer.' }));
-            prox.forEach(function (a) { rolaE.appendChild(linhaAula(a, false, true)); });
-            rotulo(rolaD, 'Estudos', 'var(--terracota)'); if (!ativos.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum estudo ainda.' }));
-            var linhaEstudo = function (e) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(e.nome)].concat(barras(e))); l.addEventListener('click', function () { entrar(e.id, null); }); return l; };
-            ativos.forEach(function (e) { rolaD.appendChild(linhaEstudo(e)); });
-            if (enc.length) { var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: estVerEnc ? 'Esconder encerrados' : 'Encerrados (' + enc.length + ')' }); vc.addEventListener('click', function () { estVerEnc = !estVerEnc; desenharTudo(); }); rolaD.appendChild(vc); if (estVerEnc) enc.forEach(function (e) { rolaD.appendChild(linhaEstudo(e)); }); }
-            var completo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo estudo, importar aulas e mais' }); completo.addEventListener('click', function () { abrirTela('admin-estudos.html'); }); rolaD.appendChild(completo);
-            return;
-          }
-          var vb = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:0 0 6px', text: '← Voltar' });
-          vb.addEventListener('click', function () { if (!voltarPagina()) { if (estAula) estAula = null; else estSel = est.estudo_pai_id || null; desenharTudo(); } }); rolaE.appendChild(vb);
-          if (aula) {
-            /* esquerda: a aula · direita: as questões dela */
-            var dia = String(aula.data).slice(0, 10);
-            rolaE.appendChild(nome(aula.titulo, true)); rolaE.appendChild(el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: aula.materia + ' · ' + est.nome }));
-            rolaE.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:6px 0 3px' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:110px', text: 'Data' }), el('span', { text: (+dia.slice(8)) + ' de ' + MESES[+dia.slice(5, 7) - 1] })]));
-            rolaE.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:3px 0' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:110px', text: 'Situação' }), el('span', { text: infoAula(aula) })]));
-            var resp1 = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px', text: concluida(aula) ? 'Rever esta aula' : 'Fazer esta aula' }); resp1.addEventListener('click', function () { abrirTela('admin-estudos.html#aula=' + encodeURIComponent(aula.id) + '&estudo=' + encodeURIComponent(est.id)); }); rolaE.appendChild(resp1);
-            var qs = questoes.filter(function (q) { return q.aula_id === aula.id; });
-            rotulo(rolaD, 'Questões', 'var(--terracota)'); if (!qs.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Sem questões.' }));
-            qs.forEach(function (q, i) {
-              var r = resp[q.id], feita = q.tipo === 'multipla' ? !!(r && r.opcao != null) : !!(r && r.texto), certa = q.tipo === 'multipla' && feita && r.opcao === q.correta;
-              var estado = !feita ? 'por responder' : q.tipo !== 'multipla' ? 'respondida' : certa ? 'certa' : 'errada', txt = String(q.enunciado || '').replace(/\s+/g, ' ').trim();
-              var l = el('div', { class: 'tarefa', style: 'cursor:pointer' }, [el('span', { class: 'cx', style: 'border-color:transparent;color:' + (certa ? 'var(--azul-egipcio-escuro)' : 'var(--terracota)'), text: !feita ? '' : (q.tipo === 'multipla' ? (certa ? '✓' : '✗') : '✓') }), el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: 'questão ' + (i + 1) + ' · ' + estado }), el('div', { style: 'overflow-wrap:anywhere', text: txt.length > 110 ? txt.slice(0, 110) + '…' : txt })])]);
-              l.addEventListener('click', function () { abrirTela('admin-estudos.html#aula=' + encodeURIComponent(aula.id) + '&estudo=' + encodeURIComponent(est.id)); }); rolaD.appendChild(l);
-            });
-            return;
-          }
-          /* esquerda: o estudo (e as aulas feitas) · direita: as aulas para fazer e os estudos menores */
-          rolaE.appendChild(nome(est.nome, true)); barras(est).forEach(function (b) { rolaE.appendChild(b); });
-          var minhas = aulas.filter(function (a) { return a.estudo_id === est.id; }), pend = minhas.filter(function (a) { return !concluida(a); }), feitas = minhas.filter(concluida), menores = filhosDe(est.id);
-          if (feitas.length) { rotulo(rolaE, 'Feitas'); feitas.forEach(function (a) { rolaE.appendChild(linhaAula(a, true, false)); }); }
-          var abre = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Editar este estudo' }); abre.addEventListener('click', function () { abrirTela('admin-estudos.html#estudo=' + encodeURIComponent(est.id)); }); rolaE.appendChild(abre);
-          if (menores.length) { rotulo(rolaD, 'Estudos menores', 'var(--terracota)'); menores.forEach(function (m) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(m.nome)].concat(barras(m))); l.addEventListener('click', function () { entrar(m.id, null); }); rolaD.appendChild(l); }); }
-          rotulo(rolaD, 'Para fazer', 'var(--terracota)'); if (!pend.length) rolaD.appendChild(el('p', { class: 'vazio', text: minhas.length ? 'Tudo feito.' : 'Nenhuma aula ainda.' }));
-          pend.forEach(function (a) { rolaD.appendChild(linhaAula(a, false, false)); });
-        }
-        desenharTudo();
-      }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
+      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      if (!estMod) estMod = window.EstudosCaderno(estCtx);
+      estCtx.esq = rolaE; estCtx.dir = rolaD; estMod.ir(estSel, estVer, estAula);
+      estMod.carregar().then(function () { if (eu !== pedido) return; rolaE.textContent = ''; estMod.desenhar(); }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os estudos (' + ((er && er.message) || '') + ').' })); } });
     }
 
     /* ---------- Financeiro: o mês à esquerda, os gráficos à direita. Virar a página volta ao mês anterior; avançar, ao próximo ---------- */
@@ -1090,7 +1020,7 @@
     document.getElementById('tMais').addEventListener('click', novaTarefa);
     (function () { /* o dedo vira a página: para a direita volta, para a esquerda avança */
       var folha = cad.querySelector('.folha'), x0 = 0, y0 = 0, t0 = 0, ativo = false;
-      folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; if (ev.touches.length !== 1 || t.touchType === 'stylus' || (ev.target.closest && ev.target.closest('input,textarea,select,[style*="overflow-x"]'))) { ativo = false; return; } x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; }, { passive: true });
+      folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; if (ev.touches.length !== 1 || t.touchType === 'stylus' || (ev.target.closest && (ev.target.closest('input,textarea,select,[style*="overflow-x"]') || (ev.target.closest('canvas') && !ev.target.closest('.lp'))))) { ativo = false; return; } x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; }, { passive: true });
       folha.addEventListener('touchend', function (ev) { if (!ativo) return; ativo = false; var t = ev.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 800 || Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return; if (visao === 'leitor' && leitorLivro && leitorAtual) { if (leitorAtual.zoom() === 1) { virar(dx > 0 ? 'tras' : 'frente'); leitorAtual.virar(dx > 0 ? -1 : 1); } return; } if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(dx > 0 ? -1 : 1); return; } if (dx > 0) voltarPagina(); else avancarPagina(); }, { passive: true });
     })();
     C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
