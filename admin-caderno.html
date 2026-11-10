@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="tipografia.css?v=37">
   <link rel="stylesheet" href="caderno-financeiro.css?v=1">
   <link rel="stylesheet" href="caderno-producao.css?v=1">
+  <link rel="stylesheet" href="caderno-projetos.css?v=1">
   <style>
     /* CADERNO do Hellenic Daily: uma folha aberta (duas páginas) dentro de uma capa de cor escolhida, com marcadores dos dois lados.
        Só desenho: os dados são os mesmos da Agenda (Google, To do, horas planetárias). */
@@ -245,6 +246,7 @@
   <script src="hora-planetaria.js?v=1"></script>
   <script src="caderno-leitor.js?v=1"></script>
   <script src="caderno-producao.js?v=1"></script>
+  <script src="caderno-projetos.js?v=1"></script>
   <script src="todo-dados.js?v=1"></script>
   <script src="carrinho.js?v=6"></script>
   <script src="caderno-financeiro.js?v=1"></script>
@@ -264,7 +266,7 @@
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
     var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
-    var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
+    var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
     function p2(n) { return String(n).padStart(2, '0'); }
@@ -455,10 +457,10 @@
     /* VIRAR A PÁGINA: cada entrada (tocar num marcador ou num item) vira a página; o que estava ali fica na esquerda e o novo na direita.
        Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
     var hist = [], hpos = -1, aplicando = false;
-    function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, estSel: estSel, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
+    function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, projVer: projVer, estSel: estSel, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
     function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); hist.push(snapshot()); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } }
     function virar(sentido) { var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
-    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; estSel = sn.estSel; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
+    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function voltarPagina() { if (hpos <= 0) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (hpos >= hist.length - 1) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
     function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
@@ -817,93 +819,18 @@
       }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir a Produção.' })); } });
     }
 
-    /* ---------- Projetos, de página em página: (próximos passos · projetos) → (o projeto · os passos dele) → (o subprojeto · os passos dele). Criar, renomear, datas e subprojetos: tela de antes, dentro do caderno ---------- */
-    var projVerConcl = false;
+    /* ---------- Projetos: a tela COMPLETA (caderno-projetos.js), de página em página: próximos passos · projetos → projeto · passos → subprojeto · passos ---------- */
+    var projMod = null, projVer = null, projCtx = { P: P, C: C, app: el('div'), esq: null, dir: null,
+      entrar: function (fn) { var e = projMod.estado(); projSel = e.aberto; projVer = e.ver; entrarPagina(fn); paginaCel('p2'); },
+      voltar: function () { return voltarPagina(); },
+      rotulos: function (a, b) { document.getElementById('t1').textContent = a; document.getElementById('t2').textContent = b; } };
     function vistaProjetos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
-      var COLS = 'id,projeto_id,titulo,nota,feito,feito_em,ordem,data';
-      Promise.all([C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio,projeto_pai_id,ordem_no_pai').order('ordem').order('criado_em'), C.from('projeto_passos').select(COLS).order('ordem').order('criado_em')]).then(function (res) {
-        if (eu !== pedido) return;
-        if (res[0].error || res[1].error) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os projetos.' })); return; }
-        var projetos = res[0].data || [], passos = res[1].data || [];
-        function recarregar() { C.from('projeto_passos').select(COLS).order('ordem').order('criado_em').then(function (r) { if (eu !== pedido || r.error) return; passos = r.data || []; desenharTudo(); }); }
-        var filhosDe = function (id) { return projetos.filter(function (p) { return p.projeto_pai_id === id; }); };
-        var arvore = function (p) { var r = [p]; filhosDe(p.id).forEach(function (f) { r = r.concat(arvore(f)); }); return r; };
-        var passosDaArvore = function (p) { var ids = {}; arvore(p).forEach(function (x) { ids[x.id] = true; }); return passos.filter(function (x) { return ids[x.projeto_id]; }); };
-        var proximaData = function (p) { var ds = passosDaArvore(p).filter(function (x) { return !x.feito && x.data; }).map(function (x) { return x.data; }).sort(); return ds[0] || p.data_fim || null; };
-        var contagem = function (p) {
-          var meus = passos.filter(function (x) { return x.projeto_id === p.id; }), fs = filhosDe(p.id);
-          if (!meus.length && !fs.length) return p.projeto_pai_id ? { total: 1, feitos: 0 } : { total: 0, feitos: 0 };
-          var t = meus.length, f = meus.filter(function (x) { return x.feito; }).length; fs.forEach(function (c) { var k = contagem(c); t += k.total; f += k.feitos; }); return { total: t, feitos: f };
-        };
-        var pctProj = function (p) { var c = contagem(p); return c.total ? Math.floor(c.feitos * 100 / c.total) : 0; };
-        var concluido = function (p) { var c = contagem(p); return c.total > 0 && c.feitos === c.total; };
-        var porNumero = function (lista) { var n = function (p) { return p.prioridade == null ? Infinity : p.prioridade; }; return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) { var x = n(a.p), y = n(b.p); if (x !== y) return x < y ? -1 : 1; if (x === Infinity && pctProj(a.p) !== pctProj(b.p)) return pctProj(b.p) - pctProj(a.p); return a.i - b.i; }).map(function (q) { return q.p; }); };
-        var tempoDe = function (p) {
-          if (!p.data_fim) return null;
-          var fim = new Date(p.data_fim + 'T23:59:59'), ini = new Date((p.data_inicio || new Date(p.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date(), f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
-          var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
-          return { pct: Math.floor(f * 100), cor: corTempo(f), texto: passou + '/' + total + ' dias' };
-        };
-        function barras(p) { var c = contagem(p), t = tempoDe(p), l = [P.barraLinha(pctProj(p), null, c.feitos + '/' + c.total, false)]; if (t) l.push(P.barraLinha(t.pct, t.cor, t.texto, true)); return l; }
-        function entrar(id) { projSel = id; entrarPagina(desenharTudo); paginaCel('p2'); }
-        function rotulo(onde, t, cor) { onde.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--ocre)') + ';padding:12px 0 4px', text: t })); }
-        function linhaPasso(x, feito, comProjeto) {
-          var cx = el('button', { type: 'button', class: 'cx', 'aria-label': feito ? 'Desmarcar' : 'Marcar como feito', text: feito ? '✓' : '' });
-          cx.addEventListener('click', function (ev) { ev.stopPropagation(); cx.disabled = true; C.from('projeto_passos').update(feito ? { feito: false, feito_em: null } : { feito: true, feito_em: new Date().toISOString() }).eq('id', x.id).then(function (g) { if (g.error) { cx.disabled = false; alert('Não foi possível salvar.'); return; } recarregar(); }); });
-          var dono = comProjeto ? projetos.filter(function (p) { return p.id === x.projeto_id; })[0] : null;
-          var l = el('div', { class: 'tarefa', style: (feito ? 'opacity:.6;' : '') + (dono ? 'cursor:pointer' : '') }, [cx, el('div', { style: 'flex:1;min-width:0' }, [x.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(x.data) }) : null, el('div', { class: 'nome', style: feito ? 'text-decoration:line-through' : '', text: x.titulo }), dono ? el('div', { class: 'det', style: 'color:var(--ocre);font-weight:700', text: dono.nome }) : (x.nota ? el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: x.nota }) : null)].filter(Boolean))]);
-          if (dono) l.addEventListener('click', function () { entrar(dono.id); }); return l;
-        }
-        function desenharTudo() {
-          if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
-          var proj = projSel ? projetos.filter(function (p) { return p.id === projSel; })[0] : null; if (projSel && !proj) projSel = null;
-          document.getElementById('t1').textContent = proj ? 'projeto' : 'próximos'; document.getElementById('t2').textContent = proj ? 'passos' : 'projetos';
-          if (!proj) {
-            /* esquerda: os próximos passos de todos os projetos · direita: a lista dos projetos */
-            var raizes = projetos.filter(function (p) { return !p.projeto_pai_id; }), ativos = porNumero(raizes.filter(function (p) { return !concluido(p); })), concl = porNumero(raizes.filter(concluido));
-            var prox = passos.filter(function (x) { return !x.feito && x.data; }).sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; }).slice(0, 14);
-            rotulo(rolaE, 'Próximos passos', 'var(--terracota)'); if (!prox.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum passo com data.' }));
-            prox.forEach(function (x) { rolaE.appendChild(linhaPasso(x, false, true)); });
-            rotulo(rolaD, 'Projetos', 'var(--terracota)'); if (!ativos.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum projeto ainda.' }));
-            var linhaProjeto = function (p) {
-              var bol = p.prioridade == null ? null : el('span', { style: 'flex:none;width:26px;height:26px;border:1.5px solid var(--azul-egipcio-claro);border-radius: 50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700', text: String(p.prioridade) });
-              var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { style: 'display:flex;align-items:center;gap:10px' }, [bol, el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: p.nome })].filter(Boolean))].concat(barras(p)));
-              l.addEventListener('click', function () { entrar(p.id); }); return l;
-            };
-            ativos.forEach(function (p) { rolaD.appendChild(linhaProjeto(p)); });
-            if (concl.length) { var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: projVerConcl ? 'Esconder concluídos' : 'Concluídos (' + concl.length + ')' }); vc.addEventListener('click', function () { projVerConcl = !projVerConcl; desenharTudo(); }); rolaD.appendChild(vc); if (projVerConcl) concl.forEach(function (p) { rolaD.appendChild(linhaProjeto(p)); }); }
-            var completa = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo projeto e mais opções' }); completa.addEventListener('click', function () { abrirTela('admin-projetos.html'); }); rolaD.appendChild(completa);
-            return;
-          }
-          /* esquerda: o projeto (e o que já foi feito) · direita: os passos dele */
-          var vb = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:0 0 6px', text: '← Voltar' }); vb.addEventListener('click', function () { if (!voltarPagina()) { projSel = proj.projeto_pai_id || null; desenharTudo(); } }); rolaE.appendChild(vb);
-          rolaE.appendChild(el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:20px;color:var(--terracota);margin:2px 0 4px;overflow-wrap:anywhere', text: proj.nome }));
-          barras(proj).forEach(function (b) { rolaE.appendChild(b); });
-          [['Início', proj.data_inicio || (proj.criado_em ? String(proj.criado_em).slice(0, 10) : '')], ['Data final', proj.data_fim || '']].forEach(function (c) { if (c[1]) rolaE.appendChild(el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:3px 0' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:110px', text: c[0] }), el('span', { text: dataCurta(c[1]) + ' · ' + String(c[1]).slice(0, 4) })])); });
-          var meus = passos.filter(function (x) { return x.projeto_id === proj.id; }), feitos = meus.filter(function (x) { return x.feito; });
-          if (feitos.length) { rotulo(rolaE, 'Feitos'); feitos.forEach(function (x) { rolaE.appendChild(linhaPasso(x, true, false)); }); }
-          var edita = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Editar este projeto' }); edita.addEventListener('click', function () { abrirTela('admin-projetos.html#projeto=' + encodeURIComponent(proj.id)); }); rolaE.appendChild(edita);
-          var itens = meus.filter(function (x) { return !x.feito; }).map(function (x) { return { passo: x, data: x.data || null, ordem: x.ordem || 0 }; });
-          filhosDe(proj.id).forEach(function (c) { var k = contagem(c); if (k.total && k.feitos === k.total) return; itens.push({ filho: c, data: proximaData(c), pct: k.total ? Math.floor(k.feitos * 100 / k.total) : 0, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai }); });
-          var grupo = function (x) { return x.data ? 0 : x.filho ? 1 : 2; };
-          itens.sort(function (a, b) { var ga = grupo(a), gb = grupo(b); if (ga !== gb) return ga - gb; if (ga === 0) return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; if (ga === 1) return b.pct - a.pct; return a.ordem - b.ordem; });
-          if (!itens.length && !meus.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum passo ainda.' }));
-          itens.forEach(function (it, i) {
-            if (i === 0) rotulo(rolaD, 'Próximo passo'); else if (i === 1) rotulo(rolaD, 'Depois');
-            if (it.passo) { rolaD.appendChild(linhaPasso(it.passo, false, false)); return; }
-            var c = it.filho, l = el('div', { class: 'tarefa', style: 'cursor:pointer' }, [el('span', { class: 'cx', style: 'border-color:transparent' }), el('div', { style: 'flex:1;min-width:0' }, [it.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }) : null, el('div', { class: 'nome', text: c.nome })].filter(Boolean).concat(barras(c)))]);
-            l.addEventListener('click', function () { entrar(c.id); }); rolaD.appendChild(l);
-          });
-          var campo = el('input', { type: 'text', placeholder: 'Novo passo', 'aria-label': 'Novo passo', style: 'width:100%;box-sizing:border-box' }), add = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:8px', text: 'Adicionar passo' });
-          function adicionar() { var t = campo.value.trim(); if (!t) return; add.disabled = true; var ordem = meus.reduce(function (m, x) { return Math.max(m, x.ordem || 0); }, 0) + 1; C.from('projeto_passos').insert({ projeto_id: proj.id, titulo: t, ordem: ordem }).then(function (g) { add.disabled = false; if (g.error) { alert('Não foi possível salvar.'); return; } campo.value = ''; recarregar(); }); }
-          add.addEventListener('click', adicionar); campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); adicionar(); } });
-          rolaD.appendChild(el('div', { class: 'portal', style: 'margin-top:16px' }, [campo, add]));
-        }
-        desenharTudo();
-      }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
+      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      if (!projMod) projMod = window.ProjetosCaderno(projCtx);
+      projCtx.esq = rolaE; projCtx.dir = rolaD; projMod.ir(projSel, projVer);
+      projMod.carregar().then(function () { if (eu !== pedido) return; }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os projetos.' })); } });
     }
 
     /* ---------- Estudos, de página em página: (próximas aulas · estudos) → (o estudo · as aulas dele) → (a aula · as questões dela). Responder a aula, importar, caderno e encerrar: tela de antes, dentro do caderno ---------- */

@@ -1,0 +1,15 @@
+/* estilo dos Projetos dentro do caderno (cópia do <style> de admin-projetos.html) */
+
+    .proj-barra{height:14px;border:1px solid var(--azul-egipcio-claro);margin:8px 0 6px}
+    .proj-barra i{display:block;height:100%;background:var(--azul-egipcio-claro)}
+    .proj-passo{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid var(--azul-egipcio-claro)}
+    .proj-passo:last-child{border-bottom:0}
+    .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid var(--azul-egipcio-claro);background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
+    .proj-passo input[type=checkbox]:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--terracota);font-size:20px;font-weight:700;font-family:Arial,sans-serif}
+    .proj-passo.feito .proj-titulo{text-decoration:line-through;opacity:.6}
+    .proj-grupo{font-family:Cinzel,serif;font-weight:700;font-size:14px;color:var(--terracota);margin:22px 0 6px;text-transform:lowercase}
+    .proj-titulo{font-size:17px;line-height:1.4;color:var(--preto-tinta);display:block;overflow-wrap:anywhere}
+    .proj-acoes{display:flex;gap:18px;align-items:center;margin-top:6px}
+    .proj-mini{background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:var(--preto-tinta);opacity:.6;cursor:pointer;text-decoration:underline}
+    .proj-mini:disabled{opacity:.2;cursor:default}
+  
