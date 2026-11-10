@@ -56,7 +56,8 @@
     .cad .topo{display:flex;gap:24px;align-items:flex-start}
     .cad .hoje{flex:1;text-align:center}
     .cad .logo-daily{display:block;width:250px;height:auto;margin:0 auto 6px}
-    .cad .mes{display:flex;justify-content:center;align-items:center;gap:6px;color:var(--azul-egipcio-escuro);font-size:19px}
+    .cad .cal{flex:none}
+    .cad .mes{display:flex;justify-content:center;align-items:center;gap:6px;color:var(--azul-egipcio-escuro);font-size:19px;margin-top:8px}
     .cad .seta{background:none;border:0;color:var(--azul-egipcio-escuro);font-size:26px;line-height:1;padding:0 8px}
     .cad .num-linha{display:flex;justify-content:center;align-items:center;gap:6px}
     .cad .num{font-size:104px;line-height:1;color:var(--terracota);margin:4px 0 2px;font-weight:700}
@@ -115,7 +116,7 @@
       .cad.p1 .pag.dir,.cad.p2 .pag.esq{display:none}
       .cad .topo{gap:6px}
       .cad .logo-daily{width:165px}
-      .cad .num{font-size:72px}.cad .mes{font-size:14px}.cad .sem{font-size:13px}
+      .cad .num{font-size:72px}.cad .mes{font-size:14px;margin-top:4px}.cad .sem{font-size:13px}
       .cad .reg{flex-direction:column;gap:4px;font-size:13px}
       .cad .mini{font-size:13px}.cad .mini td button{padding:4px 5px;font-size:13px}.cad .mini th{padding:2px 5px 4px;font-size:10px}
       .cad .mini .ns{display:none}
@@ -146,12 +147,13 @@
         <div class="topo">
           <div class="hoje">
             <img class="logo-daily" src="img/logo-menu-daily-linha.svg?v=1" alt="Hellenic Daily" width="1100" height="190">
-            <div class="mes"><button type="button" class="seta" id="mesAnt" aria-label="Mês anterior">‹</button><span class="botao-fixo" id="tituloMes"></span><button type="button" class="seta" id="mesProx" aria-label="Próximo mês">›</button></div>
             <div class="num-linha"><button type="button" class="seta" id="diaAnt" aria-label="Dia anterior">‹</button><div class="num botao-fixo" id="numDia"></div><button type="button" class="seta" id="diaProx" aria-label="Próximo dia">›</button></div>
             <p class="sem" id="semana"></p>
             <div class="reg"><span><span class="rotulo-fixo">dia de</span> <span class="ic" id="icDia" style="color:var(--terracota)"></span></span><span><span class="rotulo-fixo">hora de</span> <span class="ic" id="icHora"></span> <span id="ateHora"></span></span></div>
           </div>
-          <table class="mini" id="mini"></table>
+          <div class="cal"><table class="mini" id="mini"></table>
+            <div class="mes"><button type="button" class="seta" id="mesAnt" aria-label="Mês anterior">‹</button><span class="botao-fixo" id="tituloMes"></span><button type="button" class="seta" id="mesProx" aria-label="Próximo mês">›</button></div>
+          </div>
         </div>
         <div class="rotulo-fixo" style="margin:20px 0 4px">to do</div>
         <div class="rolagem" id="todo"></div>
