@@ -67,7 +67,7 @@
       ['u', 'servico', 'sa', 'agenda', 'nome', 'whatsapp', 'email'].forEach(function (k) { if (q.get(k)) f.set(k, q.get(k)); });
       var caixa = el('div', { class: 'portal-form-caixa' });
       function abrir(endereco) {
-        var quadro = el('iframe', { class: 'portal-form', src: endereco, title: 'Seus dados para o atendimento', scrolling: 'no' });
+        var quadro = el('iframe', { class: 'portal-form', src: endereco, title: 'Seus dados para o atendimento' }); /* sem scrolling no: se a altura não chegar, o formulário rola por dentro em vez de ficar preso */
         window.addEventListener('message', function (ev) {
           if (ev.source !== quadro.contentWindow || !ev.data || ev.data.tipo !== 'astrohellenic-altura') return;
           var h = Number(ev.data.altura);
