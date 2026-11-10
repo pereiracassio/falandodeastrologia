@@ -11,6 +11,7 @@ const EXCECOES = {
   'portal.js': 'janelas (alert/confirm/prompt) e sanfona, componentes com CSS próprio',
   'menu.js': 'menu lateral, componente com CSS próprio', 'conversa.js': 'balões das Dúvidas, componente com CSS próprio',
   'admin-producao.html': 'teleprompter e etapas (já cobertos por classe; fonte do prompter)',
+  'caderno-financeiro.js': 'PDF e gráficos SVG do Financeiro (cópia)',
   'caderno-agenda.js': 'cópia da Agenda (mesmas exceções)',
   'caderno-producao.js': 'cópia da Produção (mesmas exceções: teleprompter, avisos)',
   'carrinho.html': 'checkout', 'horario-confirmado.html': 'checkout', 'agenda.html': 'agendamento público',

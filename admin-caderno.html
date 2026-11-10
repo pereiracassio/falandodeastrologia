@@ -888,8 +888,10 @@
         var sub = {}; entradas.forEach(function (e) { var k = e.area_id && porArea[e.area_id] ? e.area_id : '_sem'; sub[k] = (sub[k] || 0) + Number(e.valor || 0); });
         Object.keys(sub).forEach(function (k) { var nome = k === '_sem' ? 'Sem área' : porArea[k].nome, pct = total > 0 ? Math.round(sub[k] / total * 100) : 0; rolaE.appendChild(el('div', { class: 'fin-area' }, [el('span', {}, [document.createTextNode(nome + ' '), el('span', { class: 'fin-pct', text: '(' + pct + '%)' })]), el('strong', { class: 'fin-fixo', text: F.moeda(sub[k]) })])); });
         var novo = el('button', { type: 'button', class: 'portal-btn', style: 'margin:12px 0 4px', text: '+ Entrada' }); novo.addEventListener('click', function () { abrirEntrada(null); });
-        var pdf = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:12px 0 4px 14px', text: 'PDF e mais' }); pdf.addEventListener('click', function () { abrirTela('admin-financeiro.html'); });
-        rolaE.appendChild(el('div', {}, [novo, pdf]));
+        var pdfMes = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:12px 0 4px 14px', text: 'PDF deste mês' }), pdfTudo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:12px 0 4px 14px', text: 'PDF de todos os meses' }), msgPdf = el('p', { class: 'portal-msg' });
+        function baixar(todos) { pdfMes.disabled = pdfTudo.disabled = true; F.gerarPdf(todos, function (t, tipo) { P.mensagem(msgPdf, t, tipo); }).then(function () { pdfMes.disabled = pdfTudo.disabled = false; }); }
+        pdfMes.addEventListener('click', function () { baixar(false); }); pdfTudo.addEventListener('click', function () { baixar(true); });
+        rolaE.appendChild(el('div', {}, [novo, pdfMes, pdfTudo])); rolaE.appendChild(msgPdf);
         if (!entradas.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma entrada em ' + F.MESES[finMes.mes].toLowerCase() + ' de ' + finMes.ano + '.' }));
         entradas.forEach(function (e) {
           var area = e.area_id && porArea[e.area_id] ? porArea[e.area_id].nome : '', det = [area, [e.produto, e.observacao].filter(Boolean).join(' — '), e.forma_pagamento].filter(Boolean).join(' · ');
