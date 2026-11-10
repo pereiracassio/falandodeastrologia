@@ -33,9 +33,14 @@
     .cad .folha{position:relative;height:100%;background:var(--papiro-fundo);display:flex}
     .cad .folha::after{z-index:3}
     .cad .pag{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;
-      padding:calc(130px*var(--moldura-m) + 14px) 30px calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 22px)}
-    .cad .pag.dir{padding-left:30px;padding-right:calc(80px*var(--moldura-m) + 22px)}
-    .cad .dobra{flex:none;width:2px;background:var(--azul-egipcio-escuro);margin:calc(130px*var(--moldura-m) + 2px) 0}
+      padding:calc(130px*var(--moldura-m) + 14px) 46px calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 22px)}
+    .cad .pag.dir{padding-left:46px;padding-right:calc(80px*var(--moldura-m) + 22px)}
+    .cad .dobra{flex:none;position:relative;z-index:2;width:0;margin:calc(130px*var(--moldura-m) + 2px) 0;pointer-events:none}
+    /* costura do caderno: sombra da lombada dos dois lados, vinco no meio e fio com pontos */
+    .cad .dobra::before{content:"";position:absolute;top:0;bottom:0;left:-34px;width:68px;
+      background:linear-gradient(90deg,rgba(60,35,10,0) 0,rgba(60,35,10,.07) 30%,rgba(60,35,10,.2) 47%,rgba(40,22,6,.34) 50%,rgba(60,35,10,.2) 53%,rgba(60,35,10,.07) 70%,rgba(60,35,10,0) 100%)}
+    .cad .dobra::after{content:"";position:absolute;top:6px;bottom:6px;left:-1px;width:2px;
+      background:repeating-linear-gradient(180deg,var(--terracota) 0 9px,transparent 9px 17px);opacity:.9}
     .cad button{cursor:pointer}
     .cad .rolagem{flex:1;min-height:0;overflow-y:auto}
 
