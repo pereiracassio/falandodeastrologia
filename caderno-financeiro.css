@@ -1,0 +1,38 @@
+/* estilo das telas do Financeiro dentro do caderno (cópia do <style> de admin-financeiro.html) */
+    .fin-fixo{font-family:var(--fonte-titulo)!important;text-transform:lowercase!important}
+    .fin-divisa{border:0;border-top:2px solid var(--azul-egipcio-claro,#1F5FA3);margin:14px 0}
+    .fin-mes{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .fin-mes-nome{font-size:18px;font-weight:700;color:var(--terracota,#A03E25);text-align:center}
+    .fin-rotulo{font-size:13px;color:var(--preto-tinta,#16233F);letter-spacing:.04em}
+    .fin-total{font-size:30px;font-weight:700;color:var(--terracota,#A03E25);margin:2px 0 10px}
+    .fin-area{display:flex;justify-content:space-between;gap:12px;font-size:15px;padding:6px 0;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 80%,transparent);color:var(--preto-tinta,#16233F)}
+    .fin-area:last-of-type{border-bottom:0}
+    .fin-pct{opacity:.75}
+    .fin-area strong{color:var(--azul-egipcio-escuro,#1034A6);font-size:14px}
+    .fin-linha{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 80%,transparent);cursor:pointer}
+    .fin-linha:hover .fin-nome{color:var(--terracota,#A03E25)}
+    .fin-data{font-size:12px;opacity:.85}
+    .fin-nome{font-size:16px;font-weight:700;color:var(--azul-egipcio-escuro,#1034A6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fin-det{font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fin-valor{font-size:14px;font-weight:700;white-space:nowrap;color:var(--preto-tinta,#16233F)}
+    /* gráficos: só tinta, sem fundo; fixo em Cinzel, o que veio das entradas (nomes) à mão */
+    .fin-graficos{padding-top:6px}
+    .fin-graf-titulo{margin:22px 0 8px;font-size:18px}
+    .fin-graficos svg{display:block;overflow:visible}
+    .fin-eixo{font-family:var(--fonte-titulo);font-size:11px;fill:var(--preto-tinta,#16233F);text-transform:lowercase}
+    .fin-eixo-forte{font-weight:700;fill:var(--terracota,#A03E25)}
+    .fin-valor-graf{font-family:var(--fonte-titulo);font-size:10.5px;fill:var(--preto-tinta,#16233F);text-transform:lowercase}
+    .fin-valor-lado{font-size:12px}
+    .fin-rotulo-graf{font-family:var(--fonte-mao);font-size:14px;fill:var(--preto-tinta,#16233F)}
+    .fin-sobre-cor{font-family:var(--fonte-titulo);font-size:15px;font-weight:700}
+    .fin-leitura{min-height:1.6em;font-size:14px;color:var(--preto-tinta,#16233F);margin:8px 0 0}
+    .fin-legenda{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 8px;font-size:14px;color:var(--preto-tinta,#16233F)}
+    .fin-legenda-item{display:inline-flex;align-items:center;gap:6px}
+    .fin-amostra{display:inline-block;width:12px;height:12px}
+    .fin-graf-vazio{font-size:14px;opacity:.8}
+    .fin-barra rect,.fin-ponto{cursor:pointer}
+    .fin-barra:focus,.fin-ponto:focus{outline:2px solid var(--azul-egipcio-escuro,#1034A6);outline-offset:1px}
+    .fin-barra:hover rect[fill]:not([fill=transparent]){opacity:.85}
+    .fin-escopo-rotulo{font-size:13px;margin:6px 0 8px}
+    /* botão de contorno agora é só a palavra; o período escolhido leva um traço ocre embaixo */
+    html body .pagina-papiro .portal-btn.fin-escopo-atual{text-decoration:underline;text-decoration-color:var(--ocre,#B5852F);text-decoration-thickness:3px;text-underline-offset:7px}

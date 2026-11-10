@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
+  <link rel="stylesheet" href="caderno-financeiro.css?v=1">
   <style>
     /* CADERNO do Hellenic Daily: uma folha aberta (duas páginas) dentro de uma capa de cor escolhida, com marcadores dos dois lados.
        Só desenho: os dados são os mesmos da Agenda (Google, To do, horas planetárias). */
@@ -231,6 +232,8 @@
   <script src="portal.js?v=169"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="todo-dados.js?v=1"></script>
+  <script src="carrinho.js?v=6"></script>
+  <script src="caderno-financeiro.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app'), cad = document.getElementById('cad'), HP = window.horaPlanetaria;
@@ -245,8 +248,8 @@
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
-      ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'] };
+      ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro']];
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null;
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -444,7 +447,7 @@
     function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; estSel = sn.estSel; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function voltarPagina() { if (hpos <= 0) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (hpos >= hist.length - 1) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
-    function irPara(v) { visao = v; empurrar(); mostrarVisao(); virar('frente'); }
+    function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
     function entrarPagina(redesenhar) { empurrar(); redesenhar(); virar('frente'); } /* quem chama já mudou o estado (o item tocado) */
     function mostrarVisao() {
       var v = visao; Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { b.classList.toggle('aberta', b.getAttribute('data-v') === v); });
@@ -460,7 +463,7 @@
       pedido++;
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos, financeiro: vistaFinanceiro })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -576,7 +579,7 @@
     var TD = null, todoDados = null;
     function tdPronto() { if (!TD) TD = window.TodoDados({ P: P, C: C, el: el, HP: HP, FdaTema: window.FdaTema, lat: LAT, lon: LON }); TD.setLugar(LAT, LON); return TD; }
     function abrirTela(url) { /* a tela de antes que cabe no caderno abre dentro dele; as outras (alunos, clientes, curso) abrem como sempre */
-      var m = /admin-(projetos|estudos|producao)\.html/.exec(url || '');
+      var m = /admin-(projetos|estudos|producao|financeiro)\.html/.exec(url || '');
       if (!m) { if (url) location.href = url; return; }
       urlForcada = url; irPara(m[1]);
     }
@@ -1055,6 +1058,49 @@
       }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
     }
 
+    /* ---------- Financeiro: o mês à esquerda, os gráficos à direita. Virar a página volta ao mês anterior; avançar, ao próximo ---------- */
+    var finMes = null, finEst = null, FIN = null, finFechar = function () {};
+    function finPronto() { if (!FIN) FIN = window.FinCaderno(P, window.FdaTema, { aoFechar: function () { finFechar(); }, aoMudar: function () { var m = FIN.getMes(); if (m) finMes = { ano: m.ano, mes: m.mes }; finEst = null; finFechar(); vistaFinanceiro(); } }); return FIN; }
+    function finMudarMes(d) { if (!finMes) return; finMes = { ano: finMes.ano + (finMes.mes + d > 11 ? 1 : finMes.mes + d < 0 ? -1 : 0), mes: (finMes.mes + d + 12) % 12 }; vistaFinanceiro(); virar(d < 0 ? 'tras' : 'frente'); }
+    function vistaFinanceiro() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], F = finPronto();
+      if (!finMes) { var h = new Date(); finMes = { ano: h.getFullYear(), mes: h.getMonth() }; }
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      var ini = finMes.ano + '-' + p2(finMes.mes + 1) + '-01', fim = (finMes.mes === 11 ? finMes.ano + 1 : finMes.ano) + '-' + p2(finMes.mes === 11 ? 1 : finMes.mes + 2) + '-01';
+      var estatico = finEst ? Promise.resolve(finEst) : Promise.all([C.from('fin_areas').select('*').order('ordem').order('nome'), C.from('clientes').select('id,nome').order('nome'), C.from('cliente_codigos').select('cliente_id,codigo'),
+        C.from('fin_entradas').select('data,valor,area_id,produto,cliente_nome,forma_pagamento').order('data').range(0, 9999), C.from('fin_servicos').select('*').order('nome'), C.from('alunos').select('id,nome').order('nome'), C.from('aluno_codigos').select('aluno_id,codigo')]).then(function (r) {
+        var cods = {}; ((r[2] && r[2].data) || []).forEach(function (c) { cods[c.cliente_id] = c.codigo; }); var clientes = ((r[1] && r[1].data) || []).map(function (c) { c.codigo = cods[c.id] || ''; return c; });
+        var codAl = {}; ((r[6] && r[6].data) || []).forEach(function (c) { codAl[c.aluno_id] = c.codigo; }); var alunos = ((r[5] && !r[5].error && r[5].data) || []).map(function (a) { a.codigo = codAl[a.id] || ''; return a; });
+        finEst = { erro: r[0].error, areas: r[0].data || [], clientes: clientes, alunos: alunos, todas: (r[3] && r[3].data) || [], servicosCad: (r[4] && !r[4].error && r[4].data) || [] }; return finEst;
+      });
+      Promise.all([estatico, C.from('fin_entradas').select('*').gte('data', ini).lt('data', fim).order('data').order('criado_em')]).then(function (r) {
+        if (eu !== pedido) return; var E = r[0], mesR = r[1]; rolaE.textContent = '';
+        if (E.erro || mesR.error) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir o Financeiro.' })); return; }
+        var entradas = mesR.data || [], porArea = {}; E.areas.forEach(function (a) { porArea[a.id] = a; });
+        F.setDados({ areas: E.areas, entradas: entradas, todas: E.todas, servicosCad: E.servicosCad, clientes: E.clientes, alunos: E.alunos, mes: finMes, largura: Math.max(340, (rolaD.clientWidth || 560) + 48) });
+        /* esquerda: o mês */
+        var a = el('button', { type: 'button', class: 'seta', 'aria-label': 'Mês anterior', text: '‹' }), b = el('button', { type: 'button', class: 'seta', 'aria-label': 'Próximo mês', text: '›' }); a.addEventListener('click', function () { finMudarMes(-1); }); b.addEventListener('click', function () { finMudarMes(1); });
+        rolaE.appendChild(el('div', { class: 'cab-vista', style: 'margin:0 0 6px' }, [a, el('span', { class: 't botao-fixo', text: F.MESES[finMes.mes] + ' ' + finMes.ano }), b]));
+        var total = entradas.reduce(function (s, e) { return s + Number(e.valor || 0); }, 0);
+        rolaE.appendChild(el('div', { class: 'fin-rotulo fin-fixo', text: 'Total do mês' })); rolaE.appendChild(el('div', { class: 'fin-total fin-fixo', text: F.moeda(total) }));
+        var sub = {}; entradas.forEach(function (e) { var k = e.area_id && porArea[e.area_id] ? e.area_id : '_sem'; sub[k] = (sub[k] || 0) + Number(e.valor || 0); });
+        Object.keys(sub).forEach(function (k) { var nome = k === '_sem' ? 'Sem área' : porArea[k].nome, pct = total > 0 ? Math.round(sub[k] / total * 100) : 0; rolaE.appendChild(el('div', { class: 'fin-area' }, [el('span', {}, [document.createTextNode(nome + ' '), el('span', { class: 'fin-pct', text: '(' + pct + '%)' })]), el('strong', { class: 'fin-fixo', text: F.moeda(sub[k]) })])); });
+        var novo = el('button', { type: 'button', class: 'portal-btn', style: 'margin:12px 0 4px', text: '+ Entrada' }); novo.addEventListener('click', function () { abrirEntrada(null); });
+        var pdf = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:12px 0 4px 14px', text: 'PDF e mais' }); pdf.addEventListener('click', function () { abrirTela('admin-financeiro.html'); });
+        rolaE.appendChild(el('div', {}, [novo, pdf]));
+        if (!entradas.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma entrada em ' + F.MESES[finMes.mes].toLowerCase() + ' de ' + finMes.ano + '.' }));
+        entradas.forEach(function (e) {
+          var area = e.area_id && porArea[e.area_id] ? porArea[e.area_id].nome : '', det = [area, [e.produto, e.observacao].filter(Boolean).join(' — '), e.forma_pagamento].filter(Boolean).join(' · ');
+          var linha = el('div', { class: 'fin-linha', role: 'button', tabindex: '0' }, [el('div', { class: 'fin-data fin-fixo', text: F.dataBR(e.data) }), el('div', { style: 'min-width:0' }, [el('div', { class: 'fin-nome', text: e.cliente_nome || 'Sem cliente' }), el('div', { class: 'fin-det', text: det })]), el('div', { class: 'fin-valor fin-fixo', text: F.moeda(e.valor) })]);
+          linha.addEventListener('click', function () { abrirEntrada(e); }); rolaE.appendChild(linha);
+        });
+        /* direita: os gráficos */
+        rolaD.appendChild(F.montarGraficos());
+      }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
+      function abrirEntrada(e) { folhaPequena(function (caixa, fechar) { finFechar = fechar; caixa.classList.add('larga'); F.formEntrada(caixa, e); }); }
+    }
+
     /* ---------- começo ---------- */
     function mostrar() {
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
@@ -1088,7 +1134,7 @@
     (function () { /* o dedo vira a página: para a direita volta, para a esquerda avança */
       var folha = cad.querySelector('.folha'), x0 = 0, y0 = 0, t0 = 0, ativo = false;
       folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; if (ev.touches.length !== 1 || t.touchType === 'stylus' || (ev.target.closest && ev.target.closest('input,textarea,select,[style*="overflow-x"]'))) { ativo = false; return; } x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; }, { passive: true });
-      folha.addEventListener('touchend', function (ev) { if (!ativo) return; ativo = false; var t = ev.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 800 || Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return; if (dx > 0) voltarPagina(); else avancarPagina(); }, { passive: true });
+      folha.addEventListener('touchend', function (ev) { if (!ativo) return; ativo = false; var t = ev.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 800 || Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return; if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(dx > 0 ? -1 : 1); return; } if (dx > 0) voltarPagina(); else avancarPagina(); }, { passive: true });
     })();
     C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
   })();
