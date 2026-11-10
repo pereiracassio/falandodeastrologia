@@ -182,6 +182,7 @@
       width:calc(100% - 2*(80px*var(--moldura-m) + 14px));height:calc(100% - 2*(130px*var(--moldura-m) + 8px))}
     .cad.v-embed .embed{display:block}
     .cad.v-embed .pag,.cad.v-embed .dobra{visibility:hidden}
+    .cad.v-config .dobra{visibility:visible}
     .cad .abas.dir .aba:not(.peq){font-size:13px}
     @media (max-width:820px){.cad .logo-topo{width:165px}.cad .grade-mes .cel .chip{font-size:9px}.cad .cel .n{font-size:12px}.cad .anos{gap:6px 10px}.cad .mm .g button{font-size:11px;padding:2px 0 5px}}
     .cad .folha.vf .pag.dir{animation:entraDir .32s ease-out}.cad .folha.vf .pag.esq{animation:entraFade .24s ease-out}
@@ -500,7 +501,7 @@
     }
     function desenhar() {
       var x = ABAS.filter(function (y) { return y[0] === visao; })[0] || (EXTRAS[visao] ? [visao, '', EXTRAS[visao]] : null), embutida = urlForcada || (x && x[2]);
-      cad.classList.toggle('v-embed', !!embutida);
+      cad.classList.toggle('v-embed', !!embutida); cad.classList.toggle('v-config', visao === 'config');
       cad.classList.toggle('v-outra', !embutida && visao !== 'dia');
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
       document.getElementById('troca').style.display = embutida ? 'none' : '';
