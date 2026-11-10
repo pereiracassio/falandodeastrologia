@@ -273,6 +273,7 @@
     /* cores de capa: as do site (temas.css) */
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
+    var EXTRAS = { config: 'admin-site.html', avisos: 'admin-avisos.html', mensagens: 'admin-mensagens.html' };
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
     var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
@@ -350,6 +351,12 @@
       fundo.addEventListener('click', function (ev) { if (ev.target === fundo) fundo.remove(); });
       cad.parentNode.appendChild(fundo);
     }
+    function contarAvisos() {
+      C.from('avisos_recebidos').select('id', { count: 'exact', head: true }).eq('lido', false).then(function (r) {
+        var b = document.querySelector('#abasDir .aba[data-v="avisos"] span'); if (!b || !r || r.error) return;
+        b.textContent = r.count > 0 ? 'avisos ' + r.count : 'avisos';
+      }, function () { /* sem número */ });
+    }
     function escolherCapa() {
       folhaPequena(function (caixa, fechar) {
         caixa.appendChild(el('h2', { text: 'Capa do caderno' }));
@@ -379,7 +386,12 @@
         dir.appendChild(b);
       });
       dir.appendChild(el('div', { class: 'vao' }));
-      var eng = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Capa', 'aria-label': 'Capa' }, [el('span', { text: '⚙' })]); eng.addEventListener('click', escolherCapa); dir.appendChild(eng);
+      var cp = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Capa', 'aria-label': 'Capa' }, [el('span', { text: 'capa' })]); cp.addEventListener('click', escolherCapa); dir.appendChild(cp);
+      [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '⚙']].forEach(function (x) {
+        var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1] })]);
+        b.addEventListener('click', function () { irPara(x[0]); }); dir.appendChild(b);
+      });
+      contarAvisos();
       var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); desenhar(); }); dir.appendChild(hj);
       var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); }); dir.appendChild(mais);
     }
@@ -487,7 +499,7 @@
       desenhar();
     }
     function desenhar() {
-      var x = ABAS.filter(function (y) { return y[0] === visao; })[0], embutida = urlForcada || (x && x[2]);
+      var x = ABAS.filter(function (y) { return y[0] === visao; })[0] || (EXTRAS[visao] ? [visao, '', EXTRAS[visao]] : null), embutida = urlForcada || (x && x[2]);
       cad.classList.toggle('v-embed', !!embutida);
       cad.classList.toggle('v-outra', !embutida && visao !== 'dia');
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
