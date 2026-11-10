@@ -240,8 +240,8 @@
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
-      ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['próximos', 'séries'] };
+      ['projetos', 'Projetos'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção']];
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['próximos', 'séries'], projetos: ['projetos', 'passos'] };
     var visao = 'dia', cacheAno = {};
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -445,7 +445,7 @@
       pedido++;
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -804,6 +804,91 @@
           l.addEventListener('click', function () { abrirTela(link(v)); }); rolaD.appendChild(l);
         });
         var completa = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Abrir a produção completa' }); completa.addEventListener('click', function () { abrirTela('admin-producao.html'); }); rolaD.appendChild(completa);
+      }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
+    }
+
+    /* ---------- Projetos: a lista dos projetos (esquerda) e os passos do projeto escolhido (direita). Criar, renomear, datas e subprojetos: tela de antes, dentro do caderno ---------- */
+    var projSel = null, projVerConcl = false;
+    function vistaProjetos() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
+      cabVista(esq, 'projetos');
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      Promise.all([C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio,projeto_pai_id,ordem_no_pai').order('ordem').order('criado_em'), C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em')]).then(function (res) {
+        if (eu !== pedido) return;
+        if (res[0].error || res[1].error) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os projetos.' })); return; }
+        var projetos = res[0].data || [], passos = res[1].data || [];
+        function recarregar() { C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em').then(function (r) { if (eu !== pedido || r.error) return; passos = r.data || []; desenharTudo(); }); }
+        var filhosDe = function (id) { return projetos.filter(function (p) { return p.projeto_pai_id === id; }); };
+        var arvore = function (p) { var r = [p]; filhosDe(p.id).forEach(function (f) { r = r.concat(arvore(f)); }); return r; };
+        var passosDaArvore = function (p) { var ids = {}; arvore(p).forEach(function (x) { ids[x.id] = true; }); return passos.filter(function (x) { return ids[x.projeto_id]; }); };
+        var proximaData = function (p) { var ds = passosDaArvore(p).filter(function (x) { return !x.feito && x.data; }).map(function (x) { return x.data; }).sort(); return ds[0] || p.data_fim || null; };
+        var contagem = function (p) {
+          var meus = passos.filter(function (x) { return x.projeto_id === p.id; }), fs = filhosDe(p.id);
+          if (!meus.length && !fs.length) return p.projeto_pai_id ? { total: 1, feitos: 0 } : { total: 0, feitos: 0 };
+          var t = meus.length, f = meus.filter(function (x) { return x.feito; }).length; fs.forEach(function (c) { var k = contagem(c); t += k.total; f += k.feitos; }); return { total: t, feitos: f };
+        };
+        var pctProj = function (p) { var c = contagem(p); return c.total ? Math.floor(c.feitos * 100 / c.total) : 0; };
+        var concluido = function (p) { var c = contagem(p); return c.total > 0 && c.feitos === c.total; };
+        var porNumero = function (lista) { var n = function (p) { return p.prioridade == null ? Infinity : p.prioridade; }; return lista.map(function (p, i) { return { p: p, i: i }; }).sort(function (a, b) { var x = n(a.p), y = n(b.p); if (x !== y) return x < y ? -1 : 1; if (x === Infinity && pctProj(a.p) !== pctProj(b.p)) return pctProj(b.p) - pctProj(a.p); return a.i - b.i; }).map(function (q) { return q.p; }); };
+        var tempoDe = function (p) {
+          if (!p.data_fim) return null;
+          var fim = new Date(p.data_fim + 'T23:59:59'), ini = new Date((p.data_inicio || new Date(p.criado_em).toLocaleDateString('sv-SE')) + 'T00:00:00'), agora = new Date(), f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
+          var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
+          return { pct: Math.floor(f * 100), cor: corTempo(f), texto: passou + '/' + total + ' dias' };
+        };
+        function barras(p) { var c = contagem(p), t = tempoDe(p), l = [P.barraLinha(pctProj(p), null, c.feitos + '/' + c.total, false)]; if (t) l.push(P.barraLinha(t.pct, t.cor, t.texto, true)); return l; }
+        function desenharTudo() {
+          if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
+          var raizes = projetos.filter(function (p) { return !p.projeto_pai_id; }), ativos = porNumero(raizes.filter(function (p) { return !concluido(p); })), concl = porNumero(raizes.filter(concluido));
+          if (!projSel || !projetos.some(function (p) { return p.id === projSel; })) projSel = ativos.length ? ativos[0].id : (concl.length ? concl[0].id : null);
+          rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Projetos' }));
+          if (!ativos.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum projeto ainda.' }));
+          function linhaProjeto(p) {
+            var raizSel = projetos.filter(function (x) { return x.id === projSel; })[0]; while (raizSel && raizSel.projeto_pai_id) { var pai = raizSel.projeto_pai_id; raizSel = projetos.filter(function (x) { return x.id === pai; })[0]; }
+            var marcada = raizSel && raizSel.id === p.id;
+            var bol = p.prioridade == null ? null : el('span', { style: 'flex:none;width:26px;height:26px;border:1.5px solid var(--azul-egipcio-claro);border-radius: 50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700', text: String(p.prioridade) });
+            var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [el('div', { style: 'display:flex;align-items:center;gap:10px' }, [bol, el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: p.nome })].filter(Boolean))].concat(barras(p)));
+            l.addEventListener('click', function () { projSel = p.id; desenharTudo(); if (cad.classList.contains('p1')) paginaCel('p2'); }); return l;
+          }
+          ativos.forEach(function (p) { rolaE.appendChild(linhaProjeto(p)); });
+          if (concl.length) {
+            var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: (projVerConcl ? 'Esconder concluídos' : 'Concluídos (' + concl.length + ')') }); vc.addEventListener('click', function () { projVerConcl = !projVerConcl; desenharTudo(); }); rolaE.appendChild(vc);
+            if (projVerConcl) concl.forEach(function (p) { rolaE.appendChild(linhaProjeto(p)); });
+          }
+          var completa = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo projeto e mais opções' }); completa.addEventListener('click', function () { abrirTela('admin-projetos.html'); }); rolaE.appendChild(completa);
+          /* direita: os passos do projeto escolhido */
+          var proj = projetos.filter(function (p) { return p.id === projSel; })[0]; if (!proj) return;
+          if (proj.projeto_pai_id) { var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' }); voltar.addEventListener('click', function () { projSel = proj.projeto_pai_id; desenharTudo(); }); rolaD.appendChild(voltar); }
+          rolaD.appendChild(el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:20px;color:var(--terracota);margin:2px 0 4px;overflow-wrap:anywhere', text: proj.nome }));
+          barras(proj).forEach(function (b) { rolaD.appendChild(b); });
+          var meus = passos.filter(function (x) { return x.projeto_id === proj.id; });
+          var itens = meus.filter(function (x) { return !x.feito; }).map(function (x) { return { passo: x, data: x.data || null, ordem: x.ordem || 0 }; });
+          filhosDe(proj.id).forEach(function (c) { var k = contagem(c); if (k.total && k.feitos === k.total) return; itens.push({ filho: c, data: proximaData(c), pct: k.total ? Math.floor(k.feitos * 100 / k.total) : 0, ordem: c.ordem_no_pai == null ? 1e9 : c.ordem_no_pai }); });
+          var grupo = function (x) { return x.data ? 0 : x.filho ? 1 : 2; }; /* 1º o que tem data; 2º subprojetos sem data (do mais concluído); 3º passos comuns na ordem */
+          itens.sort(function (a, b) { var ga = grupo(a), gb = grupo(b); if (ga !== gb) return ga - gb; if (ga === 0) return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; if (ga === 1) return b.pct - a.pct; return a.ordem - b.ordem; });
+          function rotulo(t, cor) { rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--ocre)') + ';padding:12px 0 4px', text: t })); }
+          function linhaPasso(x, feito) {
+            var cx = el('button', { type: 'button', class: 'cx', 'aria-label': feito ? 'Desmarcar' : 'Marcar como feito', text: feito ? '✓' : '' });
+            cx.addEventListener('click', function () { cx.disabled = true; C.from('projeto_passos').update(feito ? { feito: false, feito_em: null } : { feito: true, feito_em: new Date().toISOString() }).eq('id', x.id).then(function (g) { if (g.error) { cx.disabled = false; alert('Não foi possível salvar.'); return; } recarregar(); }); });
+            return el('div', { class: 'tarefa', style: feito ? 'opacity:.6' : '' }, [cx, el('div', { style: 'flex:1;min-width:0' }, [x.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(x.data) }) : null, el('div', { class: 'nome', style: feito ? 'text-decoration:line-through' : '', text: x.titulo }), x.nota ? el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: x.nota }) : null].filter(Boolean))]);
+          }
+          if (!itens.length && !meus.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum passo ainda.' }));
+          itens.forEach(function (it, i) {
+            if (i === 0) rotulo('Próximo passo'); else if (i === 1) rotulo('Depois');
+            if (it.passo) { rolaD.appendChild(linhaPasso(it.passo, false)); return; }
+            var c = it.filho, k = contagem(c), l = el('div', { class: 'tarefa', style: 'cursor:pointer' }, [el('span', { class: 'cx', style: 'border-color:transparent' }), el('div', { style: 'flex:1;min-width:0' }, [it.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }) : null, el('div', { class: 'nome', text: c.nome })].filter(Boolean).concat(barras(c)))]);
+            l.addEventListener('click', function () { projSel = c.id; desenharTudo(); }); rolaD.appendChild(l);
+          });
+          var feitos = meus.filter(function (x) { return x.feito; });
+          if (feitos.length) { rotulo('Feitos'); feitos.forEach(function (x) { rolaD.appendChild(linhaPasso(x, true)); }); }
+          /* novo passo, rápido */
+          var campo = el('input', { type: 'text', placeholder: 'Novo passo', 'aria-label': 'Novo passo', style: 'width:100%;box-sizing:border-box' }), add = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:8px', text: 'Adicionar passo' });
+          function adicionar() { var t = campo.value.trim(); if (!t) return; add.disabled = true; var ordem = meus.reduce(function (m, x) { return Math.max(m, x.ordem || 0); }, 0) + 1; C.from('projeto_passos').insert({ projeto_id: proj.id, titulo: t, ordem: ordem }).then(function (g) { add.disabled = false; if (g.error) { alert('Não foi possível salvar.'); return; } campo.value = ''; recarregar(); }); }
+          add.addEventListener('click', adicionar); campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); adicionar(); } });
+          var edita = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-left:14px', text: 'Editar este projeto' }); edita.addEventListener('click', function () { abrirTela('admin-projetos.html#projeto=' + encodeURIComponent(proj.id)); });
+          rolaD.appendChild(el('div', { class: 'portal', style: 'margin-top:16px' }, [campo, el('div', { style: 'display:flex;align-items:center' }, [add, edita])]));
+        }
+        desenharTudo();
       }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
     }
 
