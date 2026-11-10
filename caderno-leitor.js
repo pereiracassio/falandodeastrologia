@@ -133,6 +133,7 @@ window.LeitorCaderno = function (P) {
     }
     var campo = el('input', { type: 'number', min: '1', value: '1' }); campo.style.cssText = 'width:52px;text-align:center;background:transparent;border:0;border-bottom:1px solid #1F5FA3;font:inherit;font-size:15px;padding:2px;flex:none;min-height:0';
     var totalTxt = el('span', { text: '' }); totalTxt.style.cssText = 'font-size:14px;margin-right:4px;white-space:nowrap;flex:none';
+    campo.setAttribute('inputmode', 'numeric'); campo.setAttribute('enterkeyhint', 'go'); campo.addEventListener('focus', function () { setTimeout(function () { try { campo.select(); } catch (e) { /* ok */ } }, 0); }); /* toca no número, digita a página e confirma */
     campo.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') campo.blur(); });
     campo.addEventListener('change', function () { var p = Math.max(1, Math.min(total, parseInt(campo.value, 10) || 1)); virarPara(p <= 1 ? 0 : Math.floor(p / 2), 0); });
     var bAnt = btn('‹', function () { virar(-1); }, ';font-size:22px'), bProx = btn('›', function () { virar(1); }, ';font-size:22px'), bMenos = btn('−', function () { zoomar(0); }, ';font-size:22px'), bMais = btn('+', function () { zoomar(1); }, ';font-size:22px');
