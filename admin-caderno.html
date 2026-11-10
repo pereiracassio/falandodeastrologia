@@ -240,8 +240,8 @@
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
-      ['projetos', 'Projetos'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['próximos', 'séries'], projetos: ['projetos', 'passos'] };
+      ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção']];
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['próximos', 'séries'], projetos: ['projetos', 'passos'], estudos: ['estudos', 'aulas'] };
     var visao = 'dia', cacheAno = {};
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -445,7 +445,7 @@
       pedido++;
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -887,6 +887,74 @@
           add.addEventListener('click', adicionar); campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); adicionar(); } });
           var edita = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-left:14px', text: 'Editar este projeto' }); edita.addEventListener('click', function () { abrirTela('admin-projetos.html#projeto=' + encodeURIComponent(proj.id)); });
           rolaD.appendChild(el('div', { class: 'portal', style: 'margin-top:16px' }, [campo, el('div', { style: 'display:flex;align-items:center' }, [add, edita])]));
+        }
+        desenharTudo();
+      }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
+    }
+
+    /* ---------- Estudos: a lista dos estudos (esquerda) e as aulas do estudo escolhido (direita). Responder a aula (questões, quadro da conta), importar, caderno e encerrar: tela de antes, dentro do caderno ---------- */
+    var estSel = null, estVerEnc = false;
+    function vistaEstudos() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
+      cabVista(esq, 'estudos');
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      Promise.all([C.from('estudos').select('*').order('criado_em'), C.from('estudo_aulas').select('id,estudo_id,data,materia,titulo').order('data').order('criado_em'), C.from('estudo_questoes').select('id,aula_id,tipo,correta'), C.from('estudo_respostas').select('questao_id,opcao,texto')]).then(function (rs) {
+        if (eu !== pedido) return; rolaE.textContent = '';
+        var erro = rs[0].error || rs[1].error || rs[2].error || rs[3].error;
+        if (erro) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os estudos (' + erro.message + ').' })); return; }
+        var estudos = rs[0].data || [], aulas = rs[1].data || [], resp = {}, prog = {};
+        (rs[3].data || []).forEach(function (x) { resp[x.questao_id] = x; });
+        (rs[2].data || []).forEach(function (q) {
+          var p = prog[q.aula_id] = prog[q.aula_id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 }, r = resp[q.id]; p.total++;
+          if (q.tipo === 'multipla') { p.multiplas++; if (r && r.opcao != null) { p.feitas++; if (r.opcao === q.correta) p.certas++; } } else if (r && r.texto) p.feitas++;
+        });
+        var filhosDe = function (id) { return estudos.filter(function (e) { return e.estudo_pai_id === id; }); };
+        var arvoreDe = function (e) { var r = [e]; filhosDe(e.id).forEach(function (f) { r = r.concat(arvoreDe(f)); }); return r; };
+        var raizDe = function (id) { var q = estudos.filter(function (x) { return x.id === id; })[0]; while (q && q.estudo_pai_id) { var pai = q.estudo_pai_id; q = estudos.filter(function (x) { return x.id === pai; })[0]; } return q; };
+        var concluida = function (a) { var p = prog[a.id]; return !!p && p.total > 0 && p.feitas === p.total; };
+        var aulasDa = function (e) { var ids = {}; arvoreDe(e).forEach(function (x) { ids[x.id] = true; }); return aulas.filter(function (a) { return ids[a.estudo_id]; }); };
+        var tempoDe = function (e) {
+          if (!e.data_fim) return null;
+          var fim = new Date(String(e.data_fim).slice(0, 10) + 'T23:59:59'), ini = new Date(String(e.data_inicio || e.criado_em).slice(0, 10) + 'T00:00:00'), agora = new Date(), f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
+          var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
+          return { pct: Math.floor(f * 100), cor: corTempo(f), texto: passou + '/' + total + ' dias' };
+        };
+        var barras = function (e) { var l = aulasDa(e), feitas = l.filter(concluida).length, out = [P.barraLinha(l.length ? Math.floor(feitas * 100 / l.length) : 0, null, feitas + '/' + l.length, false)], t = tempoDe(e); if (t) out.push(P.barraLinha(t.pct, t.cor, t.texto, true)); return out; };
+        function desenharTudo() {
+          if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
+          var raizes = estudos.filter(function (e) { return !e.estudo_pai_id; }), ativos = raizes.filter(function (e) { return !e.encerrado; }), enc = raizes.filter(function (e) { return e.encerrado; });
+          if (!estSel || !estudos.some(function (e) { return e.id === estSel; })) estSel = ativos.length ? ativos[0].id : (enc.length ? enc[0].id : null);
+          var rz = estSel ? raizDe(estSel) : null;
+          rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Estudos' }));
+          if (!ativos.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum estudo ainda.' }));
+          function linhaEstudo(e) {
+            var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (rz && rz.id === e.id ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: e.nome })].concat(barras(e)));
+            l.addEventListener('click', function () { estSel = e.id; desenharTudo(); if (cad.classList.contains('p1')) paginaCel('p2'); }); return l;
+          }
+          ativos.forEach(function (e) { rolaE.appendChild(linhaEstudo(e)); });
+          if (enc.length) {
+            var vc = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:10px', text: estVerEnc ? 'Esconder encerrados' : 'Encerrados (' + enc.length + ')' }); vc.addEventListener('click', function () { estVerEnc = !estVerEnc; desenharTudo(); }); rolaE.appendChild(vc);
+            if (estVerEnc) enc.forEach(function (e) { rolaE.appendChild(linhaEstudo(e)); });
+          }
+          var completo = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:10px 0 0 14px', text: 'Novo estudo, importar aulas e mais' }); completo.addEventListener('click', function () { abrirTela('admin-estudos.html'); }); rolaE.appendChild(completo);
+          /* direita: as aulas do estudo escolhido */
+          var est = estudos.filter(function (e) { return e.id === estSel; })[0]; if (!est) return;
+          if (est.estudo_pai_id) { var voltar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '← Voltar' }); voltar.addEventListener('click', function () { estSel = est.estudo_pai_id; desenharTudo(); }); rolaD.appendChild(voltar); }
+          rolaD.appendChild(el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:20px;color:var(--terracota);margin:2px 0 4px;overflow-wrap:anywhere', text: est.nome }));
+          barras(est).forEach(function (b) { rolaD.appendChild(b); });
+          function rotulo(t) { rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--ocre);padding:12px 0 4px', text: t })); }
+          var menores = filhosDe(est.id);
+          if (menores.length) { rotulo('Estudos menores'); menores.forEach(function (m) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', text: m.nome })].concat(barras(m))); l.addEventListener('click', function () { estSel = m.id; desenharTudo(); }); rolaD.appendChild(l); }); }
+          var minhas = aulas.filter(function (a) { return a.estudo_id === est.id; }), pend = minhas.filter(function (a) { return !concluida(a); }), feitas = minhas.filter(concluida), hoje = isoDia(Date.now());
+          function linhaAula(a, feita) {
+            var p = prog[a.id] || { total: 0, feitas: 0, certas: 0, multiplas: 0 }, info = p.total ? p.feitas + ' de ' + p.total + ' respondidas' + (p.multiplas ? ' · ' + p.certas + ' certas' : '') : 'sem questões', dia = String(a.data).slice(0, 10), atrasada = !feita && dia < hoje;
+            var l = el('div', { class: 'tarefa', style: 'cursor:pointer' + (feita ? ';opacity:.65' : '') }, [el('span', { class: 'cx', style: 'border-color:transparent;color:var(--terracota)', text: feita ? '✓' : '' }), el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'det', style: 'color:' + (atrasada ? 'var(--terracota)' : 'var(--azul-egipcio-escuro)'), text: (+dia.slice(8)) + ' de ' + MES3[+dia.slice(5, 7) - 1] + (atrasada ? ' · atrasada' : '') }), el('div', { class: 'nome', text: a.titulo }), el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: a.materia + ' · ' + info })])]);
+            l.addEventListener('click', function () { abrirTela('admin-estudos.html#aula=' + encodeURIComponent(a.id) + '&estudo=' + encodeURIComponent(est.id)); }); return l;
+          }
+          if (!minhas.length && !menores.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhuma aula ainda.' }));
+          if (pend.length) { rotulo('Para fazer'); pend.forEach(function (a) { rolaD.appendChild(linhaAula(a, false)); }); }
+          if (feitas.length) { rotulo('Feitas'); feitas.forEach(function (a) { rolaD.appendChild(linhaAula(a, true)); }); }
+          var abre = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Abrir este estudo completo' }); abre.addEventListener('click', function () { abrirTela('admin-estudos.html#estudo=' + encodeURIComponent(est.id)); }); rolaD.appendChild(abre);
         }
         desenharTudo();
       }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
