@@ -36,6 +36,9 @@
     .cad .pag{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;
       padding:calc(130px*var(--moldura-m) + 14px) 46px calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 22px)}
     .cad .pag.dir{padding-left:46px;padding-right:calc(80px*var(--moldura-m) + 22px)}
+    .cad .pag{position:relative}
+    .cad .voltar-tab{position:absolute;z-index:5;top:calc(130px*var(--moldura-m) + 2px);left:calc(80px*var(--moldura-m) + 22px);background:none;border:0;padding:2px 0;color:var(--terracota);font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:4px}
+    .cad .voltar-tab[hidden]{display:none}
     .cad .dobra{flex:none;position:relative;z-index:4;width:0;margin:0;pointer-events:none}
     /* costura do caderno: sombra da lombada dos dois lados, vinco no meio e fio com pontos */
     .cad .dobra::before{content:"";position:absolute;top:0;bottom:0;left:-34px;width:68px;
@@ -224,7 +227,7 @@
     <div class="abas esq" id="meses"></div>
     <button type="button" class="ano baixo botao-fixo" id="anoMais"></button>
     <div class="miolo"><div class="folha papiro-moldura">
-      <section class="pag esq"><div class="vdia" id="diaEsq">
+      <section class="pag esq"><button type="button" class="voltar-tab botao-fixo" id="voltarTab" hidden>← voltar</button><div class="vdia" id="diaEsq">
         <div class="topo">
           <div class="hoje">
             <img class="logo-daily" src="img/logo-menu-daily-linha.svg?v=1" alt="Hellenic Daily" width="1100" height="190">
@@ -492,11 +495,14 @@
        Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
     var hist = [], hpos = -1, aplicando = false;
     function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, projVer: projVer, estSel: estSel, estVer: estVer, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
-    function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } }
+    function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } atualizarVoltar(); }
     function virar(sentido) { var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
     function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
-    function voltarPagina() { if (hpos <= 0) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
-    function avancarPagina() { if (hpos >= hist.length - 1) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
+    function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && hist[hpos - 1].visao === visao; } /* o histórico é de dentro da aba: nunca volta para outra aba */
+    function podeAvancar() { return hpos < hist.length - 1 && !!hist[hpos + 1] && hist[hpos + 1].visao === visao; }
+    function atualizarVoltar() { var b = document.getElementById('voltarTab'); if (b) b.hidden = !podeVoltar() || cad.classList.contains('v-livro') || cad.classList.contains('v-embed'); }
+    function voltarPagina() { if (!podeVoltar()) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
+    function avancarPagina() { if (!podeAvancar()) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
     function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
     function entrarPagina(redesenhar) { empurrar(); redesenhar(); virar('frente'); } /* quem chama já mudou o estado (o item tocado) */
     function periodo(d) { /* virar a página sem histórico: dia, semana, mês... anterior ou seguinte (os mesmos botões ‹ › da folha) */
@@ -514,6 +520,7 @@
     function desenhar() {
       var x = ABAS.filter(function (y) { return y[0] === visao; })[0] || (EXTRAS[visao] ? [visao, '', EXTRAS[visao]] : null), embutida = urlForcada || (x && x[2]);
       cad.classList.toggle('v-embed', !!embutida); cad.classList.toggle('v-config', visao === 'config');
+      atualizarVoltar();
       cad.classList.toggle('v-outra', !embutida && visao !== 'dia');
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
       document.getElementById('troca').style.display = embutida ? 'none' : '';
@@ -1056,6 +1063,7 @@
     document.getElementById('anoMais').addEventListener('click', function () { ancora = mudaMes(ancora, 12); desenhar(); });
     function paginaCel(p) { pagCel = p; cad.classList.remove('p1', 'p2'); cad.classList.add(p); document.getElementById('t1').classList.toggle('aberta', p === 'p1'); document.getElementById('t2').classList.toggle('aberta', p === 'p2'); }
     window.addEventListener('resize', function () { if (leitorAtual && leitorAtual.aoRedimensionar) leitorAtual.aoRedimensionar(); });
+    document.getElementById('voltarTab').addEventListener('click', function () { voltarPagina(); });
     document.getElementById('t1').addEventListener('click', function () { paginaCel('p1'); });
     document.getElementById('t2').addEventListener('click', function () { paginaCel('p2'); });
     document.getElementById('tMais').addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); });
