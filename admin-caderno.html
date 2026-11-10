@@ -1008,7 +1008,7 @@
       var o = preparaOut(), esq = o[0], dir = o[1], livro = leitorLivro; if (leitorAtual) { leitorAtual.fechar(); leitorAtual = null; }
       leitorAtual = window.LeitorCaderno(P).abrir({
         esq: esq, dir: dir, barra: document.getElementById('leitorBarra'), barraTopo: document.getElementById('leitorBarraTopo'), livro: livro, aviso: toast,
-        voltar: function () { leitorAtual = null; if (!voltarPagina()) { leitorLivro = null; mostrarVisao(); } },
+        voltar: function () { leitorAtual = null; leitorLivro = null; empurrar(); mostrarVisao(); virar('tras'); }, /* sai do PDF e volta para a estante, para escolher outro */
         aoMudar: function (e, d) { document.getElementById('t1').textContent = e ? 'pág. ' + e : 'capa'; document.getElementById('t2').textContent = d ? 'pág. ' + d : 'fim'; },
         obterPdf: function (progresso) {
           return P.tokenGoogle().then(function (token) { return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(livro.drive_id) + '?alt=media&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } }); }).then(function (r) {
