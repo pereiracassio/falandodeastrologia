@@ -182,6 +182,7 @@
     @keyframes entraDir{from{transform:translateX(46px);opacity:0}to{transform:none;opacity:1}}
     @keyframes entraEsq{from{transform:translateX(-46px);opacity:0}to{transform:none;opacity:1}}
     @keyframes entraFade{from{opacity:.35}to{opacity:1}}
+    .cad-aviso{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:1200;background:var(--papiro-fundo-simples);border:1.5px solid var(--terracota);color:var(--terracota);padding:10px 18px;max-width:86vw;text-align:center}
     .cad .troca{display:none}
     @media (max-width:820px){
       .cad .troca{display:flex;position:absolute;left:14px;right:14px;bottom:10px;height:44px;gap:3px}
@@ -808,6 +809,38 @@
       var tituloVideo = function (v) { return (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' });
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' })); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD);
+      /* as etapas MARCAM direto aqui (mesmas regras da Produção): Capa, Membros e Público se marcam sozinhas; SEO do vídeo só com tudo preenchido; no corte, SEO marca Legenda e YouTube Shorts marca Legenda e SEO */
+      function aviso(t) { var a = el('div', { class: 'cad-aviso', text: t }); cad.parentNode.appendChild(a); setTimeout(function () { a.remove(); }, 3800); }
+      function faltaParaSeo(v) {
+        var falta = [], vazio = function (x) { return !String(x == null ? '' : x).trim(); };
+        var rb = v.roteiro_blocos, temRoteiro = !vazio(v.roteiro) || !!(rb && (!vazio(rb.gancho) || !vazio(rb.conclusao) || (rb.blocos || []).some(function (b) { return !vazio(b); })));
+        var t = String(v.texto_postagem || ''), k = t.indexOf('✨ Atendimentos'), corpo = (k >= 0 ? t.slice(0, k) : t).trim();
+        if (vazio(v.titulo) || /^Vídeo \d+$/.test(String(v.titulo).trim())) falta.push('título');
+        if (vazio(v.capa_texto)) falta.push('texto da capa');
+        if (!v.numero) falta.push('número na série');
+        if (!v.data_postar) falta.push('data para membros');
+        if (!temRoteiro) falta.push('roteiro');
+        if (!corpo) falta.push('texto que vai junto');
+        if (vazio(v.tags)) falta.push('tags');
+        return falta;
+      }
+      var repintando = {}; /* o mesmo vídeo ou corte aparece em mais de uma barra (esquerda e direita): marcou numa, repinta todas */
+      function etapas(item, tipo, fim) {
+        var lista = tipo === 'v' ? td.ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }) : td.ETC;
+        var par = td.barrasDe(item, tipo === 'v' ? td.ETV : td.ETC, item.criado_em, fim), spans = [].slice.call(par[0].children);
+        var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= isoDia(Date.now())) : !!item[k]; };
+        var chave = tipo + item.id; (repintando[chave] = repintando[chave] || []).push(function () { repintar(); });
+        function repintar() { spans.forEach(function (sp, i) { var on = feita(lista[i][0]); sp.className = on ? 'preench' : ''; sp.style.background = on ? 'var(--azul-egipcio-claro)' : ''; sp.style.color = on ? 'var(--vazado,#F3E3B8)' : 'var(--terracota)'; }); }
+        function alternar(k) {
+          var novo = !item[k], campos = {}; campos[k] = novo;
+          if (tipo === 'v' && k === 'seo_ok' && novo) { var falta = faltaParaSeo(item); if (falta.length) { aviso('Falta preencher: ' + falta.join(', ')); return; } }
+          if (tipo === 'c' && novo) ({ seo_ok: ['legenda_ok'], shorts: ['legenda_ok', 'seo_ok'] }[k] || []).forEach(function (x) { if (!item[x]) campos[x] = true; });
+          var antes = {}; Object.keys(campos).forEach(function (x) { antes[x] = item[x]; item[x] = campos[x]; }); repintando[chave].forEach(function (f) { f(); });
+          C.from(tipo === 'v' ? 'prod_videos' : 'prod_cortes').update(campos).eq('id', item.id).then(function (r) { if (r.error) { Object.keys(antes).forEach(function (x) { item[x] = antes[x]; }); repintando[chave].forEach(function (f) { f(); }); aviso('Não consegui salvar.'); } });
+        }
+        spans.forEach(function (sp, i) { var k = lista[i][0]; if (tipo === 'v' && (k === 'capa' || k === 'no_ar' || k === 'publico_ok')) return; sp.style.cursor = 'pointer'; sp.addEventListener('click', function (ev) { ev.stopPropagation(); alternar(k); }); });
+        return par;
+      }
       document.getElementById('t1').textContent = nivel === 0 ? 'próximos' : nivel === 1 ? 'série' : nivel === 2 ? 'vídeo' : 'corte'; document.getElementById('t2').textContent = nivel === 0 ? 'séries' : nivel === 1 ? 'vídeos' : 'cortes';
       function ir(se, vi, co) { prodSerie = se; prodVideo = vi; prodCorte = co; entrarPagina(renderProducao); if (co) paginaCel('p1'); else paginaCel('p2'); }
       function voltar() { if (!voltarPagina()) { if (prodCorte) { prodCorte = null; } else if (prodVideo) { prodVideo = null; } else prodSerie = null; renderProducao(); } }
@@ -819,18 +852,18 @@
       function botaoEditar(t, url) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:12px', text: t }); b.addEventListener('click', function () { abrirTela(url); }); return b; }
       var resumo = function (lista) { var n = lista.length, conta = function (c) { return lista.filter(function (v) { return v[c]; }).length; }; return n ? conta('roteiro_ok') + ' roteiros · ' + conta('gravado') + ' gravados · ' + conta('no_ar') + ' no ar · ' + conta('blog_ok') + ' no blog' : 'Nenhum vídeo ainda'; };
       function linhaVideo(v, marcada) {
-        var fim = fimDoVideo(v), l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [fim ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(fim) }) : null, nome(tituloVideo(v)), sub(acesso(v) + (v.no_ar ? ' · no ar' : ''))].filter(Boolean).concat(td.barrasDe(v, td.ETV, v.criado_em, fim)));
+        var fim = fimDoVideo(v), l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [fim ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(fim) }) : null, nome(tituloVideo(v)), sub(acesso(v) + (v.no_ar ? ' · no ar' : ''))].filter(Boolean).concat(etapas(v, 'v', fim)));
         l.addEventListener('click', function () { ir(v.serie_id || 'soltos', v.id, null); }); return l;
       }
       function linhaCorte(c, marcada) {
-        var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [c.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(c.data) }) : null, nome(c.titulo || 'Corte ' + c.ordem)].filter(Boolean).concat(td.barrasDe(c, td.ETC, c.criado_em, c.data)));
+        var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [c.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(c.data) }) : null, nome(c.titulo || 'Corte ' + c.ordem)].filter(Boolean).concat(etapas(c, 'c', c.data)));
         l.addEventListener('click', function () { ir(prodSerie, c.video_id, c.id); }); return l;
       }
       if (nivel === 0) {
         /* próximos (esquerda) · séries e fila do blog (direita) */
         var itens = [];
-        D.videos.forEach(function (v) { if (v.no_ar) return; var fim = fimDoVideo(v); if (!fim) return; var s = v.serie_id ? achar(D.series, v.serie_id) : null; itens.push({ data: String(fim).slice(0, 10), nome: tituloVideo(v), sub: s ? s.nome : 'Vídeo solto', barras: td.barrasDe(v, td.ETV, v.criado_em, fim), ir: [v.serie_id || 'soltos', v.id, null] }); });
-        D.cortes.forEach(function (c) { if ((c.instagram && c.tiktok) || !c.data) return; var v = achar(D.videos, c.video_id); if (!v) return; itens.push({ data: String(c.data).slice(0, 10), nome: c.titulo || 'Corte sem título', sub: 'corte · ' + nomeVideo(v), barras: td.barrasDe(c, td.ETC, c.criado_em, c.data), ir: [v.serie_id || 'soltos', v.id, c.id] }); });
+        D.videos.forEach(function (v) { if (v.no_ar) return; var fim = fimDoVideo(v); if (!fim) return; var s = v.serie_id ? achar(D.series, v.serie_id) : null; itens.push({ data: String(fim).slice(0, 10), nome: tituloVideo(v), sub: s ? s.nome : 'Vídeo solto', barras: etapas(v, 'v', fim), ir: [v.serie_id || 'soltos', v.id, null] }); });
+        D.cortes.forEach(function (c) { if ((c.instagram && c.tiktok) || !c.data) return; var v = achar(D.videos, c.video_id); if (!v) return; itens.push({ data: String(c.data).slice(0, 10), nome: c.titulo || 'Corte sem título', sub: 'corte · ' + nomeVideo(v), barras: etapas(c, 'c', c.data), ir: [v.serie_id || 'soltos', v.id, c.id] }); });
         itens.sort(function (x, y) { return x.data < y.data ? -1 : x.data > y.data ? 1 : 0; });
         rolaE.appendChild(titulo('Próximos')); if (!itens.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada em andamento.' }));
         itens.forEach(function (it) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }), nome(it.nome), sub(it.sub)].concat(it.barras)); l.addEventListener('click', function () { ir(it.ir[0], it.ir[1], it.ir[2]); }); rolaE.appendChild(l); });
@@ -868,12 +901,12 @@
         rolaE.appendChild(nome(tituloVideo(video), true)); rolaE.appendChild(sub(video.serie_id ? (achar(D.series, video.serie_id) || {}).nome || '' : 'Vídeo solto'));
         if (video.capa_url) rolaE.appendChild(el('img', { src: video.capa_url, alt: '', style: 'display:block;width:100%;max-width:300px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:8px 0' }));
         [campo('Acesso', acesso(video)), campo('Gravar em', video.data_gravar ? dataCurta(video.data_gravar) : ''), campo(acesso(video) === 'membros' ? 'Disponível aos membros' : 'Fica público em', fim2 ? dataCurta(fim2) : ''), campo('Cortes até', video.data_cortes ? dataCurta(video.data_cortes) : ''), campo('Blog até', video.data_blog ? dataCurta(video.data_blog) : '')].forEach(function (c) { if (c) rolaE.appendChild(c); });
-        td.barrasDe(video, td.ETV, video.criado_em, fim2).forEach(function (b) { rolaE.appendChild(b); });
+        etapas(video, 'v', fim2).forEach(function (b) { rolaE.appendChild(b); });
         rolaE.appendChild(botaoEditar('Editar este vídeo', link(video)));
       } else {
         rolaE.appendChild(nome(corte.titulo || 'Corte ' + corte.ordem, true)); rolaE.appendChild(sub('corte · ' + nomeVideo(video)));
         [campo('Data', corte.data ? dataCurta(corte.data) : '')].forEach(function (c) { if (c) rolaE.appendChild(c); });
-        td.barrasDe(corte, td.ETC, corte.criado_em, corte.data).forEach(function (b) { rolaE.appendChild(b); });
+        etapas(corte, 'c', corte.data).forEach(function (b) { rolaE.appendChild(b); });
         rolaE.appendChild(botaoEditar('Editar este corte', link(video, corte.id)));
       }
       rolaD.appendChild(titulo(nivel === 2 ? 'Cortes' : 'Cortes do vídeo ' + (video.numero || '')));
