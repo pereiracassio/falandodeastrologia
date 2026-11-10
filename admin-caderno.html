@@ -98,7 +98,13 @@
     .cad-cores{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 16px}
     .cad-cores button{width:44px;height:44px;border-radius:50%;border:2px solid transparent;padding:0}
     .cad-cores button.sel{border-color:var(--preto-tinta);box-shadow:0 0 0 2px var(--papiro-meio) inset}
-    .cad-fundo input[type=text]{width:100%;box-sizing:border-box}
+    .cad-fundo input[type=text],.cad-fundo select{width:100%;box-sizing:border-box}
+    .cad-fundo .cx-folha.larga{max-width:520px;max-height:90vh;overflow-y:auto}
+    .cad-fundo .det-enc{font-size:13px;margin:0 0 4px}
+    .cad-fundo .tarefa{display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--azul-egipcio-claro)}
+    .cad-fundo .cx{flex:none;width:22px;height:22px;border:1.5px solid var(--azul-egipcio-claro);background:transparent;padding:0;border-radius:0;color:var(--terracota);font-size:18px;line-height:1}
+    .cad .hora-linha{padding:5px 0 6px;border-bottom:1px solid var(--azul-egipcio-claro);cursor:pointer}
+    .cad .hora-linha.ativa{border-left:3px solid var(--terracota);padding-left:6px}
 
     /* celular: uma página por vez; marcadores em cima (rolam) e as duas páginas embaixo */
     @media (max-width:820px){
@@ -233,9 +239,9 @@
     /* cores de capa: as do site (temas.css) */
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
-    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas', 'admin-agenda.html#v=horas'],
+    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'] };
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'] };
     var visao = 'dia', cacheAno = {};
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -275,7 +281,7 @@
     function normalizar(e, cal) {
       if (e.status === 'cancelled') return null;
       var diaTodo = !!(e.start && e.start.date);
-      return { id: e.id, calId: cal.id, calNome: cal.summary, livre: e.transparency === 'transparent', titulo: e.summary || '(sem título)', ini: diaTodo ? doIso(e.start.date) : Date.parse(e.start.dateTime), fim: diaTodo ? doIso(e.end.date) : Date.parse(e.end.dateTime), diaTodo: diaTodo, link: e.htmlLink, cor: cal.backgroundColor || '#B5852F' };
+      return { id: e.id, calId: cal.id, calNome: cal.summary, livre: e.transparency === 'transparent', ocupa: !(e.start && e.start.date) && e.transparency !== 'transparent' && !(e.attendees || []).some(function (x) { return x.self && x.responseStatus === 'declined'; }), titulo: e.summary || '(sem título)', ini: diaTodo ? doIso(e.start.date) : Date.parse(e.start.dateTime), fim: diaTodo ? doIso(e.end.date) : Date.parse(e.end.dateTime), diaTodo: diaTodo, link: e.htmlLink, cor: cal.backgroundColor || '#B5852F' };
     }
     function eventosDe(c, de, ate, tentativa) {
       return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
@@ -301,9 +307,9 @@
       try { localStorage.setItem('fda_caderno_capa', c); } catch (e) { /* só cache de exibição */ }
     }
     function folhaPequena(conteudo) {
-      var fundo = el('div', { class: 'cad-fundo' }), caixa = el('div', { class: 'cx-folha barra-ocre' }); fundo.appendChild(caixa); conteudo(caixa, function () { fundo.remove(); });
+      var fundo = el('div', { class: 'cad-fundo' }), caixa = el('div', { class: 'cx-folha barra-ocre portal' }); fundo.appendChild(caixa); conteudo(caixa, function () { fundo.remove(); });
       fundo.addEventListener('click', function (ev) { if (ev.target === fundo) fundo.remove(); });
-      document.body.appendChild(fundo);
+      cad.parentNode.appendChild(fundo);
     }
     function escolherCapa() {
       folhaPequena(function (caixa, fechar) {
@@ -439,7 +445,7 @@
       pedido++;
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -617,6 +623,141 @@
       }, function (er) { if (eu !== pedido) return; rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível carregar (' + (er.message || 'erro') + ').' })); });
     }
     var recarregarTodo = function () {};
+
+    /* ---------- Horas: as 24 horas planetárias do dia (12 do dia numa página, 12 da noite na outra) e o encaixe de tarefa ---------- */
+    var TAREFAS = [['Estudar', 'Mercúrio'], ['Produzir vídeo (roteiro, edição)', 'Mercúrio'], ['Gravar vídeo', 'Sol'], ['Mentoria e atendimento', 'Júpiter'], ['Rotina e organização', 'Saturno']]; /* a lista só sugere: ele pode escrever qualquer outra coisa */
+    var SVG_SOL = '<svg viewBox="0 0 64 64" width="16" height="16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><circle cx="32" cy="32" r="10"/><path d="M32 8v8M32 48v8M8 32h8M48 32h8M15 15l6 6M43 43l6 6M49 15l-6 6M21 43l-6 6"/></svg>';
+    var SVG_LUA = '<svg viewBox="0 0 64 64" width="16" height="16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M44 10a24 24 0 1 0 10 34A20 20 0 0 1 44 10z"/></svg>';
+    function duracaoTxt(min) { return min < 60 ? min + ' min' : (min % 60 ? Math.floor(min / 60) + ' h ' + (min % 60) + ' min' : min / 60 + ' h'); }
+    function numPt(n) { return String(n).replace('.', ','); }
+    function corTempo(f) { /* azul no começo, ocre no meio, terracota no fim: a mesma dos prazos do site */
+      var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, t = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
+      return 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')';
+    }
+    function barraDe(ini, fim, agora, unidade, fino) { /* "62% [barra] 12/23 minutos": porcentagem antes, o tanto depois */
+      var f = Math.max(0, Math.min(1, (agora - ini) / (fim - ini))), cor = corTempo(f), pct = agora >= fim ? 100 : Math.floor(f * 100);
+      var total = unidade === 'horas' ? Math.round((fim - ini) / 3600000 * 2) / 2 : Math.round((fim - ini) / 60000 * 2) / 2;
+      var passou = agora >= fim ? total : Math.floor(Math.min(f * total, total));
+      if (!fino) return P.barraLinha(pct, cor, numPt(passou) + '/' + numPt(total) + ' ' + unidade, true);
+      return el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px' }, [el('span', { text: pct + '%', class: 'tempo-pct', style: 'flex:none;min-width:34px;font-weight:700' }),
+        el('div', { class: 'tempo-trilho', style: 'flex:1;height:4px;border:1px solid transparent' }, [P.tempoNoPreenchimento(el('i', { style: 'display:block;height:100%;width:' + pct + '%' }), pct)]), el('span', { text: numPt(passou) + '/' + numPt(total) + ' ' + unidade, class: 'tempo-fim', style: 'flex:none;white-space:nowrap' })]);
+    }
+    function vistaHoras() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], a = ancora.split('-'), agora = Date.now();
+      var longa = SEMANA[diaSem(ancora)] + ', ' + (+a[2]) + ' de ' + MESES[+a[1] - 1];
+      cabVista(esq, longa, function () { ancora = somaDias(ancora, -1); desenhar(); }, function () { ancora = somaDias(ancora, 1); desenhar(); });
+      var corpoE = el('div', { class: 'rola' }), corpoD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(corpoE); dir.appendChild(corpoD); carregando(corpoE);
+      preparar().then(function () {
+        if (eu !== pedido) return; corpoE.textContent = '';
+        var hs = HP.horasDoDia(+a[0], +a[1], +a[2], LAT, LON);
+        if (hs.length < 24) { corpoE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível calcular as horas deste dia neste lugar.' })); return; }
+        var atual = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0];
+        /* resumo do dia: o planeta do dia, o nascer e o pôr do sol e, se é hoje, a hora de agora com as duas barras */
+        var resumo = el('div', { style: 'display:flex;align-items:flex-end;gap:26px;justify-content:center;margin:2px 0 10px;text-align:center' }, [
+          el('div', {}, [el('div', { class: 'rotulo-grupo', text: 'Dia' }), el('span', { class: 'ic', style: 'font-size:58px;color:var(--terracota)', text: icone(REGENTE[diaSem(ancora)]) })]),
+          atual ? el('div', {}, [el('div', { class: 'rotulo-grupo', text: 'Hora' }), el('span', { class: 'ic', style: 'font-size:42px;color:' + (atual.noite ? '#1F5FA3' : '#B5852F'), text: icone(atual.planeta) })]) : null,
+          el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;text-align:left' }, [el('div', { class: 'rotulo-fixo', text: 'nascer do sol ' + hhmm(hs[0].ini) + ' · pôr do sol ' + hhmm(hs[12].ini) })].concat(atual ? [barraDe(hs[0].ini, hs[23].fim, agora, 'horas', false), barraDe(atual.ini, atual.fim, agora, 'minutos', false)] : []))
+        ].filter(Boolean));
+        corpoE.appendChild(resumo);
+        function linhaHora(h, i) {
+          var ativa = agora >= h.ini && agora < h.fim, cor = h.noite ? '#1F5FA3' : '#B5852F';
+          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? '#1F5FA3' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
+          var l = el('div', { class: 'hora-linha' + (ativa ? ' ativa' : '') }, [el('div', { style: 'display:flex;align-items:center;gap:10px' }, [
+            el('span', { text: (i % 12 + 1) + 'ª', style: 'flex:none;width:30px;font-weight:700' }), per, el('span', { class: 'ic', style: 'flex:none;width:34px;font-size:26px;color:' + cor, text: icone(h.planeta) }),
+            el('span', { text: hhmm(h.ini), style: 'flex:1;text-align:center;font-weight:700' }), el('span', { text: hhmm(h.fim), style: 'flex:1;text-align:center;font-weight:700' })]), el('div', { style: 'margin-top:3px' }, [barraDe(h.ini, h.fim, agora, 'minutos', true)])]);
+          l.addEventListener('click', function () { /* tocar numa hora abre o encaixe, já com o planeta e o horário dela */
+            var fm = new Date(Math.min(h.fim, doIso(ancora) + DIA) + HP.FUSO), fimMin = fm.getUTCHours() * 60 + fm.getUTCMinutes() + 60;
+            painelEncaixe({ planeta: h.planeta, dia: ancora, dow: [diaSem(ancora)], hDe: hhmm(Math.max(h.ini, doIso(ancora))), hAte: fimMin >= 1440 ? '23:59' : p2(Math.floor(fimMin / 60)) + ':' + p2(fimMin % 60) });
+          });
+          return l;
+        }
+        corpoE.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:0 0 2px', text: 'horas do dia' }));
+        hs.slice(0, 12).forEach(function (h, i) { corpoE.appendChild(linhaHora(h, i)); });
+        corpoD.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:0 0 2px', text: 'horas da noite' }));
+        hs.slice(12).forEach(function (h, i) { corpoD.appendChild(linhaHora(h, i + 12)); });
+      }, function (e) { if (eu === pedido) { corpoE.textContent = ''; corpoE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + e.message + ').' })); } });
+    }
+
+    /* ---------- encaixar uma tarefa pela hora planetária ---------- */
+    function painelEncaixe(pre) {
+      pre = pre || {};
+      folhaPequena(function (caixa, fechar) {
+        caixa.classList.add('larga');
+        caixa.appendChild(el('h2', { text: 'Onde encaixar uma tarefa' }));
+        var o = el('input', { type: 'text', autocomplete: 'off', placeholder: 'Escreva ou escolha na lista' });
+        var planeta = el('select'); HP.CALDEIA.forEach(function (n) { planeta.appendChild(el('option', { value: n, text: n })); }); planeta.value = pre.planeta || 'Mercúrio';
+        var doPreset = function (txt) { var t = TAREFAS.filter(function (x) { return x[0].toLowerCase() === String(txt).trim().toLowerCase(); })[0]; if (t) planeta.value = t[1]; };
+        o.addEventListener('input', function () { doPreset(o.value); });
+        var caixaTarefa = P.combo(o, function () { return TAREFAS.map(function (t) { return { valor: t[0], rotulo: t[0], busca: t[0].toLowerCase() }; }); }, function (i) { o.value = i.valor; doPreset(i.valor); }, true);
+        var dur = el('select'); [30, 45, 60, 90, 120, 180].forEach(function (m) { dur.appendChild(el('option', { value: String(m), text: duracaoTxt(m) })); }); dur.value = '60';
+        var folga = el('select'); [[0, 'Nenhuma'], [15, '15 minutos'], [30, '30 minutos'], [45, '45 minutos'], [60, '1 hora']].forEach(function (x) { folga.appendChild(el('option', { value: String(x[0]), text: x[1] })); }); folga.value = '30';
+        var hoje = isoDia(Date.now()), de = el('input', { type: 'date', value: pre.dia || hoje }), ate = el('input', { type: 'date', value: somaDias(pre.dia || hoje, 6) });
+        var dow = pre.dow || [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
+        ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
+          var b = el('button', { type: 'button', text: rot, 'aria-label': SEMANA[k] });
+          var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+          pinta(); b.addEventListener('click', function () { var i = dow.indexOf(k); if (i >= 0) dow.splice(i, 1); else dow.push(k); pinta(); }); blocoDias.appendChild(b);
+        });
+        var hDe = el('input', { type: 'time', value: pre.hDe || '06:00' }), hAte = el('input', { type: 'time', value: pre.hAte || '22:00' });
+        var botao = el('button', { type: 'button', class: 'portal-btn', text: 'Ver horários' }), res = el('div'), cancela = el('button', { type: 'button', class: 'portal-apagar', text: 'Fechar' });
+        botao.addEventListener('click', function () { sugerir(res, { tarefa: o.value.trim(), planeta: planeta.value, minutos: +dur.value, de: de.value, ate: ate.value, dow: dow.slice(), hDe: hDe.value, hAte: hAte.value, folga: +folga.value }, fechar); });
+        cancela.addEventListener('click', fechar);
+        var campo = function (r, c) { return [el('label', { text: r }), c]; };
+        [[el('label', { text: 'O que você vai fazer' })].concat(caixaTarefa), campo('Na hora de', planeta), campo('Quanto tempo', dur), campo('Folga antes e depois dos compromissos', folga), [P.linhaDatas([P.colunaData(de, 'Do dia'), P.colunaData(ate, 'Até o dia')])],
+          [el('label', { text: 'Nos dias' }), blocoDias], campo('Não antes de', hDe), campo('Não depois de', hAte), [el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:12px' }, [botao, cancela]), res]].forEach(function (g) { g.forEach(function (n) { caixa.appendChild(n); }); });
+      });
+    }
+    function slotsDoDia(dia, eventos, planeta, minutos, deHora, ateHora, fg, agora) { /* a tarefa COMEÇA dentro da hora do planeta e cabe inteira num trecho livre */
+      var achados = [], ja = Math.max(doIso(dia, deHora), agora), fimJ = doIso(dia, ateHora);
+      if (fimJ <= ja) return achados;
+      var ocupado = eventos.filter(function (e) { return e.ocupa && e.fim + fg > ja && e.ini - fg < fimJ; }).map(function (e) { return [Math.max(e.ini - fg, ja), Math.min(e.fim + fg, fimJ)]; });
+      var livres = [], cursor = ja;
+      ocupado.sort(function (a, b) { return a[0] - b[0]; }).forEach(function (b) { if (b[0] > cursor) livres.push([cursor, b[0]]); cursor = Math.max(cursor, b[1]); });
+      if (cursor < fimJ) livres.push([cursor, fimJ]);
+      HP.horasEntre(ja, fimJ, LAT, LON).filter(function (h) { return h.planeta === planeta; }).forEach(function (h) {
+        livres.forEach(function (l) { var s = Math.ceil(Math.max(l[0], h.ini) / 60000) * 60000; if (s < h.fim && s + minutos * 60000 <= l[1]) achados.push({ dia: dia, ini: s, limite: l[1], hora: h }); });
+      });
+      return achados;
+    }
+    function sugerir(res, o, fechar) { /* dia a dia do período, onde a tarefa encaixa (um horário por dia); ele tira os que não quer e coloca tudo de uma vez */
+      res.textContent = ''; if (!o.de || !o.ate) return;
+      var ini = o.de, fim = o.ate; if (fim < ini) { var t = ini; ini = fim; fim = t; }
+      var total = Math.min(366, Math.round((doIso(fim) - doIso(ini)) / DIA) + 1);
+      res.appendChild(el('p', { class: 'vazio', text: 'Procurando...' }));
+      eventosEntre(doIso(ini), doIso(somaDias(ini, total))).then(function (evs) {
+        res.textContent = '';
+        if (evs.falhas && evs.falhas.length) { res.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui ler a agenda ' + evs.falhas.join(', ') + ' agora, então não dá para garantir os horários livres. Toque em ver horários de novo.' })); return; }
+        var hojeIso = isoDia(Date.now()), fg = o.folga * 60000, propostas = [];
+        for (var i = 0; i < total; i++) {
+          var iso = somaDias(ini, i); if (iso < hojeIso || o.dow.indexOf(diaSem(iso)) < 0) continue;
+          var agora = iso === hojeIso ? Math.ceil(Date.now() / 300000) * 300000 : 0;
+          var slots = slotsDoDia(iso, evs, o.planeta, o.minutos, o.hDe, o.hAte, fg, agora).sort(function (p, q) { return p.ini - q.ini; }); propostas.push({ iso: iso, slot: slots[0] || null });
+        }
+        var itens = propostas.filter(function (p) { return p.slot; }).map(function (p) { return { iso: p.iso, ini: p.slot.ini, fim: p.slot.ini + o.minutos * 60000, hora: p.slot.hora, marcado: true }; });
+        var confirmar = el('button', { type: 'button', class: 'portal-btn', style: 'margin-top:14px' }), msg = el('p', { class: 'portal-msg' });
+        var atualiza = function () { var n = itens.filter(function (x) { return x.marcado; }).length; confirmar.textContent = 'Colocar na agenda (' + n + ')'; confirmar.disabled = !n; };
+        propostas.forEach(function (p) {
+          if (!p.slot) { res.appendChild(el('p', { class: 'det-enc', style: 'opacity:.6', text: rotuloDiaTodo(p.iso) + ' · sem horário livre' })); return; }
+          var it = itens.filter(function (x) { return x.iso === p.iso; })[0], cx = el('button', { type: 'button', class: 'cx', text: '✓', 'aria-label': 'Marcar' });
+          cx.addEventListener('click', function () { it.marcado = !it.marcado; cx.textContent = it.marcado ? '✓' : ''; atualiza(); });
+          res.appendChild(el('div', { class: 'tarefa', style: 'padding:6px 0;align-items:center' }, [cx, el('div', {}, [el('div', { text: rotuloDiaTodo(p.iso) + ', ' + hhmm(it.ini) + ' às ' + hhmm(it.fim) }),
+            el('div', { class: 'det-enc' }, [el('span', { class: 'ic', style: 'font-size:16px;color:' + (it.hora.noite ? '#1F5FA3' : '#B5852F'), text: icone(o.planeta) }), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })])])]));
+        });
+        if (!itens.length) return; atualiza();
+        confirmar.addEventListener('click', function () {
+          var esc = itens.filter(function (x) { return x.marcado; }); if (!esc.length) return; confirmar.disabled = true; P.mensagem(msg, 'Colocando na agenda...', '');
+          var titulo = o.tarefa || ('Hora de ' + o.planeta), falhou = 0;
+          esc.reduce(function (cadeia, x) {
+            return cadeia.then(function () { return gapi('/calendars/primary/events', false, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ summary: titulo, start: { dateTime: new Date(x.ini).toISOString(), timeZone: 'America/Sao_Paulo' }, end: { dateTime: new Date(x.fim).toISOString(), timeZone: 'America/Sao_Paulo' } }) }); }).then(function () {}, function () { falhou++; });
+          }, Promise.resolve()).then(function () {
+            cacheAno = {};
+            if (falhou) { confirmar.disabled = false; P.mensagem(msg, falhou + ' de ' + esc.length + ' não foram colocados (' + (falhou === esc.length ? 'confira a permissão do Google Agenda' : 'tente de novo') + ').', 'erro'); return; }
+            fechar(); desenhar();
+          });
+        });
+        res.appendChild(el('div', {}, [confirmar])); res.appendChild(msg);
+      }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+    }
 
     /* ---------- começo ---------- */
     function mostrar() {
