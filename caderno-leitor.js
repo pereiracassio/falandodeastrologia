@@ -24,7 +24,7 @@ window.LeitorCaderno = function (P) {
       var janela = el('div', { class: 'lp' }); janela.style.cssText = 'position:relative;overflow:hidden;margin:auto;flex:none;touch-action:pan-x pan-y;background:transparent';
       var holder = el('div'); holder.style.cssText = 'position:absolute;background:transparent';
       function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;' + (css || ''); holder.appendChild(c); return c; }
-      var cvPdf = lona('mix-blend-mode:multiply'), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();
+      var cvPdf = lona(), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();
       janela.appendChild(holder); host.appendChild(janela); janela.style.display = 'none';
       var P_ = { num: null, pag: null, pw: 1, ph: 1, cssW: 1, cssH: 1, tracos: [], pendente: false, espera: null, idRender: 0, tarefa: null, idCarga: 0, apagou: null, host: host };
 
@@ -48,11 +48,21 @@ window.LeitorCaderno = function (P) {
         [cvMarca, cvTinta].forEach(function (c) { c.width = Math.max(1, Math.round(P_.cssW * r)); c.height = Math.max(1, Math.round(P_.cssH * r)); });
         P_.tracos.forEach(desenhar); return r;
       }
+      /* o branco do PDF vira transparente de verdade (o papiro aparece por baixo desde o primeiro instante, sem piscar durante a virada da página) */
+      function tirarBranco(g, w, h) {
+        var im = g.getImageData(0, 0, w, h), d = im.data;
+        for (var i = 0; i < d.length; i += 4) {
+          var mn = Math.min(d[i], d[i + 1], d[i + 2]), a = 255 - mn;
+          if (a === 0) { d[i + 3] = 0; continue; }
+          d[i] = Math.max(0, Math.min(255, 255 * (d[i] - mn) / a)); d[i + 1] = Math.max(0, Math.min(255, 255 * (d[i + 1] - mn) / a)); d[i + 2] = Math.max(0, Math.min(255, 255 * (d[i + 2] - mn) / a)); d[i + 3] = a;
+        }
+        g.putImageData(im, 0, 0);
+      }
       function renderizar() {
         if (!P_.pag) return; var eu = ++P_.idRender; if (P_.tarefa) { try { P_.tarefa.cancel(); } catch (e) { /* ok */ } }
         medir(); var r = lonasDoTamanho(), vp = P_.pag.getViewport({ scale: (P_.cssW / P_.pw) * r }), tmp = document.createElement('canvas'); tmp.width = Math.round(vp.width); tmp.height = Math.round(vp.height);
         P_.tarefa = P_.pag.render({ canvasContext: tmp.getContext('2d'), viewport: vp });
-        P_.tarefa.promise.then(function () { if (eu !== P_.idRender) return; cvPdf.width = tmp.width; cvPdf.height = tmp.height; cvPdf.getContext('2d').drawImage(tmp, 0, 0); }, function () { /* cancelado */ });
+        P_.tarefa.promise.then(function () { if (eu !== P_.idRender) return; cvPdf.width = tmp.width; cvPdf.height = tmp.height; var gp = cvPdf.getContext('2d'); gp.drawImage(tmp, 0, 0); tirarBranco(gp, cvPdf.width, cvPdf.height); }, function () { /* cancelado */ });
       }
       function gravar() {
         clearTimeout(P_.espera); if (!P_.pendente || !P_.num) return Promise.resolve(); P_.pendente = false; var pg = P_.num, copia = P_.tracos.slice();
