@@ -127,7 +127,11 @@ window.LeitorCaderno = function (P) {
     campo.addEventListener('change', function () { var p = Math.max(1, Math.min(total, parseInt(campo.value, 10) || 1)); virarPara(p <= 1 ? 0 : Math.floor(p / 2), 0); });
     var bAnt = btn('‹', function () { virar(-1); }, ';font-size:22px'), bProx = btn('›', function () { virar(1); }, ';font-size:22px'), bMenos = btn('−', function () { zoomar(0); }, ';font-size:22px'), bMais = btn('+', function () { zoomar(1); }, ';font-size:22px');
     var bVoltar = btn('← Voltar', function () { fechar(); o.voltar(); });
-    [bVoltar, bMao, bCaneta, bMarca, bBorracha, corBtns, bDesfazer, bAnt, campo, totalTxt, bProx, bMenos, bMais].forEach(function (x) { barra.appendChild(x); });
+    /* ferramentas na página da esquerda, páginas e zoom na da direita: nada em cima da costura */
+    var gE = el('div', { class: 'lb-g' }), gD = el('div', { class: 'lb-g' });
+    [bVoltar, bMao, bCaneta, bMarca, bBorracha, corBtns, bDesfazer].forEach(function (x) { gE.appendChild(x); });
+    [bAnt, campo, totalTxt, bProx, bMenos, bMais].forEach(function (x) { gD.appendChild(x); });
+    barra.appendChild(gE); barra.appendChild(gD);
     pintarFerr();
 
     /* ---------- as duas páginas ---------- */
