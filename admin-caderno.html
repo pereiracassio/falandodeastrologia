@@ -15,7 +15,7 @@
   <script src="moldura.js?v=20261109a"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
-  <link rel="stylesheet" href="page.css?v=89">
+  <link rel="stylesheet" href="page.css?v=90">
   <link rel="stylesheet" href="portal.css?v=33">
   <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
@@ -123,6 +123,53 @@
       .cad .tarefa .nome{font-size:15px}
       .cad .hp .r{width:64px;font-size:12px}.cad .ev{left:70px;font-size:13px}.cad .diatodo{padding-left:64px}.cad .falha{margin-left:64px}
     }
+
+    /* as outras visões (semana, mês, ano, lista) e as telas de antes dentro da folha */
+    .cad .vdia,.cad .vout{flex:1;min-height:0;display:flex;flex-direction:column}
+    .cad .vout{display:none}
+    .cad.v-outra .vdia{display:none}.cad.v-outra .vout{display:flex}
+    .cad .logo-topo{display:block;width:250px;height:auto;margin:0 auto 4px}
+    .cad .cab-vista{display:flex;justify-content:center;align-items:center;gap:6px;color:var(--azul-egipcio-escuro);font-size:19px;margin:2px 0 8px}
+    .cad .cab-vista .t{text-align:center;min-width:0}
+    .cad .dsem{flex:1;min-height:0;border-bottom:1px solid var(--azul-egipcio-claro);padding:6px 0 4px;display:flex;flex-direction:column;overflow:hidden}
+    .cad .dsem:last-child{border-bottom:0}
+    .cad .dsem-cab{align-self:flex-start;background:none;border:0;padding:0;color:var(--azul-egipcio-escuro);font-size:16px;display:flex;align-items:center;gap:8px;text-transform:lowercase}
+    .cad .dsem-cab.eh-hoje{color:var(--terracota)}
+    .cad .dsem-cab .ic{font-size:20px}
+    .cad .lev{display:flex;gap:8px;align-items:baseline;font-size:14px;line-height:1.3;text-decoration:none;color:var(--preto-tinta);margin-top:2px}
+    .cad .lev small{font-size:12px;color:var(--terracota);flex:none;min-width:38px}
+    .cad .lev i{flex:none;width:8px;height:8px;border-radius:50%;align-self:center}
+    .cad .lev span{min-width:0;overflow-wrap:anywhere}
+    .cad .rola{flex:1;min-height:0;overflow-y:auto}
+    .cad .grade-mes{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:auto repeat(6,minmax(0,1fr));border-top:1px solid var(--azul-egipcio-claro);border-left:1px solid var(--azul-egipcio-claro)}
+    .cad .grade-mes>*{border-right:1px solid var(--azul-egipcio-claro);border-bottom:1px solid var(--azul-egipcio-claro);min-width:0;min-height:0;overflow:hidden}
+    .cad .grade-mes .sem-cab{text-align:center;font-size:12px;color:var(--ocre);padding:3px 0}
+    .cad .cel{padding:2px 3px;display:flex;flex-direction:column;gap:1px}
+    .cad .cel.fora{opacity:.45}
+    .cad .cel .n{align-self:flex-start;background:none;border:0;padding:0 2px;font-family:inherit;font-size:14px;color:var(--preto-tinta);text-transform:none}
+    .cad .cel.fds .n{color:var(--azul-egipcio-claro)}
+    .cad .cel.eh-hoje .n{color:var(--terracota);font-weight:700;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}
+    .cad .chip{display:block;font-size:11px;line-height:1.2;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}
+    .cad .mais{font-size:11px;color:var(--terracota);padding:0 4px}
+    .cad .dia-lista{padding:6px 0 4px;border-bottom:1px solid var(--azul-egipcio-claro)}
+    .cad .dia-lista:last-child{border-bottom:0}
+    .cad .anos{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:8px 22px}
+    .cad .mm{display:flex;flex-direction:column;min-height:0}
+    .cad .mm .nm{align-self:flex-start;background:none;border:0;padding:0;color:var(--azul-egipcio-escuro);font-size:15px;margin-bottom:2px}
+    .cad .mm .nm.atual{color:var(--terracota)}
+    .cad .mm .g{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr);align-content:start}
+    .cad .mm .g b{font-family:var(--fonte-titulo,inherit);font-weight:400;text-align:center;font-size:10px;color:var(--ocre)}
+    .cad .mm .g button{background:none;border:0;padding:3px 0 6px;font-family:inherit;font-size:13px;color:var(--preto-tinta);position:relative;text-transform:none}
+    .cad .mm .g button.fds{color:var(--azul-egipcio-claro)}
+    .cad .mm .g button.eh-hoje{color:var(--terracota);font-weight:700}
+    .cad .mm .g button.tem::after{content:"";position:absolute;left:50%;bottom:1px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--ocre)}
+    .cad .embed{display:none;position:absolute;z-index:2;border:0;background:transparent;
+      left:calc(80px*var(--moldura-m) + 14px);right:calc(80px*var(--moldura-m) + 14px);top:calc(130px*var(--moldura-m) + 8px);bottom:calc(130px*var(--moldura-m) + 8px);
+      width:calc(100% - 2*(80px*var(--moldura-m) + 14px));height:calc(100% - 2*(130px*var(--moldura-m) + 8px))}
+    .cad.v-embed .embed{display:block}
+    .cad.v-embed .pag,.cad.v-embed .dobra{visibility:hidden}
+    .cad .abas.dir .aba:not(.peq){font-size:13px}
+    @media (max-width:820px){.cad .logo-topo{width:165px}.cad .grade-mes .cel .chip{font-size:9px}.cad .cel .n{font-size:12px}.cad .anos{gap:6px 10px}.cad .mm .g button{font-size:11px;padding:2px 0 5px}}
     .cad .troca{display:none}
     @media (max-width:820px){
       .cad .troca{display:flex;position:absolute;left:14px;right:14px;bottom:10px;height:44px;gap:3px}
@@ -143,7 +190,7 @@
     <div class="abas esq" id="meses"></div>
     <button type="button" class="ano baixo botao-fixo" id="anoMais"></button>
     <div class="miolo"><div class="folha papiro-moldura">
-      <section class="pag esq">
+      <section class="pag esq"><div class="vdia" id="diaEsq">
         <div class="topo">
           <div class="hoje">
             <img class="logo-daily" src="img/logo-menu-daily-linha.svg?v=1" alt="Hellenic Daily" width="1100" height="190">
@@ -157,15 +204,16 @@
         </div>
         <div class="rotulo-fixo" style="margin:20px 0 4px">to do</div>
         <div class="rolagem" id="todo"></div>
-      </section>
+      </div><div class="vout" id="outEsq"></div></section>
       <div class="dobra"></div>
-      <section class="pag dir">
+      <section class="pag dir"><div class="vdia" id="diaDir">
         <div class="diatodo" id="diaTodo"></div>
         <div class="linha" id="linha"></div>
-      </section>
+      </div><div class="vout" id="outDir"></div></section>
+      <iframe class="embed" id="embed" title="Tela" allowtransparency="true"></iframe>
     </div></div>
     <div class="abas dir" id="abasDir"></div>
-    <div class="troca"><button type="button" class="aba" id="t1">tarefas</button><button type="button" class="aba" id="t2">horários</button><button type="button" class="aba" id="tMais" style="flex:.4;color:var(--terracota);font-size:24px">+</button></div>
+    <div class="troca" id="troca"><button type="button" class="aba" id="t1">tarefas</button><button type="button" class="aba" id="t2">horários</button><button type="button" class="aba" id="tMais" style="flex:.4;color:var(--terracota);font-size:24px">+</button></div>
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -184,8 +232,10 @@
     /* cores de capa: as do site (temas.css) */
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
-    var ABAS = [['dia', 'Dia'], ['semana', 'Semana', 'admin-agenda.html#v=semana'], ['mes', 'Mês', 'admin-agenda.html#v=mes'], ['ano', 'Ano', 'admin-agenda.html#v=ano'], ['lista', 'Lista', 'admin-agenda.html#v=lista'],
-      ['todo', 'To do', 'admin-agenda.html#v=todo'], ['horas', 'Horas', 'admin-agenda.html#v=horas'], ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']];
+    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do', 'admin-agenda.html#v=todo'], ['horas', 'Horas', 'admin-agenda.html#v=horas'],
+      ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']];
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'] };
+    var visao = 'dia', cacheAno = {};
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
     function p2(n) { return String(n).padStart(2, '0'); }
@@ -201,9 +251,9 @@
     function semanaDoAno(iso) { var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2])), n = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - n + 3); var p = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d - p) / DIA - 3 + ((p.getUTCDay() + 6) % 7)) / 7); }
 
     /* ---------- Google Agenda (a mesma conexão permanente do Drive) ---------- */
-    function gapi(caminho, jaTentou) {
-      return P.tokenGoogle().then(function (token) { return fetch(CAL + caminho, { headers: { Authorization: 'Bearer ' + token } }); }).then(function (r) {
-        if (r.status === 401 && !jaTentou) { try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ } return gapi(caminho, true); }
+    function gapi(caminho, jaTentou, opcoes) {
+      return P.tokenGoogle().then(function (token) { var o = Object.assign({}, opcoes || {}); o.headers = Object.assign({ Authorization: 'Bearer ' + token }, o.headers || {}); return fetch(CAL + caminho, o); }).then(function (r) {
+        if (r.status === 401 && !jaTentou) { try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ } return gapi(caminho, true, opcoes); }
         if (!r.ok) { var e = new Error(r.status === 403 ? 'permissao' : 'Google ' + r.status); throw e; }
         return r.json();
       });
@@ -227,7 +277,7 @@
       return { titulo: e.summary || '(sem título)', ini: diaTodo ? doIso(e.start.date) : Date.parse(e.start.dateTime), fim: diaTodo ? doIso(e.end.date) : Date.parse(e.end.dateTime), diaTodo: diaTodo, link: e.htmlLink, cor: cal.backgroundColor || '#B5852F' };
     }
     function eventosDe(c, de, ate, tentativa) {
-      return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250', timeZone: 'America/Sao_Paulo' }))
+      return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
         .then(function (r) { return (r.items || []).map(function (e) { return normalizar(e, c); }); }, function (er) {
           if (tentativa < 3) return new Promise(function (ok) { setTimeout(ok, 600 * (tentativa + 1)); }).then(function () { return eventosDe(c, de, ate, tentativa + 1); });
           throw er;
@@ -274,12 +324,12 @@
       var meses = document.getElementById('meses'); meses.textContent = '';
       MES3.forEach(function (m, i) {
         var b = el('button', { type: 'button', class: 'aba botao-fixo', 'data-mes': String(i + 1) }, [el('span', { text: m })]);
-        b.addEventListener('click', function () { var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; desenhar(); }); meses.appendChild(b);
+        b.addEventListener('click', function () { var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; if (visao === 'ano') visao = 'mes'; if (visao === 'dia') ancora = a[0] + '-' + p2(i + 1) + '-' + p2(Math.min(+a[2], new Date(Date.UTC(+a[0], i + 1, 0)).getUTCDate())); irPara(visao); }); meses.appendChild(b);
       });
       var dir = document.getElementById('abasDir'); dir.textContent = '';
       ABAS.forEach(function (x) {
-        var b = el('button', { type: 'button', class: 'aba botao-fixo' + (x[0] === 'dia' ? ' aberta' : '') }, [el('span', { text: x[1] })]);
-        if (x[2]) b.addEventListener('click', function () { location.href = x[2]; }); /* ainda abre a tela de antes; entra nesta folha uma de cada vez */
+        var b = el('button', { type: 'button', class: 'aba botao-fixo', 'data-v': x[0] }, [el('span', { text: x[1] })]);
+        b.addEventListener('click', function () { irPara(x[0]); });
         dir.appendChild(b);
       });
       dir.appendChild(el('div', { class: 'vao' }));
@@ -287,7 +337,7 @@
       var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); desenhar(); }); dir.appendChild(hj);
       var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Nova tarefa', 'aria-label': 'Nova tarefa', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', novaTarefa); dir.appendChild(mais);
     }
-    function desenhar() {
+    function desenharDia() {
       var a = ancora.split('-'), ano = +a[0], mes = +a[1], dia = +a[2], hojeIso = isoDia(Date.now()), eu = ++pedido;
       document.getElementById('anoMenos').textContent = '▲ ' + (ano - 1); document.getElementById('anoMais').textContent = (ano + 1) + ' ▼';
       Array.prototype.forEach.call(document.querySelectorAll('#meses .aba'), function (b) { b.classList.toggle('aberta', +b.getAttribute('data-mes') === mes); });
@@ -372,12 +422,137 @@
       });
     }
 
+    /* ---------- as outras visões da folha: Semana, Mês, Ano e Lista ---------- */
+    function irPara(v) {
+      visao = v; var x = ABAS.filter(function (y) { return y[0] === v; })[0] || ABAS[0];
+      Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { b.classList.toggle('aberta', b.getAttribute('data-v') === v); });
+      try { history.replaceState(null, '', '#v=' + v + '&d=' + ancora); } catch (e) { /* sem histórico */ }
+      desenhar();
+    }
+    function desenhar() {
+      var x = ABAS.filter(function (y) { return y[0] === visao; })[0], embutida = x && x[2];
+      cad.classList.toggle('v-embed', !!embutida);
+      cad.classList.toggle('v-outra', !embutida && visao !== 'dia');
+      var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
+      document.getElementById('troca').style.display = embutida ? 'none' : '';
+      pedido++;
+      if (embutida) { var f = document.getElementById('embed'), partes = x[2].split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); if (f.getAttribute('data-url') !== x[2]) { f.setAttribute('data-url', x[2]); f.src = url; } return; }
+      if (visao === 'dia') { desenharDia(); return; }
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista })[visao]();
+    }
+    function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
+    function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
+      var m = {}, ini = doIso(primeiro), fim = ini + n * DIA;
+      evs.forEach(function (e) {
+        var a = Math.max(e.ini, ini), b = Math.min(e.fim, fim); if (b < a || (b === a && !(e.ini === e.fim))) return;
+        for (var d = meiaNoite(a); d < b || d === meiaNoite(a); d += DIA) { var iso = isoDia(d); (m[iso] = m[iso] || []).push(e); if (e.fim <= d + DIA) break; }
+      });
+      Object.keys(m).forEach(function (k) { m[k].sort(function (x, y) { return (y.diaTodo ? 1 : 0) - (x.diaTodo ? 1 : 0) || x.ini - y.ini; }); });
+      return m;
+    }
+    function meiaNoite(ms) { return doIso(isoDia(ms)); }
+    function corDe(e) { return e.cor && e.cor.length === 7 ? e.cor : '#B5852F'; }
+    function linhaEv(e) {
+      var a = el('a', { class: 'lev', href: e.link || '#', target: '_blank', rel: 'noopener' }, [e.diaTodo ? null : el('small', { text: hhmm(e.ini) }), el('i', { style: 'background:' + corDe(e) }), el('span', { text: e.titulo })].filter(Boolean));
+      return a;
+    }
+    function cabVista(esq, titulo, ant, prox) {
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var a = el('button', { type: 'button', class: 'seta', 'aria-label': 'Anterior', text: '‹' }), b = el('button', { type: 'button', class: 'seta', 'aria-label': 'Próximo', text: '›' });
+      a.addEventListener('click', ant); b.addEventListener('click', prox);
+      esq.appendChild(el('div', { class: 'cab-vista' }, [a, el('span', { class: 't botao-fixo', text: titulo }), b]));
+    }
+    function preparaOut() { var e = document.getElementById('outEsq'), d = document.getElementById('outDir'); e.textContent = ''; d.textContent = ''; return [e, d]; }
+    function carregando(onde) { onde.appendChild(el('p', { class: 'vazio', text: 'Carregando...' })); }
+    function lerEventos(de, ate, eu, pronto, esq) {
+      eventosEntre(de, ate).then(function (evs) { if (eu !== pedido) return; if (evs.falhas && evs.falhas.length && esq) esq.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui ler: ' + evs.falhas.join(', ') })); pronto(evs); },
+        function (er) { if (eu !== pedido) return; var m = er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível ler a agenda (' + er.message + ').'; if (esq) esq.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: m })); pronto([]); });
+    }
+    function irAoDia(iso) { ancora = iso; irPara('dia'); }
+
+    function vistaSemana() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], inicio = somaDias(ancora, -diaSem(ancora)), fim = somaDias(inicio, 6), hojeIso = isoDia(Date.now());
+      var t = inicio.slice(8).replace(/^0/, '') + ' a ' + fim.slice(8).replace(/^0/, '') + ' de ' + MESES[+fim.slice(5, 7) - 1] + ' · semana ' + semanaDoAno(somaDias(inicio, 1));
+      cabVista(esq, t, function () { ancora = somaDias(ancora, -7); desenhar(); }, function () { ancora = somaDias(ancora, 7); desenhar(); });
+      var blocos = [];
+      for (var k = 0; k < 7; k++) (function (iso) {
+        var cab = el('button', { type: 'button', class: 'dsem-cab botao-fixo' + (iso === hojeIso ? ' eh-hoje' : '') }, [el('span', { text: SEMANA[diaSem(iso)].split('-')[0] + ' ' + (+iso.slice(8)) }), el('span', { class: 'ic', text: icone(REGENTE[diaSem(iso)]) })]);
+        cab.addEventListener('click', function () { irAoDia(iso); });
+        var bl = el('div', { class: 'dsem', 'data-iso': iso }, [cab]); blocos.push(bl);
+      })(somaDias(inicio, k));
+      blocos.forEach(function (bl, i) { (i < 4 ? esq : dir).appendChild(bl); });
+      dir.appendChild(el('div', { class: 'dsem' }, [el('span', { class: 'rotulo-fixo', text: 'notas' })]));
+      carregando(esq);
+      lerEventos(doIso(inicio), doIso(inicio) + 7 * DIA, eu, function (evs) {
+        var carr = esq.querySelector('.vazio'); if (carr) carr.remove();
+        var m = porDia(evs, inicio, 7);
+        blocos.forEach(function (bl) { (m[bl.getAttribute('data-iso')] || []).forEach(function (e) { bl.appendChild(linhaEv(e)); }); });
+      }, esq);
+    }
+
+    function vistaMes() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], a = ancora.split('-'), ano = +a[0], mes = +a[1], hojeIso = isoDia(Date.now());
+      cabVista(esq, MESES[mes - 1] + ' de ' + ano, function () { ancora = mudaMes(ancora, -1); desenhar(); }, function () { ancora = mudaMes(ancora, 1); desenhar(); });
+      var primeiro = ano + '-' + p2(mes) + '-01', ini = somaDias(primeiro, -diaSem(primeiro)), grade = el('div', { class: 'grade-mes' }), cels = {};
+      'domingo segunda terça quarta quinta sexta sábado'.split(' ').forEach(function (n) { grade.appendChild(el('div', { class: 'sem-cab rotulo-fixo', text: n.slice(0, 3) })); });
+      for (var k = 0; k < 42; k++) (function (iso) {
+        var d = +iso.slice(8), c = diaSem(iso), dentro = iso.slice(0, 7) === primeiro.slice(0, 7);
+        var n = el('button', { type: 'button', class: 'n', text: String(d) }); n.addEventListener('click', function () { irAoDia(iso); });
+        var cel = el('div', { class: 'cel' + (dentro ? '' : ' fora') + (c === 0 || c === 6 ? ' fds' : '') + (iso === hojeIso ? ' eh-hoje' : '') }, [n]); cels[iso] = cel; grade.appendChild(cel);
+      })(somaDias(ini, k));
+      esq.appendChild(grade); dir.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:4px 0 6px', text: 'neste mês' })); var rola = el('div', { class: 'rola' }); dir.appendChild(rola); carregando(rola);
+      lerEventos(doIso(ini), doIso(ini) + 42 * DIA, eu, function (evs) {
+        rola.textContent = ''; var m = porDia(evs, ini, 42), algum = false;
+        Object.keys(cels).forEach(function (iso) {
+          var l = m[iso] || [], cel = cels[iso];
+          l.slice(0, 3).forEach(function (e) { var c = corDe(e); cel.appendChild(el('a', { class: 'chip', href: e.link || '#', target: '_blank', rel: 'noopener', text: e.titulo, style: 'background:' + c + ';color:' + textoSobre(c) })); });
+          if (l.length > 3) cel.appendChild(el('span', { class: 'mais', text: '+' + (l.length - 3) }));
+          if (iso.slice(0, 7) === primeiro.slice(0, 7) && l.length) { algum = true; var bl = el('div', { class: 'dia-lista' }, [el('button', { type: 'button', class: 'dsem-cab botao-fixo' + (iso === hojeIso ? ' eh-hoje' : ''), text: SEMANA[diaSem(iso)].split('-')[0] + ' ' + (+iso.slice(8)) })]); bl.firstChild.addEventListener('click', function () { irAoDia(iso); }); l.forEach(function (e) { bl.appendChild(linhaEv(e)); }); rola.appendChild(bl); }
+        });
+        if (!algum) rola.appendChild(el('p', { class: 'vazio', text: 'Nenhum compromisso neste mês.' }));
+      }, esq);
+    }
+
+    function vistaAno() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], ano = +ancora.slice(0, 4), hojeIso = isoDia(Date.now()), tem = {};
+      cabVista(esq, String(ano), function () { ancora = mudaMes(ancora, -12); desenhar(); }, function () { ancora = mudaMes(ancora, 12); desenhar(); });
+      var gE = el('div', { class: 'anos' }), gD = el('div', { class: 'anos' }); esq.appendChild(gE); dir.appendChild(el('div', { style: 'height:' + 66 + 'px;flex:none' })); dir.appendChild(gD);
+      var botoes = {};
+      for (var m = 1; m <= 12; m++) (function (m) {
+        var prim = ano + '-' + p2(m) + '-01', total = new Date(Date.UTC(ano, m, 0)).getUTCDate(), atual = hojeIso.slice(0, 7) === prim.slice(0, 7);
+        var nome = el('button', { type: 'button', class: 'nm botao-fixo' + (atual ? ' atual' : ''), text: MESES[m - 1] }); nome.addEventListener('click', function () { ancora = prim; irPara('mes'); });
+        var g = el('div', { class: 'g' }); 'dstqqss'.split('').forEach(function (l) { g.appendChild(el('b', { text: l })); });
+        for (var v = 0; v < diaSem(prim); v++) g.appendChild(el('span'));
+        for (var d = 1; d <= total; d++) { var iso = ano + '-' + p2(m) + '-' + p2(d), c = diaSem(iso), b = el('button', { type: 'button', class: (c === 0 || c === 6 ? 'fds ' : '') + (iso === hojeIso ? 'eh-hoje' : ''), text: String(d) }); (function (iso) { b.addEventListener('click', function () { irAoDia(iso); }); })(iso); botoes[iso] = b; g.appendChild(b); }
+        (m <= 6 ? gE : gD).appendChild(el('div', { class: 'mm' }, [nome, g]));
+      })(m);
+      function marcar(evs) { var mp = porDia(evs, ano + '-01-01', 366); Object.keys(mp).forEach(function (iso) { if (botoes[iso]) botoes[iso].classList.add('tem'); }); }
+      if (cacheAno[ano]) { marcar(cacheAno[ano]); return; }
+      lerEventos(doIso(ano + '-01-01'), doIso((ano + 1) + '-01-01'), eu, function (evs) { cacheAno[ano] = evs; marcar(evs); }, esq);
+    }
+
+    function vistaLista() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now()), N = 31;
+      cabVista(esq, 'a partir de ' + (+ancora.slice(8)) + ' de ' + MES3[+ancora.slice(5, 7) - 1], function () { ancora = somaDias(ancora, -N); desenhar(); }, function () { ancora = somaDias(ancora, N); desenhar(); });
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      lerEventos(doIso(ancora), doIso(ancora) + N * DIA, eu, function (evs) {
+        rolaE.textContent = ''; var m = porDia(evs, ancora, N), dias = Object.keys(m).sort(), total = dias.reduce(function (s, k) { return s + 1 + m[k].length; }, 0), soma = 0;
+        if (!dias.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum compromisso nestes dias.' })); return; }
+        dias.forEach(function (iso) {
+          var bl = el('div', { class: 'dia-lista' }, [el('button', { type: 'button', class: 'dsem-cab botao-fixo' + (iso === hojeIso ? ' eh-hoje' : ''), text: SEMANA[diaSem(iso)] + ', ' + (+iso.slice(8)) + ' de ' + MESES[+iso.slice(5, 7) - 1] })]);
+          bl.firstChild.addEventListener('click', function () { irAoDia(iso); }); m[iso].forEach(function (e) { bl.appendChild(linhaEv(e)); });
+          (soma < total / 2 ? rolaE : rolaD).appendChild(bl); soma += 1 + m[iso].length;
+        });
+      }, esq);
+    }
+
     /* ---------- começo ---------- */
     function mostrar() {
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
       cad.classList.add('on', pagCel);
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
-      desenhar();
+      var h = /#v=(\w+)&d=(\d{4}-\d{2}-\d{2})/.exec(location.hash); if (h && ABAS.some(function (y) { return y[0] === h[1]; })) { visao = h[1]; ancora = h[2]; }
+      irPara(visao);
     }
     function iniciar(user) {
       app.textContent = '';

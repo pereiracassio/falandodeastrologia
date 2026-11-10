@@ -354,3 +354,13 @@ html body .pagina-papiro .data-legenda .portal-apagar,html body .pagina-papiro .
   .pagina-papiro .folha-pagina h1.titulo-grande{font-size:clamp(28px,2.5vw,38px)!important}
   .pagina-papiro .folha-pagina p.texto,.pagina-papiro .folha-pagina p.texto-intro,.pagina-papiro .folha-pagina ul.lista-texto,.pagina-papiro .folha-pagina .texto-servico li{font-size:clamp(17px,1.55vw,23px)!important}
 }
+
+/* Telas de antes dentro do CADERNO (admin-caderno.html abre a página num quadro com ?caderno=1): sem cabeçalho, sem barra de abas,
+   sem moldura e sem fundo próprio, para a folha do caderno aparecer por trás. */
+html.fda-caderno,html.fda-caderno body,html.fda-caderno .pagina,html.fda-caderno .folha-pagina,html.fda-caderno .portal,html.fda-caderno .portal-caixa{background:transparent!important}
+html.fda-caderno .folha-pagina::after,html.fda-caderno .folha-pagina::before,html.fda-caderno .pagina::before,html.fda-caderno .pagina::after{display:none!important}
+html.fda-caderno .folha-pagina{padding:0!important;margin:0!important;min-height:0!important;box-shadow:none!important;border:0!important;filter:none!important;clip-path:none!important}
+html.fda-caderno .pagina{padding:0!important;margin:0!important;min-height:0!important;clip-path:none!important;filter:none!important}
+html.fda-caderno .cab-papiro,html.fda-caderno .sidemenu-toggle,html.fda-caderno .cart-toggle,html.fda-caderno .hermes-toggle,html.fda-caderno .sidemenu-overlay,html.fda-caderno .sidemenu-panel,html.fda-caderno h1.portal-titulo,html.fda-caderno .fundo-presa{display:none!important}
+html.fda-caderno .portal-caixa,html.fda-caderno .portal{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}
+html.fda-caderno .cab-horas,html.fda-caderno .barra-agenda{position:static!important}
