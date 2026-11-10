@@ -240,8 +240,8 @@
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
-      ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'] };
+      ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção']];
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['próximos', 'séries'] };
     var visao = 'dia', cacheAno = {};
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -437,7 +437,7 @@
       desenhar();
     }
     function desenhar() {
-      var x = ABAS.filter(function (y) { return y[0] === visao; })[0], embutida = x && x[2];
+      var x = ABAS.filter(function (y) { return y[0] === visao; })[0], embutida = urlForcada || (x && x[2]);
       cad.classList.toggle('v-embed', !!embutida);
       cad.classList.toggle('v-outra', !embutida && visao !== 'dia');
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
@@ -445,7 +445,7 @@
       pedido++;
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -757,6 +757,54 @@
         });
         res.appendChild(el('div', {}, [confirmar])); res.appendChild(msg);
       }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
+    }
+
+    /* ---------- Produção: próximos (esquerda) e séries + fila do blog (direita). Editar um vídeo ou corte abre a Produção de antes, dentro do caderno ---------- */
+    function dataCurta(s) { var iso = String(s).slice(0, 10); return SEMANA[diaSem(iso)].slice(0, 3) + ' ' + (+iso.slice(8)) + '/' + (+iso.slice(5, 7)); }
+    function vistaProducao() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
+      cabVista(esq, 'produção');
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      Promise.all([C.from('prod_series').select('*').order('criado_em'), C.from('prod_videos').select('*').order('numero').order('criado_em'), C.from('prod_cortes').select('*').order('ordem').order('criado_em')]).then(function (r) {
+        if (eu !== pedido) return; rolaE.textContent = '';
+        if (r[0].error || r[1].error || r[2].error) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir a Produção.' })); return; }
+        var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], td = tdPronto();
+        var achar = function (lista, id) { for (var i = 0; i < lista.length; i++) if (lista[i].id === id) return lista[i]; return null; };
+        var acesso = function (v) { return (v && v.acesso) === 'membros' ? 'membros' : 'público'; };
+        var fimDoVideo = function (v) { return (acesso(v) === 'público' && v.data_publico) || v.data_postar || null; };
+        var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
+        var nomeVideo = function (v) { var s = v.serie_id ? achar(series, v.serie_id) : null; return (s ? s.nome + ' · ' : '') + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
+        /* próximos: o que ainda não foi ao ar e tem data, mais os cortes que faltam postar, pela data */
+        var itens = [];
+        videos.forEach(function (v) { if (v.no_ar) return; var fim = fimDoVideo(v); if (!fim) return; var s = v.serie_id ? achar(series, v.serie_id) : null; itens.push({ data: String(fim).slice(0, 10), nome: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: s ? s.nome : 'Vídeo solto', barras: td.barrasDe(v, td.ETV, v.criado_em, fim), url: link(v) }); });
+        cortes.forEach(function (c) { if ((c.instagram && c.tiktok) || !c.data) return; var v = achar(videos, c.video_id); if (!v) return; itens.push({ data: String(c.data).slice(0, 10), nome: c.titulo || 'Corte sem título', sub: 'corte · ' + nomeVideo(v), barras: td.barrasDe(c, td.ETC, c.criado_em, c.data), url: link(v, c.id) }); });
+        itens.sort(function (x, y) { return x.data < y.data ? -1 : x.data > y.data ? 1 : 0; });
+        rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Próximos' }));
+        if (!itens.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada em andamento.' }));
+        itens.forEach(function (it) {
+          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }), el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: it.nome }), el('div', { class: 'det', style: 'font-size:13px;opacity:.75', text: it.sub })].concat(it.barras));
+          l.addEventListener('click', function () { abrirTela(it.url); }); rolaE.appendChild(l);
+        });
+        /* séries (e os vídeos soltos) */
+        rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Séries' }));
+        var resumo = function (lista) { var n = lista.length, conta = function (c) { return lista.filter(function (v) { return v[c]; }).length; }; return n ? conta('roteiro_ok') + ' roteiros · ' + conta('gravado') + ' gravados · ' + conta('no_ar') + ' no ar · ' + conta('blog_ok') + ' no blog' : 'Nenhum vídeo ainda'; };
+        series.forEach(function (s) {
+          var lista = videos.filter(function (v) { return v.serie_id === s.id; }), previstos = Math.max(s.total || 0, lista.length), pct = previstos ? Math.round(100 * lista.filter(function (v) { return v.no_ar; }).length / previstos) : 0;
+          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px', text: s.nome }), el('div', { class: 'det', style: 'font-size:13px;opacity:.75', text: acesso(s) + ' · ' + resumo(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }), P.barraLinha(pct, null, lista.filter(function (v) { return v.no_ar; }).length + '/' + previstos, false)]);
+          l.addEventListener('click', function () { abrirTela('admin-producao.html#aba=series&serie=' + encodeURIComponent(s.id)); }); rolaD.appendChild(l);
+        });
+        var soltos = videos.filter(function (v) { return !v.serie_id; }), ls = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px', text: 'Vídeos soltos' }), el('div', { class: 'det', style: 'font-size:13px;opacity:.75', text: resumo(soltos) })]);
+        ls.addEventListener('click', function () { abrirTela('admin-producao.html#aba=series&serie=soltos'); }); rolaD.appendChild(ls);
+        /* fila do blog: já foi ao ar e ainda não virou postagem */
+        var fila = videos.filter(function (v) { return v.no_ar && !v.blog_ok; });
+        rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:12px 0 4px', text: 'Fila do blog' }));
+        if (!fila.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nada esperando para virar postagem.' }));
+        fila.forEach(function (v) {
+          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }), v.data_blog ? P.barraTempoDias(String(v.criado_em).slice(0, 10), String(v.data_blog).slice(0, 10)) : null].filter(Boolean));
+          l.addEventListener('click', function () { abrirTela(link(v)); }); rolaD.appendChild(l);
+        });
+        var completa = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Abrir a produção completa' }); completa.addEventListener('click', function () { abrirTela('admin-producao.html'); }); rolaD.appendChild(completa);
+      }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
     }
 
     /* ---------- começo ---------- */
