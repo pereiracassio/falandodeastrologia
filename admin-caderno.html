@@ -158,7 +158,7 @@
     .cad .mm .nm{align-self:flex-start;background:none;border:0;padding:0;color:var(--azul-egipcio-escuro);font-size:15px;margin-bottom:2px}
     .cad .mm .nm.atual{color:var(--terracota)}
     .cad .mm .g{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr);align-content:start}
-    .cad .mm .g b{font-family:var(--fonte-titulo,inherit);font-weight:400;text-align:center;font-size:10px;color:var(--ocre)}
+    .cad .mm .g b{font-weight:400;text-align:center;font-size:10px;color:var(--ocre)}
     .cad .mm .g button{background:none;border:0;padding:3px 0 6px;font-family:inherit;font-size:13px;color:var(--preto-tinta);position:relative;text-transform:none}
     .cad .mm .g button.fds{color:var(--azul-egipcio-claro)}
     .cad .mm .g button.eh-hoje{color:var(--terracota);font-weight:700}
@@ -521,7 +521,7 @@
       for (var m = 1; m <= 12; m++) (function (m) {
         var prim = ano + '-' + p2(m) + '-01', total = new Date(Date.UTC(ano, m, 0)).getUTCDate(), atual = hojeIso.slice(0, 7) === prim.slice(0, 7);
         var nome = el('button', { type: 'button', class: 'nm botao-fixo' + (atual ? ' atual' : ''), text: MESES[m - 1] }); nome.addEventListener('click', function () { ancora = prim; irPara('mes'); });
-        var g = el('div', { class: 'g' }); 'dstqqss'.split('').forEach(function (l) { g.appendChild(el('b', { text: l })); });
+        var g = el('div', { class: 'g' }); 'dstqqss'.split('').forEach(function (l) { g.appendChild(el('b', { class: 'rotulo-fixo', text: l })); });
         for (var v = 0; v < diaSem(prim); v++) g.appendChild(el('span'));
         for (var d = 1; d <= total; d++) { var iso = ano + '-' + p2(m) + '-' + p2(d), c = diaSem(iso), b = el('button', { type: 'button', class: (c === 0 || c === 6 ? 'fds ' : '') + (iso === hojeIso ? 'eh-hoje' : ''), text: String(d) }); (function (iso) { b.addEventListener('click', function () { irAoDia(iso); }); })(iso); botoes[iso] = b; g.appendChild(b); }
         (m <= 6 ? gE : gD).appendChild(el('div', { class: 'mm' }, [nome, g]));
