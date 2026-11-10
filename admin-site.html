@@ -121,6 +121,26 @@
       return cartao;
     }
 
+    function cartaoVisaoAgenda() {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Visualização da agenda' })]), linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:6px' });
+      var OPCOES = [['caderno', 'Visualização de agenda'], ['padrao', 'Visualização padrão']], atual = 'caderno', msg = el('p', { class: 'portal-msg' });
+      function desenhar() {
+        linha.textContent = '';
+        OPCOES.forEach(function (o) {
+          var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: (o[0] === atual ? '\u2713 ' : '') + o[1] });
+          if (o[0] === atual) b.style.setProperty('color', 'var(--terracota)', 'important');
+          b.addEventListener('click', function () {
+            atual = o[0]; desenhar();
+            C.from('site_config').upsert({ chave: 'daily_visual', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (r) { if (r.error) P.mensagem(msg, 'Não salvou.', 'erro'); else P.mensagem(msg, ''); });
+          });
+          linha.appendChild(b);
+        });
+      }
+      desenhar(); cartao.appendChild(linha); cartao.appendChild(msg);
+      C.from('site_config').select('valor').eq('chave', 'daily_visual').maybeSingle().then(function (r) { try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v === 'padrao' || v === 'caderno') { atual = v; desenhar(); } } catch (e) { /* padrão */ } });
+      return cartao;
+    }
+
     function cartaoTextoFixo() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Texto fixo dos vídeos' })]);
       var area = el('textarea', { rows: '10' }), msg = el('p', { class: 'portal-msg' }), salvo = false, t = null;
@@ -494,6 +514,7 @@
         pagina.appendChild(cartaoTema('daily'));
         var conexaoDrive = P.cartaoConexaoDrive();
         if (conexaoDrive) pagina.appendChild(conexaoDrive);
+        pagina.appendChild(cartaoVisaoAgenda());
         pagina.appendChild(cartaoLugar());
         pagina.appendChild(cartaoTextoFixo());
         pagina.appendChild(cartaoAgendas());

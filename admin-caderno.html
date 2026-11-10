@@ -275,7 +275,7 @@
     /* cores de capa: as do site (temas.css) */
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
-    var EXTRAS = { config: 'admin-site.html', avisos: 'admin-avisos.html', mensagens: 'admin-mensagens.html' };
+    var EXTRAS = { config: 'admin-site.html?app=daily', avisos: 'admin-avisos.html?app=daily', mensagens: 'admin-mensagens.html' };
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
     var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
@@ -509,7 +509,7 @@
       pedido++;
       if (leitorAtual && !(visao === 'leitor' && leitorLivro)) { leitorAtual.fechar(); leitorAtual = null; }
       cad.classList.toggle('v-livro', visao === 'leitor' && !!leitorLivro && !embutida);
-      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
+      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
     }
@@ -1029,6 +1029,7 @@
       C.rpc('sou_admin').then(function (r) {
         if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
         mostrar();
+        valorSite('daily_visual').then(function (v) { if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + location.hash); });
         valorSite('daily_capa').then(function (c) { if (c && CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); });
       });
     }
