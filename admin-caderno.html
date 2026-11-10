@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem('fda_admin'))document.documentElement.className+=' fda-admin-tela'}catch(e){}</script>
+  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="tema.js?v=7"></script>
+  <meta name="theme-color" content="#16233F">
+  <title>Caderno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="temas.css?v=5">
+  <script src="moldura.js?v=20261109a"></script>
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=89">
+  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="tema-paginas.css?v=42">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="tipografia.css?v=37">
+  <style>
+    /* CADERNO do Hellenic Daily: uma folha aberta (duas páginas) dentro de uma capa de cor escolhida, com marcadores dos dois lados.
+       Só desenho: os dados são os mesmos da Agenda (Google, To do, horas planetárias). */
+    .cad{position:fixed;inset:0;z-index:1000;background:var(--capa,#A03E25);--moldura-m:.22;display:none}
+    .cad.on{display:block}
+    .cad::before{content:"";position:absolute;inset:8px;border:1.5px dashed var(--capa-fio,#e6d3a0);pointer-events:none}
+    .cad .miolo{position:absolute;inset:22px 76px 22px 76px}
+    .cad .folha{position:relative;height:100%;background:var(--papiro-fundo);display:flex}
+    .cad .folha::after{z-index:3}
+    .cad .pag{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;
+      padding:calc(130px*var(--moldura-m) + 14px) 30px calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 22px)}
+    .cad .pag.dir{padding-left:30px;padding-right:calc(80px*var(--moldura-m) + 22px)}
+    .cad .dobra{flex:none;width:2px;background:var(--azul-egipcio-escuro);margin:calc(130px*var(--moldura-m) + 2px) 0}
+    .cad button{cursor:pointer}
+    .cad .rolagem{flex:1;min-height:0;overflow-y:auto}
+
+    /* marcadores presos na capa */
+    .cad .abas{position:absolute;top:56px;bottom:56px;width:56px;display:flex;flex-direction:column;gap:3px;z-index:2}
+    .cad .abas.esq{left:20px}.cad .abas.dir{right:20px}
+    .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;background:var(--papiro-fundo-simples);display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important}
+    .cad .abas.esq .aba{clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 calc(100% - 12px),0 12px)}
+    .cad .abas.dir .aba{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 14px) 100%,0 100%)}
+    .cad .aba span{writing-mode:vertical-rl;transform:rotate(180deg)}
+    .cad .abas.dir .aba span{transform:none}
+    .cad .aba.aberta{color:var(--ocre)}
+    .cad .abas.esq .aba.aberta{margin-right:-8px}.cad .abas.dir .aba.aberta{margin-left:-8px}
+    .cad .abas.dir .aba.peq{flex:.55}
+    .cad .abas.dir .aba.peq span{writing-mode:horizontal-tb;transform:none}
+    .cad .abas.dir .vao{flex:.4}
+    .cad .ano{position:absolute;left:20px;width:56px;text-align:center;color:var(--capa-fio,#e6d3a0);font-size:13px;background:none;border:0;padding:0;z-index:2}
+    .cad .ano.cima{top:20px}.cad .ano.baixo{bottom:20px}
+
+    /* página da esquerda */
+    .cad .topo{display:flex;gap:24px;align-items:flex-start}
+    .cad .hoje{flex:1;text-align:center}
+    .cad .mes{display:flex;justify-content:center;align-items:center;gap:6px;color:var(--azul-egipcio-escuro);font-size:19px}
+    .cad .seta{background:none;border:0;color:var(--azul-egipcio-escuro);font-size:26px;line-height:1;padding:0 8px}
+    .cad .num-linha{display:flex;justify-content:center;align-items:center;gap:6px}
+    .cad .num{font-size:104px;line-height:1;color:var(--terracota);margin:4px 0 2px;font-weight:700}
+    .cad .sem{font-size:16px;margin:0}
+    .cad .reg{margin-top:8px;display:flex;justify-content:center;gap:18px;align-items:center;font-size:15px;flex-wrap:wrap}
+    .cad .ic{font-family:AstroIcones;line-height:1;display:inline-block;font-size:26px;vertical-align:middle}
+    .cad .mini{flex:none;border-collapse:collapse;font-size:16px}
+    .cad .mini th{font-size:12px;color:var(--ocre);padding:2px 9px 6px}
+    .cad .mini td{text-align:center;padding:0}
+    .cad .mini td button{background:none;border:0;padding:5px 9px;color:var(--preto-tinta);font-family:inherit;font-size:16px;text-transform:none}
+    .cad .mini td.fds button{color:var(--azul-egipcio-claro)}
+    .cad .mini td.h button{color:var(--terracota);font-weight:700;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
+    .cad .mini td.ns{font-size:10px;color:var(--ocre);padding-right:4px}
+    .cad .tarefa{display:flex;gap:14px;align-items:flex-start;padding:11px 0 10px;border-bottom:1px solid var(--azul-egipcio-claro)}
+    .cad .cx{flex:none;width:22px;height:22px;border:1.5px solid var(--azul-egipcio-claro);margin-top:3px;background:transparent;padding:0;border-radius:0;color:var(--terracota);font-size:18px;line-height:1}
+    .cad .tarefa .nome{text-transform:uppercase;font-size:18px;letter-spacing:.3px;overflow-wrap:anywhere}
+    .cad .tarefa .det{font-size:13px;margin-top:2px;color:var(--terracota)}
+    .cad .vazio{opacity:.7;margin:14px 0}
+    .cad .pauta{flex:none;height:140px;background:repeating-linear-gradient(180deg,transparent 0,transparent 53px,var(--azul-egipcio-claro) 53px,var(--azul-egipcio-claro) 54px)}
+
+    /* página da direita: o dia em horas planetárias */
+    .cad .diatodo{display:flex;align-items:center;gap:10px;padding:0 0 8px 76px;min-height:34px;flex-wrap:wrap}
+    .cad .bloco{background:var(--ocre);color:#16233F;padding:3px 10px;font-size:15px}
+    .cad .linha{position:relative;flex:1;min-height:0}
+    .cad .hp{position:absolute;left:0;right:0;border-top:1px solid var(--azul-egipcio-claro);display:flex;align-items:flex-start}
+    .cad .hp .r{width:76px;display:flex;align-items:center;gap:7px;padding-top:2px;font-size:13px}
+    .cad .hp .r .ic{font-size:20px;width:22px;text-align:center}
+    .cad .ev{position:absolute;left:84px;right:4px;padding:0 10px;line-height:1.25;min-height:22px;font-size:15px;overflow:hidden;display:flex;gap:10px;align-items:baseline;text-decoration:none;cursor:pointer}
+    .cad .ev small{font-size:12px}
+    .cad .agora{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--terracota);z-index:2}
+    .cad .agora i{position:absolute;right:0;top:-11px;background:var(--terracota);color:#F3E3B8;font-style:normal;font-weight:700;font-size:12px;padding:2px 8px}
+    .cad .falha{color:var(--terracota);font-size:13px;margin:0 0 6px 76px}
+
+    /* folha pequena (cor da capa, nova tarefa) */
+    .cad-fundo{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px}
+    .cad-fundo .cx-folha{background:var(--papiro-fundo);padding:22px 24px;max-width:420px;width:100%;border:1.5px solid var(--azul-egipcio-escuro)}
+    .cad-fundo h2{margin:0 0 12px}
+    .cad-cores{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 16px}
+    .cad-cores button{width:44px;height:44px;border-radius:50%;border:2px solid transparent;padding:0}
+    .cad-cores button.sel{border-color:var(--preto-tinta);box-shadow:0 0 0 2px var(--papiro-meio) inset}
+    .cad-fundo input[type=text]{width:100%;box-sizing:border-box}
+
+    /* celular: uma página por vez; marcadores em cima (rolam) e as duas páginas embaixo */
+    @media (max-width:820px){
+      .cad{--moldura-m:.16}
+      .cad::before{inset:5px}
+      .cad .miolo{inset:58px 12px 64px}
+      .cad .abas.esq,.cad .ano{display:none}
+      .cad .abas.dir{flex-direction:row;height:44px;width:auto;top:10px;bottom:auto;left:14px;right:14px;overflow-x:auto;overflow-y:hidden;gap:3px}
+      .cad .abas.dir .aba{flex:0 0 auto;min-width:74px;padding:0 10px;clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);font-size:12px}
+      .cad .abas.dir .aba span{writing-mode:horizontal-tb;transform:none}
+      .cad .abas.dir .aba.aberta{margin:0 0 -6px}
+      .cad .abas.dir .vao,.cad .abas.dir .aba.peq{display:none}
+      .cad .dobra{display:none}
+      .cad .pag,.cad .pag.dir{padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 12px)}
+      .cad.p1 .pag.dir,.cad.p2 .pag.esq{display:none}
+      .cad .topo{gap:6px}
+      .cad .num{font-size:72px}.cad .mes{font-size:14px}.cad .sem{font-size:13px}
+      .cad .reg{flex-direction:column;gap:4px;font-size:13px}
+      .cad .mini{font-size:13px}.cad .mini td button{padding:4px 5px;font-size:13px}.cad .mini th{padding:2px 5px 4px;font-size:10px}
+      .cad .mini .ns{display:none}
+      .cad .tarefa .nome{font-size:15px}
+      .cad .hp .r{width:64px;font-size:12px}.cad .ev{left:70px;font-size:13px}.cad .diatodo{padding-left:64px}.cad .falha{margin-left:64px}
+    }
+    .cad .troca{display:none}
+    @media (max-width:820px){
+      .cad .troca{display:flex;position:absolute;left:14px;right:14px;bottom:10px;height:44px;gap:3px}
+      .cad .troca .aba{clip-path:polygon(0 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px));font-size:13px}
+      .cad .troca .aba.aberta{margin-top:-6px}
+    }
+  </style>
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Caderno</h1>
+    <div id="app"></div>
+  </div></div>
+
+  <div class="cad" id="cad">
+    <button type="button" class="ano cima botao-fixo" id="anoMenos"></button>
+    <div class="abas esq" id="meses"></div>
+    <button type="button" class="ano baixo botao-fixo" id="anoMais"></button>
+    <div class="miolo"><div class="folha papiro-moldura">
+      <section class="pag esq">
+        <div class="topo">
+          <div class="hoje">
+            <div class="mes"><button type="button" class="seta" id="mesAnt" aria-label="Mês anterior">‹</button><span class="botao-fixo" id="tituloMes"></span><button type="button" class="seta" id="mesProx" aria-label="Próximo mês">›</button></div>
+            <div class="num-linha"><button type="button" class="seta" id="diaAnt" aria-label="Dia anterior">‹</button><div class="num botao-fixo" id="numDia"></div><button type="button" class="seta" id="diaProx" aria-label="Próximo dia">›</button></div>
+            <p class="sem" id="semana"></p>
+            <div class="reg"><span><span class="rotulo-fixo">dia de</span> <span class="ic" id="icDia" style="color:var(--terracota)"></span></span><span><span class="rotulo-fixo">hora de</span> <span class="ic" id="icHora"></span> <span id="ateHora"></span></span></div>
+          </div>
+          <table class="mini" id="mini"></table>
+        </div>
+        <div class="rotulo-fixo" style="margin:20px 0 4px">to do</div>
+        <div class="rolagem" id="todo"></div>
+      </section>
+      <div class="dobra"></div>
+      <section class="pag dir">
+        <div class="diatodo" id="diaTodo"></div>
+        <div class="linha" id="linha"></div>
+      </section>
+    </div></div>
+    <div class="abas dir" id="abasDir"></div>
+    <div class="troca"><button type="button" class="aba" id="t1">tarefas</button><button type="button" class="aba" id="t2">horários</button><button type="button" class="aba" id="tMais" style="flex:.4;color:var(--terracota);font-size:24px">+</button></div>
+  </div>
+</div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="portal.js?v=169"></script>
+  <script src="hora-planetaria.js?v=1"></script>
+  <script>
+  (function () {
+    var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app'), cad = document.getElementById('cad'), HP = window.horaPlanetaria;
+    var LAT = -23.3053, LON = -45.9658; /* lugar das horas planetárias: o mesmo de Configurações (site_config.prod_local_horas); padrão Jacareí */
+    var CAL = 'https://www.googleapis.com/calendar/v3', DIA = 86400000;
+    var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    var MES3 = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    var SEMANA = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+    var ORDEM = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno'];
+    var REGENTE = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno'];
+    /* cores de capa: as do site (temas.css) */
+    var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
+    /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
+    var ABAS = [['dia', 'Dia'], ['semana', 'Semana', 'admin-agenda.html#v=semana'], ['mes', 'Mês', 'admin-agenda.html#v=mes'], ['ano', 'Ano', 'admin-agenda.html#v=ano'], ['lista', 'Lista', 'admin-agenda.html#v=lista'],
+      ['todo', 'To do', 'admin-agenda.html#v=todo'], ['horas', 'Horas', 'admin-agenda.html#v=horas'], ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html']];
+    var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
+
+    function p2(n) { return String(n).padStart(2, '0'); }
+    function loc(ms) { return new Date(ms + HP.FUSO); }
+    function isoDia(ms) { var d = loc(ms); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
+    function doIso(dia, hora) { var a = dia.split('-'), h = (hora || '00:00').split(':'); return Date.UTC(+a[0], +a[1] - 1, +a[2], +h[0], +h[1]) - HP.FUSO; }
+    function hhmm(ms) { var d = loc(ms); return p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()); }
+    function somaDias(iso, n) { var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2] + n)); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
+    function mudaMes(iso, n) { var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1 + n, 1)); var max = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate(); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(Math.min(+a[2], max)); }
+    function diaSem(iso) { var a = iso.split('-'); return new Date(Date.UTC(+a[0], +a[1] - 1, +a[2])).getUTCDay(); }
+    function icone(n) { return String.fromCharCode(0xE000 + ORDEM.indexOf(n)); }
+    function textoSobre(hex) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 120 ? '#16233F' : '#FFFFFF'; }
+    function semanaDoAno(iso) { var a = iso.split('-'), d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2])), n = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - n + 3); var p = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d - p) / DIA - 3 + ((p.getUTCDay() + 6) % 7)) / 7); }
+
+    /* ---------- Google Agenda (a mesma conexão permanente do Drive) ---------- */
+    function gapi(caminho, jaTentou) {
+      return P.tokenGoogle().then(function (token) { return fetch(CAL + caminho, { headers: { Authorization: 'Bearer ' + token } }); }).then(function (r) {
+        if (r.status === 401 && !jaTentou) { try { sessionStorage.removeItem('fda_drive_token'); } catch (e) { /* sem armazenamento */ } return gapi(caminho, true); }
+        if (!r.ok) { var e = new Error(r.status === 403 ? 'permissao' : 'Google ' + r.status); throw e; }
+        return r.json();
+      });
+    }
+    function valorSite(chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); }
+    function gravarSite(chave, valor) { return C.from('site_config').upsert({ chave: chave, valor: JSON.stringify(valor), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }); }
+    var prontoP = null;
+    function preparar() {
+      if (prontoP) return prontoP;
+      prontoP = Promise.all([valorSite('prod_local_horas'), valorSite('agenda_ocultas'), gapi('/users/me/calendarList?minAccessRole=freeBusyReader')]).then(function (r) {
+        var v = r[0], ocultas = r[1] || [];
+        if (v && isFinite(v.lat) && isFinite(v.lon)) { LAT = +v.lat; LON = +v.lon; }
+        calendarios = (r[2].items || []).filter(function (c) { return ocultas.indexOf(c.id) < 0; }); /* só as agendas marcadas em Configurações */
+      });
+      prontoP.catch(function () { prontoP = null; });
+      return prontoP;
+    }
+    function normalizar(e, cal) {
+      if (e.status === 'cancelled') return null;
+      var diaTodo = !!(e.start && e.start.date);
+      return { titulo: e.summary || '(sem título)', ini: diaTodo ? doIso(e.start.date) : Date.parse(e.start.dateTime), fim: diaTodo ? doIso(e.end.date) : Date.parse(e.end.dateTime), diaTodo: diaTodo, link: e.htmlLink, cor: cal.backgroundColor || '#B5852F' };
+    }
+    function eventosDe(c, de, ate, tentativa) {
+      return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250', timeZone: 'America/Sao_Paulo' }))
+        .then(function (r) { return (r.items || []).map(function (e) { return normalizar(e, c); }); }, function (er) {
+          if (tentativa < 3) return new Promise(function (ok) { setTimeout(ok, 600 * (tentativa + 1)); }).then(function () { return eventosDe(c, de, ate, tentativa + 1); });
+          throw er;
+        });
+    }
+    function eventosEntre(de, ate) { /* se alguma agenda não puder ser lida, vai em .falhas (nunca some em silêncio) */
+      return preparar().then(function () {
+        var fila = calendarios.slice(), saida = [], falhas = [];
+        function trab() { var c = fila.shift(); if (!c) return Promise.resolve(); return eventosDe(c, de, ate, 0).then(function (l) { saida = saida.concat(l); }, function () { falhas.push(c.summaryOverride || c.summary || c.id); }).then(trab); }
+        return Promise.all([trab(), trab(), trab(), trab(), trab(), trab()]).then(function () { var l = saida.filter(Boolean).sort(function (a, b) { return a.ini - b.ini; }); l.falhas = falhas; return l; });
+      });
+    }
+
+    /* ---------- capa ---------- */
+    function pintarCapa(c) {
+      capa = c;
+      var papiro = c === 'papiro';
+      cad.style.setProperty('--capa', papiro ? 'var(--papiro-fundo)' : '#' + c);
+      cad.style.setProperty('--capa-fio', papiro ? '#1034A6' : '#e6d3a0');
+      try { localStorage.setItem('fda_caderno_capa', c); } catch (e) { /* só cache de exibição */ }
+    }
+    function folhaPequena(conteudo) {
+      var fundo = el('div', { class: 'cad-fundo' }), caixa = el('div', { class: 'cx-folha barra-ocre' }); fundo.appendChild(caixa); conteudo(caixa, function () { fundo.remove(); });
+      fundo.addEventListener('click', function (ev) { if (ev.target === fundo) fundo.remove(); });
+      document.body.appendChild(fundo);
+    }
+    function escolherCapa() {
+      folhaPequena(function (caixa, fechar) {
+        caixa.appendChild(el('h2', { text: 'Capa do caderno' }));
+        var linha = el('div', { class: 'cad-cores' });
+        CAPAS.forEach(function (x) {
+          var b = el('button', { type: 'button', title: x[1], 'aria-label': x[1], class: x[0] === capa ? 'sel' : '' });
+          b.style.background = x[0] === 'papiro' ? 'var(--papiro-fundo-simples)' : '#' + x[0]; if (x[0] === 'papiro') b.style.border = '2px solid #1034A6';
+          b.addEventListener('click', function () { pintarCapa(x[0]); gravarSite('daily_capa', x[0]); fechar(); });
+          linha.appendChild(b);
+        });
+        caixa.appendChild(linha);
+        var sair = el('button', { type: 'button', class: 'portal-apagar', text: 'Fechar' }); sair.addEventListener('click', fechar); caixa.appendChild(sair);
+      });
+    }
+
+    /* ---------- a folha ---------- */
+    function montarMarcadores() {
+      var meses = document.getElementById('meses'); meses.textContent = '';
+      MES3.forEach(function (m, i) {
+        var b = el('button', { type: 'button', class: 'aba botao-fixo', 'data-mes': String(i + 1) }, [el('span', { text: m })]);
+        b.addEventListener('click', function () { var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; desenhar(); }); meses.appendChild(b);
+      });
+      var dir = document.getElementById('abasDir'); dir.textContent = '';
+      ABAS.forEach(function (x) {
+        var b = el('button', { type: 'button', class: 'aba botao-fixo' + (x[0] === 'dia' ? ' aberta' : '') }, [el('span', { text: x[1] })]);
+        if (x[2]) b.addEventListener('click', function () { location.href = x[2]; }); /* ainda abre a tela de antes; entra nesta folha uma de cada vez */
+        dir.appendChild(b);
+      });
+      dir.appendChild(el('div', { class: 'vao' }));
+      var eng = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Capa', 'aria-label': 'Capa' }, [el('span', { text: '⚙' })]); eng.addEventListener('click', escolherCapa); dir.appendChild(eng);
+      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); desenhar(); }); dir.appendChild(hj);
+      var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Nova tarefa', 'aria-label': 'Nova tarefa', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', novaTarefa); dir.appendChild(mais);
+    }
+    function desenhar() {
+      var a = ancora.split('-'), ano = +a[0], mes = +a[1], dia = +a[2], hojeIso = isoDia(Date.now()), eu = ++pedido;
+      document.getElementById('anoMenos').textContent = '▲ ' + (ano - 1); document.getElementById('anoMais').textContent = (ano + 1) + ' ▼';
+      Array.prototype.forEach.call(document.querySelectorAll('#meses .aba'), function (b) { b.classList.toggle('aberta', +b.getAttribute('data-mes') === mes); });
+      document.getElementById('tituloMes').textContent = MESES[mes - 1] + ' de ' + ano;
+      document.getElementById('numDia').textContent = String(dia);
+      document.getElementById('semana').textContent = SEMANA[diaSem(ancora)] + ', semana ' + semanaDoAno(ancora);
+      /* calendário pequeno do mês, com o número da semana */
+      var mini = document.getElementById('mini'); mini.textContent = '';
+      var cab = el('tr', {}, [el('th', { class: 'ns' })]); 'dstqqss'.split('').forEach(function (l) { cab.appendChild(el('th', { class: 'rotulo-fixo', text: l })); }); mini.appendChild(cab);
+      var primeiro = diaSem(a[0] + '-' + a[1] + '-01'), total = new Date(Date.UTC(ano, mes, 0)).getUTCDate(), n = 1 - primeiro;
+      for (var s = 0; s < 6 && n <= total; s++) {
+        var tr = el('tr', {}, [el('td', { class: 'ns', text: String(semanaDoAno(a[0] + '-' + a[1] + '-' + p2(Math.min(Math.max(n + 1, 1), total))))})]);
+        for (var c = 0; c < 7; c++, n++) {
+          var td = el('td', { class: n === dia ? 'h' : (c === 0 || c === 6 ? 'fds' : '') });
+          if (n >= 1 && n <= total) { (function (d) { var b = el('button', { type: 'button', text: String(d) }); b.addEventListener('click', function () { ancora = a[0] + '-' + a[1] + '-' + p2(d); desenhar(); }); td.appendChild(b); })(n); }
+          tr.appendChild(td);
+        }
+        mini.appendChild(tr);
+      }
+      desenharHoras(eu, hojeIso); desenharTarefas(eu);
+    }
+    function desenharHoras(eu, hojeIso) {
+      var d0 = doIso(ancora), d1 = d0 + DIA, agora = Date.now(), linha = document.getElementById('linha'), todo = document.getElementById('diaTodo');
+      linha.textContent = ''; todo.textContent = '';
+      var horas = HP.horasEntre(d0, d1, LAT, LON).map(function (h) { return { ini: Math.max(h.ini, d0), fim: Math.min(h.fim, d1), planeta: h.planeta, noite: h.noite }; }).filter(function (s) { return s.fim > s.ini; });
+      function pct(ms) { return ((ms - d0) / (d1 - d0) * 100).toFixed(3) + '%'; }
+      var corDe = function (h) { return h.noite ? '#1F5FA3' : '#B5852F'; }, icH = document.getElementById('icHora'), ate = document.getElementById('ateHora'); icH.textContent = ''; ate.textContent = '';
+      horas.forEach(function (h) {
+        var e = el('div', { class: 'hp', style: 'top:' + pct(h.ini) + ';height:' + ((h.fim - h.ini) / (d1 - d0) * 100).toFixed(3) + '%' }, [el('div', { class: 'r' }, [el('span', { class: 'ic', text: icone(h.planeta), style: 'color:' + corDe(h) }), el('span', { text: hhmm(h.ini) })])]);
+        linha.appendChild(e);
+        if (ancora === hojeIso && agora >= h.ini && agora < h.fim) { icH.textContent = icone(h.planeta); icH.style.color = corDe(h); ate.textContent = 'até ' + hhmm(h.fim); }
+      });
+      var regente = REGENTE[diaSem(ancora)]; document.getElementById('icDia').textContent = icone(regente);
+      if (ancora === hojeIso) { var ag = el('div', { class: 'agora', style: 'top:' + pct(agora) }, [el('i', { text: hhmm(agora) })]); linha.appendChild(ag); }
+      eventosEntre(d0, d1).then(function (evs) {
+        if (eu !== pedido) return;
+        if (evs.falhas && evs.falhas.length) todo.parentNode.insertBefore(el('p', { class: 'falha', text: 'Não consegui ler: ' + evs.falhas.join(', ') }), linha);
+        evs.forEach(function (e) {
+          if (e.diaTodo) { var bl = el('span', { class: 'bloco', text: e.titulo }); bl.style.background = e.cor; bl.style.color = textoSobre(e.cor.length === 7 ? e.cor : '#B5852F'); todo.appendChild(bl); return; }
+          var ini = Math.max(e.ini, d0), fim = Math.min(e.fim, d1); if (fim <= ini) return;
+          var cor = e.cor.length === 7 ? e.cor : '#B5852F', b = el('a', { class: 'ev', href: e.link || '#', target: '_blank', rel: 'noopener', style: 'top:' + pct(ini) + ';height:calc(' + ((fim - ini) / (d1 - d0) * 100).toFixed(3) + '% - 2px);margin-top:1px;background:' + cor + ';color:' + textoSobre(cor) }, [el('span', { text: e.titulo }), el('small', { text: hhmm(e.ini) + ' às ' + hhmm(e.fim) })]);
+          linha.appendChild(b);
+        });
+        if (!todo.firstChild) todo.appendChild(el('span', { class: 'rotulo-fixo', text: 'dia todo' }));
+        else todo.insertBefore(el('span', { class: 'rotulo-fixo', text: 'dia todo' }), todo.firstChild);
+      }, function (er) {
+        if (eu !== pedido) return;
+        todo.appendChild(el('span', { class: 'falha', style: 'margin:0', text: er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível ler a agenda (' + er.message + ').' }));
+      });
+    }
+
+    /* ---------- To do do dia: as tarefas dele (tabela todo_tarefas) que vencem até este dia, ou sem data ---------- */
+    function desenharTarefas(eu) {
+      var alvo = document.getElementById('todo'); alvo.textContent = '';
+      var dia = ancora;
+      C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) {
+        if (eu !== pedido) return;
+        if (r.error) { alvo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível ler as tarefas (' + r.error.message + ').' })); return; }
+        var lista = (r.data || []).filter(function (t) { return !t.data || String(t.data).slice(0, 10) <= dia; }).sort(function (a, b) { return String(a.data || '9999').localeCompare(String(b.data || '9999')) || String(a.hora || '').localeCompare(String(b.hora || '')); });
+        if (!lista.length) alvo.appendChild(el('p', { class: 'vazio', text: 'Nada para fazer.' }));
+        lista.forEach(function (t) {
+          var cx = el('button', { type: 'button', class: 'cx', 'aria-label': 'Marcar como feita' });
+          cx.addEventListener('click', function () { cx.textContent = '✓'; C.from('todo_tarefas').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', t.id).then(function (g) { if (g.error) { cx.textContent = ''; alert('Não foi possível marcar agora.'); return; } desenharTarefas(pedido); }); });
+          var det = t.data ? (String(t.data).slice(0, 10) < dia ? 'desde ' : '') + String(t.data).slice(8, 10).replace(/^0/, '') + ' de ' + MES3[+String(t.data).slice(5, 7) - 1] + (t.hora ? ', ' + String(t.hora).slice(0, 5) : '') : '';
+          alvo.appendChild(el('div', { class: 'tarefa' }, [cx, el('div', {}, [el('div', { class: 'nome', text: t.titulo }), det ? el('div', { class: 'det', text: det }) : null].filter(Boolean))]));
+        });
+        alvo.appendChild(el('div', { class: 'pauta' }));
+      });
+    }
+    function novaTarefa() {
+      folhaPequena(function (caixa, fechar) {
+        caixa.appendChild(el('h2', { text: 'Nova tarefa' }));
+        var campo = el('input', { type: 'text', placeholder: 'O que fazer', 'aria-label': 'O que fazer' }), msg = el('p', { class: 'portal-msg' });
+        var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
+        ok.addEventListener('click', function () {
+          var t = campo.value.trim(); if (!t) return; ok.disabled = true;
+          C.from('todo_tarefas').insert({ titulo: t, data: ancora }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); desenharTarefas(pedido); });
+        });
+        nao.addEventListener('click', fechar);
+        caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
+        setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
+      });
+    }
+
+    /* ---------- começo ---------- */
+    function mostrar() {
+      app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
+      cad.classList.add('on', pagCel);
+      document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
+      desenhar();
+    }
+    function iniciar(user) {
+      app.textContent = '';
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
+        mostrar();
+        valorSite('daily_capa').then(function (c) { if (c && CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); });
+      });
+    }
+    try { var guardada = localStorage.getItem('fda_caderno_capa'); if (guardada && CAPAS.some(function (x) { return x[0] === guardada; })) capa = guardada; } catch (e) { /* sem armazenamento */ }
+    pintarCapa(capa);
+    ancora = isoDia(Date.now());
+    montarMarcadores();
+    document.getElementById('mesAnt').addEventListener('click', function () { ancora = mudaMes(ancora, -1); desenhar(); });
+    document.getElementById('mesProx').addEventListener('click', function () { ancora = mudaMes(ancora, 1); desenhar(); });
+    document.getElementById('diaAnt').addEventListener('click', function () { ancora = somaDias(ancora, -1); desenhar(); });
+    document.getElementById('diaProx').addEventListener('click', function () { ancora = somaDias(ancora, 1); desenhar(); });
+    document.getElementById('anoMenos').addEventListener('click', function () { ancora = mudaMes(ancora, -12); desenhar(); });
+    document.getElementById('anoMais').addEventListener('click', function () { ancora = mudaMes(ancora, 12); desenhar(); });
+    function paginaCel(p) { pagCel = p; cad.classList.remove('p1', 'p2'); cad.classList.add(p); document.getElementById('t1').classList.toggle('aberta', p === 'p1'); document.getElementById('t2').classList.toggle('aberta', p === 'p2'); }
+    document.getElementById('t1').addEventListener('click', function () { paginaCel('p1'); });
+    document.getElementById('t2').addEventListener('click', function () { paginaCel('p2'); });
+    document.getElementById('tMais').addEventListener('click', novaTarefa);
+    C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
+  })();
+  </script>
+</body>
+</html>
