@@ -194,8 +194,9 @@
     .cad-aviso{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:1200;background:var(--papiro-fundo-simples);border:1.5px solid var(--terracota);color:var(--terracota);padding:10px 18px;max-width:86vw;text-align:center}
     .cad .leitor-barra{display:none;position:absolute;left:76px;right:104px;bottom:calc(130px*var(--moldura-m) + 4px);z-index:4;justify-content:center;align-items:center;gap:2px;flex-wrap:nowrap}
     .cad.v-livro .leitor-barra{display:flex}
+    .cad .leitor-barra.topo{bottom:auto;top:calc(22px + 130px*var(--moldura-m) + 8px)}
     .cad .leitor-barra .lb-g{box-sizing:border-box;flex:1 1 50%;min-width:0;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:2px;padding:0 40px}
-    .cad.v-livro .pag,.cad.v-livro .pag.dir{padding-bottom:calc(130px*var(--moldura-m) + 46px);padding-top:calc(130px*var(--moldura-m) + 6px)}
+    .cad.v-livro .pag,.cad.v-livro .pag.dir{padding-bottom:calc(130px*var(--moldura-m) + 46px);padding-top:calc(130px*var(--moldura-m) + 48px)}
     .cad.v-livro .logo-topo{display:none}
     .cad .portal-cartao{border-top:0!important;padding-top:4px!important}
     .cad .rola.portal{padding:0 2px;overflow-x:hidden;margin:0!important;width:100%!important;max-width:100%!important}
@@ -241,6 +242,7 @@
         <div class="diatodo" id="diaTodo"></div>
         <div class="linha" id="linha"></div>
       </div><div class="vout" id="outDir"></div></section>
+      <div class="leitor-barra topo" id="leitorBarraTopo"></div>
       <div class="leitor-barra" id="leitorBarra"></div>
       <iframe class="embed" id="embed" title="Tela" allowtransparency="true"></iframe>
     </div></div>
@@ -252,7 +254,7 @@
   <script src="portal.js?v=170"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="caderno-leitor.js?v=4"></script>
+  <script src="caderno-leitor.js?v=5"></script>
   <script src="caderno-producao.js?v=1"></script>
   <script src="caderno-projetos.js?v=1"></script>
   <script src="caderno-agenda.js?v=1"></script>
@@ -1003,7 +1005,7 @@
     function vistaLivro() {
       var o = preparaOut(), esq = o[0], dir = o[1], livro = leitorLivro; if (leitorAtual) { leitorAtual.fechar(); leitorAtual = null; }
       leitorAtual = window.LeitorCaderno(P).abrir({
-        esq: esq, dir: dir, barra: document.getElementById('leitorBarra'), livro: livro, aviso: toast,
+        esq: esq, dir: dir, barra: document.getElementById('leitorBarra'), barraTopo: document.getElementById('leitorBarraTopo'), livro: livro, aviso: toast,
         voltar: function () { leitorAtual = null; if (!voltarPagina()) { leitorLivro = null; mostrarVisao(); } },
         aoMudar: function (e, d) { document.getElementById('t1').textContent = e ? 'pág. ' + e : 'capa'; document.getElementById('t2').textContent = d ? 'pág. ' + d : 'fim'; },
         obterPdf: function (progresso) {

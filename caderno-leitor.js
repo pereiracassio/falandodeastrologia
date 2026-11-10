@@ -138,10 +138,13 @@ window.LeitorCaderno = function (P) {
     var bAnt = btn('‹', function () { virar(-1); }, ';font-size:22px'), bProx = btn('›', function () { virar(1); }, ';font-size:22px'), bMenos = btn('−', function () { zoomar(0); }, ';font-size:22px'), bMais = btn('+', function () { zoomar(1); }, ';font-size:22px');
     var bVoltar = btn('← Voltar', function () { fechar(); o.voltar(); });
     /* ferramentas na página da esquerda, páginas e zoom na da direita: nada em cima da costura */
-    var gE = el('div', { class: 'lb-g' }), gD = el('div', { class: 'lb-g' });
-    [bVoltar, bMao, bCaneta, bMarca, bBorracha, corBtns, bDesfazer].forEach(function (x) { gE.appendChild(x); });
-    [bAnt, campo, totalTxt, bProx, bMenos, bMais].forEach(function (x) { gD.appendChild(x); });
-    barra.appendChild(gE); barra.appendChild(gD);
+    /* UMA linha em cima (ferramentas, metade de cada lado da costura) e UMA linha embaixo (páginas e zoom, na página da direita) */
+    var topo = o.barraTopo; topo.textContent = '';
+    var t1 = el('div', { class: 'lb-g' }), t2 = el('div', { class: 'lb-g' }), b1 = el('div', { class: 'lb-g' }), b2 = el('div', { class: 'lb-g' });
+    [bVoltar, bMao, bCaneta, bMarca].forEach(function (x) { t1.appendChild(x); });
+    [bBorracha, corBtns, bDesfazer].forEach(function (x) { t2.appendChild(x); });
+    [bAnt, campo, totalTxt, bProx, bMenos, bMais].forEach(function (x) { b2.appendChild(x); });
+    topo.appendChild(t1); topo.appendChild(t2); barra.appendChild(b1); barra.appendChild(b2);
     pintarFerr();
 
     /* ---------- as duas páginas ---------- */
