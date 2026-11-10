@@ -65,21 +65,22 @@
     .cad .ano.cima{top:20px}.cad .ano.baixo{bottom:20px}
 
     /* página da esquerda */
-    .cad .topo{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-start}
-    .cad .hoje{flex:1 1 210px;min-width:0;text-align:center}
-    .cad .logo-daily{display:block;width:210px;height:auto;margin:0 auto 6px}
-    .cad .cal{flex:0 1 auto;max-width:100%;margin:0 auto}
-    .cad .mes{display:flex;justify-content:center;align-items:center;gap:6px;white-space:nowrap;color:var(--terracota);font-size:16px;margin-top:8px}
+    .cad .pag.esq{container-type:inline-size}
+    .cad .topo{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 14px;align-items:start} /* número à esquerda, calendário AO LADO, nunca embaixo */
+    .cad .hoje{min-width:0;text-align:center}
+    .cad .logo-daily{display:block;width:min(210px,100%);height:auto;margin:0 auto 6px}
+    .cad .cal{min-width:0}
+    .cad .mes{display:flex;justify-content:center;align-items:center;gap:6px;white-space:nowrap;color:var(--terracota);font-size:clamp(12px,2.8cqw,16px);margin-top:6px}
     .cad .seta{background:none;border:0;color:var(--terracota);font-size:26px;line-height:1;padding:0 8px}
     .cad .num-linha{display:flex;justify-content:center;align-items:center;gap:6px}
-    .cad .num{font-size:84px;line-height:1;color:var(--terracota);margin:4px 0 2px;font-weight:700}
+    .cad .num{font-size:clamp(46px,12cqw,76px);line-height:1;color:var(--terracota);margin:4px 0 2px;font-weight:700}
     .cad .sem{font-size:16px;margin:0}
-    .cad .reg{margin-top:8px;display:flex;justify-content:center;gap:18px;align-items:center;font-size:15px;flex-wrap:wrap}
+    .cad .reg{margin-top:8px;display:flex;justify-content:center;gap:8px 14px;align-items:center;font-size:clamp(12px,2.6cqw,15px);flex-wrap:wrap}
     .cad .ic{font-family:AstroIcones;line-height:1;display:inline-block;font-size:26px;vertical-align:middle}
-    .cad .mini{flex:none;border-collapse:collapse;font-size:14px}
-    .cad .mini th{font-size:11px;color:var(--ocre);padding:2px 3px 5px}
+    .cad .mini{flex:none;border-collapse:collapse;font-size:clamp(11px,2.5cqw,14px)}
+    .cad .mini th{font-size:clamp(9px,2cqw,11px);color:var(--ocre);padding:2px 2px 4px}
     .cad .mini td{text-align:center;padding:0}
-    .cad .mini td button{background:none;border:0;padding:4px 4px;color:var(--preto-tinta);font-family:inherit;font-size:14px;text-transform:none}
+    .cad .mini td button{background:none;border:0;padding:3px 3px;color:var(--preto-tinta);font-family:inherit;font-size:inherit;text-transform:none}
     .cad .mini td.fds button{color:var(--azul-egipcio-claro)}
     .cad .mini td.h button{color:var(--terracota);font-weight:700;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
     .cad .mini td.ns{font-size:10px;color:var(--ocre);padding-right:4px}
