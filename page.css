@@ -286,6 +286,8 @@ html body .pagina-papiro .portal-apagar:hover,html body .pagina-papiro .portal-b
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-top:0!important;padding-top:0!important;margin:0!important}
 /* linha DIVIDINDO uma coisa da outra dentro da aba: uma só, no fim de cada cartão (inclusive o último, que encerra), nunca duas coladas */
 .pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao{border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)!important;padding-bottom:18px!important;margin-bottom:18px!important}
+/* cartão que é o ÚLTIMO dentro de outro cartão que já fecha com linha: não repete a linha (senão fica linha, espaço vazio, linha) */
+.pagina-papiro .rolagem-wrap:has(.portal-abas-rola)+.portal-cartao .portal-cartao>.portal-cartao:last-child{border-bottom:0!important;padding-bottom:0!important;margin-bottom:0!important}
 
 .pagina-papiro .engrenagem{font-size:2em;line-height:.5;vertical-align:-.14em;display:inline-block}
 
