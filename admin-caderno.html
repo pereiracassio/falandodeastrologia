@@ -183,6 +183,10 @@
     @keyframes entraEsq{from{transform:translateX(-46px);opacity:0}to{transform:none;opacity:1}}
     @keyframes entraFade{from{opacity:.35}to{opacity:1}}
     .cad-aviso{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:1200;background:var(--papiro-fundo-simples);border:1.5px solid var(--terracota);color:var(--terracota);padding:10px 18px;max-width:86vw;text-align:center}
+    .cad .leitor-barra{display:none;position:absolute;left:40px;right:40px;bottom:calc(130px*var(--moldura-m) + 4px);z-index:4;justify-content:center;align-items:center;gap:2px;flex-wrap:wrap}
+    .cad.v-livro .leitor-barra{display:flex}
+    .cad.v-livro .pag,.cad.v-livro .pag.dir{padding-bottom:calc(130px*var(--moldura-m) + 46px);padding-top:calc(130px*var(--moldura-m) + 6px)}
+    .cad.v-livro .logo-topo{display:none}
     .cad .troca{display:none}
     @media (max-width:820px){
       .cad .troca{display:flex;position:absolute;left:14px;right:14px;bottom:10px;height:44px;gap:3px}
@@ -223,6 +227,7 @@
         <div class="diatodo" id="diaTodo"></div>
         <div class="linha" id="linha"></div>
       </div><div class="vout" id="outDir"></div></section>
+      <div class="leitor-barra" id="leitorBarra"></div>
       <iframe class="embed" id="embed" title="Tela" allowtransparency="true"></iframe>
     </div></div>
     <div class="abas dir" id="abasDir"></div>
@@ -231,7 +236,9 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=169"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
+  <script src="caderno-leitor.js?v=1"></script>
   <script src="todo-dados.js?v=1"></script>
   <script src="carrinho.js?v=6"></script>
   <script src="caderno-financeiro.js?v=1"></script>
@@ -249,9 +256,9 @@
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
-      ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'] };
-    var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null;
+      ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
+    var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
     function p2(n) { return String(n).padStart(2, '0'); }
@@ -442,10 +449,10 @@
     /* VIRAR A PÁGINA: cada entrada (tocar num marcador ou num item) vira a página; o que estava ali fica na esquerda e o novo na direita.
        Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
     var hist = [], hpos = -1, aplicando = false;
-    function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, estSel: estSel, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, embed: urlForcada }; }
+    function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, estSel: estSel, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
     function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); hist.push(snapshot()); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } }
     function virar(sentido) { var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
-    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; estSel = sn.estSel; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
+    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; estSel = sn.estSel; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function voltarPagina() { if (hpos <= 0) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (hpos >= hist.length - 1) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
     function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
@@ -462,9 +469,11 @@
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
       document.getElementById('troca').style.display = embutida ? 'none' : '';
       pedido++;
+      if (leitorAtual && !(visao === 'leitor' && leitorLivro)) { leitorAtual.fechar(); leitorAtual = null; }
+      cad.classList.toggle('v-livro', visao === 'leitor' && !!leitorLivro && !embutida);
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos, financeiro: vistaFinanceiro })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -1134,6 +1143,99 @@
       function abrirEntrada(e) { folhaPequena(function (caixa, fechar) { finFechar = fechar; caixa.classList.add('larga'); F.formEntrada(caixa, e); }); }
     }
 
+    /* ---------- Leitor: a estante (pastas e PDFs do Drive) em duas páginas e o livro aberto em duas páginas ---------- */
+    var RAIZ = { id: 'root', nome: 'Meu Drive' }, PASTA = 'application/vnd.google-apps.folder', driveCache = {}, camLido = false, leitorAtual = null;
+    function toast(t) { var a = el('div', { class: 'cad-aviso', text: t }); cad.parentNode.appendChild(a); setTimeout(function () { a.remove(); }, 3800); }
+    function lerCaminhoLeitor() { if (camLido) return Promise.resolve(); return valorSite('leitor_pasta').then(function (v) { camLido = true; if (Array.isArray(v) && v.length && v[0].id === 'root') leitorCam = v; }); }
+    function listarPasta(token, id) {
+      var itens = [];
+      function pagina(pt) {
+        var q = "'" + id + "' in parents and trashed=false and (mimeType='" + PASTA + "' or mimeType='application/pdf')";
+        var url = 'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=' + encodeURIComponent('nextPageToken,files(id,name,mimeType,thumbnailLink)') + '&orderBy=folder,name_natural&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true' + (pt ? '&pageToken=' + encodeURIComponent(pt) : '');
+        return fetch(url, { headers: { Authorization: 'Bearer ' + token } }).then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); }).then(function (d) { itens = itens.concat(d.files || []); return d.nextPageToken ? pagina(d.nextPageToken) : itens; });
+      }
+      return pagina('');
+    }
+    function capaPdf(f, token) { /* a capa que o próprio Drive faz do PDF; sem ela, a folha só com o contorno */
+      var folha = el('div', { style: 'aspect-ratio:0.707;border:1px solid var(--azul-egipcio-claro,#1F5FA3);background:transparent;overflow:hidden;display:flex' });
+      if (!f.thumbnailLink) return folha;
+      var link = f.thumbnailLink.replace(/=s\d+$/, '=s480'), im = el('img', { alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', style: 'width:100%;height:100%;object-fit:cover;object-position:top;display:block' }), tentou = false;
+      im.addEventListener('error', function () { if (tentou) { im.remove(); return; } tentou = true; fetch(link, { headers: { Authorization: 'Bearer ' + token } }).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { im.src = URL.createObjectURL(b); }).catch(function () { im.remove(); }); });
+      im.src = link; folha.appendChild(im); return folha;
+    }
+    function desenhoPasta() { var d = el('div', { style: 'aspect-ratio:0.707;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-claro,#1F5FA3)' }); d.innerHTML = '<svg viewBox="0 0 64 64" width="72%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6,16 H24 L30,22 H58 V52 H6 Z"/><line x1="6" y1="28" x2="58" y2="28"/></svg>'; return d; }
+    function vistaLeitor() {
+      cad.classList.toggle('v-livro', !!leitorLivro);
+      if (leitorLivro) { vistaLivro(); return; }
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      Promise.all([lerCaminhoLeitor(), P.tokenGoogle(), C.from('leitor_livros').select('*').order('atualizado_em', { ascending: false })]).then(function (r) {
+        var token = r[1], livros = (r[2] && r[2].data) || [], porDrive = {}; livros.forEach(function (l) { porDrive[l.drive_id] = l; });
+        var d = leitorCam.length - 1;
+        document.getElementById('t1').textContent = d > 0 ? 'pasta' : 'abertos'; document.getElementById('t2').textContent = d > 0 ? 'dentro' : 'pasta';
+        function listagem(p) { return driveCache[p.id] ? Promise.resolve(driveCache[p.id]) : listarPasta(token, p.id).then(function (l) { driveCache[p.id] = l; return l; }); }
+        return Promise.all([d > 0 ? listagem(leitorCam[d - 1]) : Promise.resolve(null), listagem(leitorCam[d])]).then(function (ls) {
+          if (eu !== pedido) return; rolaE.textContent = '';
+          function abrirLivro(f) {
+            var nome = String(f.name).replace(/\.pdf$/i, ''), l = porDrive[f.id];
+            function entrar(livro) { leitorLivro = livro; entrarPagina(vistaLeitor); }
+            if (l) { entrar(l); return; }
+            C.from('leitor_livros').upsert({ drive_id: f.id, nome: nome }, { onConflict: 'drive_id' }).select().single().then(function (x) { if (x.error) toast(P.traduzErro(x.error.message)); else entrar(x.data); });
+          }
+          function grade(lista, nivel) { /* nivel = posição da pasta de onde esta lista vem; tocar numa pasta entra nela a partir dali */
+            var g = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:20px 16px;margin:6px 0 20px' });
+            if (!lista.length) return el('p', { class: 'vazio', text: 'Nenhuma pasta nem PDF aqui.' });
+            lista.forEach(function (f) {
+              var pasta = f.mimeType === PASTA, nome = pasta ? f.name : String(f.name).replace(/\.pdf$/i, ''), l = porDrive[f.id];
+              var cel = el('div', { role: 'button', tabindex: '0', style: 'cursor:pointer;text-align:center;min-width:0' }, [pasta ? desenhoPasta() : capaPdf(f, token), el('div', { class: 'nome', style: 'margin-top:6px;font-size:12px;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-transform:none', text: nome })]);
+              if (l) cel.appendChild(el('div', { class: 'det', style: 'font-size:12px;color:var(--ocre);font-weight:700', text: 'página ' + l.pagina + (l.total ? ' de ' + l.total : '') }));
+              cel.addEventListener('click', function () {
+                if (pasta) { leitorCam = leitorCam.slice(0, nivel + 1).concat([{ id: f.id, nome: f.name }]); gravarSite('leitor_pasta', leitorCam); entrarPagina(vistaLeitor); paginaCel('p2'); return; }
+                abrirLivro(f);
+              });
+              g.appendChild(cel);
+            });
+            return g;
+          }
+          /* esquerda: a pasta de onde se veio (ou, na primeira, os livros já abertos) · direita: a pasta de agora */
+          if (d > 0) { rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: leitorCam[d - 1].nome })); rolaE.appendChild(grade(ls[0], d - 1)); }
+          else {
+            rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Já abertos' }));
+            if (!livros.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum livro aberto ainda.' }));
+            livros.forEach(function (l) {
+              var linha = el('div', { class: 'tarefa', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'nome', style: 'text-transform:none;font-size:17px', text: l.nome }), el('div', { class: 'det', style: 'color:inherit;opacity:.75', text: 'página ' + l.pagina + (l.total ? ' de ' + l.total : '') })])]);
+              var rem = P.botaoApagar('Remover'); rem.addEventListener('click', function (ev) { ev.stopPropagation(); if (!confirm('Remover "' + l.nome + '" do Leitor? As marcações também serão apagadas. O arquivo continua no Drive. Não dá para desfazer.')) return; C.from('leitor_livros').delete().eq('id', l.id).then(function (x) { if (x.error) toast(P.traduzErro(x.error.message)); else vistaLeitor(); }); });
+              linha.appendChild(rem); linha.addEventListener('click', function () { leitorLivro = l; entrarPagina(vistaLeitor); }); rolaE.appendChild(linha);
+            });
+          }
+          rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: leitorCam[d].nome })); rolaD.appendChild(grade(ls[1], d));
+        });
+      }).catch(function (e) { if (eu !== pedido) return; rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: e && e.message === 'desconectado' ? 'O Google Drive ainda não está conectado (Configurações).' : 'Não consegui ler o Google Drive. Tente de novo.' })); });
+    }
+    function vistaLivro() {
+      var o = preparaOut(), esq = o[0], dir = o[1], livro = leitorLivro; if (leitorAtual) { leitorAtual.fechar(); leitorAtual = null; }
+      leitorAtual = window.LeitorCaderno(P).abrir({
+        esq: esq, dir: dir, barra: document.getElementById('leitorBarra'), livro: livro, aviso: toast,
+        voltar: function () { leitorAtual = null; if (!voltarPagina()) { leitorLivro = null; mostrarVisao(); } },
+        aoMudar: function (e, d) { document.getElementById('t1').textContent = e ? 'pág. ' + e : 'capa'; document.getElementById('t2').textContent = d ? 'pág. ' + d : 'fim'; },
+        obterPdf: function (progresso) {
+          return P.tokenGoogle().then(function (token) { return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(livro.drive_id) + '?alt=media&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } }); }).then(function (r) {
+            if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'drive');
+            var total = Number(r.headers.get('Content-Length')) || 0; if (!r.body || !r.body.getReader) return r.arrayBuffer();
+            var leitor = r.body.getReader(), partes = [], lido = 0;
+            return (function passo() { return leitor.read().then(function (x) { if (x.done) { var tudo = new Uint8Array(lido), p0 = 0; partes.forEach(function (p) { tudo.set(p, p0); p0 += p.length; }); return tudo.buffer; } partes.push(x.value); lido += x.value.length; progresso(total ? Math.round(lido / total * 100) + '%' : Math.round(lido / 1048576) + ' MB'); return passo(); }); })();
+          });
+        },
+        carregarTracos: function (pg) { return C.from('leitor_tracos').select('tracos').eq('livro_id', livro.id).eq('pagina', pg).maybeSingle().then(function (x) { return x.data ? (x.data.tracos || []) : null; }); },
+        salvarTracos: function (pg, tracos) {
+          var q = tracos.length ? C.from('leitor_tracos').upsert({ livro_id: livro.id, pagina: pg, tracos: tracos, atualizado_em: new Date().toISOString() }, { onConflict: 'livro_id,pagina' }) : C.from('leitor_tracos').delete().eq('livro_id', livro.id).eq('pagina', pg);
+          return q.then(function (x) { if (x.error) throw x.error; });
+        },
+        salvarPagina: function (pg, total) { livro.pagina = pg; livro.total = total; C.from('leitor_livros').update({ pagina: pg, total: total, atualizado_em: new Date().toISOString() }).eq('id', livro.id).then(function () {}); }
+      });
+    }
+
     /* ---------- começo ---------- */
     function mostrar() {
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
@@ -1161,13 +1263,14 @@
     document.getElementById('anoMenos').addEventListener('click', function () { ancora = mudaMes(ancora, -12); desenhar(); });
     document.getElementById('anoMais').addEventListener('click', function () { ancora = mudaMes(ancora, 12); desenhar(); });
     function paginaCel(p) { pagCel = p; cad.classList.remove('p1', 'p2'); cad.classList.add(p); document.getElementById('t1').classList.toggle('aberta', p === 'p1'); document.getElementById('t2').classList.toggle('aberta', p === 'p2'); }
+    window.addEventListener('resize', function () { if (leitorAtual && leitorAtual.aoRedimensionar) leitorAtual.aoRedimensionar(); });
     document.getElementById('t1').addEventListener('click', function () { paginaCel('p1'); });
     document.getElementById('t2').addEventListener('click', function () { paginaCel('p2'); });
     document.getElementById('tMais').addEventListener('click', novaTarefa);
     (function () { /* o dedo vira a página: para a direita volta, para a esquerda avança */
       var folha = cad.querySelector('.folha'), x0 = 0, y0 = 0, t0 = 0, ativo = false;
       folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; if (ev.touches.length !== 1 || t.touchType === 'stylus' || (ev.target.closest && ev.target.closest('input,textarea,select,[style*="overflow-x"]'))) { ativo = false; return; } x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; }, { passive: true });
-      folha.addEventListener('touchend', function (ev) { if (!ativo) return; ativo = false; var t = ev.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 800 || Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return; if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(dx > 0 ? -1 : 1); return; } if (dx > 0) voltarPagina(); else avancarPagina(); }, { passive: true });
+      folha.addEventListener('touchend', function (ev) { if (!ativo) return; ativo = false; var t = ev.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 800 || Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return; if (visao === 'leitor' && leitorLivro && leitorAtual) { if (leitorAtual.zoom() === 1) { virar(dx > 0 ? 'tras' : 'frente'); leitorAtual.virar(dx > 0 ? -1 : 1); } return; } if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(dx > 0 ? -1 : 1); return; } if (dx > 0) voltarPagina(); else avancarPagina(); }, { passive: true });
     })();
     C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
   })();
