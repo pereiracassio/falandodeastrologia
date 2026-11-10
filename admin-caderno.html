@@ -55,7 +55,7 @@
     /* página da esquerda */
     .cad .topo{display:flex;gap:24px;align-items:flex-start}
     .cad .hoje{flex:1;text-align:center}
-    .cad .logo-daily{display:block;width:150px;height:auto;margin:-8px auto 2px}
+    .cad .logo-daily{display:block;width:250px;height:auto;margin:0 auto 6px}
     .cad .mes{display:flex;justify-content:center;align-items:center;gap:6px;color:var(--azul-egipcio-escuro);font-size:19px}
     .cad .seta{background:none;border:0;color:var(--azul-egipcio-escuro);font-size:26px;line-height:1;padding:0 8px}
     .cad .num-linha{display:flex;justify-content:center;align-items:center;gap:6px}
@@ -114,7 +114,7 @@
       .cad .pag,.cad .pag.dir{padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 12px)}
       .cad.p1 .pag.dir,.cad.p2 .pag.esq{display:none}
       .cad .topo{gap:6px}
-      .cad .logo-daily{width:104px;margin-top:-6px}
+      .cad .logo-daily{width:165px}
       .cad .num{font-size:72px}.cad .mes{font-size:14px}.cad .sem{font-size:13px}
       .cad .reg{flex-direction:column;gap:4px;font-size:13px}
       .cad .mini{font-size:13px}.cad .mini td button{padding:4px 5px;font-size:13px}.cad .mini th{padding:2px 5px 4px;font-size:10px}
@@ -145,7 +145,7 @@
       <section class="pag esq">
         <div class="topo">
           <div class="hoje">
-            <img class="logo-daily" src="img/logo-menu-daily.svg?v=1" alt="Hellenic Daily" width="752" height="238">
+            <img class="logo-daily" src="img/logo-menu-daily-linha.svg?v=1" alt="Hellenic Daily" width="1100" height="190">
             <div class="mes"><button type="button" class="seta" id="mesAnt" aria-label="Mês anterior">‹</button><span class="botao-fixo" id="tituloMes"></span><button type="button" class="seta" id="mesProx" aria-label="Próximo mês">›</button></div>
             <div class="num-linha"><button type="button" class="seta" id="diaAnt" aria-label="Dia anterior">‹</button><div class="num botao-fixo" id="numDia"></div><button type="button" class="seta" id="diaProx" aria-label="Próximo dia">›</button></div>
             <p class="sem" id="semana"></p>
