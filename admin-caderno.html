@@ -241,7 +241,7 @@
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['próximos', 'séries'], projetos: ['projetos', 'passos'], estudos: ['estudos', 'aulas'] };
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['projetos', 'passos'], estudos: ['estudos', 'aulas'] };
     var visao = 'dia', cacheAno = {};
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -443,6 +443,7 @@
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
       document.getElementById('troca').style.display = embutida ? 'none' : '';
       pedido++;
+      if (visao !== 'producao') { prodSerie = null; prodVideo = null; prodCorte = null; }
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos })[visao]();
@@ -468,6 +469,10 @@
       var partes = [el('span', { class: 't botao-fixo', text: titulo })];
       if (ant) { var a = el('button', { type: 'button', class: 'seta', 'aria-label': 'Anterior', text: '‹' }), b = el('button', { type: 'button', class: 'seta', 'aria-label': 'Próximo', text: '›' }); a.addEventListener('click', ant); b.addEventListener('click', prox); partes = [a, partes[0], b]; }
       esq.appendChild(el('div', { class: 'cab-vista' }, partes));
+    }
+    function cabNav(onde, titulo, ant, prox) { /* só a troca (‹ título ›), sem o logo */
+      var a = el('button', { type: 'button', class: 'seta', 'aria-label': 'Anterior', text: '‹' }), b = el('button', { type: 'button', class: 'seta', 'aria-label': 'Próximo', text: '›' }); a.addEventListener('click', ant); b.addEventListener('click', prox);
+      onde.appendChild(el('div', { class: 'cab-vista', style: 'margin:6px 0 10px' }, [a, el('span', { class: 't botao-fixo', text: titulo }), b]));
     }
     function preparaOut() { var e = document.getElementById('outEsq'), d = document.getElementById('outDir'); e.textContent = ''; d.textContent = ''; return [e, d]; }
     function carregando(onde) { onde.appendChild(el('p', { class: 'vazio', text: 'Carregando...' })); }
@@ -645,20 +650,22 @@
     function vistaHoras() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], a = ancora.split('-'), agora = Date.now();
       var longa = SEMANA[diaSem(ancora)] + ', ' + (+a[2]) + ' de ' + MESES[+a[1] - 1];
-      cabVista(esq, longa, function () { ancora = somaDias(ancora, -1); desenhar(); }, function () { ancora = somaDias(ancora, 1); desenhar(); });
-      var corpoE = el('div', { class: 'rola' }), corpoD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(corpoE); dir.appendChild(corpoD); carregando(corpoE);
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var corpoE = el('div', { class: 'rola' }), corpoD = el('div', { class: 'rola' }); esq.appendChild(corpoE);
+      cabNav(dir, longa, function () { ancora = somaDias(ancora, -1); desenhar(); }, function () { ancora = somaDias(ancora, 1); desenhar(); }); dir.appendChild(corpoD); carregando(corpoE);
       preparar().then(function () {
         if (eu !== pedido) return; corpoE.textContent = '';
         var hs = HP.horasDoDia(+a[0], +a[1], +a[2], LAT, LON);
         if (hs.length < 24) { corpoE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível calcular as horas deste dia neste lugar.' })); return; }
         var atual = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0];
-        /* resumo do dia: o planeta do dia, o nascer e o pôr do sol e, se é hoje, a hora de agora com as duas barras */
-        var resumo = el('div', { style: 'display:flex;align-items:flex-end;gap:26px;justify-content:center;margin:2px 0 10px;text-align:center' }, [
-          el('div', {}, [el('div', { class: 'rotulo-grupo', text: 'Dia' }), el('span', { class: 'ic', style: 'font-size:58px;color:var(--terracota)', text: icone(REGENTE[diaSem(ancora)]) })]),
-          atual ? el('div', {}, [el('div', { class: 'rotulo-grupo', text: 'Hora' }), el('span', { class: 'ic', style: 'font-size:42px;color:' + (atual.noite ? '#1F5FA3' : '#B5852F'), text: icone(atual.planeta) })]) : null,
-          el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;text-align:left' }, [el('div', { class: 'rotulo-fixo', text: 'nascer do sol ' + hhmm(hs[0].ini) + ' · pôr do sol ' + hhmm(hs[12].ini) })].concat(atual ? [barraDe(hs[0].ini, hs[23].fim, agora, 'horas', false), barraDe(atual.ini, atual.fim, agora, 'minutos', false)] : []))
-        ].filter(Boolean));
-        corpoE.appendChild(resumo);
+        /* esquerda: o planeta da hora de agora e a barra dela (só quando o dia é hoje) */
+        if (atual) corpoE.appendChild(el('div', { style: 'display:flex;align-items:center;gap:22px;margin:6px 0 12px' }, [
+          el('div', { style: 'text-align:center;flex:none' }, [el('div', { class: 'rotulo-grupo', text: 'Hora' }), el('span', { class: 'ic', style: 'font-size:70px;color:' + (atual.noite ? '#1F5FA3' : '#B5852F'), text: icone(atual.planeta) })]),
+          el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:8px' }, [barraDe(atual.ini, atual.fim, agora, 'minutos', false), el('div', { class: 'rotulo-fixo', style: 'text-align:center', text: (hs.indexOf(atual) % 12 + 1) + 'ª hora · ' + hhmm(atual.ini) + ' às ' + hhmm(atual.fim) })])]));
+        /* direita: o planeta do dia, maior, com a barra do dia e o nascer e o pôr do sol */
+        corpoD.appendChild(el('div', { style: 'display:flex;align-items:center;gap:22px;margin:6px 0 12px' }, [
+          el('div', { style: 'text-align:center;flex:none' }, [el('div', { class: 'rotulo-grupo', text: 'Dia' }), el('span', { class: 'ic', style: 'font-size:96px;color:var(--terracota)', text: icone(REGENTE[diaSem(ancora)]) })]),
+          el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:8px' }, [barraDe(hs[0].ini, hs[23].fim, agora, 'horas', false), el('div', { class: 'rotulo-fixo', style: 'text-align:center', text: 'nascer do sol ' + hhmm(hs[0].ini) + ' · pôr do sol ' + hhmm(hs[12].ini) })])]));
         function linhaHora(h, i) {
           var ativa = agora >= h.ini && agora < h.fim, cor = h.noite ? '#1F5FA3' : '#B5852F';
           var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? '#1F5FA3' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
@@ -759,52 +766,102 @@
       }, function (e) { res.textContent = ''; res.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível consultar a agenda (' + e.message + ').' })); });
     }
 
-    /* ---------- Produção: próximos (esquerda) e séries + fila do blog (direita). Editar um vídeo ou corte abre a Produção de antes, dentro do caderno ---------- */
+    /* ---------- Produção, de página em página: séries → (série à esquerda, vídeos à direita) → (vídeo à esquerda, cortes à direita) → (corte à esquerda, cortes do vídeo à direita).
+       Aqui se navega e se vê; mudar os dados (marcar etapa, datas, textos) abre a Produção de antes dentro do caderno ---------- */
+    var prodSerie = null, prodVideo = null, prodCorte = null, prodDados = null;
     function dataCurta(s) { var iso = String(s).slice(0, 10); return SEMANA[diaSem(iso)].slice(0, 3) + ' ' + (+iso.slice(8)) + '/' + (+iso.slice(5, 7)); }
     function vistaProducao() {
-      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      cabVista(esq, 'produção');
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      var eu = pedido, o = preparaOut(); carregando(o[0]);
       Promise.all([C.from('prod_series').select('*').order('criado_em'), C.from('prod_videos').select('*').order('numero').order('criado_em'), C.from('prod_cortes').select('*').order('ordem').order('criado_em')]).then(function (r) {
-        if (eu !== pedido) return; rolaE.textContent = '';
-        if (r[0].error || r[1].error || r[2].error) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir a Produção.' })); return; }
-        var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], td = tdPronto();
-        var achar = function (lista, id) { for (var i = 0; i < lista.length; i++) if (lista[i].id === id) return lista[i]; return null; };
-        var acesso = function (v) { return (v && v.acesso) === 'membros' ? 'membros' : 'público'; };
-        var fimDoVideo = function (v) { return (acesso(v) === 'público' && v.data_publico) || v.data_postar || null; };
-        var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
-        var nomeVideo = function (v) { var s = v.serie_id ? achar(series, v.serie_id) : null; return (s ? s.nome + ' · ' : '') + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
-        /* próximos: o que ainda não foi ao ar e tem data, mais os cortes que faltam postar, pela data */
+        if (eu !== pedido) return;
+        if (r[0].error || r[1].error || r[2].error) { o[0].textContent = ''; o[0].appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir a Produção.' })); return; }
+        prodDados = { series: r[0].data || [], videos: r[1].data || [], cortes: r[2].data || [] }; renderProducao();
+      }, function (er) { if (eu === pedido) { o[0].textContent = ''; o[0].appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
+    }
+    function renderProducao() {
+      var D = prodDados, eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], td = tdPronto();
+      var achar = function (lista, id) { for (var i = 0; i < lista.length; i++) if (lista[i].id === id) return lista[i]; return null; };
+      var acesso = function (v) { return (v && v.acesso) === 'membros' ? 'membros' : 'público'; };
+      var fimDoVideo = function (v) { return (acesso(v) === 'público' && v.data_publico) || v.data_postar || null; };
+      var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
+      var serie = prodSerie && prodSerie !== 'soltos' ? achar(D.series, prodSerie) : null, video = prodVideo ? achar(D.videos, prodVideo) : null, corte = prodCorte ? achar(D.cortes, prodCorte) : null;
+      if (prodCorte && !corte) { prodCorte = null; corte = null; } if (prodVideo && !video) { prodVideo = null; prodCorte = null; video = null; corte = null; } if (prodSerie && prodSerie !== 'soltos' && !serie) { prodSerie = null; prodVideo = null; prodCorte = null; serie = null; video = null; corte = null; }
+      var nivel = corte ? 3 : video ? 2 : prodSerie ? 1 : 0;
+      var nomeVideo = function (v) { var s = v.serie_id ? achar(D.series, v.serie_id) : null; return (s ? s.nome + ' · ' : '') + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
+      var tituloVideo = function (v) { return (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'); };
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' });
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' })); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD);
+      document.getElementById('t1').textContent = nivel === 0 ? 'próximos' : nivel === 1 ? 'série' : nivel === 2 ? 'vídeo' : 'corte'; document.getElementById('t2').textContent = nivel === 0 ? 'séries' : nivel === 1 ? 'vídeos' : 'cortes';
+      function ir(se, vi, co) { prodSerie = se; prodVideo = vi; prodCorte = co; renderProducao(); if (co) paginaCel('p1'); else if (vi || se) paginaCel('p2'); else paginaCel('p1'); }
+      function voltar() { if (prodCorte) ir(prodSerie, prodVideo, null); else if (prodVideo) ir(prodSerie, null, null); else ir(null, null, null); }
+      function titulo(t, cor) { return el('div', { class: 'rotulo-grupo', style: 'color:' + (cor || 'var(--terracota)') + ';padding:2px 0 4px', text: t }); }
+      function nome(t, grande) { return el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:' + (grande ? 20 : 17) + 'px;overflow-wrap:anywhere' + (grande ? ';color:var(--terracota);margin:2px 0 4px' : ''), text: t }); }
+      function sub(t) { return el('div', { class: 'det', style: 'font-size:13px;opacity:.75;color:inherit', text: t }); }
+      function campo(r, v) { return v ? el('div', { style: 'display:flex;gap:10px;align-items:baseline;margin:3px 0' }, [el('span', { class: 'rotulo-fixo', style: 'flex:none;min-width:150px', text: r }), el('span', { text: v })]) : null; }
+      function botaoVoltar() { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin:0 0 6px', text: '← Voltar' }); b.addEventListener('click', voltar); return b; }
+      function botaoEditar(t, url) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:12px', text: t }); b.addEventListener('click', function () { abrirTela(url); }); return b; }
+      var resumo = function (lista) { var n = lista.length, conta = function (c) { return lista.filter(function (v) { return v[c]; }).length; }; return n ? conta('roteiro_ok') + ' roteiros · ' + conta('gravado') + ' gravados · ' + conta('no_ar') + ' no ar · ' + conta('blog_ok') + ' no blog' : 'Nenhum vídeo ainda'; };
+      function linhaVideo(v, marcada) {
+        var fim = fimDoVideo(v), l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [fim ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(fim) }) : null, nome(tituloVideo(v)), sub(acesso(v) + (v.no_ar ? ' · no ar' : ''))].filter(Boolean).concat(td.barrasDe(v, td.ETV, v.criado_em, fim)));
+        l.addEventListener('click', function () { ir(v.serie_id || 'soltos', v.id, null); }); return l;
+      }
+      function linhaCorte(c, marcada) {
+        var l = el('div', { class: 'dia-lista', style: 'cursor:pointer;' + (marcada ? 'border-left:3px solid var(--terracota);padding-left:8px' : '') }, [c.data ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(c.data) }) : null, nome(c.titulo || 'Corte ' + c.ordem)].filter(Boolean).concat(td.barrasDe(c, td.ETC, c.criado_em, c.data)));
+        l.addEventListener('click', function () { ir(prodSerie, c.video_id, c.id); }); return l;
+      }
+      if (nivel === 0) {
+        /* próximos (esquerda) · séries e fila do blog (direita) */
         var itens = [];
-        videos.forEach(function (v) { if (v.no_ar) return; var fim = fimDoVideo(v); if (!fim) return; var s = v.serie_id ? achar(series, v.serie_id) : null; itens.push({ data: String(fim).slice(0, 10), nome: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título'), sub: s ? s.nome : 'Vídeo solto', barras: td.barrasDe(v, td.ETV, v.criado_em, fim), url: link(v) }); });
-        cortes.forEach(function (c) { if ((c.instagram && c.tiktok) || !c.data) return; var v = achar(videos, c.video_id); if (!v) return; itens.push({ data: String(c.data).slice(0, 10), nome: c.titulo || 'Corte sem título', sub: 'corte · ' + nomeVideo(v), barras: td.barrasDe(c, td.ETC, c.criado_em, c.data), url: link(v, c.id) }); });
+        D.videos.forEach(function (v) { if (v.no_ar) return; var fim = fimDoVideo(v); if (!fim) return; var s = v.serie_id ? achar(D.series, v.serie_id) : null; itens.push({ data: String(fim).slice(0, 10), nome: tituloVideo(v), sub: s ? s.nome : 'Vídeo solto', barras: td.barrasDe(v, td.ETV, v.criado_em, fim), ir: [v.serie_id || 'soltos', v.id, null] }); });
+        D.cortes.forEach(function (c) { if ((c.instagram && c.tiktok) || !c.data) return; var v = achar(D.videos, c.video_id); if (!v) return; itens.push({ data: String(c.data).slice(0, 10), nome: c.titulo || 'Corte sem título', sub: 'corte · ' + nomeVideo(v), barras: td.barrasDe(c, td.ETC, c.criado_em, c.data), ir: [v.serie_id || 'soltos', v.id, c.id] }); });
         itens.sort(function (x, y) { return x.data < y.data ? -1 : x.data > y.data ? 1 : 0; });
-        rolaE.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Próximos' }));
-        if (!itens.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada em andamento.' }));
-        itens.forEach(function (it) {
-          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }), el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px;overflow-wrap:anywhere', text: it.nome }), el('div', { class: 'det', style: 'font-size:13px;opacity:.75', text: it.sub })].concat(it.barras));
-          l.addEventListener('click', function () { abrirTela(it.url); }); rolaE.appendChild(l);
+        rolaE.appendChild(titulo('Próximos')); if (!itens.length) rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada em andamento.' }));
+        itens.forEach(function (it) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro)', text: dataCurta(it.data) }), nome(it.nome), sub(it.sub)].concat(it.barras)); l.addEventListener('click', function () { ir(it.ir[0], it.ir[1], it.ir[2]); }); rolaE.appendChild(l); });
+        rolaD.appendChild(titulo('Séries'));
+        D.series.forEach(function (s) {
+          var lista = D.videos.filter(function (v) { return v.serie_id === s.id; }), previstos = Math.max(s.total || 0, lista.length), noAr = lista.filter(function (v) { return v.no_ar; }).length, pct = previstos ? Math.round(100 * noAr / previstos) : 0;
+          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(s.nome), sub(acesso(s) + ' · ' + resumo(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '')), P.barraLinha(pct, null, noAr + '/' + previstos, false)]);
+          l.addEventListener('click', function () { ir(s.id, null, null); }); rolaD.appendChild(l);
         });
-        /* séries (e os vídeos soltos) */
-        rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Séries' }));
-        var resumo = function (lista) { var n = lista.length, conta = function (c) { return lista.filter(function (v) { return v[c]; }).length; }; return n ? conta('roteiro_ok') + ' roteiros · ' + conta('gravado') + ' gravados · ' + conta('no_ar') + ' no ar · ' + conta('blog_ok') + ' no blog' : 'Nenhum vídeo ainda'; };
-        series.forEach(function (s) {
-          var lista = videos.filter(function (v) { return v.serie_id === s.id; }), previstos = Math.max(s.total || 0, lista.length), pct = previstos ? Math.round(100 * lista.filter(function (v) { return v.no_ar; }).length / previstos) : 0;
-          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px', text: s.nome }), el('div', { class: 'det', style: 'font-size:13px;opacity:.75', text: acesso(s) + ' · ' + resumo(lista) + (s.total ? ' (de ' + s.total + ' previstos)' : '') }), P.barraLinha(pct, null, lista.filter(function (v) { return v.no_ar; }).length + '/' + previstos, false)]);
-          l.addEventListener('click', function () { abrirTela('admin-producao.html#aba=series&serie=' + encodeURIComponent(s.id)); }); rolaD.appendChild(l);
-        });
-        var soltos = videos.filter(function (v) { return !v.serie_id; }), ls = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px', text: 'Vídeos soltos' }), el('div', { class: 'det', style: 'font-size:13px;opacity:.75', text: resumo(soltos) })]);
-        ls.addEventListener('click', function () { abrirTela('admin-producao.html#aba=series&serie=soltos'); }); rolaD.appendChild(ls);
-        /* fila do blog: já foi ao ar e ainda não virou postagem */
-        var fila = videos.filter(function (v) { return v.no_ar && !v.blog_ok; });
-        rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:12px 0 4px', text: 'Fila do blog' }));
+        var soltos = D.videos.filter(function (v) { return !v.serie_id; }), ls = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome('Vídeos soltos'), sub(resumo(soltos))]); ls.addEventListener('click', function () { ir('soltos', null, null); }); rolaD.appendChild(ls);
+        var fila = D.videos.filter(function (v) { return v.no_ar && !v.blog_ok; }); rolaD.appendChild(el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:12px 0 4px', text: 'Fila do blog' }));
         if (!fila.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nada esperando para virar postagem.' }));
-        fila.forEach(function (v) {
-          var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [el('div', { class: 'nome', style: 'text-transform:uppercase;font-size:17px', text: (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título') }), v.data_blog ? P.barraTempoDias(String(v.criado_em).slice(0, 10), String(v.data_blog).slice(0, 10)) : null].filter(Boolean));
-          l.addEventListener('click', function () { abrirTela(link(v)); }); rolaD.appendChild(l);
-        });
-        var completa = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'margin-top:14px', text: 'Abrir a produção completa' }); completa.addEventListener('click', function () { abrirTela('admin-producao.html'); }); rolaD.appendChild(completa);
-      }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar (' + er.message + ').' })); } });
+        fila.forEach(function (v) { var l = el('div', { class: 'dia-lista', style: 'cursor:pointer' }, [nome(tituloVideo(v)), v.data_blog ? P.barraTempoDias(String(v.criado_em).slice(0, 10), String(v.data_blog).slice(0, 10)) : null].filter(Boolean)); l.addEventListener('click', function () { ir(v.serie_id || 'soltos', v.id, null); }); rolaD.appendChild(l); });
+        rolaD.appendChild(botaoEditar('Abrir a produção completa', 'admin-producao.html'));
+        return;
+      }
+      if (nivel === 1) {
+        /* a série (esquerda) · os vídeos dela (direita) */
+        var lista1 = D.videos.filter(function (v) { return (v.serie_id || 'soltos') === prodSerie; }), nomeSerie = serie ? serie.nome : 'Vídeos soltos', noAr1 = lista1.filter(function (v) { return v.no_ar; }).length, previstos1 = Math.max(serie && serie.total || 0, lista1.length);
+        var datas = lista1.map(function (v) { return v.data_postar; }).filter(Boolean).sort();
+        rolaE.appendChild(botaoVoltar()); rolaE.appendChild(nome(nomeSerie, true));
+        if (serie) { rolaE.appendChild(campo('Acesso', acesso(serie))); rolaE.appendChild(campo('Previstos', serie.total ? String(serie.total) : '')); }
+        rolaE.appendChild(campo('Período', datas.length ? dataCurta(datas[0]) + (datas.length > 1 && datas[datas.length - 1] !== datas[0] ? ' até ' + dataCurta(datas[datas.length - 1]) : '') : ''));
+        rolaE.appendChild(campo('Situação', resumo(lista1)));
+        if (previstos1) rolaE.appendChild(P.barraLinha(Math.round(100 * noAr1 / previstos1), null, noAr1 + '/' + previstos1, false));
+        rolaE.appendChild(botaoEditar(serie ? 'Editar esta série' : 'Editar os vídeos soltos', 'admin-producao.html#aba=series&serie=' + encodeURIComponent(prodSerie)));
+        rolaD.appendChild(titulo('Vídeos')); if (!lista1.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum vídeo ainda.' }));
+        lista1.forEach(function (v) { rolaD.appendChild(linhaVideo(v, false)); });
+        return;
+      }
+      /* níveis 2 e 3: o vídeo (ou o corte) à esquerda · os cortes do vídeo à direita */
+      var cortesDe = D.cortes.filter(function (c) { return c.video_id === video.id; }), fim2 = fimDoVideo(video);
+      rolaE.appendChild(botaoVoltar());
+      if (nivel === 2) {
+        rolaE.appendChild(nome(tituloVideo(video), true)); rolaE.appendChild(sub(video.serie_id ? (achar(D.series, video.serie_id) || {}).nome || '' : 'Vídeo solto'));
+        if (video.capa_url) rolaE.appendChild(el('img', { src: video.capa_url, alt: '', style: 'display:block;width:100%;max-width:300px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:8px 0' }));
+        [campo('Acesso', acesso(video)), campo('Gravar em', video.data_gravar ? dataCurta(video.data_gravar) : ''), campo(acesso(video) === 'membros' ? 'Disponível aos membros' : 'Fica público em', fim2 ? dataCurta(fim2) : ''), campo('Cortes até', video.data_cortes ? dataCurta(video.data_cortes) : ''), campo('Blog até', video.data_blog ? dataCurta(video.data_blog) : '')].forEach(function (c) { if (c) rolaE.appendChild(c); });
+        td.barrasDe(video, td.ETV, video.criado_em, fim2).forEach(function (b) { rolaE.appendChild(b); });
+        rolaE.appendChild(botaoEditar('Editar este vídeo', link(video)));
+      } else {
+        rolaE.appendChild(nome(corte.titulo || 'Corte ' + corte.ordem, true)); rolaE.appendChild(sub('corte · ' + nomeVideo(video)));
+        [campo('Data', corte.data ? dataCurta(corte.data) : '')].forEach(function (c) { if (c) rolaE.appendChild(c); });
+        td.barrasDe(corte, td.ETC, corte.criado_em, corte.data).forEach(function (b) { rolaE.appendChild(b); });
+        rolaE.appendChild(botaoEditar('Editar este corte', link(video, corte.id)));
+      }
+      rolaD.appendChild(titulo(nivel === 2 ? 'Cortes' : 'Cortes do vídeo ' + (video.numero || '')));
+      if (!cortesDe.length) rolaD.appendChild(el('p', { class: 'vazio', text: 'Nenhum corte ainda.' }));
+      cortesDe.forEach(function (c) { rolaD.appendChild(linhaCorte(c, nivel === 3 && c.id === corte.id)); });
     }
 
     /* ---------- Projetos: a lista dos projetos (esquerda) e os passos do projeto escolhido (direita). Criar, renomear, datas e subprojetos: tela de antes, dentro do caderno ---------- */
