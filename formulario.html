@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=88">
-  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="portal.css?v=34">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
 <script data-goatcounter="https://falandodeastrologia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -34,9 +34,15 @@
   </div>
   <div class="portal"><div class="portal-caixa">
     <h1 class="portal-titulo">Seus dados</h1>
+    <div class="portal-acoes" style="margin:0 0 12px"><button type="button" class="portal-btn portal-btn-sec" style="color:var(--terracota,#A03E25)!important;font-weight:700" onclick="voltarDaqui()">← Voltar</button></div>
     <div class="portal-form-caixa"><iframe id="quadro" class="portal-form" title="Seus dados para o atendimento"></iframe><!-- sem scrolling="no": se a altura não chegar, o formulário rola por dentro em vez de ficar preso --></div>
+    <div class="portal-acoes" style="margin:12px 0 0"><button type="button" class="portal-btn portal-btn-sec" style="color:var(--terracota,#A03E25)!important;font-weight:700" onclick="voltarDaqui()">← Voltar</button></div>
   </div></div>
 </div></div>
+<script>
+/* "← Voltar": a tela de onde a pessoa veio (os dados dela ficam guardados; nada se perde). Sem histórico (link aberto direto), vai para o Seu espaço. */
+function voltarDaqui() { if (history.length > 1) history.back(); else location.href = 'cliente.html'; }
+</script>
 <script>
 (function () {
   /* O formulário do Astro Hellenic, embutido aqui. Os dados caem no Astro Hellenic como sempre. Todo parâmetro do endereço (u, servico, nome, email...) passa adiante;
