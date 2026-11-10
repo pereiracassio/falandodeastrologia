@@ -389,8 +389,7 @@
         dir.appendChild(b);
       });
       dir.appendChild(el('div', { class: 'vao' }));
-      var cp = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Capa', 'aria-label': 'Capa' }, [el('span', { text: 'capa' })]); cp.addEventListener('click', escolherCapa); dir.appendChild(cp);
-      [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '⚙']].forEach(function (x) {
+            [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '⚙']].forEach(function (x) {
         var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1] })]);
         b.addEventListener('click', function () { irPara(x[0]); }); dir.appendChild(b);
       });
@@ -503,6 +502,7 @@
       if (alvo && alvo.offsetParent !== null) alvo.click();
     }
     function mostrarVisao() {
+      valorSite('daily_capa').then(function (c) { if (c && CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); }); /* a cor escolhida em Configurações vale ao voltar */
       var v = visao; Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { b.classList.toggle('aberta', b.getAttribute('data-v') === v); });
       try { history.replaceState(null, '', '#v=' + v + '&d=' + ancora); } catch (e) { /* sem histórico */ }
       desenhar();

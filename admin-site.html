@@ -141,6 +141,35 @@
       return cartao;
     }
 
+    function cartaoCapa() {
+      var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cor da capa' })]), linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:12px;margin:8px 0' }), atual = 'A03E25';
+      function desenhar() {
+        linha.textContent = '';
+        CAPAS.forEach(function (x) {
+          var b = el('button', { type: 'button', title: x[1], 'aria-label': x[1] });
+          b.style.cssText = 'width:40px;height:40px;border-radius:50%;padding:0;border:3px solid ' + (x[0] === atual ? 'var(--preto-tinta)' : 'transparent') + ';background:' + (x[0] === 'papiro' ? 'var(--papiro-fundo-simples);outline:2px solid #1034A6;outline-offset:-5px' : '#' + x[0]);
+          b.addEventListener('click', function () {
+            atual = x[0]; desenhar();
+            C.from('site_config').upsert({ chave: 'daily_capa', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' });
+          });
+          linha.appendChild(b);
+        });
+      }
+      desenhar(); cartao.appendChild(linha);
+      C.from('site_config').select('valor').eq('chave', 'daily_capa').maybeSingle().then(function (r) { try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v && CAPAS.some(function (x) { return x[0] === v; })) { atual = v; desenhar(); } } catch (e) { /* padrão */ } });
+      return cartao;
+    }
+    /* Personalização: tudo o que é aparência num cartão só (tema, visualização da agenda, cor da capa) */
+    function cartaoPersonalizacao() {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Personalização' })]);
+      [['tema', cartaoTema('daily')], ['visualização da agenda', cartaoVisaoAgenda()], ['cor da capa', cartaoCapa()]].forEach(function (x, i) {
+        cartao.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:' + (i ? '18px' : '6px') + ' 0 2px', text: x[0] }));
+        [].slice.call(x[1].children, 1).forEach(function (f) { cartao.appendChild(f); });
+      });
+      return cartao;
+    }
+
     function cartaoTextoFixo() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Texto fixo dos vídeos' })]);
       var area = el('textarea', { rows: '10' }), msg = el('p', { class: 'portal-msg' }), salvo = false, t = null;
@@ -511,10 +540,9 @@
         pagina.appendChild(cartaoImportarClientes());
       } else {
         /* Hellenic Daily: conexão Google (Drive e Agenda), lugar das horas, texto fixo da Produção, agendas que aparecem, avisos, e as Áreas e Serviços do Financeiro */
-        pagina.appendChild(cartaoTema('daily'));
+        pagina.appendChild(cartaoPersonalizacao());
         var conexaoDrive = P.cartaoConexaoDrive();
         if (conexaoDrive) pagina.appendChild(conexaoDrive);
-        pagina.appendChild(cartaoVisaoAgenda());
         pagina.appendChild(cartaoLugar());
         pagina.appendChild(cartaoTextoFixo());
         pagina.appendChild(cartaoAgendas());
