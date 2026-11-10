@@ -151,9 +151,10 @@ window.LeitorCaderno = function (P) {
     var pvE = criarPagina(o.esq), pvD = criarPagina(o.dir);
     var status = el('div', { text: 'Abrindo...' }); status.style.cssText = 'position:absolute;left:0;right:0;top:42%;text-align:center;font-size:16px;padding:0 20px'; o.dir.appendChild(status);
     var ZOOMS = [1, 1.3, 1.7, 2.2, 3];
-    function zoomar(mais) { var i = ZOOMS.indexOf(zoom); i = Math.max(0, Math.min(ZOOMS.length - 1, i + (mais ? 1 : -1))); zoom = ZOOMS[i]; pvE.renderizar(); pvD.renderizar(); }
+    function marcarZoom() { var c = o.barra.closest && o.barra.closest('.cad'); if (c) c.classList.toggle('leitor-zoom', zoom > 1); } /* sem zoom, o dedo desliza em qualquer lugar da página para virar */
+    function zoomar(mais) { var i = ZOOMS.indexOf(zoom); i = Math.max(0, Math.min(ZOOMS.length - 1, i + (mais ? 1 : -1))); zoom = ZOOMS[i]; marcarZoom(); pvE.renderizar(); pvD.renderizar(); }
     function mostrarSpread() {
-      var e = esqNum(s), d = dirNum(s); zoom = 1; status.style.display = 'none';
+      var e = esqNum(s), d = dirNum(s); zoom = 1; marcarZoom(); status.style.display = 'none';
       campo.value = String(e || d || 1); marcar(bAnt, false);
       o.esq.style.visibility = e ? '' : 'visible';
       return Promise.all([pvE.mostrar(e), pvD.mostrar(d)]).then(function () { o.aoMudar && o.aoMudar(e, d); });
