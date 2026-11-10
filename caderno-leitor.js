@@ -25,6 +25,7 @@ window.LeitorCaderno = function (P) {
       var holder = el('div'); holder.style.cssText = 'position:absolute;background:transparent';
       function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;' + (css || ''); holder.appendChild(c); return c; }
       var cvPdf = lona(), cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona();
+      var camadaLinks = el('div'); camadaLinks.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none'; holder.appendChild(camadaLinks);
       janela.appendChild(holder); host.appendChild(janela); janela.style.display = 'none';
       var P_ = { num: null, pag: null, pw: 1, ph: 1, cssW: 1, cssH: 1, tracos: [], pendente: false, espera: null, idRender: 0, tarefa: null, idCarga: 0, apagou: null, host: host };
 
@@ -33,6 +34,25 @@ window.LeitorCaderno = function (P) {
         var fit = Math.min(aw / (P_.pw * rw), ah / (P_.ph * rh)); P_.cssW = P_.pw * fit * zoom; P_.cssH = P_.ph * fit * zoom;
         janela.style.width = (P_.cssW * rw) + 'px'; janela.style.height = (P_.cssH * rh) + 'px';
         holder.style.left = (-rec.x0 * P_.cssW) + 'px'; holder.style.top = (-rec.y0 * P_.cssH) + 'px'; holder.style.width = P_.cssW + 'px'; holder.style.height = P_.cssH + 'px';
+      }
+      /* índice e outros links do PDF: tocar no número leva à página (links internos do próprio PDF) */
+      function carregarLinks(pag, eu) {
+        camadaLinks.textContent = '';
+        pag.getAnnotations().then(function (an) {
+          if (eu !== P_.idCarga) return; var vp = pag.getViewport({ scale: 1 });
+          an.forEach(function (a) {
+            if (a.subtype !== 'Link' || !a.rect || !(a.dest || a.action === 'GoTo')) return;
+            Promise.resolve(typeof a.dest === 'string' ? pdf.getDestination(a.dest) : a.dest).then(function (d) {
+              if (!d || !d[0]) return; return typeof d[0] === 'object' ? pdf.getPageIndex(d[0]).then(function (i) { return i + 1; }) : d[0] + 1;
+            }).then(function (n) {
+              if (!n || eu !== P_.idCarga) return;
+              var r = vp.convertToViewportRectangle(a.rect), x0 = Math.min(r[0], r[2]), x1 = Math.max(r[0], r[2]), y0 = Math.min(r[1], r[3]), y1 = Math.max(r[1], r[3]);
+              var b = el('div', { title: 'Ir para a página ' + n }); b.style.cssText = 'position:absolute;pointer-events:auto;cursor:pointer;left:' + (x0 / vp.width * 100) + '%;top:' + (y0 / vp.height * 100) + '%;width:' + ((x1 - x0) / vp.width * 100) + '%;height:' + ((y1 - y0) / vp.height * 100) + '%';
+              b.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); if (ferr === 'mao') irPagina(n); });
+              camadaLinks.appendChild(b);
+            }, function () { /* link que não resolve */ });
+          });
+        }, function () { /* sem links */ });
       }
       function pintarTracos() { [cvMarca, cvTinta].forEach(function (c) { c.getContext('2d').clearRect(0, 0, c.width, c.height); }); P_.tracos.forEach(desenhar); }
       function ctxDe(t) { return t.t === 'm' ? cvMarca : cvTinta; }
@@ -73,7 +93,7 @@ window.LeitorCaderno = function (P) {
         var eu = ++P_.idCarga; P_.num = num; P_.tracos = []; P_.pendente = false;
         if (!num) { P_.pag = null; janela.style.display = 'none'; return Promise.resolve(); }
         return pdf.getPage(num).then(function (p) {
-          if (eu !== P_.idCarga) return; var vp = p.getViewport({ scale: 1 }); P_.pw = vp.width; P_.ph = vp.height; P_.pag = p; janela.style.display = ''; renderizar();
+          if (eu !== P_.idCarga) return; var vp = p.getViewport({ scale: 1 }); P_.pw = vp.width; P_.ph = vp.height; P_.pag = p; janela.style.display = ''; renderizar(); carregarLinks(p, eu);
           return Promise.resolve(o.carregarTracos(num)).then(function (t) { if (eu !== P_.idCarga || !t) return; P_.tracos = t; pintarTracos(); }).catch(function () { /* sem marcações */ });
         });
       }
@@ -160,6 +180,7 @@ window.LeitorCaderno = function (P) {
       o.esq.style.visibility = e ? '' : 'visible';
       return Promise.all([pvE.mostrar(e), pvD.mostrar(d)]).then(function () { o.aoMudar && o.aoMudar(e, d); });
     }
+    function irPagina(p) { p = Math.max(1, Math.min(total, p)); virarPara(p <= 1 ? 0 : Math.floor(p / 2), 0); }
     function virarPara(novo, sentido) {
       if (!pdf) return; novo = Math.max(0, Math.min(sMax(), novo)); if (novo === s && pvD.pag) return;
       Promise.all([pvE.gravar(), pvD.gravar()]).then(function () {
