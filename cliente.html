@@ -71,7 +71,7 @@
         window.addEventListener('message', function (ev) {
           if (ev.source !== quadro.contentWindow || !ev.data || ev.data.tipo !== 'astrohellenic-altura') return;
           var h = Number(ev.data.altura);
-          if (h > 100 && h < 8000) quadro.style.height = h + 'px';
+          if (h > 100) quadro.style.height = h + 'px'; /* sem teto: com muitos fatos a página passa de 8000 e o quadro ficava travado, pequeno e sem rolagem */
         });
         caixa.textContent = '';
         caixa.appendChild(quadro);
