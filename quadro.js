@@ -73,14 +73,14 @@
     barraTopo.appendChild(btn('Desfazer', desfazer));
     tela.appendChild(barraTopo);
 
-    var area = el('div'); area.style.cssText = 'flex:1;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0;background:#d9c78f';
-    var folha = el('div'); folha.style.cssText = 'position:absolute;background:var(--papiro-fundo,#e6d3a0);overflow:hidden';
+    var area = el('div'); area.style.cssText = 'flex:1;position:relative;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;min-height:0;background:var(--papiro-fundo,#e6d3a0)';
+    var folha = el('div'); folha.style.cssText = 'position:absolute;overflow:visible'; /* a folha é só a medida (3 por 2, no meio): a tela INTEIRA é papiro e pode ser usada; o que passa da medida continua valendo, só que em tela mais estreita fica para fora */
     var camada = el('div'); camada.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%';
     function lona(css) { var c = el('canvas'); c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' + (css || ''); return c; }
     var cvMarca = lona('opacity:.55;mix-blend-mode:multiply'), cvTinta = lona(), cvLaser = lona();
-    [camada, cvMarca, cvTinta, cvLaser].forEach(function (x) { folha.appendChild(x); });
+    folha.appendChild(camada);
     var status = el('div', { text: 'Abrindo...' }); status.style.cssText = 'position:absolute;left:0;right:0;top:8px;text-align:center;color:var(--preto-tinta,#16233F);font-size:15px;padding:0 20px;pointer-events:none;z-index:3';
-    area.appendChild(folha); area.appendChild(status); tela.appendChild(area);
+    [folha, cvMarca, cvTinta, cvLaser, status].forEach(function (x) { area.appendChild(x); }); tela.appendChild(area); /* as lonas cobrem a tela toda, não só a medida */
 
     var barraBaixo = barra(false), contexto = el('span'); contexto.style.cssText = 'display:inline-flex;align-items:center;gap:0 4px;flex:none';
     var folga = el('span'); folga.style.cssText = 'flex:1 1 auto;min-width:12px';
@@ -113,26 +113,30 @@
     /* ---------- medidas ---------- */
     var dpr = Math.max(1, window.devicePixelRatio || 1), W = 1, H = 1;
     /* zoom: dois dedos (pinça) aumentam e arrastam a folha; com zoom, um dedo arrasta (a caneta continua riscando). No teclado/trackpad: pinça do trackpad ou os botões − e +. */
-    var zoom = 1, esq = 0, cima = 0, esperaLonas = null;
-    function posicionar() { /* só o tamanho e o lugar da folha (barato: roda a cada movimento da pinça) */
-      var aw = area.clientWidth, ah = area.clientHeight;
-      W = Math.min(aw, ah * PROPORCAO) * zoom; H = W / PROPORCAO;
-      esq = W <= aw ? (aw - W) / 2 : Math.min(0, Math.max(aw - W, esq));
-      cima = H <= ah ? (ah - H) / 2 : Math.min(0, Math.max(ah - H, cima));
+    var zoom = 1, esq = 0, cima = 0;
+    var AW = 1, AH = 1, K = 1, pintaMarcada = false;
+    function posicionar() { /* tamanho e lugar da medida; com zoom, dá para arrastar até a beira do que a tela mostra sem zoom */
+      AW = area.clientWidth; AH = area.clientHeight;
+      var w0 = Math.min(AW, AH * PROPORCAO), mx = (AW - w0) / 2 * zoom, my = (AH - w0 / PROPORCAO) / 2 * zoom;
+      W = w0 * zoom; H = W / PROPORCAO;
+      esq = Math.min(mx, Math.max(AW - W - mx, esq)); cima = Math.min(my, Math.max(AH - H - my, cima));
       folha.style.left = esq + 'px'; folha.style.top = cima + 'px'; folha.style.width = W + 'px'; folha.style.height = H + 'px';
       dados.itens.forEach(posicionarItem);
+      if (!pintaMarcada) { pintaMarcada = true; requestAnimationFrame(function () { pintaMarcada = false; repintar(); }); }
     }
-    function pintarLonas() { /* refaz os riscos no tamanho novo (nítidos com zoom) */
-      var r = Math.min(dpr, Math.sqrt(8e6 / Math.max(1, W * H)));
-      [cvMarca, cvTinta, cvLaser].forEach(function (c) { c.width = Math.max(1, Math.round(W * r)); c.height = Math.max(1, Math.round(H * r)); });
-      repintar(); if (atual && atual.p && !atual.laser && !atual.borracha) desenhar(atual);
+    function pintarLonas() { /* as lonas têm o tamanho da tela (os riscos são redesenhados no lugar e no tamanho do zoom, sempre nítidos) */
+      K = dpr;
+      [cvMarca, cvTinta, cvLaser].forEach(function (c) { c.width = Math.max(1, Math.round(AW * K)); c.height = Math.max(1, Math.round(AH * K)); });
+      repintar();
     }
+    function PX(x) { return (esq + x * W) * K; }
+    function PY(y) { return (cima + y * H) * K; }
     function medir() { posicionar(); pintarLonas(); }
     function zoomPor(k, cx, cy) {
-      var aw = area.clientWidth, ah = area.clientHeight; cx = cx == null ? aw / 2 : cx; cy = cy == null ? ah / 2 : cy;
-      var u = (cx - esq) / W, v = (cy - cima) / H, novo = Math.max(1, Math.min(5, zoom * k));
-      zoom = novo; W = Math.min(aw, ah * PROPORCAO) * zoom; H = W / PROPORCAO; esq = cx - u * W; cima = cy - v * H;
-      posicionar(); clearTimeout(esperaLonas); esperaLonas = setTimeout(pintarLonas, 160);
+      cx = cx == null ? AW / 2 : cx; cy = cy == null ? AH / 2 : cy;
+      var u = (cx - esq) / W, v = (cy - cima) / H;
+      zoom = Math.max(1, Math.min(5, zoom * k)); W = Math.min(AW, AH * PROPORCAO) * zoom; H = W / PROPORCAO; esq = cx - u * W; cima = cy - v * H;
+      posicionar();
     }
     function arrastarFolha(dx, dy) { esq += dx; cima += dy; posicionar(); }
     var aoRedimensionar = function () { medir(); };
@@ -141,21 +145,22 @@
     /* ---------- riscos ---------- */
     function lonaDe(s) { return s.t === 'm' ? cvMarca : cvTinta; }
     function desenhar(s) {
-      var cv = lonaDe(s), g = cv.getContext('2d'), p = s.p;
-      g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = s.c; g.fillStyle = s.c; g.lineWidth = s.w * cv.width;
+      var g = lonaDe(s).getContext('2d'), p = s.p;
+      g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = s.c; g.fillStyle = s.c; g.lineWidth = s.w * W * K;
       g.beginPath();
-      if (p.length === 1) { g.arc(p[0][0] * cv.width, p[0][1] * cv.height, g.lineWidth / 2, 0, 7); g.fill(); }
-      else { g.moveTo(p[0][0] * cv.width, p[0][1] * cv.height); for (var i = 1; i < p.length; i++) g.lineTo(p[i][0] * cv.width, p[i][1] * cv.height); g.stroke(); }
+      if (p.length === 1) { g.arc(PX(p[0][0]), PY(p[0][1]), g.lineWidth / 2, 0, 7); g.fill(); }
+      else { g.moveTo(PX(p[0][0]), PY(p[0][1])); for (var i = 1; i < p.length; i++) g.lineTo(PX(p[i][0]), PY(p[i][1])); g.stroke(); }
       g.restore();
     }
     function trecho(s, a, b) {
-      var cv = lonaDe(s), g = cv.getContext('2d');
-      g.save(); g.lineCap = 'round'; g.strokeStyle = s.c; g.lineWidth = s.w * cv.width;
-      g.beginPath(); g.moveTo(a[0] * cv.width, a[1] * cv.height); g.lineTo(b[0] * cv.width, b[1] * cv.height); g.stroke(); g.restore();
+      var g = lonaDe(s).getContext('2d');
+      g.save(); g.lineCap = 'round'; g.strokeStyle = s.c; g.lineWidth = s.w * W * K;
+      g.beginPath(); g.moveTo(PX(a[0]), PY(a[1])); g.lineTo(PX(b[0]), PY(b[1])); g.stroke(); g.restore();
     }
     function repintar() {
       [cvMarca, cvTinta].forEach(function (c) { c.getContext('2d').clearRect(0, 0, c.width, c.height); });
       dados.tracos.forEach(desenhar);
+      if (atual && atual.p && !atual.laser) desenhar(atual);
     }
     function desfazer() {
       var op = pilha.pop(); if (!op) return;
@@ -174,12 +179,12 @@
         var idade = r.fim ? agora - r.fim : 0;
         g.globalAlpha = idade <= DURA ? 1 : Math.max(0, 1 - (idade - DURA) / SOME);
         [[5, '#E2231A', 10], [1.6, '#FFB3A6', 0]].forEach(function (q) {
-          var kl = cvLaser.width / Math.max(1, W);
+          var kl = K;
           g.lineWidth = q[0] * kl; g.strokeStyle = q[1]; g.fillStyle = q[1]; g.shadowColor = '#E2231A'; g.shadowBlur = q[2] * kl;
           g.beginPath();
-          if (r.p.length === 1) { g.arc(r.p[0][0] * cvLaser.width, r.p[0][1] * cvLaser.height, g.lineWidth / 2, 0, 7); g.fill(); return; }
-          g.moveTo(r.p[0][0] * cvLaser.width, r.p[0][1] * cvLaser.height);
-          for (var i = 1; i < r.p.length; i++) g.lineTo(r.p[i][0] * cvLaser.width, r.p[i][1] * cvLaser.height);
+          if (r.p.length === 1) { g.arc(PX(r.p[0][0]), PY(r.p[0][1]), g.lineWidth / 2, 0, 7); g.fill(); return; }
+          g.moveTo(PX(r.p[0][0]), PY(r.p[0][1]));
+          for (var i = 1; i < r.p.length; i++) g.lineTo(PX(r.p[i][0]), PY(r.p[i][1]));
           g.stroke();
         });
       });
