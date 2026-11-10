@@ -219,6 +219,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="portal.js?v=169"></script>
   <script src="hora-planetaria.js?v=1"></script>
+  <script src="todo-dados.js?v=1"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app'), cad = document.getElementById('cad'), HP = window.horaPlanetaria;
@@ -232,9 +233,9 @@
     /* cores de capa: as do site (temas.css) */
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
-    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do', 'admin-agenda.html#v=todo'], ['horas', 'Horas', 'admin-agenda.html#v=horas'],
+    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas', 'admin-agenda.html#v=horas'],
       ['projetos', 'Projetos', 'admin-projetos.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'] };
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'] };
     var visao = 'dia', cacheAno = {};
     var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -274,7 +275,7 @@
     function normalizar(e, cal) {
       if (e.status === 'cancelled') return null;
       var diaTodo = !!(e.start && e.start.date);
-      return { titulo: e.summary || '(sem título)', ini: diaTodo ? doIso(e.start.date) : Date.parse(e.start.dateTime), fim: diaTodo ? doIso(e.end.date) : Date.parse(e.end.dateTime), diaTodo: diaTodo, link: e.htmlLink, cor: cal.backgroundColor || '#B5852F' };
+      return { id: e.id, calId: cal.id, calNome: cal.summary, livre: e.transparency === 'transparent', titulo: e.summary || '(sem título)', ini: diaTodo ? doIso(e.start.date) : Date.parse(e.start.dateTime), fim: diaTodo ? doIso(e.end.date) : Date.parse(e.end.dateTime), diaTodo: diaTodo, link: e.htmlLink, cor: cal.backgroundColor || '#B5852F' };
     }
     function eventosDe(c, de, ate, tentativa) {
       return gapi('/calendars/' + encodeURIComponent(c.id) + '/events?' + new URLSearchParams({ timeMin: new Date(de).toISOString(), timeMax: new Date(ate).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '2500', timeZone: 'America/Sao_Paulo' }))
@@ -414,7 +415,7 @@
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () {
           var t = campo.value.trim(); if (!t) return; ok.disabled = true;
-          C.from('todo_tarefas').insert({ titulo: t, data: ancora }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); desenharTarefas(pedido); });
+          C.from('todo_tarefas').insert({ titulo: t, data: ancora }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); if (visao === 'todo') recarregarTodo(); else desenharTarefas(pedido); });
         });
         nao.addEventListener('click', fechar);
         caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
@@ -436,9 +437,9 @@
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
       document.getElementById('troca').style.display = embutida ? 'none' : '';
       pedido++;
-      if (embutida) { var f = document.getElementById('embed'), partes = x[2].split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); if (f.getAttribute('data-url') !== x[2]) { f.setAttribute('data-url', x[2]); f.src = url; } return; }
+      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + '?caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -458,9 +459,9 @@
     }
     function cabVista(esq, titulo, ant, prox) {
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var a = el('button', { type: 'button', class: 'seta', 'aria-label': 'Anterior', text: '‹' }), b = el('button', { type: 'button', class: 'seta', 'aria-label': 'Próximo', text: '›' });
-      a.addEventListener('click', ant); b.addEventListener('click', prox);
-      esq.appendChild(el('div', { class: 'cab-vista' }, [a, el('span', { class: 't botao-fixo', text: titulo }), b]));
+      var partes = [el('span', { class: 't botao-fixo', text: titulo })];
+      if (ant) { var a = el('button', { type: 'button', class: 'seta', 'aria-label': 'Anterior', text: '‹' }), b = el('button', { type: 'button', class: 'seta', 'aria-label': 'Próximo', text: '›' }); a.addEventListener('click', ant); b.addEventListener('click', prox); partes = [a, partes[0], b]; }
+      esq.appendChild(el('div', { class: 'cab-vista' }, partes));
     }
     function preparaOut() { var e = document.getElementById('outEsq'), d = document.getElementById('outDir'); e.textContent = ''; d.textContent = ''; return [e, d]; }
     function carregando(onde) { onde.appendChild(el('p', { class: 'vazio', text: 'Carregando...' })); }
@@ -545,6 +546,77 @@
         });
       }, esq);
     }
+
+    /* ---------- To do: tudo o que precisa ser feito, em duas páginas (as fontes são as do To do da Agenda: todo-dados.js) ---------- */
+    var TD = null, urlForcada = null, todoDados = null;
+    function tdPronto() { if (!TD) TD = window.TodoDados({ P: P, C: C, el: el, HP: HP, FdaTema: window.FdaTema, lat: LAT, lon: LON }); TD.setLugar(LAT, LON); return TD; }
+    function abrirTela(url) { /* a tela de antes que cabe no caderno abre dentro dele; as outras (alunos, clientes, curso) abrem como sempre */
+      var m = /admin-(projetos|estudos|producao)\.html/.exec(url || '');
+      if (!m) { if (url) location.href = url; return; }
+      urlForcada = url; irPara(m[1]);
+    }
+    function rotuloDiaTodo(iso) {
+      var hoje = isoDia(Date.now()), amanha = somaDias(hoje, 1);
+      return iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEMANA[diaSem(iso)] + ', ' + (+iso.slice(8)) + ' de ' + MES3[+iso.slice(5, 7) - 1];
+    }
+    function marcarFeito(x, cx, dados, redesenhar) {
+      cx.textContent = '✓'; cx.disabled = true;
+      var falhou = function () { cx.textContent = ''; cx.disabled = false; alert('Não foi possível salvar.'); };
+      if (x.passoId) { C.from('projeto_passos').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.passoId).then(function (g) { if (g.error) return falhou(); dados.fora = dados.fora.filter(function (i) { return i !== x; }); redesenhar(); }, falhou); return; }
+      if (x.tarefa) { C.from('todo_tarefas').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.tarefa.id).then(function (g) { if (g.error) return falhou(); dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); redesenhar(); }, falhou); return; }
+      valorSite('todo_feitos').then(function (atual) {
+        atual = atual || {}; atual[x.chave] = Date.now();
+        Object.keys(atual).forEach(function (k) { if (Date.now() - atual[k] > 90 * DIA) delete atual[k]; });
+        return gravarSite('todo_feitos', atual);
+      }).then(function (g) { if (g && g.error) throw g.error; dados.feitos[x.chave] = 1; redesenhar(); }, falhou);
+    }
+    function vistaTodo() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
+      cabVista(esq, 'to do');
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      var agora = Date.now(), base = doIso(isoDia(agora)), de = base - 14 * DIA, ate = base + 61 * DIA;
+      function desenharItens() {
+        if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
+        var dados = todoDados, hoje = isoDia(Date.now());
+        if (dados.falhas.length) rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui ler: ' + dados.falhas.join(', ') + '.' }));
+        var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
+        dados.tarefas.forEach(function (t) { itens.push({ tarefa: t, quando: t.data ? doIso(String(t.data).slice(0, 10), t.hora ? String(t.hora).slice(0, 5) : '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data }); });
+        itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; });
+        if (!itens.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada para fazer.' })); return; }
+        var grupos = [], atual = null;
+        itens.forEach(function (x) {
+          var iso = x.semData || !isFinite(x.quando) ? '' : isoDia(x.quando), nome = !iso ? 'Sem data' : iso < hoje ? 'Atrasados' : iso;
+          if (!atual || atual.nome !== nome) { atual = { nome: nome, itens: [] }; grupos.push(atual); }
+          atual.itens.push({ x: x, iso: iso });
+        });
+        var total = grupos.reduce(function (s, g) { return s + 1 + g.itens.length; }, 0), soma = 0;
+        grupos.forEach(function (g) {
+          var bl = el('div', { class: 'dia-lista' }, [el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: g.nome === 'Atrasados' || g.nome === 'Sem data' ? g.nome : rotuloDiaTodo(g.nome) })]);
+          g.itens.forEach(function (it) {
+            var x = it.x, caixa = (x.chave || x.tarefa || x.passoId) ? el('button', { type: 'button', class: 'cx', 'aria-label': 'Marcar como feito' }) : el('span', { class: 'cx', style: 'border-color:transparent' });
+            if (caixa.tagName === 'BUTTON') caixa.addEventListener('click', function () { marcarFeito(x, caixa, dados, desenharItens); });
+            var quando = x.semData || !isFinite(x.quando) ? '' : (g.nome === 'Atrasados' ? (+it.iso.slice(8)) + ' de ' + MES3[+it.iso.slice(5, 7) - 1] + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando));
+            var meio = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro);margin:0 0 1px', text: quando }) : null, el('div', { class: 'nome', text: x.titulo }), x.sub ? el('div', { class: 'det', style: x.subOcre ? 'color:var(--ocre);font-weight:700' : 'opacity:.75;color:inherit', text: x.sub }) : null].filter(Boolean).concat(x.bsp ? tdPronto().barrasDe(x.bsp[1], x.bsp[0] === 'v' ? tdPronto().ETV : tdPronto().ETC, x.bsp[2], x.bsp[3]) : []));
+            meio.addEventListener('click', function () { if (x.url) { abrirTela(x.url); return; } if (x.evento && x.evento.link) window.open(x.evento.link, '_blank', 'noopener'); });
+            var linha = el('div', { class: 'tarefa' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor }), caixa, meio]);
+            if (x.tarefa) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (r) { if (r.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenharItens(); }); }); linha.appendChild(ap); }
+            if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? '#1F5FA3' : '#B5852F') : '#A03E25'), text: icone(pl) })); }
+            bl.appendChild(linha);
+          });
+          (soma < total / 2 ? rolaE : rolaD).appendChild(bl); soma += 1 + g.itens.length;
+        });
+      }
+      function horaDoInstante(ms) { var d0 = doIso(isoDia(ms)), hs = HP.horasEntre(d0, d0 + DIA, LAT, LON); for (var k = 0; k < hs.length; k++) if (ms >= hs[k].ini && ms < hs[k].fim) return hs[k]; return null; }
+      recarregarTodo = function () { vistaTodo(); };
+      preparar().then(function () {
+        var td = tdPronto();
+        return Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), td.itensDaProducao(), Promise.all([td.itensDeProjetosEEstudos(), td.itensDeAulasEstudo(), td.itensDoCurso()]).then(function (x) { return x[0].concat(x[1], x[2]); }), td.itensDePassos(),
+          C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), td.codigosDosAtendimentos(), td.carregarAniversarios()]);
+      }).then(function (r) {
+        if (eu !== pedido) return; todoDados = tdPronto().montarItens(r.slice(0, 7), de, ate, agora); desenharItens();
+      }, function (er) { if (eu !== pedido) return; rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível carregar (' + (er.message || 'erro') + ').' })); });
+    }
+    var recarregarTodo = function () {};
 
     /* ---------- começo ---------- */
     function mostrar() {
