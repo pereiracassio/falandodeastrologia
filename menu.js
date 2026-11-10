@@ -22,9 +22,9 @@
   /* nas telas do painel o menu é sempre o do painel (o sinal fda_admin só nasce depois do login, e o app novo abre sem ele) */
   if (/\/(admin-[a-z]+|capa)\.html$/.test(location.pathname)) {
     links = [
-      { label: "Agenda", href: "admin-agenda.html" },
-      { label: "Horas", href: "admin-agenda.html#v=horas" },
-      { label: "To do", href: "admin-agenda.html#v=todo" },
+      { label: "Agenda", href: "admin-caderno.html" },
+      { label: "Horas", href: "admin-caderno.html#v=horas" },
+      { label: "To do", href: "admin-caderno.html#v=todo" },
       { label: "Aplicações", href: "admin-aplicacoes.html" },
       { label: "Alunos", href: "admin-alunos.html" },
       { label: "Mensagens", href: "admin-mensagens.html" },

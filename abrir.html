@@ -8,7 +8,8 @@
     if (!app) return;
     var u = localStorage.getItem('fda_ultima_pagina');
     var daily = /^\/admin-(agenda|estudos|producao|projetos|financeiro|leitor)\.html/;   /* telas do Hellenic Daily guardadas antes da separação não valem aqui */
-    var destino = u && /^\/[a-z-]+\.html/.test(u) && !daily.test(u) ? u : (localStorage.getItem('fda_admin') === '1' ? '/admin-alunos.html' : '/aluno.html');
+    var adm = localStorage.getItem('fda_admin') === '1';
+    var destino = u && /^\/[a-z-]+\.html/.test(u) && !daily.test(u) ? u : (adm ? '/admin-caderno.html' : '/aluno.html');
     location.replace(destino);
   } catch (e) { location.replace('/aluno.html'); } })();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
