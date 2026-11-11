@@ -2,7 +2,24 @@
 <html lang="pt-BR">
 <head>
   <script>if(window.top!==window.self&&/[?&]caderno=1/.test(location.search))document.documentElement.className+=' fda-caderno'</script>
-  <style>@media (min-width:900px){html.fda-caderno #app{column-count:2;column-gap:88px;column-fill:balance}html.fda-caderno #app>div:not([class]){display:contents}html.fda-caderno #app>*,html.fda-caderno #app>div:not([class])>*{break-inside:avoid;margin-top:0}}</style>
+  <style>
+    /* Configurações do Hellenic Daily: lista de abas à esquerda, a tela da aba à direita (como no Astro Hellenic). No caderno, a lista é a página da esquerda e a tela a da direita. */
+    .cfg-layout{display:grid;grid-template-columns:200px minmax(0,1fr);gap:36px;align-items:start}
+    .cfg-nav{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .cfg-aba{display:block;width:100%;text-align:left;background:none;border:0;border-left:3px solid transparent;padding:9px 0 9px 12px;margin:0;font-size:15px;cursor:pointer;color:var(--azul-egipcio,#1034A6);border-radius:0}
+    .cfg-aba.ativa{color:var(--ocre,#B5852F);border-left-color:var(--ocre,#B5852F)}
+    .cfg-tela{min-width:0}
+    .pagina-papiro .cfg-tela>.portal-cartao.cfg-primeiro{border-top:0!important;padding-top:0!important}
+    .cfg-tela>[hidden]{display:none!important}
+    @media (min-width:900px){html.fda-caderno .cfg-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:88px}}
+    @media (max-width:899px){
+      .cfg-layout{grid-template-columns:minmax(0,1fr);gap:16px}
+      .cfg-nav{flex-direction:row;gap:22px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+      .cfg-nav::-webkit-scrollbar{display:none}
+      .cfg-aba{width:auto;flex:0 0 auto;white-space:nowrap;padding:6px 0;border-left:0;border-bottom:3px solid transparent}
+      .cfg-aba.ativa{border-bottom-color:var(--ocre,#B5852F)}
+    }
+  </style>
   <meta charset="UTF-8">
   <script>try{if(localStorage.getItem('fda_admin'))document.documentElement.className+=' fda-admin-tela'}catch(e){}</script>
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
@@ -541,18 +558,47 @@
         pagina.appendChild(P.avisos.cartao('admin')); /* avisos no celular quando um aluno enviar uma atividade */
         pagina.appendChild(cartaoImportarClientes());
       } else {
-        /* Hellenic Daily: conexão Google (Drive e Agenda), lugar das horas, texto fixo da Produção, agendas que aparecem, avisos, e as Áreas e Serviços do Financeiro */
-        pagina.appendChild(cartaoPersonalizacao());
-        var conexaoDrive = P.cartaoConexaoDrive();
-        if (conexaoDrive) pagina.appendChild(conexaoDrive);
-        pagina.appendChild(cartaoLugar());
-        pagina.appendChild(cartaoTextoFixo());
-        pagina.appendChild(cartaoAgendas());
-        pagina.appendChild(P.avisos.cartao('admin'));
-        pagina.appendChild(cartaoAreas); pagina.appendChild(cartaoServicos);
+        /* Hellenic Daily: abas à esquerda, a tela da aba aberta à direita. Aba nova = uma entrada em ABAS; configuração nova = um cartão dentro de uma aba. */
+        var conexaoDrive = P.cartaoConexaoDrive(), areaSenha = el('div', { style: 'width:100%' });
+        var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trocar senha' });
+        trocar.addEventListener('click', function () {
+          if (areaSenha.firstChild) { areaSenha.textContent = ''; return; }
+          P.montarNovaSenha(areaSenha, function () { areaSenha.textContent = ''; areaSenha.appendChild(el('p', { class: 'portal-msg ok', text: 'Senha trocada.' })); }, 'Trocar senha');
+        });
+        var saindo = el('button', { type: 'button', class: 'portal-btn', text: 'Sair' });
+        saindo.addEventListener('click', sair);
+        var ABAS = [
+          ['personalizacao', 'Personalização', [cartaoPersonalizacao()]],
+          ['agenda', 'Agenda', [cartaoAgendas(), cartaoLugar()]],
+          ['producao', 'Produção', [cartaoTextoFixo()]],
+          ['financeiro', 'Financeiro', [cartaoAreas, cartaoServicos]],
+          ['conta', 'Conta', [conexaoDrive, P.avisos.cartao('admin'), el('div', { class: 'portal-cartao', style: 'display:flex;flex-direction:column;align-items:center;gap:14px' }, [trocar, areaSenha, saindo])]]
+        ];
+        var nav = el('div', { class: 'cfg-nav' }), telaAba = el('div', { class: 'cfg-tela' }), aberta = '';
+        try { aberta = (location.hash.match(/aba=([a-z]+)/) || [])[1] || sessionStorage.getItem('fda_cfg_aba') || ''; } catch (e) { /* abre na primeira */ }
+        if (!ABAS.some(function (x) { return x[0] === aberta; })) aberta = ABAS[0][0];
+        function abrirAba(id) {
+          aberta = id;
+          try { sessionStorage.setItem('fda_cfg_aba', id); history.replaceState(null, '', location.pathname + location.search + '#aba=' + id); } catch (e) { /* só não lembra */ }
+          ABAS.forEach(function (x) {
+            x[3].classList.toggle('ativa', x[0] === id); x[3].setAttribute('aria-pressed', x[0] === id ? 'true' : 'false');
+            var primeiro = true;
+            if (x[0] === id) requestAnimationFrame(function () { if (nav.scrollWidth > nav.clientWidth) nav.scrollLeft += x[3].getBoundingClientRect().left - nav.getBoundingClientRect().left - 20; }); /* no celular a aba aberta fica à vista na fileira */
+            x[2].forEach(function (c) { if (!c) return; c.hidden = x[0] !== id; c.classList.toggle('cfg-primeiro', x[0] === id && primeiro); if (x[0] === id) primeiro = false; });
+          });
+        }
+        ABAS.forEach(function (x) {
+          x[3] = el('button', { type: 'button', class: 'cfg-aba botao-fixo', text: x[1] });
+          x[3].addEventListener('click', function () { abrirAba(x[0]); x[3].blur(); });
+          nav.appendChild(x[3]);
+          x[2].forEach(function (c) { if (c) telaAba.appendChild(c); });
+        });
+        pagina.className = 'cfg-layout'; pagina.appendChild(nav); pagina.appendChild(telaAba);
+        abrirAba(aberta);
       }
       app.appendChild(pagina);
       carregarFin();
+      if (daily) return;
       /* no fim da lista: Trocar senha e, abaixo, o Sair (botão cheio, terracota) */
       var areaSenha = el('div', { style: 'width:100%' });
       var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Trocar senha' });
