@@ -11,7 +11,20 @@
   var BASE = 'https://astrohellenic.com/', CHAVE = 'daily_hellenic_mapa';
   var NOMES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno', 'Fortuna', 'Espírito', 'Necessidade', 'Eros', 'Coragem', 'Vitória', 'Nêmesis', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'];
   var PLANETA = { Sun: 'Sol', Moon: 'Lua', Mercury: 'Mercúrio', Venus: 'Vênus', Mars: 'Marte', Jupiter: 'Júpiter', Saturn: 'Saturno' };
-  var ASPECTO = { conj: 'conjunção', sex: 'sextil', squ: 'quadratura', tri: 'trígono', opp: 'oposição' };
+  /* ícones dos aspectos: os mesmos desenhos da Circumambulação do Astro Hellenic (direcoes.js, getAspectSymbolSVGDir), nas cores dos aspectos do papiro */
+  var ASPECTO_SVG = {
+    conj: '<circle cx="8" cy="12" r="5" fill="none" stroke="#1A1410" stroke-width="2.2"/><line x1="12" y1="8" x2="18" y2="2" stroke="#1A1410" stroke-width="2.2" stroke-linecap="round"/>',
+    sex: '<path d="M10 2v16M3 6l14 8M3 14L17 6" stroke="#1F5FA3" stroke-width="2.5" stroke-linecap="round"/>',
+    squ: '<rect x="3" y="3" width="14" height="14" fill="none" stroke="#A03E25" stroke-width="2.5"/>',
+    tri: '<polygon points="10,2 19,17 1,17" fill="none" stroke="#1034A6" stroke-width="2.5"/>',
+    opp: '<circle cx="5" cy="10" r="4" fill="none" stroke="#D0610F" stroke-width="2.2"/><line x1="9" y1="10" x2="15" y2="10" stroke="#D0610F" stroke-width="2.2"/><circle cx="19" cy="10" r="4" fill="none" stroke="#D0610F" stroke-width="2.2"/>'
+  };
+  var ASPECTO = { conj: 'conjunção', sex: 'sextil', squ: 'quadratura', tri: 'trígono', opp: 'oposição' }; /* só como dica ao tocar */
+  function aspectoIcone(t) {
+    var e = el('span', { class: 'oe-as', title: ASPECTO[t] || '' });
+    e.innerHTML = '<svg width="' + (t === 'opp' ? 28 : 22) + '" height="22" viewBox="' + (t === 'opp' ? '0 0 24 20' : '0 0 20 20') + '" style="vertical-align:-3px">' + (ASPECTO_SVG[t] || '') + '</svg>';
+    return e;
+  }
   var escolhido; /* undefined = ainda não leu; null = sem mapa escolhido */
 
   function icone(nome) { var i = NOMES.indexOf(nome); return i < 0 ? '' : String.fromCharCode(0xE000 + i); }
@@ -74,7 +87,7 @@
     alvo.textContent = '';
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var circ = r.circumambulacao, ls = [];
-    if (circ.aspecto) ls.push(linha('Aspecto', [ASPECTO[circ.aspecto.tipo] + ' ', glifo(PLANETA[circ.aspecto.planetId])]));
+    if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', glifo(PLANETA[circ.aspecto.planetId])]));
     if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', glifo(PLANETA[circ.termo.planetId])]));
     alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
