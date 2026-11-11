@@ -84,7 +84,7 @@ window.TodoDados = function (ctx) {
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
           var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
-          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · Júpiter', subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data] });
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · Júpiter', subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data], capa: v.capa_url || '' });
         });
         return saida;
       }, function () { return []; });
