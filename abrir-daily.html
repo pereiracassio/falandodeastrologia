@@ -7,9 +7,9 @@
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app) return;
     var u = localStorage.getItem('fda_ultima_pagina_daily');
-    var destino = u && /^\/admin-(agenda|estudos|producao|projetos|financeiro|leitor|site|avisos)\.html/.test(u) ? u : '/admin-agenda.html';
+    var destino = u && /^\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor|site|avisos)\.html/.test(u) ? u : '/admin-caderno.html';
     location.replace(destino);
-  } catch (e) { location.replace('/admin-agenda.html'); } })();</script>
+  } catch (e) { location.replace('/admin-caderno.html'); } })();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#e6d3a0">
   <meta name="robots" content="noindex">

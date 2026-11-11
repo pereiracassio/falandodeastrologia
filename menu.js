@@ -21,10 +21,11 @@
   /* só dentro das telas do painel; no site em si fica o menu do site */
   /* nas telas do painel o menu é sempre o do painel (o sinal fda_admin só nasce depois do login, e o app novo abre sem ele) */
   if (/\/(admin-[a-z]+|capa)\.html$/.test(location.pathname)) {
+    var BASE_AGENDA = "admin-caderno.html"; try { if (localStorage.getItem("fda_daily_visual") === "padrao") BASE_AGENDA = "admin-agenda.html"; } catch (e) { /* sem armazenamento */ }
     links = [
-      { label: "Agenda", href: "admin-caderno.html" },
-      { label: "Horas", href: "admin-caderno.html#v=horas" },
-      { label: "To do", href: "admin-caderno.html#v=todo" },
+      { label: "Agenda", href: BASE_AGENDA },
+      { label: "Horas", href: BASE_AGENDA + "#v=horas" },
+      { label: "To do", href: BASE_AGENDA + "#v=todo" },
       { label: "Aplicações", href: "admin-aplicacoes.html" },
       { label: "Alunos", href: "admin-alunos.html" },
       { label: "Mensagens", href: "admin-mensagens.html" },

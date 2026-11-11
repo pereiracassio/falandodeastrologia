@@ -8,7 +8,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=7"></script>
+  <script src="tema.js?v=8"></script>
   <link rel="manifest" href="manifest-producao.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -23,7 +23,7 @@
   <script src="moldura.js?v=20261109a"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
-  <link rel="stylesheet" href="page.css?v=90">
+  <link rel="stylesheet" href="page.css?v=91">
   <link rel="stylesheet" href="portal.css?v=33">
   <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
@@ -43,8 +43,8 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=170"></script>
-  <script src="menu.js?v=67" defer></script>
+  <script src="portal.js?v=174"></script>
+  <script src="menu.js?v=68" defer></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, C = P.client, app = document.getElementById('app');
@@ -130,14 +130,14 @@
           var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: (o[0] === atual ? '\u2713 ' : '') + o[1] });
           if (o[0] === atual) b.style.setProperty('color', 'var(--terracota)', 'important');
           b.addEventListener('click', function () {
-            atual = o[0]; desenhar();
+            atual = o[0]; desenhar(); P.guardarModoDaily(atual);
             C.from('site_config').upsert({ chave: 'daily_visual', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (r) { if (r.error) P.mensagem(msg, 'Não salvou.', 'erro'); else P.mensagem(msg, ''); });
           });
           linha.appendChild(b);
         });
       }
       desenhar(); cartao.appendChild(linha); cartao.appendChild(msg);
-      C.from('site_config').select('valor').eq('chave', 'daily_visual').maybeSingle().then(function (r) { try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v === 'padrao' || v === 'caderno') { atual = v; desenhar(); } } catch (e) { /* padrão */ } });
+      C.from('site_config').select('valor').eq('chave', 'daily_visual').maybeSingle().then(function (r) { try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v === 'padrao' || v === 'caderno') { atual = v; desenhar(); P.guardarModoDaily(v); } } catch (e) { /* padrão */ } });
       return cartao;
     }
 
