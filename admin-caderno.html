@@ -99,6 +99,11 @@
     .cad .tarefa .nome{text-transform:uppercase;font-size:18px;letter-spacing:.3px;overflow-wrap:anywhere}
     .cad .tarefa .det{font-size:13px;margin-top:2px;color:var(--terracota)}
     .cad .vazio{opacity:.7;margin:14px 0}
+    .cad .oe-g{margin:0 0 14px}.cad .oe-g .rotulo-fixo{margin:0 0 4px}
+    .cad .oe-l{display:flex;gap:12px;align-items:baseline;padding:4px 0}
+    .cad .oe-r{flex:none;width:84px;font-size:13px;color:var(--terracota)}
+    .cad .oe-v{font-size:17px;overflow-wrap:anywhere}
+    .cad .oe-ic{font-size:22px;color:var(--azul-egipcio-claro);vertical-align:-2px}
     .cad .pauta{flex:none;height:140px;background:repeating-linear-gradient(180deg,transparent 0,transparent 53px,var(--azul-egipcio-claro) 53px,var(--azul-egipcio-claro) 54px)}
 
     /* página da direita: o dia em horas planetárias */
@@ -275,6 +280,7 @@
   <script src="portal.js?v=177"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
+  <script src="hellenic-ponte.js?v=1"></script>
   <script src="caderno-leitor.js?v=8"></script>
   <script src="caderno-producao.js?v=5"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -444,7 +450,7 @@
         }
         mini.appendChild(tr);
       }
-      desenharHoras(eu, hojeIso);
+      desenharHoras(eu, hojeIso); desenharDiario(eu);
     }
     function desenharHoras(eu, hojeIso) {
       var d0 = doIso(ancora), d1 = d0 + DIA, agora = Date.now(), linha = document.getElementById('linha'), todo = document.getElementById('diaTodo');
@@ -484,7 +490,18 @@
       });
     }
 
-    /* o espaço da esquerda do Dia (#diario) está reservado para o diário astrológico */
+    /* esquerda do Dia: o diário astrológico, por ora só "onde estou hoje" no mapa dele (ponte com o Astro Hellenic, hellenic-ponte.js) */
+    function desenharDiario(eu) {
+      var alvo = document.getElementById('diario'); if (!alvo || !window.hellenicPonte) return;
+      alvo.textContent = '';
+      window.hellenicPonte.ondeEstou(ancora).then(function (r) {
+        if (eu !== pedido) return;
+        window.hellenicPonte.desenhar(alvo, r);
+      }, function (er) {
+        if (eu !== pedido) return;
+        alvo.textContent = ''; alvo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível calcular (' + er.message + ').' }));
+      });
+    }
     function novaTarefa() {
       folhaPequena(function (caixa, fechar) {
         caixa.appendChild(el('h2', { text: 'Nova tarefa' }));
