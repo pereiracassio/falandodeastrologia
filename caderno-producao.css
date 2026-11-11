@@ -58,3 +58,6 @@
 .prod-seg.com-datas .prod-chip.prod-chip{white-space:normal;font-size:clamp(5px,1.4cqw,12px);line-height:1.15;padding:5px 1px;overflow-wrap:normal;word-break:keep-all}
 .prod-seg.com-datas .prod-data-cel{padding:0 1px}
 .prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:clamp(5px,1.25cqw,11px);gap:1px} /* letras proporcionais à largura da página: o que cabe numa largura cabe em qualquer uma */
+/* TODA barra de etapas do caderno (com ou sem datas: vídeo, corte, listas) cabe na página sem rolar de lado: colunas iguais e letra proporcional à largura da página */
+.prod-seg{overflow:visible}
+.prod-seg .prod-chip,.prod-seg .prod-chip.on{flex:1 1 0;min-width:0;white-space:normal;font-size:clamp(5px,1.4cqw,12px);line-height:1.15;padding:5px 1px;overflow-wrap:normal;word-break:keep-all}
