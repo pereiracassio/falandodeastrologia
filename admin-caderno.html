@@ -93,6 +93,7 @@
     .cad .mini td.h button{color:var(--terracota);font-weight:700;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
     .cad .mini td.ns{font-size:10px;color:var(--ocre);padding-right:4px}
     .cad .tarefa{display:flex;gap:14px;align-items:flex-start;padding:11px 0 10px;border-bottom:1px solid var(--azul-egipcio-claro)}
+    .cad .tarefa.feita{opacity:.45}.cad .tarefa.feita .nome{text-decoration:line-through}
     .cad .cx{flex:none;width:22px;height:22px;border:1.5px solid var(--azul-egipcio-claro);margin-top:3px;background:transparent;padding:0;border-radius:0;color:var(--terracota);font-size:18px;line-height:1}
     .cad .tarefa .nome{text-transform:uppercase;font-size:18px;letter-spacing:.3px;overflow-wrap:anywhere}
     .cad .tarefa .det{font-size:13px;margin-top:2px;color:var(--terracota)}
@@ -297,7 +298,7 @@
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
     var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
-    var ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
+    var diaTodo = null, ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
     function p2(n) { return String(n).padStart(2, '0'); }
     function loc(ms) { return new Date(ms + HP.FUSO); }
@@ -537,6 +538,7 @@
       if (leitorAtual && !(visao === 'leitor' && leitorLivro)) { leitorAtual.fechar(); leitorAtual = null; }
       cad.classList.toggle('v-livro', visao === 'leitor' && !!leitorLivro && !embutida);
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
+      if (visao !== 'todo') diaTodo = null;
       if (visao === 'dia') { desenharDia(); return; }
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
     }
@@ -663,20 +665,26 @@
       var hoje = isoDia(Date.now()), amanha = somaDias(hoje, 1);
       return iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEMANA[diaSem(iso)] + ', ' + (+iso.slice(8)) + ' de ' + MES3[+iso.slice(5, 7) - 1];
     }
+    function registrarConcluido(x, dados) { /* o que foi feito fica guardado (com o dia) para aparecer esmaecido no To do daquele dia */
+      var c = { t: Date.now(), titulo: x.titulo, sub: x.sub || '', cor: x.cor || '', url: x.url || '' };
+      dados.concluidos = (dados.concluidos || []).concat([c]);
+      valorSite('todo_concluidos').then(function (a) { return gravarSite('todo_concluidos', (a || []).filter(function (i) { return Date.now() - i.t < 365 * DIA; }).concat([c])); }).then(null, function () { });
+    }
     function marcarFeito(x, cx, dados, redesenhar) {
       cx.textContent = '✓'; cx.disabled = true;
       var falhou = function () { cx.textContent = ''; cx.disabled = false; alert('Não foi possível salvar.'); };
-      if (x.passoId) { C.from('projeto_passos').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.passoId).then(function (g) { if (g.error) return falhou(); dados.fora = dados.fora.filter(function (i) { return i !== x; }); redesenhar(); }, falhou); return; }
-      if (x.tarefa) { C.from('todo_tarefas').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.tarefa.id).then(function (g) { if (g.error) return falhou(); dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); redesenhar(); }, falhou); return; }
+      if (x.passoId) { C.from('projeto_passos').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.passoId).then(function (g) { if (g.error) return falhou(); registrarConcluido(x, dados); dados.fora = dados.fora.filter(function (i) { return i !== x; }); redesenhar(); }, falhou); return; }
+      if (x.tarefa) { C.from('todo_tarefas').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.tarefa.id).then(function (g) { if (g.error) return falhou(); registrarConcluido(x, dados); dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); redesenhar(); }, falhou); return; }
       valorSite('todo_feitos').then(function (atual) {
         atual = atual || {}; atual[x.chave] = Date.now();
         Object.keys(atual).forEach(function (k) { if (Date.now() - atual[k] > 90 * DIA) delete atual[k]; });
         return gravarSite('todo_feitos', atual);
-      }).then(function (g) { if (g && g.error) throw g.error; dados.feitos[x.chave] = 1; redesenhar(); }, falhou);
+      }).then(function (g) { if (g && g.error) throw g.error; dados.feitos[x.chave] = 1; registrarConcluido(x, dados); redesenhar(); }, falhou);
     }
     function vistaTodo() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      cabVista(esq, 'to do');
+      var hojeT = isoDia(Date.now()), diaVer = diaTodo && diaTodo < hojeT ? diaTodo : hojeT;
+      cabVista(esq, diaVer === hojeT ? 'to do' : rotuloDiaTodo(diaVer), function () { diaTodo = somaDias(diaVer, -1); desenhar(); }, function () { diaTodo = diaVer < hojeT ? somaDias(diaVer, 1) : null; desenhar(); });
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       var agora = Date.now(), base = doIso(isoDia(agora)), de = base - 14 * DIA, ate = base + 61 * DIA;
       function desenharItens() {
@@ -686,13 +694,23 @@
         var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
         dados.tarefas.forEach(function (t) { itens.push({ tarefa: t, quando: t.data ? doIso(String(t.data).slice(0, 10), t.hora ? String(t.hora).slice(0, 5) : '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data }); });
         itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; });
-        if (!itens.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada para fazer.' })); return; }
+        var concl = (dados.concluidos || []).filter(function (c) { return isoDia(c.t) === diaVer; }).sort(function (a, b) { return a.t - b.t; });
+        function linhaFeita(c) {
+          var meio = el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'nome', text: c.titulo }), c.sub ? el('div', { class: 'det', text: c.sub }) : null]);
+          return el('div', { class: 'tarefa feita' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + (c.cor || '#B5852F') }), el('span', { class: 'cx', style: 'border-color:var(--azul-egipcio-claro)', text: '✓' }), meio]);
+        }
+        if (diaVer < hoje) { /* dia que já passou: só o que foi feito nele */
+          rolaE.appendChild(el('div', { class: 'dia-lista' }, [el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Feitos' })].concat(concl.length ? concl.map(linhaFeita) : [el('p', { class: 'vazio', text: 'Nada foi marcado como feito.' })])));
+          return;
+        }
+        if (!itens.length && !concl.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada para fazer.' })); return; }
         var grupos = [], atual = null;
         itens.forEach(function (x) {
           var iso = x.semData || !isFinite(x.quando) ? '' : isoDia(x.quando), nome = !iso ? 'Sem data' : iso < hoje ? 'Atrasados' : iso;
           if (!atual || atual.nome !== nome) { atual = { nome: nome, itens: [] }; grupos.push(atual); }
           atual.itens.push({ x: x, iso: iso });
         });
+        if (concl.length && !grupos.some(function (g) { return g.nome === hoje; })) { var pos = grupos.length; grupos.forEach(function (g, k) { if (pos === grupos.length && g.nome !== 'Atrasados' && (g.nome === 'Sem data' || g.nome > hoje)) pos = k; }); grupos.splice(pos, 0, { nome: hoje, itens: [] }); }
         var limite = isoDia(base + 7 * DIA); /* a direita mostra só os próximos 7 dias; a esquerda é atrasados, hoje e o que não tem data */
         grupos.forEach(function (g) {
           if (g.nome !== 'Atrasados' && g.nome !== 'Sem data' && g.nome > limite) return;
@@ -708,6 +726,7 @@
             if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? '#1F5FA3' : '#B5852F') : '#A03E25'), text: icone(pl) })); }
             bl.appendChild(linha);
           });
+          if (g.nome === hoje) concl.forEach(function (c) { bl.appendChild(linhaFeita(c)); });
           (g.nome === 'Atrasados' || g.nome === 'Sem data' || g.nome <= hoje ? rolaE : rolaD).appendChild(bl);
         });
       }
@@ -716,9 +735,9 @@
       preparar().then(function () {
         var td = tdPronto();
         return Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), td.itensDaProducao(), Promise.all([td.itensDeProjetosEEstudos(), td.itensDeAulasEstudo(), td.itensDoCurso()]).then(function (x) { return x[0].concat(x[1], x[2]); }), td.itensDePassos(),
-          C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), td.codigosDosAtendimentos(), td.carregarAniversarios()]);
+          C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), td.codigosDosAtendimentos(), td.carregarAniversarios(), valorSite('todo_concluidos')]);
       }).then(function (r) {
-        if (eu !== pedido) return; todoDados = tdPronto().montarItens(r.slice(0, 7), de, ate, agora); desenharItens();
+        if (eu !== pedido) return; todoDados = tdPronto().montarItens(r.slice(0, 7), de, ate, agora); todoDados.concluidos = Array.isArray(r[8]) ? r[8] : []; desenharItens();
       }, function (er) { if (eu !== pedido) return; rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível carregar (' + (er.message || 'erro') + ').' })); });
     }
     var recarregarTodo = function () {};
