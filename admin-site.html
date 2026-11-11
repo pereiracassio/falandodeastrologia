@@ -43,7 +43,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=175"></script>
+  <script src="portal.js?v=176"></script>
   <script src="menu.js?v=68" defer></script>
   <script>
   (function () {
@@ -153,6 +153,7 @@
           b.addEventListener('click', function () {
             atual = x[0]; desenhar();
             try { localStorage.setItem('fda_caderno_capa', atual); } catch (e) { /* o caderno aberto na outra janela troca a capa na hora */ }
+            try { if (window.parent !== window && window.parent.fdaPintarCapa) window.parent.fdaPintarCapa(atual); } catch (e) { /* fora do caderno */ }
             C.from('site_config').upsert({ chave: 'daily_capa', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (g) { if (g && g.error) alert('Não foi possível salvar a cor da capa (' + P.traduzErro(g.error.message) + ').'); }, function () { alert('Não foi possível salvar a cor da capa.'); });
           });
           linha.appendChild(b);

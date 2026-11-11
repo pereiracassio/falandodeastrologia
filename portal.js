@@ -665,6 +665,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       localStorage.setItem('fda_ultimo_uso', String(Date.now())); /* a abertura do zero do app se reconhece por isto estar velho (ver o <head> das páginas de entrada) */
       if (!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches))) return; /* só o app da tela de início guarda o último lugar: navegador e app nunca se misturam */
       if (!/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname)) return;
+      if (window.top !== window.self || /[?&]caderno=1/.test(location.search)) return; /* tela de dentro do caderno (janela embutida) nunca vira a "última tela": o app volta ao caderno */
       if (/access_token|refresh_token|type=/.test(String(location.hash))) return;
       localStorage.setItem(appDaPagina() === 'daily' ? 'fda_ultima_pagina_daily' : 'fda_ultima_pagina', location.pathname + location.search + location.hash);
     } catch (e) { /* sem armazenamento */ }

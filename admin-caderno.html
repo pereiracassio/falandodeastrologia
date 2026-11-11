@@ -266,7 +266,7 @@
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=175"></script>
+  <script src="portal.js?v=176"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="caderno-leitor.js?v=8"></script>
@@ -359,6 +359,7 @@
     }
 
     /* ---------- capa ---------- */
+    window.fdaPintarCapa = function (c) { if (CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); }; /* a janela de Configurações (dentro do caderno) chama isto ao escolher a cor */
     window.addEventListener('storage', function (ev) { if (ev.key === 'fda_caderno_capa' && ev.newValue && CAPAS.some(function (x) { return x[0] === ev.newValue; }) && ev.newValue !== capa) pintarCapa(ev.newValue); }); /* a cor escolhida em Configurações (janela de dentro) vale na hora */
     function pintarCapa(c) {
       capa = c;

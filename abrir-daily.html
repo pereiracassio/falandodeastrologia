@@ -7,7 +7,7 @@
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app) return;
     var u = localStorage.getItem('fda_ultima_pagina_daily');
-    var destino = u && /^\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor|site|avisos)\.html/.test(u) ? u : '/admin-caderno.html';
+    var destino = u && !/[?&]caderno=1/.test(u) && /^\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor|site|avisos)\.html/.test(u) ? u : '/admin-caderno.html';
     location.replace(destino);
   } catch (e) { location.replace('/admin-caderno.html'); } })();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
