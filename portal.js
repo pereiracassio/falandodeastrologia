@@ -483,7 +483,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     if (lembretesPromessa) return lembretesPromessa;
     var hoje = diaDeHoje(), somar = function (n) { var d = new Date(hoje + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
     var de = somar(-14), ate = somar(7);
-    var ETAPAS_VIDEO = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube']];
+    var ETAPAS_VIDEO = [['roteiro_ok', 'Roteiro pronto'], ['gravado', 'Gravado'], ['editado', 'E. grossa'], ['edicao_fina', 'E. fina'], ['seo_ok', 'SEO'], ['no_ar', 'No YouTube']];
     var ETAPAS_CORTE = [['corte_ok', 'Corte'], ['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts']];
     var primeira = function (reg, lista) { var f = lista.filter(function (e) { return !reg[e[0]]; })[0]; return f ? f[1] : ''; };
     lembretesPromessa = Promise.all([
