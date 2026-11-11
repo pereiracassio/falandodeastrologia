@@ -16,6 +16,9 @@
 
   function icone(nome) { var i = NOMES.indexOf(nome); return i < 0 ? '' : String.fromCharCode(0xE000 + i); }
   function signo(i) { return NOMES[14 + i]; }
+  /* cor do signo = a do elemento, igual ao Astro Hellenic (paleta de época: fogo laranja, terra marrom, ar cinza, água azul), i % 4 */
+  var COR_ELEMENTO = ['#D0610F', '#6B4A2B', '#6B7780', '#1F5FA3'];
+  function sig(i) { var e = el('span', { class: 'oe-sg', style: 'color:' + COR_ELEMENTO[i % 4] }); e.appendChild(el('span', { class: 'oe-ic', style: 'color:inherit', text: icone(signo(i)) })); e.appendChild(document.createTextNode(' ' + signo(i))); return e; }
   function ler() {
     if (escolhido !== undefined) return Promise.resolve(escolhido);
     return C.from('site_config').select('valor').eq('chave', CHAVE).maybeSingle().then(function (r) {
@@ -69,17 +72,17 @@
     alvo.textContent = '';
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var circ = r.circumambulacao, ls = [];
-    if (circ.termo) ls.push(linha('Termo', [glifo(PLANETA[circ.termo.planetId]), ' ' + PLANETA[circ.termo.planetId] + ' em ', glifo(signo(circ.termo.signIdx)), ' ' + signo(circ.termo.signIdx)]));
     if (circ.aspecto) ls.push(linha('Aspecto', [ASPECTO[circ.aspecto.tipo] + ' com ', glifo(PLANETA[circ.aspecto.planetId]), ' ' + PLANETA[circ.aspecto.planetId]]));
+    if (circ.termo) ls.push(linha('Termo', [glifo(PLANETA[circ.termo.planetId]), ' ' + PLANETA[circ.termo.planetId] + ' em ', sig(circ.termo.signIdx)]));
     alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
       var niv = r.liberacao[x[0]];
-      alvo.appendChild(grupo('Liberação · ' + x[1], niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [glifo(signo(n.signIdx)), ' ' + signo(n.signIdx)]); }) : [linha('', ['Fora do período'])]));
+      alvo.appendChild(grupo('Liberação · ' + x[1], niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)]); }) : [linha('', ['Fora do período'])]));
     });
     alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [glifo(PLANETA[n.planetId]), ' ' + PLANETA[n.planetId]]); }) : [linha('', ['Fora do período'])]));
-    var pf = r.profeccao, pl = [linha('Ano', [glifo(signo(pf.ano.signIdx)), ' ' + signo(pf.ano.signIdx)])];
-    if (pf.mes) pl.push(linha('Mês', [glifo(signo(pf.mes.signIdx)), ' ' + signo(pf.mes.signIdx)]));
-    if (pf.passo) pl.push(linha('60 horas', [glifo(signo(pf.passo.signIdx)), ' ' + signo(pf.passo.signIdx)]));
+    var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)])];
+    if (pf.mes) pl.push(linha('Mês', [sig(pf.mes.signIdx)]));
+    if (pf.passo) pl.push(linha('60 horas', [sig(pf.passo.signIdx)]));
     alvo.appendChild(grupo('Profecção', pl));
   }
 
