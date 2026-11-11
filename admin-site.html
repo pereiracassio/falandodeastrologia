@@ -154,13 +154,12 @@
             atual = x[0]; desenhar();
             try { localStorage.setItem('fda_caderno_capa', atual); } catch (e) { /* o caderno aberto na outra janela troca a capa na hora */ }
             try { if (window.parent !== window && window.parent.fdaPintarCapa) window.parent.fdaPintarCapa(atual); } catch (e) { /* fora do caderno */ }
-            C.from('site_config').upsert({ chave: 'daily_capa', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (g) { if (g && g.error) alert('Não foi possível salvar a cor da capa (' + P.traduzErro(g.error.message) + ').'); }, function () { alert('Não foi possível salvar a cor da capa.'); });
           });
           linha.appendChild(b);
         });
       }
       desenhar(); cartao.appendChild(linha);
-      C.from('site_config').select('valor').eq('chave', 'daily_capa').maybeSingle().then(function (r) { try { var v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; if (v && CAPAS.some(function (x) { return x[0] === v; })) { atual = v; desenhar(); } } catch (e) { /* padrão */ } });
+      try { var guardada = localStorage.getItem('fda_caderno_capa'); if (guardada && CAPAS.some(function (x) { return x[0] === guardada; })) { atual = guardada; desenhar(); } } catch (e) { /* padrão */ } /* a cor da capa é do APARELHO, não da conta */
       return cartao;
     }
     /* Personalização: tudo o que é aparência num cartão só (tema, visualização da agenda, cor da capa) */

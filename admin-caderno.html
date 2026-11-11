@@ -388,7 +388,7 @@
           var b = el('button', { type: 'button', title: x[1], 'aria-label': x[1], class: x[0] === capa ? 'sel' : '' });
           b.style.background = x[0] === 'papiro' ? 'var(--papiro-fundo-simples)' : '#' + x[0]; if (x[0] === 'papiro') b.style.border = '2px solid #1034A6';
           if (x[0] === capa) b.style.boxShadow = 'inset 0 0 0 4px ' + (x[0] === 'papiro' || corClara(x[0]) ? '#1A1410' : '#FFFDF5'); /* o anel de marcação é claro sobre cor escura e escuro sobre cor clara */
-          b.addEventListener('click', function () { pintarCapa(x[0]); gravarSite('daily_capa', x[0]).then(null, function () { }); fechar(); });
+          b.addEventListener('click', function () { pintarCapa(x[0]); fechar(); }); /* a cor da capa é do APARELHO (localStorage), não da conta */
           linha.appendChild(b);
         });
         caixa.appendChild(linha);
@@ -509,7 +509,7 @@
        Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
     var hist = [], hpos = -1, aplicando = false;
     function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, projVer: projVer, estSel: estSel, estVer: estVer, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
-    function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } atualizarVoltar(); }
+    function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } atualizarVoltar(); gravarHash(); }
     function virar(sentido) { var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
     function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && hist[hpos - 1].visao === visao; } /* o histórico é de dentro da aba: nunca volta para outra aba */
@@ -525,10 +525,17 @@
       else { var bs = cad.querySelectorAll('.cab-vista .seta'); if (bs.length >= 2) alvo = d < 0 ? bs[0] : bs[bs.length - 1]; }
       if (alvo && alvo.offsetParent !== null) alvo.click();
     }
+    function gravarHash() { /* o endereço guarda a aba, o dia e o LUGAR EXATO (série, vídeo, corte, projeto, estudo, aula) por id: o app reabre exatamente aí */
+      var q = ['v=' + visao, 'd=' + ancora];
+      var add = function (k, val) { if (val) q.push(k + '=' + encodeURIComponent(val)); };
+      if (visao === 'producao') { add('ps', prodSerie); add('pv', prodVideo); add('pc', prodCorte); }
+      else if (visao === 'projetos') { add('pj', projSel); add('pjv', projVer); }
+      else if (visao === 'estudos') { add('es', estSel); add('esv', estVer); add('ea', estAula); }
+      try { history.replaceState(null, '', '#' + q.join('&')); } catch (e) { /* sem histórico */ }
+    }
     function mostrarVisao() {
-      valorSite('daily_capa').then(function (c) { if (c && CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); }); /* a cor escolhida em Configurações vale ao voltar */
       var v = visao; Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { b.classList.toggle('aberta', b.getAttribute('data-v') === v); });
-      try { history.replaceState(null, '', '#v=' + v + '&d=' + ancora); } catch (e) { /* sem histórico */ }
+      gravarHash();
       desenhar();
     }
     function desenhar() {
@@ -1096,7 +1103,13 @@
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
       cad.classList.add('on', pagCel);
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
-      var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && ABAS.some(function (y) { return y[0] === h[1]; })) { visao = h[1]; if (h[2]) ancora = h[2]; }
+      var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && ABAS.some(function (y) { return y[0] === h[1]; })) {
+        visao = h[1]; if (h[2]) ancora = h[2];
+        var hq = new URLSearchParams(location.hash.replace(/^#/, ''));
+        if (visao === 'producao') { prodSerie = hq.get('ps') || null; prodVideo = hq.get('pv') || null; prodCorte = prodVideo ? (hq.get('pc') || null) : null; }
+        else if (visao === 'projetos') { projSel = hq.get('pj') || null; projVer = hq.get('pjv') || null; }
+        else if (visao === 'estudos') { estSel = hq.get('es') || null; estVer = hq.get('esv') || null; estAula = hq.get('ea') || null; }
+      }
       irPara(visao);
     }
     function iniciar(user) {
@@ -1105,7 +1118,6 @@
         if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
         mostrar();
         valorSite('daily_visual').then(function (v) { P.guardarModoDaily(v); if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + (/^#v=(horas|todo)/.test(location.hash) ? location.hash.replace(/&d=.*/, '') : '')); });
-        valorSite('daily_capa').then(function (c) { if (c && CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); });
       });
     }
     try { var guardada = localStorage.getItem('fda_caderno_capa'); if (guardada && CAPAS.some(function (x) { return x[0] === guardada; })) capa = guardada; } catch (e) { /* sem armazenamento */ }
