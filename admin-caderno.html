@@ -296,9 +296,9 @@
     var EXTRAS = { config: 'admin-site.html?app=daily', avisos: 'admin-avisos.html?app=daily', mensagens: 'admin-mensagens.html' };
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'próximos'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
-    var diaTodo = null, ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
+    var espTodo = 0, ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
     function p2(n) { return String(n).padStart(2, '0'); }
     function loc(ms) { return new Date(ms + HP.FUSO); }
@@ -538,7 +538,7 @@
       if (leitorAtual && !(visao === 'leitor' && leitorLivro)) { leitorAtual.fechar(); leitorAtual = null; }
       cad.classList.toggle('v-livro', visao === 'leitor' && !!leitorLivro && !embutida);
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
-      if (visao !== 'todo') diaTodo = null;
+      if (visao !== 'todo') espTodo = 0;
       if (visao === 'dia') { desenharDia(); return; }
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
     }
@@ -683,8 +683,9 @@
     }
     function vistaTodo() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      var hojeT = isoDia(Date.now()), diaVer = diaTodo && diaTodo < hojeT ? diaTodo : hojeT;
-      cabVista(esq, diaVer === hojeT ? 'to do' : rotuloDiaTodo(diaVer), function () { diaTodo = somaDias(diaVer, -1); desenhar(); }, function () { diaTodo = diaVer < hojeT ? somaDias(diaVer, 1) : null; desenhar(); });
+      var hojeT = isoDia(Date.now()), kTodo = espTodo || 0;
+      cabVista(esq, kTodo === 0 ? 'to do' : rotuloDiaTodo(somaDias(hojeT, 2 * kTodo)), function () { espTodo = kTodo - 1; desenhar(); }, function () { espTodo = kTodo + 1; desenhar(); });
+      document.getElementById('t1').textContent = kTodo === 0 ? 'atrasados e hoje' : ''; document.getElementById('t2').textContent = kTodo === 0 ? 'amanhã' : '';
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       var agora = Date.now(), base = doIso(isoDia(agora)), de = base - 14 * DIA, ate = base + 61 * DIA;
       function desenharItens() {
@@ -694,26 +695,18 @@
         var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
         dados.tarefas.forEach(function (t) { itens.push({ tarefa: t, quando: t.data ? doIso(String(t.data).slice(0, 10), t.hora ? String(t.hora).slice(0, 5) : '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data }); });
         itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; });
-        var concl = (dados.concluidos || []).filter(function (c) { return isoDia(c.t) === diaVer; }).sort(function (a, b) { return a.t - b.t; });
+        function conclDe(iso) { return (dados.concluidos || []).filter(function (c) { return isoDia(c.t) === iso; }).sort(function (a, b) { return a.t - b.t; }); }
         function linhaFeita(c) {
           var meio = el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'nome', text: c.titulo }), c.sub ? el('div', { class: 'det', text: c.sub }) : null]);
           return el('div', { class: 'tarefa feita' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + (c.cor || '#B5852F') }), el('span', { class: 'cx', style: 'border-color:var(--azul-egipcio-claro)', text: '✓' }), meio]);
         }
-        if (diaVer < hoje) { /* dia que já passou: só o que foi feito nele */
-          rolaE.appendChild(el('div', { class: 'dia-lista' }, [el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Feitos' })].concat(concl.length ? concl.map(linhaFeita) : [el('p', { class: 'vazio', text: 'Nada foi marcado como feito.' })])));
-          return;
-        }
-        if (!itens.length && !concl.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nada para fazer.' })); return; }
         var grupos = [], atual = null;
         itens.forEach(function (x) {
           var iso = x.semData || !isFinite(x.quando) ? '' : isoDia(x.quando), nome = !iso ? 'Sem data' : iso < hoje ? 'Atrasados' : iso;
           if (!atual || atual.nome !== nome) { atual = { nome: nome, itens: [] }; grupos.push(atual); }
           atual.itens.push({ x: x, iso: iso });
         });
-        if (concl.length && !grupos.some(function (g) { return g.nome === hoje; })) { var pos = grupos.length; grupos.forEach(function (g, k) { if (pos === grupos.length && g.nome !== 'Atrasados' && (g.nome === 'Sem data' || g.nome > hoje)) pos = k; }); grupos.splice(pos, 0, { nome: hoje, itens: [] }); }
-        var limite = isoDia(base + 7 * DIA); /* a direita mostra só os próximos 7 dias; a esquerda é atrasados, hoje e o que não tem data */
-        grupos.forEach(function (g) {
-          if (g.nome !== 'Atrasados' && g.nome !== 'Sem data' && g.nome > limite) return;
+        function blocoGrupo(g, feitos, vazio) {
           var bl = el('div', { class: 'dia-lista' }, [el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: g.nome === 'Atrasados' || g.nome === 'Sem data' ? g.nome : rotuloDiaTodo(g.nome) })]);
           g.itens.forEach(function (it) {
             var x = it.x, caixa = (x.chave || x.tarefa || x.passoId) ? el('button', { type: 'button', class: 'cx', 'aria-label': 'Marcar como feito' }) : el('span', { class: 'cx', style: 'border-color:transparent' });
@@ -726,9 +719,17 @@
             if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? '#1F5FA3' : '#B5852F') : '#A03E25'), text: icone(pl) })); }
             bl.appendChild(linha);
           });
-          if (g.nome === hoje) concl.forEach(function (c) { bl.appendChild(linhaFeita(c)); });
-          (g.nome === 'Atrasados' || g.nome === 'Sem data' || g.nome <= hoje ? rolaE : rolaD).appendChild(bl);
-        });
+          feitos.forEach(function (c) { bl.appendChild(linhaFeita(c)); });
+          if (!g.itens.length && !feitos.length && vazio) bl.appendChild(el('p', { class: 'vazio', text: vazio }));
+          return bl;
+        }
+        var byNome = {}; grupos.forEach(function (g) { byNome[g.nome] = g; });
+        function blocoDia(iso) { return blocoGrupo(byNome[iso] || { nome: iso, itens: [] }, conclDe(iso), iso < hoje ? 'Nada foi marcado como feito.' : 'Nada para este dia.'); }
+        /* cada página é um dia: a primeira folha tem atrasados e hoje à esquerda e amanhã à direita; virando, dois dias por folha */
+        if (kTodo === 0) {
+          ['Atrasados', 'Sem data'].forEach(function (n) { if (byNome[n]) rolaE.appendChild(blocoGrupo(byNome[n], [], '')); });
+          rolaE.appendChild(blocoDia(hoje)); rolaD.appendChild(blocoDia(somaDias(hoje, 1)));
+        } else { rolaE.appendChild(blocoDia(somaDias(hoje, 2 * kTodo))); rolaD.appendChild(blocoDia(somaDias(hoje, 2 * kTodo + 1))); }
       }
       function horaDoInstante(ms) { var d0 = doIso(isoDia(ms)), hs = HP.horasEntre(d0, d0 + DIA, LAT, LON); for (var k = 0; k < hs.length; k++) if (ms >= hs[k].ini && ms < hs[k].fim) return hs[k]; return null; }
       recarregarTodo = function () { vistaTodo(); };
