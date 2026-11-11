@@ -7,7 +7,7 @@
     var app = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!app) return;
     var u = localStorage.getItem('fda_ultima_pagina');
-    var daily = /^\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor)\.html/;   /* telas do Hellenic Daily guardadas antes da separação não valem aqui */
+    var daily = /^\/admin-(agenda|caderno|compras|estudos|producao|projetos|financeiro|leitor)\.html/;   /* telas do Hellenic Daily guardadas antes da separação não valem aqui */
     var adm = localStorage.getItem('fda_admin') === '1';
     var destino = u && /^\/[a-z-]+\.html/.test(u) && !daily.test(u) ? u : (adm ? '/admin-caderno.html' : '/aluno.html');
     location.replace(destino);
