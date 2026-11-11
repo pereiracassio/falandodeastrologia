@@ -296,7 +296,7 @@
     var EXTRAS = { config: 'admin-site.html?app=daily', avisos: 'admin-avisos.html?app=daily', mensagens: 'admin-mensagens.html' };
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['agora', 'depois'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
+    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
     var espTodo = 0, ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -638,17 +638,18 @@
       lerEventos(doIso(ano + '-01-01'), doIso((ano + 1) + '-01-01'), eu, function (evs) { cacheAno[ano] = evs; marcar(evs); }, esq);
     }
 
-    function vistaLista() {
-      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now()), N = 31;
-      cabVista(esq, 'a partir de ' + (+ancora.slice(8)) + ' de ' + MES3[+ancora.slice(5, 7) - 1], function () { ancora = somaDias(ancora, -N); desenhar(); }, function () { ancora = somaDias(ancora, N); desenhar(); });
+    function vistaLista() { /* a Lista é do MÊS: esquerda dias 1 a 15, direita dia 16 até o fim do mês; ‹ › troca de mês */
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now());
+      var ano = +ancora.slice(0, 4), mes = +ancora.slice(5, 7), mi = ancora.slice(0, 8) + '01', N = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+      cabVista(esq, MESES[mes - 1] + ' de ' + ano, function () { ancora = somaDias(mi, -1).slice(0, 8) + '01'; desenhar(); }, function () { ancora = somaDias(mi, N); desenhar(); });
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
-      lerEventos(doIso(ancora), doIso(ancora) + N * DIA, eu, function (evs) {
-        rolaE.textContent = ''; var m = porDia(evs, ancora, N), dias = Object.keys(m).sort(), total = dias.reduce(function (s, k) { return s + 1 + m[k].length; }, 0), soma = 0;
-        if (!dias.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum compromisso nestes dias.' })); return; }
+      lerEventos(doIso(mi), doIso(mi) + N * DIA, eu, function (evs) {
+        rolaE.textContent = ''; var m = porDia(evs, mi, N), dias = Object.keys(m).sort();
+        if (!dias.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhum compromisso neste mês.' })); return; }
         dias.forEach(function (iso) {
           var bl = el('div', { class: 'dia-lista' }, [el('button', { type: 'button', class: 'dsem-cab botao-fixo' + (iso === hojeIso ? ' eh-hoje' : ''), text: SEMANA[diaSem(iso)] + ', ' + (+iso.slice(8)) + ' de ' + MESES[+iso.slice(5, 7) - 1] })]);
           bl.firstChild.addEventListener('click', function () { irAoDia(iso); }); m[iso].forEach(function (e) { bl.appendChild(linhaEv(e)); });
-          (soma < total / 2 ? rolaE : rolaD).appendChild(bl); soma += 1 + m[iso].length;
+          (+iso.slice(8) <= 15 ? rolaE : rolaD).appendChild(bl);
         });
       }, esq);
     }
