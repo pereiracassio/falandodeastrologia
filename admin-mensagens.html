@@ -108,7 +108,7 @@
             total += c.novas;
             var nome = nomes[c.id] || 'Aluno';
             var previa = (c.ultima.de === 'cassio' ? 'Você: ' : '') + String(c.ultima.texto || '').replace(/\s+/g, ' ');
-            var abrir = function () { location.href = 'admin-alunos.html#aluno=' + encodeURIComponent(c.id) + '&aba=conversa'; };
+            var abrir = function () { location.href = 'admin-alunos.html' + (document.documentElement.classList.contains('fda-caderno') ? '?caderno=1' : '') + '#aluno=' + encodeURIComponent(c.id) + '&aba=conversa'; };
             var titulo = el('span', { class: 'portal-item-titulo', style: c.novas ? 'color:var(--terracota,#A03E25)' : '', text: nome + (c.novas ? ' (' : '') });
             if (c.novas) { titulo.appendChild(el('span', { text: String(c.novas) })); titulo.appendChild(document.createTextNode(')')); }
             var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', { style: 'min-width:0;flex:1' }, [
