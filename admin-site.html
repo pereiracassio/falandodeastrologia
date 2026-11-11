@@ -603,11 +603,11 @@
           ['conta', 'Conta', [conexaoDrive, window.hellenicPonte.cartao(), P.avisos.cartao('admin'), el('div', { class: 'portal-cartao', style: 'display:flex;flex-direction:column;align-items:center;gap:14px' }, [trocar, areaSenha, saindo])]]
         ];
         var nav = el('div', { class: 'cfg-nav' }), telaAba = el('div', { class: 'cfg-tela' }), aberta = '';
-        try { aberta = (location.hash.match(/aba=([a-z]+)/) || [])[1] || sessionStorage.getItem('fda_cfg_aba') || ''; } catch (e) { /* abre na primeira */ }
+        try { aberta = (location.hash.match(/aba=([a-z]+)/) || [])[1] || sessionStorage.getItem('fda_cfg_aba') || localStorage.getItem('fda_cfg_aba') || ''; } catch (e) { /* abre na primeira */ }
         if (!ABAS.some(function (x) { return x[0] === aberta; })) aberta = ABAS[0][0];
         function abrirAba(id) {
           aberta = id;
-          try { sessionStorage.setItem('fda_cfg_aba', id); history.replaceState(null, '', location.pathname + location.search + '#aba=' + id); } catch (e) { /* só não lembra */ }
+          try { sessionStorage.setItem('fda_cfg_aba', id); localStorage.setItem('fda_cfg_aba', id); history.replaceState(null, '', location.pathname + location.search + '#aba=' + id); } catch (e) { /* só não lembra */ }
           ABAS.forEach(function (x) {
             x[3].classList.toggle('ativa', x[0] === id); x[3].setAttribute('aria-pressed', x[0] === id ? 'true' : 'false');
             var primeiro = true;

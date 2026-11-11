@@ -1124,7 +1124,7 @@
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
       cad.classList.add('on', pagCel);
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
-      var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && ABAS.some(function (y) { return y[0] === h[1]; })) {
+      var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && (ABAS.some(function (y) { return y[0] === h[1]; }) || EXTRAS[h[1]])) { /* configurações, avisos e mensagens também voltam */
         visao = h[1]; if (h[2]) ancora = h[2];
         var hq = new URLSearchParams(location.hash.replace(/^#/, ''));
         if (visao === 'producao') { prodSerie = hq.get('ps') || null; prodVideo = hq.get('pv') || null; prodCorte = prodVideo ? (hq.get('pc') || null) : null; }
