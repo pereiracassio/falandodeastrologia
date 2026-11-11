@@ -453,7 +453,7 @@
         if (eu !== pedido) return;
         if (evs.falhas && evs.falhas.length) todo.parentNode.insertBefore(el('p', { class: 'falha', text: 'Não consegui ler: ' + evs.falhas.join(', ') }), linha);
         evs.forEach(function (e) {
-          if (e.diaTodo) { var bl = el('span', { class: 'bloco', text: e.titulo }); bl.style.background = e.cor; bl.style.color = textoSobre(e.cor.length === 7 ? e.cor : '#B5852F'); todo.appendChild(bl); return; }
+          if (e.diaTodo) { var bl = el('span', { class: 'bloco', text: e.titulo }); bl.style.background = e.cor; bl.style.color = textoSobre(e.cor.length === 7 ? e.cor : '#B5852F'); bl.style.cursor = 'pointer'; bl.setAttribute('role', 'button'); bl.addEventListener('click', function () { modAgenda().abrirEvento(e); }); todo.appendChild(bl); return; } /* dia inteiro abre e edita como qualquer compromisso */
           var ini = Math.max(e.ini, d0), fim = Math.min(e.fim, d1); if (fim <= ini) return;
           var cor = e.cor.length === 7 ? e.cor : '#B5852F', b = el('a', { class: 'ev', href: '#', style: 'top:' + pct(ini) + ';height:calc(' + ((fim - ini) / (d1 - d0) * 100).toFixed(3) + '% - 2px);margin-top:1px;background:' + cor + ';color:' + textoSobre(cor) }, [el('span', { text: e.titulo }), el('small', { text: hhmm(e.ini) + ' às ' + hhmm(e.fim) })]);
           b.addEventListener('click', function (ev) { ev.preventDefault(); modAgenda().abrirEvento(e); });
