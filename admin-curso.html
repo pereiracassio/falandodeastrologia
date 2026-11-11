@@ -61,7 +61,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=170"></script>
-  <script src="curso.js?v=8"></script>
+  <script src="curso.js?v=9"></script>
   <script src="menu.js?v=67" defer></script>
   <script>
   (function () {
@@ -602,9 +602,11 @@
 
         var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aulas' })]);
         if (!aulas.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }));
+        var contaTipo = { gravada: 0, ao_vivo: 0 };
         aulas.forEach(function (a, i) {
+          var num = ++contaTipo[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada'];
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
-            el('span', { class: 'prod-titulo', style: 'display:block', text: a.ordem + '. ' + (a.tipo === 'ao_vivo' ? 'Aula ao vivo' : a.titulo) }),
+            el('span', { class: 'prod-titulo', style: 'display:block', text: num + '. ' + (a.tipo === 'ao_vivo' ? 'Aula ao vivo' : a.titulo) }),
             el('span', { class: 'prod-sub', style: 'display:block', text: (a.tipo === 'ao_vivo' ? 'ao vivo' + (a.data_hora ? ' · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + ' · ' : '') + (!a.video_codigo ? 'sem vídeo' : 'vídeo') })
           ]);
           abrir.addEventListener('click', function () { abrirAula(a.id); });
@@ -698,7 +700,9 @@
               }, function (e) { P.mensagem(msg, 'Salvo, mas não consegui colocar na agenda do Google (' + ((e && e.message) || 'erro') + ').', 'erro'); });
             });
         });
-        var partes = [].concat([el('h2', { text: (aoVivoA ? 'Aula ao vivo ' : 'Aula ') + a.ordem })]);
+        var h2Num = el('h2', { text: aoVivoA ? 'Aula ao vivo' : 'Aula' });
+        C.from('curso_aulas').select('id,ordem,tipo').eq('modulo_id', a.modulo_id).then(function (rn) { var n = (rn.data || []).filter(function (x) { return (x.tipo === 'ao_vivo') === aoVivoA && x.ordem <= a.ordem; }).length; if (n) h2Num.textContent = (aoVivoA ? 'Aula ao vivo ' : 'Aula ') + n; });
+        var partes = [].concat([h2Num]);
         /* as datas das etapas têm UM dono só: a barra de etapas (grava na hora). Os campos "Data: ..." de baixo são espelho dela. */
         var camposEt = [];
         if (curso.construindo !== false && !aoVivoA) {
