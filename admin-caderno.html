@@ -256,8 +256,7 @@
             <div class="mes"><button type="button" class="seta" id="mesAnt" aria-label="Mês anterior">‹</button><span class="botao-fixo" id="tituloMes"></span><button type="button" class="seta" id="mesProx" aria-label="Próximo mês">›</button></div>
           </div>
         </div>
-        <div class="rotulo-fixo" style="margin:20px 0 4px">to do</div>
-        <div class="rolagem" id="todo"></div>
+        <div class="rolagem" id="diario"></div>
       </div><div class="vout" id="outEsq"></div></section>
       <div class="dobra"></div>
       <section class="pag dir"><div class="vdia" id="diaDir">
@@ -445,7 +444,7 @@
         }
         mini.appendChild(tr);
       }
-      desenharHoras(eu, hojeIso); desenharTarefas(eu);
+      desenharHoras(eu, hojeIso);
     }
     function desenharHoras(eu, hojeIso) {
       var d0 = doIso(ancora), d1 = d0 + DIA, agora = Date.now(), linha = document.getElementById('linha'), todo = document.getElementById('diaTodo');
@@ -485,24 +484,7 @@
       });
     }
 
-    /* ---------- To do do dia: as tarefas dele (tabela todo_tarefas) que vencem até este dia, ou sem data ---------- */
-    function desenharTarefas(eu) {
-      var alvo = document.getElementById('todo'); alvo.textContent = '';
-      var dia = ancora;
-      C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) {
-        if (eu !== pedido) return;
-        if (r.error) { alvo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível ler as tarefas (' + r.error.message + ').' })); return; }
-        var lista = (r.data || []).filter(function (t) { return !t.data || String(t.data).slice(0, 10) <= dia; }).sort(function (a, b) { return String(a.data || '9999').localeCompare(String(b.data || '9999')) || String(a.hora || '').localeCompare(String(b.hora || '')); });
-        if (!lista.length) alvo.appendChild(el('p', { class: 'vazio', text: 'Nada para fazer.' }));
-        lista.forEach(function (t) {
-          var cx = el('button', { type: 'button', class: 'cx', 'aria-label': 'Marcar como feita' });
-          cx.addEventListener('click', function () { cx.textContent = '✓'; C.from('todo_tarefas').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', t.id).then(function (g) { if (g.error) { cx.textContent = ''; alert('Não foi possível marcar agora.'); return; } desenharTarefas(pedido); }); });
-          var det = t.data ? (String(t.data).slice(0, 10) < dia ? 'desde ' : '') + String(t.data).slice(8, 10).replace(/^0/, '') + ' de ' + MES3[+String(t.data).slice(5, 7) - 1] + (t.hora ? ', ' + String(t.hora).slice(0, 5) : '') : '';
-          alvo.appendChild(el('div', { class: 'tarefa' }, [cx, el('div', {}, [el('div', { class: 'nome', text: t.titulo }), det ? el('div', { class: 'det', text: det }) : null].filter(Boolean))]));
-        });
-        alvo.appendChild(el('div', { class: 'pauta' }));
-      });
-    }
+    /* o espaço da esquerda do Dia (#diario) está reservado para o diário astrológico */
     function novaTarefa() {
       folhaPequena(function (caixa, fechar) {
         caixa.appendChild(el('h2', { text: 'Nova tarefa' }));
@@ -510,7 +492,7 @@
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () {
           var t = campo.value.trim(); if (!t) return; ok.disabled = true;
-          C.from('todo_tarefas').insert({ titulo: t, data: ancora }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); if (visao === 'todo') recarregarTodo(); else desenharTarefas(pedido); });
+          C.from('todo_tarefas').insert({ titulo: t, data: ancora }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); if (visao === 'todo') recarregarTodo(); });
         });
         nao.addEventListener('click', fechar);
         caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
