@@ -4,11 +4,18 @@
   <script>try{if(localStorage.getItem('fda_daily_visual')==='padrao'&&window.top===window.self)location.replace('admin-agenda.html'+(/^#v=(horas|todo)/.test(location.hash)?location.hash.replace(/&d=.*/,''):''))}catch(e){}</script>
   <meta charset="UTF-8">
   <script>try{if(localStorage.getItem('fda_admin'))document.documentElement.className+=' fda-admin-tela'}catch(e){}</script>
-  <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/icone-daily-180.png?v=1">
+  <!-- instalável na tela inicial como o app Hellenic Daily (mesmo ícone, nome e abertura das outras telas dele) -->
+  <link rel="manifest" href="manifest-daily.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Daily">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=7"></script>
-  <meta name="theme-color" content="#16233F">
-  <title>Caderno</title>
+  <script src="tema.js?v=8"></script>
+  <meta name="theme-color" content="#e6d3a0">
+  <title>Hellenic Daily</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -258,7 +265,7 @@
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=172"></script>
+  <script src="portal.js?v=173"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="caderno-leitor.js?v=8"></script>

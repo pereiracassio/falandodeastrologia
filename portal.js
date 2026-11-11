@@ -551,7 +551,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   }
   /* Dois apps no mesmo site: Hellenic Daily (agenda, horas, to do, estudos, produção, projetos, financeiro, leitor) e Falando de Astrologia (o resto).
      As telas compartilhadas (⚙ Configurações e Avisos) ficam no app em que a pessoa estava (guardado na sessão, com reserva no aparelho). */
-  var PAGINAS_DAILY = /\/admin-(agenda|estudos|producao|projetos|financeiro|leitor)\.html$/;
+  var PAGINAS_DAILY = /\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor)\.html$/;
   function appDaPagina() {
     var caminho = location.pathname;
     if (PAGINAS_DAILY.test(caminho)) return 'daily';

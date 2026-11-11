@@ -4,7 +4,7 @@
    Só entra em páginas do painel, do aluno e do cliente; o site público nunca carrega este arquivo. */
 (function () {
   var TEMAS = ['papiro', 'claro', 'escuro', 'sulfite', 'automatico'];
-  var DAILY = /\/admin-(agenda|estudos|producao|projetos|financeiro|leitor)\.html$/;
+  var DAILY = /\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor)\.html$/;
   function app() {
     var c = location.pathname;
     if (DAILY.test(c)) return 'daily';
