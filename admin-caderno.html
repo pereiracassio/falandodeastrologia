@@ -277,7 +277,7 @@
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=3"></script>
   <script src="caderno-estudos-tela.js?v=1"></script>
-  <script src="todo-dados.js?v=3"></script>
+  <script src="todo-dados.js?v=4"></script>
   <script src="carrinho.js?v=6"></script>
   <script src="caderno-financeiro.js?v=1"></script>
   <script>
@@ -732,12 +732,17 @@
             var x = it.x, caixa = (x.chave || x.tarefa || x.passoId) ? el('button', { type: 'button', class: 'cx', 'aria-label': 'Marcar como feito' }) : el('span', { class: 'cx', style: 'border-color:transparent' });
             if (caixa.tagName === 'BUTTON') caixa.addEventListener('click', function () { marcarFeito(x, caixa, dados, desenharItens); });
             var quando = x.semData || !isFinite(x.quando) ? '' : (g.nome === 'Atrasados' ? (+it.iso.slice(8)) + ' de ' + MES3[+it.iso.slice(5, 7) - 1] + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando));
-            var meio = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro);margin:0 0 1px', text: quando }) : null, el('div', { class: 'nome', text: x.titulo }), x.sub ? el('div', { class: 'det', style: x.subOcre ? 'color:var(--ocre);font-weight:700' : 'opacity:.75;color:inherit', text: x.sub }) : null].filter(Boolean).concat(x.bsp ? tdPronto().barrasDe(x.bsp[1], x.bsp[0] === 'v' ? tdPronto().ETV : tdPronto().ETC, x.bsp[2], x.bsp[3]) : []));
+            var meio = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro);margin:0 0 1px', text: quando }) : null, el('div', { class: 'nome', text: x.titulo }), x.sub ? el('div', { class: 'det', style: x.subOcre ? 'color:var(--ocre);font-weight:700' : 'opacity:.75;color:inherit', text: x.sub }) : null].filter(Boolean));
+            var barras = x.bsp ? tdPronto().barrasDe(x.bsp[1], x.bsp[0] === 'v' ? tdPronto().ETV : tdPronto().ETC, x.bsp[2], x.bsp[3]) : []; /* as barras ocupam a largura toda: item com barra não tem caixinha nem ícone na frente delas */
             meio.addEventListener('click', function () { if (x.url) { abrirTela(x.url); return; } if (x.evento && !x.evento.aniversario) modAgenda().abrirEvento(x.evento); });
             var corpoLinha = x.capa ? el('div', { style: 'flex:1;min-width:0' }, [el('img', { src: x.capa, alt: '', style: 'display:block;width:100%;max-width:260px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:0 0 6px' }), meio]) : meio; /* a capinha do vídeo fica em cima, como no To do da Agenda */
-            var linha = el('div', { class: 'tarefa' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor }), caixa, corpoLinha]);
+            var faixa = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
+            var iconePl = null; if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; iconePl = el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)') : 'var(--terracota)'), text: icone(pl) }); }
+            var linha = barras.length
+              ? el('div', { class: 'tarefa' }, [faixa, el('div', { style: 'flex:1;min-width:0' }, [el('div', { style: 'display:flex;gap:10px;align-items:flex-start' }, [corpoLinha].concat(iconePl ? [iconePl] : []))].concat(barras))])
+              : el('div', { class: 'tarefa' }, [faixa, caixa, corpoLinha]);
             if (x.tarefa) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (r) { if (r.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenharItens(); }); }); linha.appendChild(ap); }
-            if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)') : 'var(--terracota)'), text: icone(pl) })); }
+            if (!barras.length && iconePl) linha.appendChild(iconePl);
             bl.appendChild(linha);
           });
           feitos.forEach(function (c) { bl.appendChild(linhaFeita(c)); });

@@ -55,8 +55,8 @@ window.TodoDados = function (ctx) {
     function barrasDe(item, etapas, criado, fim) {
       if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
       var feita = function (k) { return k === 'capa' ? !!item.capa_url : k === 'publico_ok' ? !!(item.no_ar && item.data_publico && String(item.data_publico).slice(0, 10) <= new Date().toLocaleDateString('sv-SE')) : !!item[k]; };
-      var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid var(--azul-egipcio-claro);margin:8px 0 0;overflow-x:auto;overflow-y:hidden' }, etapas.map(function (e, i) {
-        return el('span', { text: e[1], class: feita(e[0]) ? 'preench' : '', style: 'flex:1 1 auto;white-space:nowrap;text-align:center;font-size:11px;padding:6px 6px;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:var(--vazado,#F3E3B8)' : 'color:var(--terracota)') });
+      var seg = el('div', { style: 'display:flex;flex-wrap:nowrap;border:1px solid var(--azul-egipcio-claro);margin:8px 0 0;overflow:hidden' }, etapas.map(function (e, i) {
+        return el('span', { text: e[1], class: feita(e[0]) ? 'preench' : '', style: 'flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;white-space:normal;word-break:keep-all;text-align:center;font-size:clamp(5px,2.15cqw,11px);line-height:1.12;padding:4px 0;' + (i ? 'border-left:1px solid var(--azul-egipcio-claro);' : '') + (feita(e[0]) ? 'background:var(--azul-egipcio-claro);color:var(--vazado,#F3E3B8)' : 'color:var(--terracota)') });
       }));
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }
