@@ -510,7 +510,7 @@
     function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && hist[hpos - 1].visao === visao; } /* o histórico é de dentro da aba: nunca volta para outra aba */
     function podeAvancar() { return hpos < hist.length - 1 && !!hist[hpos + 1] && hist[hpos + 1].visao === visao; }
-    function atualizarVoltar() { var b = document.getElementById('voltarTab'); if (b) b.hidden = !podeVoltar() || cad.classList.contains('v-livro') || cad.classList.contains('v-embed'); }
+    function atualizarVoltar() { var b = document.getElementById('voltarTab'); if (b) b.hidden = !podeVoltar() || cad.classList.contains('v-livro') || cad.classList.contains('v-embed') || ['projetos', 'estudos', 'producao', 'leitor'].indexOf(visao) >= 0; } /* essas telas já trazem o próprio ← Voltar: o do topinho some para não duplicar */
     function voltarPagina() { if (!podeVoltar()) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (!podeAvancar()) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
     function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
