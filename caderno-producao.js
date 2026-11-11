@@ -809,7 +809,7 @@ window.ProducaoCaderno = function (ctx) {
         cortesDe(v.id).length ? [botVideo, botCortes, botCorte] : [botVideo, botCortes]));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
       /* o vídeo tem DUAS páginas: informações (título, capa, link, etapas) à esquerda e roteiro, texto, tags e cards à direita; os CORTES são outro nível (vira a página): lista à esquerda, o corte aberto à direita */
-      function irParaCortes() { salvarEIr(function () { abaVideo = 'corte'; abaVideoDe = v.id; ctx.entrar(tela, 'p1'); }); }
+      function irParaCortes() { salvarEIr(function () { var u = cortesDe(v.id).slice(-1)[0]; if (u && !cortesDe(v.id).some(function (x) { return x.id === corteAberto; })) corteAberto = u.id; abaVideo = 'corte'; abaVideoDe = v.id; ctx.entrar(tela, 'p1'); }); }
       var botaoCortes = function () { return el('div', { class: 'portal-acoes', style: 'margin:0 0 8px' }, [botao('Cortes (' + cortesDe(v.id).length + ') ›', irParaCortes)]); };
       cartao.appendChild(botaoCortes());
       area.appendChild(cartao);
