@@ -406,8 +406,8 @@
         dir.appendChild(b);
       });
       dir.appendChild(el('div', { class: 'vao' }));
-            [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '⚙']].forEach(function (x) {
-        var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1] })]);
+            [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '\u2699\uFE0E']].forEach(function (x) { /* \uFE0E = a engrenagem de TRAÇO (letra), nunca o emoji colorido do aparelho */
+        var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1], style: x[0] === 'config' ? 'font-size:2em;line-height:.5;display:inline-block' : '' })]);
         b.addEventListener('click', function () { irPara(x[0]); }); dir.appendChild(b);
       });
       contarAvisos();
