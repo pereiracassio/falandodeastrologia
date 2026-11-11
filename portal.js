@@ -577,6 +577,20 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   }
   /* visualização do Hellenic Daily: a escolha mora no Supabase (site_config.daily_visual); aqui fica só a cópia do aparelho, para os botões já apontarem para a página certa */
   function modoDaily() { try { return localStorage.getItem('fda_daily_visual') === 'padrao' ? 'padrao' : 'caderno'; } catch (e) { return 'caderno'; } }
+  /* planeta cuja hora aparece na Produção (vídeos e cortes), escolhido em Configurações → Horas: site_config.prod_planeta_horas; padrão Júpiter.
+     A cópia no aparelho é só cache de exibição (para já abrir com o planeta certo); quem manda é o Supabase. */
+  var PLANETAS_HORAS = [['Saturn', 'Saturno'], ['Jupiter', 'Júpiter'], ['Mars', 'Marte'], ['Sun', 'Sol'], ['Venus', 'Vênus'], ['Mercury', 'Mercúrio'], ['Moon', 'Lua']];
+  var planetaHoras = { en: 'Jupiter', pt: 'Júpiter' }, planetaHorasP = null;
+  function definirPlanetaHoras(en) { var x = PLANETAS_HORAS.filter(function (p) { return p[0] === en; })[0]; if (!x) return false; planetaHoras.en = x[0]; planetaHoras.pt = x[1]; try { localStorage.setItem('fda_planeta_horas', x[0]); } catch (e) { /* sem cache */ } return true; }
+  try { definirPlanetaHoras(localStorage.getItem('fda_planeta_horas')); } catch (e) { /* padrão */ }
+  function carregarPlanetaHoras() {
+    if (!planetaHorasP) planetaHorasP = client.from('site_config').select('valor').eq('chave', 'prod_planeta_horas').maybeSingle().then(function (r) {
+      if (r.error) { planetaHorasP = null; return planetaHoras; }
+      try { definirPlanetaHoras(r.data && r.data.valor ? JSON.parse(r.data.valor) : 'Jupiter'); } catch (e) { /* fica o que estava */ }
+      return planetaHoras;
+    }, function () { planetaHorasP = null; return planetaHoras; });
+    return planetaHorasP;
+  }
   function guardarModoDaily(v) { try { localStorage.setItem('fda_daily_visual', v === 'padrao' ? 'padrao' : 'caderno'); } catch (e) { /* sem armazenamento */ } }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
@@ -1568,7 +1582,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    modoDaily: modoDaily, guardarModoDaily: guardarModoDaily, client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    modoDaily: modoDaily, guardarModoDaily: guardarModoDaily, PLANETAS_HORAS: PLANETAS_HORAS, planetaHoras: planetaHoras, definirPlanetaHoras: definirPlanetaHoras, carregarPlanetaHoras: carregarPlanetaHoras, client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias, tempoNoPreenchimento: tempoNoPreenchimento

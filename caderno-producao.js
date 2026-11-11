@@ -105,7 +105,7 @@ window.ProducaoCaderno = function (ctx) {
       var durDia = (hoje_.poe - hoje_.nasce) / 12, durNoite = (amanha.nasce + 1440 - hoje_.poe) / 12;
       for (var i = 0; i < 24; i++) {
         var dia = i < 12, j = dia ? i : i - 12;
-        if (CALDAICA[(ini + i) % 7] !== 'Jupiter') continue;
+        if (CALDAICA[(ini + i) % 7] !== P.planetaHoras.en) continue;
         var a = dia ? hoje_.nasce + j * durDia : hoje_.poe + j * durNoite, b = a + (dia ? durDia : durNoite);
         achadas.push([Math.round(a), Math.round(b)]);
       }
@@ -116,8 +116,8 @@ window.ProducaoCaderno = function (ctx) {
       caixa.textContent = '';
       if (!isoD) { if (avisoSemData) caixa.appendChild(el('div', { text: avisoSemData })); return; }
       var p = isoD.split('-'), h = horasDeJupiter(isoD);
-      caixa.appendChild(el('div', { style: 'font-weight:700', text: p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de Júpiter' }));
-      if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
+      caixa.appendChild(el('div', { style: 'font-weight:700', text: p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de ' + P.planetaHoras.pt }));
+      if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de ' + P.planetaHoras.pt + ' calculado nesse dia' }));
       h.forEach(function (x) { caixa.appendChild(el('div', { text: hhmm(x[0]) + ' a ' + hhmm(x[1]) })); });
     }
     /* os horários de Júpiter do dia, um por linha, para ESCOLHER qual vale (a escolhida fica terracota com ✓; tocar de novo desfaz). Só a palavra, sem quadrado */
@@ -125,8 +125,8 @@ window.ProducaoCaderno = function (ctx) {
       caixa.textContent = '';
       if (!isoD) { if (avisoSemData) caixa.appendChild(el('div', { text: avisoSemData })); return; }
       var p = isoD.split('-'), h = horasDeJupiter(isoD);
-      caixa.appendChild(el('div', { style: 'font-weight:700', text: p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de Júpiter' }));
-      if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
+      caixa.appendChild(el('div', { style: 'font-weight:700', text: p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de ' + P.planetaHoras.pt }));
+      if (!h.length) caixa.appendChild(el('div', { text: 'sem horário de ' + P.planetaHoras.pt + ' calculado nesse dia' }));
       h.forEach(function (x, i) {
         var on = indice === i;
         var b = el('button', { type: 'button', text: hhmm(x[0]) + ' a ' + hhmm(x[1]) + (on ? '  ✓' : ''), style: 'display:block;background:transparent;border:0;border-radius:0;padding:2px 0;margin:0;font:inherit;cursor:pointer;text-align:left;color:' + (on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')) + ';font-weight:' + (on ? '700' : '400') });
@@ -138,7 +138,7 @@ window.ProducaoCaderno = function (ctx) {
     function textoJupiter(isoD) {
       if (!isoD) return '';
       var h = horasDeJupiter(isoD);
-      return h.length ? 'Júpiter nesse dia: ' + h.map(function (x) { return hhmm(x[0]) + ' a ' + hhmm(x[1]); }).join(' · ') : '';
+      return h.length ? P.planetaHoras.pt + ' nesse dia: ' + h.map(function (x) { return hhmm(x[0]) + ' a ' + hhmm(x[1]); }).join(' · ') : '';
     }
 
     /* ---------- datas (sempre texto aaaa-mm-dd, sem fuso) ---------- */
@@ -279,7 +279,8 @@ window.ProducaoCaderno = function (ctx) {
         C.from('prod_videos').select('*').order('numero').order('criado_em'),
         C.from('prod_cortes').select('*').order('ordem').order('criado_em'),
         C.from('site_config').select('valor').eq('chave', 'prod_local_horas').maybeSingle(),
-        C.from('site_config').select('valor').eq('chave', 'prod_texto_fixo').maybeSingle()
+        C.from('site_config').select('valor').eq('chave', 'prod_texto_fixo').maybeSingle(),
+        P.carregarPlanetaHoras()
       ]).then(function (r) {
         if (r[0].error || r[1].error || r[2].error) throw new Error('prod');
         series = r[0].data || []; videos = r[1].data || []; cortes = r[2].data || [];
@@ -980,8 +981,8 @@ window.ProducaoCaderno = function (ctx) {
         var d = dataDeJupiter(), h = d ? horasDeJupiter(d) : [];
         if (!d) return;
         var p = d.split('-'), curta = p[2] + '/' + p[1] + '/' + p[0].slice(2);
-        jupFim.appendChild(el('div', { style: 'font-weight:700', text: curta + ', horários de Júpiter' }));
-        if (!h.length) jupFim.appendChild(el('div', { text: 'sem horário de Júpiter calculado nesse dia' }));
+        jupFim.appendChild(el('div', { style: 'font-weight:700', text: curta + ', horários de ' + P.planetaHoras.pt }));
+        if (!h.length) jupFim.appendChild(el('div', { text: 'sem horário de ' + P.planetaHoras.pt + ' calculado nesse dia' }));
         jupiterEscolha(jupFim, d, v.hora_jupiter == null ? null : v.hora_jupiter, '', function (i) { gravar('prod_videos', videos, v, { hora_jupiter: i }); });
       }
       pintarJupFim();

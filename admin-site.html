@@ -60,7 +60,7 @@
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="carrinho.js?v=6"></script>
-  <script src="portal.js?v=176"></script>
+  <script src="portal.js?v=177"></script>
   <script src="menu.js?v=68" defer></script>
   <script>
   (function () {
@@ -186,6 +186,27 @@
         cartao.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:' + (i ? '18px' : '6px') + ' 0 2px', text: x[0] }));
         [].slice.call(x[1].children, 1).forEach(function (f) { cartao.appendChild(f); });
       });
+      return cartao;
+    }
+
+    /* de qual planeta é a hora que aparece na Produção (vídeos e cortes) e nos lembretes dela; padrão Júpiter. Guardado em site_config.prod_planeta_horas */
+    function cartaoPlanetaProducao() {
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Hora planetária da Produção' })]), linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:6px' }), msg = el('p', { class: 'portal-msg' });
+      function desenhar() {
+        linha.textContent = '';
+        P.PLANETAS_HORAS.forEach(function (x) {
+          var on = x[0] === P.planetaHoras.en, b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: (on ? '\u2713 ' : '') + x[1] });
+          if (on) b.style.setProperty('color', 'var(--terracota)', 'important');
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.addEventListener('click', function () {
+            P.definirPlanetaHoras(x[0]); desenhar();
+            C.from('site_config').upsert({ chave: 'prod_planeta_horas', valor: JSON.stringify(x[0]), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (r) { if (r.error) P.mensagem(msg, 'Não salvou: ' + P.traduzErro(r.error.message), 'erro'); else P.mensagem(msg, ''); });
+          });
+          linha.appendChild(b);
+        });
+      }
+      desenhar(); cartao.appendChild(linha); cartao.appendChild(msg);
+      P.carregarPlanetaHoras().then(desenhar);
       return cartao;
     }
 
@@ -569,7 +590,8 @@
         saindo.addEventListener('click', sair);
         var ABAS = [
           ['personalizacao', 'Personalização', [cartaoPersonalizacao()]],
-          ['agenda', 'Agenda', [cartaoAgendas(), cartaoLugar()]],
+          ['agenda', 'Agenda', [cartaoAgendas()]],
+          ['horas', 'Horas', [cartaoLugar(), cartaoPlanetaProducao()]],
           ['producao', 'Produção', [cartaoTextoFixo()]],
           ['financeiro', 'Financeiro', [cartaoAreas, cartaoServicos]],
           ['conta', 'Conta', [conexaoDrive, P.avisos.cartao('admin'), el('div', { class: 'portal-cartao', style: 'display:flex;flex-direction:column;align-items:center;gap:14px' }, [trocar, areaSenha, saindo])]]
