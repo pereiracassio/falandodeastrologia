@@ -42,8 +42,8 @@
     .cad .folha{touch-action:pan-y;position:relative;height:100%;background:var(--papiro-fundo);display:flex}
     .cad .folha::after{z-index:3}
     .cad .pag{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;
-      padding:calc(130px*var(--moldura-m) + 14px) 46px calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 22px)}
-    .cad .pag.dir{padding-left:46px;padding-right:calc(80px*var(--moldura-m) + 22px)}
+      padding:calc(130px*var(--moldura-m) + 14px) 26px calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 22px)} /* 26px até a costura (era 46): o conteúdo chega perto da sombra, não sobra faixa vazia */
+    .cad .pag.dir{padding-left:26px;padding-right:calc(80px*var(--moldura-m) + 22px)}
     .cad .pag{position:relative}
     .cad .voltar-tab{position:absolute;z-index:5;top:calc(130px*var(--moldura-m) + 2px);left:calc(80px*var(--moldura-m) + 22px);background:none;border:0;padding:2px 0;color:var(--terracota);font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:4px}
     .cad .voltar-tab[hidden]{display:none}
