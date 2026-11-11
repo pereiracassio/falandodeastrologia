@@ -666,9 +666,19 @@
       return iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEMANA[diaSem(iso)] + ', ' + (+iso.slice(8)) + ' de ' + MES3[+iso.slice(5, 7) - 1];
     }
     function registrarConcluido(x, dados) { /* o que foi feito fica guardado (com o dia) para aparecer esmaecido no To do daquele dia */
-      var c = { t: Date.now(), titulo: x.titulo, sub: x.sub || '', cor: x.cor || '', url: x.url || '' };
+      var c = { t: Date.now(), titulo: x.titulo, sub: x.sub || '', cor: x.cor || '', url: x.url || '', passoId: x.passoId || null, tarefaId: x.tarefa ? x.tarefa.id : null, chave: x.chave || null };
       dados.concluidos = (dados.concluidos || []).concat([c]);
       valorSite('todo_concluidos').then(function (a) { return gravarSite('todo_concluidos', (a || []).filter(function (i) { return Date.now() - i.t < 365 * DIA; }).concat([c])); }).then(null, function () { });
+    }
+    function desfazerFeito(c, cx) { /* marcou por engano: tocar no ✓ desmarca de verdade (volta para a lista) e sai do registro */
+      cx.disabled = true;
+      var falhou = function () { cx.disabled = false; alert('Não foi possível desmarcar.'); };
+      var p = c.passoId ? C.from('projeto_passos').update({ feito: false, feito_em: null }).eq('id', c.passoId)
+        : c.tarefaId ? C.from('todo_tarefas').update({ feito: false, feito_em: null }).eq('id', c.tarefaId)
+        : valorSite('todo_feitos').then(function (a) { a = a || {}; delete a[c.chave]; return gravarSite('todo_feitos', a); });
+      Promise.resolve(p).then(function (g) { if (g && g.error) throw g.error; return valorSite('todo_concluidos'); })
+        .then(function (a) { return gravarSite('todo_concluidos', (a || []).filter(function (i) { return i.t !== c.t; })); })
+        .then(function (g) { if (g && g.error) throw g.error; recarregarTodo(); }, falhou);
     }
     function marcarFeito(x, cx, dados, redesenhar) {
       cx.textContent = '✓'; cx.disabled = true;
@@ -698,7 +708,9 @@
         function conclDe(iso) { return (dados.concluidos || []).filter(function (c) { return isoDia(c.t) === iso; }).sort(function (a, b) { return a.t - b.t; }); }
         function linhaFeita(c) {
           var meio = el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'nome', text: c.titulo }), c.sub ? el('div', { class: 'det', text: c.sub }) : null]);
-          return el('div', { class: 'tarefa feita' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + (c.cor || '#B5852F') }), el('span', { class: 'cx', style: 'border-color:var(--azul-egipcio-claro)', text: '✓' }), meio]);
+          var cx = (c.passoId || c.tarefaId || c.chave) ? el('button', { type: 'button', class: 'cx', 'aria-label': 'Desmarcar', text: '✓' }) : el('span', { class: 'cx', style: 'border-color:var(--azul-egipcio-claro)', text: '✓' });
+          if (cx.tagName === 'BUTTON') cx.addEventListener('click', function () { desfazerFeito(c, cx); });
+          return el('div', { class: 'tarefa feita' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + (c.cor || '#B5852F') }), cx, meio]);
         }
         var grupos = [], atual = null;
         itens.forEach(function (x) {
