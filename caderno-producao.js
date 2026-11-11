@@ -461,14 +461,21 @@ window.ProducaoCaderno = function (ctx) {
       var oculto = el('div'), nivel;
       if (aba === 'hoje') { telaHoje(esq); telaSeries(dir); ctx.rotulos('próximos', 'séries'); return; }
       if (videoAberto && achar(videos, videoAberto)) {
-        var v = achar(videos, videoAberto), emCorte = abaVideoDe === v.id && abaVideo === 'corte' && cortesDe(v.id).length;
+        var v = achar(videos, videoAberto), emCorte = abaVideoDe === v.id && (abaVideo === 'corte' || abaVideo === 'cortes');
         if (!emCorte) { abaVideo = 'video'; abaVideoDe = v.id; }
         telaVideo(oculto, v);
         if (!nos) return;
-        nos.cc.style.display = ''; 
-        if (emCorte) { nos.cartao.style.display = 'none'; nos.blocoApagar.style.display = 'none'; esq.appendChild(nos.ce); ctx.rotulos('corte', 'cortes'); }
-        else { esq.appendChild(nos.cartao); esq.appendChild(nos.blocoApagar); ctx.rotulos('vídeo', 'cortes'); }
-        dir.appendChild(nos.cc);
+        nos.cartao.style.display = nos.info.style.display = nos.blocoApagar.style.display = '';
+        if (emCorte) { /* CORTES: a lista à esquerda (de onde vim), o corte aberto à direita (o mais para dentro) */
+          var ultimoC = cortesDe(v.id).slice(-1)[0];
+          if (ultimoC && !cortesDe(v.id).some(function (x) { return x.id === corteAberto; })) corteAberto = ultimoC.id;
+          nos.cc.style.display = ''; nos.ce.style.display = nos.temCortes ? '' : 'none';
+          nos.info.style.display = nos.cartao.style.display = nos.blocoApagar.style.display = 'none';
+          esq.appendChild(nos.cc); dir.appendChild(nos.ce); ctx.rotulos('cortes', 'corte');
+          Object.keys(nos.editores).forEach(function (id) { nos.editores[id].style.display = id === String(corteAberto) ? '' : 'none'; });
+        } else { /* VÍDEO: informações à esquerda, roteiro e o resto à direita */
+          esq.appendChild(nos.info); esq.appendChild(nos.blocoApagar); dir.appendChild(nos.cartao); ctx.rotulos('vídeo', 'roteiro');
+        }
         return;
       }
       if (serieAberta) {
@@ -801,6 +808,10 @@ window.ProducaoCaderno = function (ctx) {
         : [irSeries, { nome: 'Vídeos', ir: irSerie('videos') }],
         cortesDe(v.id).length ? [botVideo, botCortes, botCorte] : [botVideo, botCortes]));
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: nomeVideo(v) })]);
+      /* o vídeo tem DUAS páginas: informações (título, capa, link, etapas) à esquerda e roteiro, texto, tags e cards à direita; os CORTES são outro nível (vira a página): lista à esquerda, o corte aberto à direita */
+      function irParaCortes() { salvarEIr(function () { abaVideo = 'corte'; abaVideoDe = v.id; ctx.entrar(tela, 'p1'); }); }
+      var botaoCortes = function () { return el('div', { class: 'portal-acoes', style: 'margin:0 0 8px' }, [botao('Cortes (' + cortesDe(v.id).length + ') ›', irParaCortes)]); };
+      cartao.appendChild(botaoCortes());
       area.appendChild(cartao);
 
       var titulo = el('input', { type: 'text', maxlength: '160' }); titulo.value = v.titulo || '';
@@ -862,7 +873,9 @@ window.ProducaoCaderno = function (ctx) {
       var tempoV = barraTempo(v.criado_em, fimDoVideo(v), v.no_ar); if (tempoV) cartao.appendChild(tempoV);
       var faltaSeoLinha = el('p', { class: 'prod-sub', style: 'margin:-4px 0 12px;color:var(--terracota,#A03E25)' });
       cartao.appendChild(faltaSeoLinha);
-      cartao.appendChild(el('hr', { class: 'prod-divisa' }));
+      var cartaoInfo = cartao; /* a partir daqui é a página do roteiro (direita) */
+      cartao = el('div', { class: 'portal-cartao' });
+      cartao.appendChild(botaoCortes());
       /* vídeos novos: roteiro em blocos (gancho, bloco 1, 2..., conclusão). Vídeos com roteiro antigo escrito no campo único ficam como estão. */
       var usaBlocos = v.roteiro_blocos != null || !(v.roteiro && v.roteiro.trim());
       var rb = v.roteiro_blocos ? { gancho: v.roteiro_blocos.gancho || '', blocos: (v.roteiro_blocos.blocos && v.roteiro_blocos.blocos.length ? v.roteiro_blocos.blocos : ['']).slice(), conclusao: v.roteiro_blocos.conclusao || '' } : { gancho: '', blocos: [''], conclusao: '' };
@@ -1057,7 +1070,7 @@ window.ProducaoCaderno = function (ctx) {
         var ordem = lista.reduce(function (m, c) { return Math.max(m, c.ordem || 0); }, 0) + 1;
         C.from('prod_cortes').insert({ video_id: v.id, ordem: ordem, titulo: 'Corte ' + ordem }).select('*').single().then(function (r) {
           if (r.error) { P.mensagem(msgC, P.traduzErro(r.error.message), 'erro'); return; }
-          cortes.push(r.data); corteAberto = r.data.id; abaVideo = 'corte'; abaVideoDe = v.id; tela(); /* o corte novo abre sozinho para editar */
+          cortes.push(r.data); corteAberto = r.data.id; abaVideo = 'corte'; abaVideoDe = v.id; tela(); /* o corte novo abre sozinho para editar (à direita) */
         });
       }, false)]));
       /* link do vídeo no Google Fotos: campo de link padrão do site (colado vira o ícone; tocar copia; "Editar" troca). Campo vazio salva como sem link */
@@ -1141,7 +1154,7 @@ window.ProducaoCaderno = function (ctx) {
         var nomeC = el('span', { class: 'prod-nome', text: c.titulo || 'Corte' }), dataC = el('span', { class: 'prod-data', style: 'display:block;color:var(--preto-tinta,#16233F)', text: c.data ? comDia(c.data) : 'sem data' }); /* data em preto: menos cor, para ler logo que é a data */
         d.addEventListener('blur', function () { dataC.textContent = d.value ? comDia(d.value) : 'sem data'; });
         t.addEventListener('change', function () { nomeC.textContent = t.value.trim() || 'Corte'; botCorte.textContent = nomeDoCorteAberto(); });
-        var abrirC = function () { corteAberto = c.id; abaVideo = 'corte'; abaVideoDe = v.id; ctx.entrar(tela); };
+        var abrirC = function () { corteAberto = c.id; abaVideo = 'corte'; abaVideoDe = v.id; ctx.entrar(tela, 'p2'); };
         var linhaC = el('div', { class: 'prod-linha', style: 'cursor:pointer' }, [el('div', { style: 'flex:1;min-width:160px' }, [nomeC, dataC,
           chipsDoCorte(c),
           barraTempo(c.criado_em, c.data, concluido(c))])]);
@@ -1149,12 +1162,12 @@ window.ProducaoCaderno = function (ctx) {
         cc.appendChild(linhaC);
       });
       cc.appendChild(msgC);
-      cc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar()])); /* ← Voltar também embaixo, na aba Cortes */
-      ce.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar()]));
+      cc.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar(function () { abaVideo = 'video'; abaVideoDe = v.id; ctx.entrar(tela, 'p1'); })])); /* ← Voltar também embaixo: sobe um nível, para o vídeo */
+      ce.appendChild(el('div', { class: 'portal-acoes', style: 'margin:18px 0 0' }, [botaoVoltar(function () { abaVideo = 'video'; abaVideoDe = v.id; ctx.entrar(tela, 'p1'); })]));
       var blocoApagar = el('div', { style: 'margin:56px 0 8px;text-align:center' }, [apagar]);
       area.appendChild(blocoApagar);
       mostrarAbaVideo(abaAtual);
-      nos = { cartao: cartao, blocoApagar: blocoApagar, cc: cc, ce: ce };
+      nos = { cartao: cartao, info: cartaoInfo, blocoApagar: blocoApagar, cc: cc, ce: ce, temCortes: cortesDe(v.id).length > 0, editores: editores };
     }
 
     return {

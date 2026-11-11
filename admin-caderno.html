@@ -271,7 +271,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="caderno-leitor.js?v=8"></script>
-  <script src="caderno-producao.js?v=2"></script>
+  <script src="caderno-producao.js?v=3"></script>
   <script src="caderno-projetos.js?v=1"></script>
   <script src="caderno-agenda.js?v=3"></script>
   <script src="leitor.js?v=10"></script>
@@ -676,7 +676,7 @@
       if (m[1] === 'producao') { prodSerie = q.get('serie') || null; prodVideo = q.get('video') || null; prodCorte = prodVideo ? (q.get('corte') || null) : null; }
       else if (m[1] === 'projetos') { projSel = q.get('projeto') || null; projVer = null; }
       else if (m[1] === 'estudos') { estSel = q.get('estudo') || null; estVer = null; estAula = q.get('aula') || null; }
-      irPara(m[1]); if (m[1] === 'producao' && prodVideo) paginaCel('p1');
+      irPara(m[1]); if (m[1] === 'producao' && prodVideo) paginaCel(prodCorte ? 'p2' : 'p1');
     }
     function rotuloDiaTodo(iso) {
       var hoje = isoDia(Date.now()), amanha = somaDias(hoje, 1);
@@ -918,7 +918,7 @@
     /* ---------- Produção: a tela COMPLETA (caderno-producao.js), encaixada de página em página:
        próximos · séries → série · vídeos → vídeo (editor inteiro) · cortes → corte (editor) · cortes do vídeo ---------- */
     var prodMod = null, prodCtx = { P: P, C: C, app: el('div'), esq: null, dir: null,
-      entrar: function (fn) { var e = prodMod.estado(); prodSerie = e.serie; prodVideo = e.video; prodCorte = e.corte; entrarPagina(fn); paginaCel(e.video ? 'p1' : 'p2'); }, /* no celular (uma página por vez): entrar num vídeo ou corte mostra o EDITOR dele (esquerda), não a lista de cortes (direita) */
+      entrar: function (fn, pag) { var e = prodMod.estado(); prodSerie = e.serie; prodVideo = e.video; prodCorte = e.corte; entrarPagina(fn); paginaCel(pag || (e.video ? 'p1' : 'p2')); }, /* pag: a página do celular a mostrar (cortes: lista = p1, corte aberto = p2) */ /* no celular (uma página por vez): entrar num vídeo ou corte mostra o EDITOR dele (esquerda), não a lista de cortes (direita) */
       rotulos: function (a, b) { document.getElementById('t1').textContent = a; document.getElementById('t2').textContent = b; } };
     function dataCurta(s) { var iso = String(s).slice(0, 10); return SEMANA[diaSem(iso)].slice(0, 3) + ' ' + (+iso.slice(8)) + '/' + (+iso.slice(5, 7)); }
     function vistaProducao() {
