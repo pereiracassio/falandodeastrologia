@@ -110,6 +110,10 @@
     .cad .hp .r .ic{font-size:20px;width:22px;text-align:center}
     .cad .ev{position:absolute;left:84px;right:4px;padding:0 10px;line-height:1.25;min-height:22px;font-size:15px;overflow:hidden;display:flex;gap:10px;align-items:baseline;text-decoration:none;cursor:pointer}
     .cad .ev small{font-size:12px}
+    .cad .evt{position:absolute;left:84px;right:4px;padding:3px 10px 0;display:flex;flex-direction:column;gap:1px;z-index:1}
+    .cad .evl{display:flex;gap:8px;align-items:baseline;line-height:1.25;font-size:15px;text-decoration:none;cursor:pointer;min-width:0}
+    .cad .evl .q{flex:0 0 auto;width:10px;height:10px;align-self:center;display:inline-block}
+    .cad .evl .evt-titulo{color:var(--terracota)}.cad .evl small{font-size:12px;color:var(--azul-egipcio-escuro,#1034A6);white-space:nowrap}
     .cad .agora{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--terracota);z-index:2}
     .cad .agora i{position:absolute;right:0;top:-11px;background:var(--terracota);color:#F3E3B8;font-style:normal;font-weight:700;font-size:12px;padding:2px 8px}
     .cad .falha{color:var(--terracota);font-size:13px;margin:0 0 6px 76px}
@@ -151,7 +155,7 @@
       .cad .mini{font-size:13px}.cad .mini td button{padding:4px 5px;font-size:13px}.cad .mini th{padding:2px 5px 4px;font-size:10px}
       .cad .mini .ns{display:none}
       .cad .tarefa .nome{font-size:15px}
-      .cad .hp .r{width:64px;font-size:12px}.cad .ev{left:70px;font-size:13px}.cad .diatodo{padding-left:64px}.cad .falha{margin-left:64px}
+      .cad .hp .r{width:64px;font-size:12px}.cad .ev{left:70px;font-size:13px}.cad .evt{left:70px}.cad .evl{font-size:13px}.cad .diatodo{padding-left:64px}.cad .falha{margin-left:64px}
     }
 
     /* as outras visões (semana, mês, ano, lista) e as telas de antes dentro da folha */
@@ -458,13 +462,18 @@
       eventosEntre(d0, d1).then(function (evs) {
         if (eu !== pedido) return;
         if (evs.falhas && evs.falhas.length) todo.parentNode.insertBefore(el('p', { class: 'falha', text: 'Não consegui ler: ' + evs.falhas.join(', ') }), linha);
+        var porHora = {};
         evs.forEach(function (e) {
           if (e.diaTodo) { var bl = el('span', { class: 'bloco', text: e.titulo }); bl.style.background = e.cor; bl.style.color = textoSobre(e.cor.length === 7 ? e.cor : '#B5852F'); bl.style.cursor = 'pointer'; bl.setAttribute('role', 'button'); bl.addEventListener('click', function () { modAgenda().abrirEvento(e); }); todo.appendChild(bl); return; } /* dia inteiro abre e edita como qualquer compromisso */
           var ini = Math.max(e.ini, d0), fim = Math.min(e.fim, d1); if (fim <= ini) return;
-          var cor = e.cor.length === 7 ? e.cor : '#B5852F', b = el('a', { class: 'ev', href: '#', style: 'top:' + pct(ini) + ';height:calc(' + ((fim - ini) / (d1 - d0) * 100).toFixed(3) + '% - 2px);margin-top:1px;background:' + cor + ';color:' + textoSobre(cor) }, [el('span', { text: e.titulo }), el('small', { text: hhmm(e.ini) + ' às ' + hhmm(e.fim) })]);
+          /* como escrito à mão no caderno: sem cartão, só um quadradinho da cor da agenda + o texto, na linha da hora planetária em que o compromisso começa */
+          var cor = e.cor.length === 7 ? e.cor : '#B5852F', k = 0;
+          for (var j = 0; j < horas.length; j++) if (ini >= horas[j].ini) k = j;
+          var b = el('a', { class: 'evl', href: '#' }, [el('i', { class: 'q', style: 'background:' + cor }), el('span', { class: 'evt-titulo', text: e.titulo }), el('small', { text: hhmm(e.ini) + ' às ' + hhmm(e.fim) })]);
           b.addEventListener('click', function (ev) { ev.preventDefault(); modAgenda().abrirEvento(e); });
-          linha.appendChild(b);
+          (porHora[k] = porHora[k] || []).push(b);
         });
+        Object.keys(porHora).forEach(function (k) { var h = horas[k], c = el('div', { class: 'evt', style: 'top:' + pct(h.ini) }, porHora[k]); linha.appendChild(c); });
         if (!todo.firstChild) todo.appendChild(el('span', { class: 'rotulo-fixo', text: 'dia todo' }));
         else todo.insertBefore(el('span', { class: 'rotulo-fixo', text: 'dia todo' }), todo.firstChild);
       }, function (er) {
