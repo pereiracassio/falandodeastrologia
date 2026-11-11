@@ -116,23 +116,34 @@
       corpo.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
     }
     function escolherMapa(ah) {
-      corpo.textContent = ''; P.mensagem(msg, 'Buscando os seus mapas...');
-      ah.from('mapas').select('id,nome,tipo,pasta,codigo,data_nascimento,hora_nascimento,latitude,longitude,cidade').order('nome').then(function (r) {
+      corpo.textContent = ''; P.mensagem(msg, 'Buscando as suas pastas...');
+      ah.from('mapas').select('id,nome,tipo,pasta,codigo,data_nascimento,hora_nascimento,latitude,longitude,cidade').limit(5000).then(function (r) {
         if (r.error) { P.mensagem(msg, 'Não consegui ler os mapas (' + P.traduzErro(r.error.message) + ').', 'erro'); return; }
         P.mensagem(msg, '');
-        var busca = el('input', { type: 'text', placeholder: 'Buscar o seu mapa pelo nome' }), lista = el('div', { style: 'margin-top:10px;max-height:320px;overflow-y:auto' });
-        function desenharLista() {
-          lista.textContent = '';
-          var q = busca.value.trim().toLowerCase();
-          (r.data || []).filter(function (m) { return !q || String(m.nome || '').toLowerCase().indexOf(q) >= 0 || String(m.codigo || '').toLowerCase().indexOf(q) >= 0; }).slice(0, 60).forEach(function (m) {
-            var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'display:block;text-align:left;margin:2px 0', text: (m.codigo ? m.codigo + ' - ' : '') + m.nome + ' · ' + m.data_nascimento });
-            b.addEventListener('click', function () { guardar(ah, m); });
-            lista.appendChild(b);
-          });
-          if (!lista.firstChild) lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum mapa.' }));
+        var porPasta = {};
+        (r.data || []).forEach(function (m) { var p = m.pasta || 'Sem pasta'; (porPasta[p] = porPasta[p] || []).push(m); });
+        var nomes = Object.keys(porPasta).sort(function (x, y) { return x.localeCompare(y, 'pt-BR', { numeric: true }); });
+        function voltarBtn(aoClicar) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'color:var(--terracota)', text: '← Voltar' }); b.addEventListener('click', aoClicar); return b; }
+        function linhaLista(texto, aoClicar) {
+          var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', style: 'display:block;width:100%;text-align:left;margin:0;padding:12px 0;font-size:16px', text: texto });
+          b.addEventListener('click', aoClicar); return b;
         }
-        busca.addEventListener('input', desenharLista); desenharLista();
-        corpo.appendChild(busca); corpo.appendChild(lista);
+        function mostrarPastas() {
+          corpo.textContent = '';
+          corpo.appendChild(el('p', { class: 'rotulo-fixo', text: 'Pastas' }));
+          nomes.forEach(function (n) { corpo.appendChild(linhaLista(n + ' · ' + porPasta[n].length, function () { mostrarMapas(n); })); });
+          if (!nomes.length) corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma pasta.' }));
+        }
+        function mostrarMapas(pasta) {
+          corpo.textContent = '';
+          corpo.appendChild(voltarBtn(mostrarPastas));
+          corpo.appendChild(el('p', { class: 'rotulo-fixo', style: 'margin-top:10px', text: pasta }));
+          porPasta[pasta].slice().sort(function (x, y) { return String(x.codigo || '').localeCompare(String(y.codigo || ''), 'pt-BR', { numeric: true }) || String(x.nome || '').localeCompare(String(y.nome || ''), 'pt-BR'); }).forEach(function (m) {
+            corpo.appendChild(linhaLista((m.codigo ? m.codigo + ' - ' : '') + m.nome + ' · ' + (m.data_nascimento || ''), function () { guardar(ah, m); }));
+          });
+          corpo.appendChild(el('div', { style: 'margin-top:14px' }, [voltarBtn(mostrarPastas)]));
+        }
+        mostrarPastas();
       });
     }
     function guardar(ah, m) {
