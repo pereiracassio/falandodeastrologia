@@ -11,7 +11,12 @@
     .cfg-tela{min-width:0}
     .pagina-papiro .cfg-tela>.portal-cartao.cfg-primeiro{border-top:0!important;padding-top:0!important}
     .cfg-tela>[hidden]{display:none!important}
-    @media (min-width:900px){html.fda-caderno .cfg-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:88px}}
+    @media (min-width:900px){html.fda-caderno .cfg-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:88px}
+      /* no caderno cada lado é uma PÁGINA: a da esquerda (lista de abas) fica parada e a da direita rola sozinha, nunca as duas juntas */
+      html.fda-caderno,html.fda-caderno body{height:100%;overflow:hidden}
+      html.fda-caderno .cfg-layout{height:100vh;align-items:stretch}
+      html.fda-caderno .cfg-nav,html.fda-caderno .cfg-tela{height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+      html.fda-caderno .cfg-nav::-webkit-scrollbar,html.fda-caderno .cfg-tela::-webkit-scrollbar{display:none}}
     @media (max-width:899px){
       .cfg-layout{grid-template-columns:minmax(0,1fr);gap:16px}
       .cfg-nav{flex-direction:row;gap:22px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -592,8 +597,8 @@
         var ABAS = [
           ['personalizacao', 'Personalização', [cartaoPersonalizacao()]],
           ['agenda', 'Agenda', [cartaoAgendas()]],
-          ['horas', 'Horas', [cartaoLugar(), cartaoPlanetaProducao()]],
-          ['producao', 'Produção', [cartaoTextoFixo()]],
+          ['horas', 'Horas', [cartaoLugar()]],
+          ['producao', 'Produção', [cartaoPlanetaProducao(), cartaoTextoFixo()]],
           ['financeiro', 'Financeiro', [cartaoAreas, cartaoServicos]],
           ['conta', 'Conta', [conexaoDrive, window.hellenicPonte.cartao(), P.avisos.cartao('admin'), el('div', { class: 'portal-cartao', style: 'display:flex;flex-direction:column;align-items:center;gap:14px' }, [trocar, areaSenha, saindo])]]
         ];
