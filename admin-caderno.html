@@ -273,7 +273,7 @@
       <iframe class="embed" id="embed" title="Tela" allowtransparency="true"></iframe>
     </div></div>
     <div class="abas dir" id="abasDir"></div>
-    <div class="troca" id="troca"><button type="button" class="aba" id="t1">tarefas</button><button type="button" class="aba" id="t2">horários</button><button type="button" class="aba" id="tMais" style="flex:.4;color:var(--terracota);font-size:24px">+</button></div>
+    <div class="troca" id="troca"><button type="button" class="aba" id="t1">diário</button><button type="button" class="aba" id="t2">horários</button><button type="button" class="aba" id="tMais" style="flex:.4;color:var(--terracota);font-size:24px">+</button></div>
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -308,7 +308,7 @@
     var EXTRAS = { config: 'admin-site.html?app=daily', avisos: 'admin-avisos.html?app=daily', mensagens: 'admin-mensagens.html' };
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
-    var ROT = { dia: ['tarefas', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
+    var ROT = { dia: ['diário', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
     var espTodo = 0, ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
