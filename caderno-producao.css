@@ -55,6 +55,6 @@
   
 /* barra de etapas com datas: cabe na meia página do caderno SEM rolar de lado (colunas iguais, letra menor, nome da etapa quebra em duas linhas) */
 .prod-seg.com-datas{grid-auto-columns:minmax(0,1fr);overflow:visible}
-.prod-seg.com-datas .prod-chip.prod-chip{white-space:normal;font-size:10px;line-height:1.15;padding:5px 1px;overflow-wrap:normal;word-break:keep-all}
+.prod-seg.com-datas .prod-chip.prod-chip{white-space:normal;font-size:clamp(5px,1.4cqw,12px);line-height:1.15;padding:5px 1px;overflow-wrap:normal;word-break:keep-all}
 .prod-seg.com-datas .prod-data-cel{padding:0 1px}
-.prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:9px;gap:1px}
+.prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:clamp(5px,1.25cqw,11px);gap:1px} /* letras proporcionais à largura da página: o que cabe numa largura cabe em qualquer uma */
