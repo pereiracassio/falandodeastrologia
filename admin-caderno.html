@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Daily">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=8"></script>
+  <script src="tema.js?v=9"></script>
   <meta name="theme-color" content="#e6d3a0">
   <title>Hellenic Daily</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +21,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="temas.css?v=5">
   <script src="moldura.js?v=20261109a"></script>
-  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="papiro.css?v=6">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=91">
   <link rel="stylesheet" href="portal.css?v=33">
@@ -362,7 +362,7 @@
     function pintarCapa(c) {
       capa = c;
       var papiro = c === 'papiro';
-      cad.style.setProperty('--capa', papiro ? 'var(--papiro-fundo)' : '#' + c);
+      cad.style.setProperty('--capa', papiro ? 'var(--papiro-capa)' : '#' + c); /* a capa não muda com o tema: só as páginas */
       cad.style.setProperty('--capa-fio', papiro ? '#1034A6' : '#e6d3a0');
       try { localStorage.setItem('fda_caderno_capa', c); } catch (e) { /* só cache de exibição */ }
     }
@@ -441,7 +441,7 @@
       linha.textContent = ''; todo.textContent = '';
       var horas = HP.horasEntre(d0, d1, LAT, LON).map(function (h) { return { ini: Math.max(h.ini, d0), fim: Math.min(h.fim, d1), planeta: h.planeta, noite: h.noite }; }).filter(function (s) { return s.fim > s.ini; });
       function pct(ms) { return ((ms - d0) / (d1 - d0) * 100).toFixed(3) + '%'; }
-      var corDe = function (h) { return h.noite ? '#1F5FA3' : '#B5852F'; }, icH = document.getElementById('icHora'), ate = document.getElementById('ateHora'); icH.textContent = ''; ate.textContent = '';
+      var corDe = function (h) { return h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)'; }, icH = document.getElementById('icHora'), ate = document.getElementById('ateHora'); icH.textContent = ''; ate.textContent = '';
       horas.forEach(function (h) {
         var e = el('div', { class: 'hp', style: 'top:' + pct(h.ini) + ';height:' + ((h.fim - h.ini) / (d1 - d0) * 100).toFixed(3) + '%' }, [el('div', { class: 'r' }, [el('span', { class: 'ic', text: icone(h.planeta), style: 'color:' + corDe(h) }), el('span', { text: hhmm(h.ini) })])]);
         linha.appendChild(e);
@@ -730,7 +730,7 @@
             var corpoLinha = x.capa ? el('div', { style: 'flex:1;min-width:0' }, [el('img', { src: x.capa, alt: '', style: 'display:block;width:100%;max-width:260px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:0 0 6px' }), meio]) : meio; /* a capinha do vídeo fica em cima, como no To do da Agenda */
             var linha = el('div', { class: 'tarefa' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor }), caixa, corpoLinha]);
             if (x.tarefa) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (r) { if (r.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenharItens(); }); }); linha.appendChild(ap); }
-            if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? '#1F5FA3' : '#B5852F') : '#A03E25'), text: icone(pl) })); }
+            if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)') : 'var(--terracota)'), text: icone(pl) })); }
             bl.appendChild(linha);
           });
           feitos.forEach(function (c) { bl.appendChild(linhaFeita(c)); });
@@ -788,15 +788,15 @@
         var atual = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0];
         /* esquerda: o planeta da hora de agora e a barra dela (só quando o dia é hoje) */
         if (atual) corpoE.appendChild(el('div', { style: 'display:flex;align-items:center;gap:22px;margin:6px 0 12px' }, [
-          el('div', { style: 'text-align:center;flex:none' }, [el('div', { class: 'rotulo-grupo', text: 'Hora' }), el('span', { class: 'ic', style: 'font-size:70px;color:' + (atual.noite ? '#1F5FA3' : '#B5852F'), text: icone(atual.planeta) })]),
+          el('div', { style: 'text-align:center;flex:none' }, [el('div', { class: 'rotulo-grupo', text: 'Hora' }), el('span', { class: 'ic', style: 'font-size:70px;color:' + (atual.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)'), text: icone(atual.planeta) })]),
           el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:8px' }, [barraDe(atual.ini, atual.fim, agora, 'minutos', false), el('div', { class: 'rotulo-fixo', style: 'text-align:center', text: (hs.indexOf(atual) % 12 + 1) + 'ª hora · ' + hhmm(atual.ini) + ' às ' + hhmm(atual.fim) })])]));
         /* direita: o planeta do dia, maior, com a barra do dia e o nascer e o pôr do sol */
         corpoD.appendChild(el('div', { style: 'display:flex;align-items:center;gap:22px;margin:6px 0 12px' }, [
           el('div', { style: 'text-align:center;flex:none' }, [el('div', { class: 'rotulo-grupo', text: 'Dia' }), el('span', { class: 'ic', style: 'font-size:96px;color:var(--terracota)', text: icone(REGENTE[diaSem(ancora)]) })]),
           el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:8px' }, [barraDe(hs[0].ini, hs[23].fim, agora, 'horas', false), el('div', { class: 'rotulo-fixo', style: 'text-align:center', text: 'nascer do sol ' + hhmm(hs[0].ini) + ' · pôr do sol ' + hhmm(hs[12].ini) })])]));
         function linhaHora(h, i) {
-          var ativa = agora >= h.ini && agora < h.fim, cor = h.noite ? '#1F5FA3' : '#B5852F';
-          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? '#1F5FA3' : '#A03E25') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
+          var ativa = agora >= h.ini && agora < h.fim, cor = h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)';
+          var per = el('span', { style: 'flex:none;width:24px;color:' + (h.noite ? 'var(--azul-egipcio-claro)' : 'var(--terracota)') }); per.innerHTML = h.noite ? SVG_LUA : SVG_SOL;
           var l = el('div', { class: 'hora-linha' + (ativa ? ' ativa' : '') }, [el('div', { style: 'display:flex;align-items:center;gap:10px' }, [
             el('span', { text: (i % 12 + 1) + 'ª', style: 'flex:none;width:30px;font-weight:700' }), per, el('span', { class: 'ic', style: 'flex:none;width:34px;font-size:26px;color:' + cor, text: icone(h.planeta) }),
             el('span', { text: hhmm(h.ini), style: 'flex:1;text-align:center;font-weight:700' }), el('span', { text: hhmm(h.fim), style: 'flex:1;text-align:center;font-weight:700' })]), el('div', { style: 'margin-top:3px' }, [barraDe(h.ini, h.fim, agora, 'minutos', true)])]);
@@ -830,7 +830,7 @@
         var dow = pre.dow || [0, 1, 2, 3, 4, 5, 6], blocoDias = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin:6px 0' });
         ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (rot, k) {
           var b = el('button', { type: 'button', text: rot, 'aria-label': SEMANA[k] });
-          var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? '#A03E25' : '#1034A6') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
+          var pinta = function () { var on = dow.indexOf(k) >= 0; b.style.cssText = 'min-width:38px;height:38px;padding:0 4px;background:transparent;border:0;border-radius:0;cursor:pointer;font-size:18px;font-weight:700;color:' + (on ? 'var(--terracota)' : 'var(--azul-egipcio-escuro)') + ';text-decoration:' + (on ? 'underline' : 'none') + ';text-underline-offset:5px;text-decoration-thickness:2px'; };
           pinta(); b.addEventListener('click', function () { var i = dow.indexOf(k); if (i >= 0) dow.splice(i, 1); else dow.push(k); pinta(); }); blocoDias.appendChild(b);
         });
         var hDe = el('input', { type: 'time', value: pre.hDe || '06:00' }), hAte = el('input', { type: 'time', value: pre.hAte || '22:00' });
@@ -876,7 +876,7 @@
           var it = itens.filter(function (x) { return x.iso === p.iso; })[0], cx = el('button', { type: 'button', class: 'cx', text: '✓', 'aria-label': 'Marcar' });
           cx.addEventListener('click', function () { it.marcado = !it.marcado; cx.textContent = it.marcado ? '✓' : ''; atualiza(); });
           res.appendChild(el('div', { class: 'tarefa', style: 'padding:6px 0;align-items:center' }, [cx, el('div', {}, [el('div', { text: rotuloDiaTodo(p.iso) + ', ' + hhmm(it.ini) + ' às ' + hhmm(it.fim) }),
-            el('div', { class: 'det-enc' }, [el('span', { class: 'ic', style: 'font-size:16px;color:' + (it.hora.noite ? '#1F5FA3' : '#B5852F'), text: icone(o.planeta) }), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })])])]));
+            el('div', { class: 'det-enc' }, [el('span', { class: 'ic', style: 'font-size:16px;color:' + (it.hora.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)'), text: icone(o.planeta) }), el('span', { text: ' ' + hhmm(it.hora.ini) + ' às ' + hhmm(it.hora.fim) })])])]));
         });
         if (!itens.length) return; atualiza();
         confirmar.addEventListener('click', function () {

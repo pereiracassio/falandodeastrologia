@@ -51,5 +51,7 @@
     return PADRAO[nome];
   }
   aplicar(ler());
+  /* o tema escolhido numa janela (ex.: Configurações dentro do caderno) vale na hora nas outras janelas do mesmo app, sem recarregar */
+  window.addEventListener('storage', function (ev) { if (ev.key === chave()) aplicar(ler()); });
   window.FdaTema = { cor: cor, TEMAS: TEMAS, app: app, ler: ler, gravar: gravar, aplicar: aplicar };
 })();
