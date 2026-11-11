@@ -128,7 +128,11 @@
           ]);
           linha.addEventListener('click', function (ev) {
             ev.preventDefault();
-            var ir = function () { location.href = /^\/admin-[a-z]+\.html/.test(a.url || '') ? a.url : (daily ? 'admin-agenda.html' : 'admin-alunos.html'); };
+            var ir = function () {
+              var alvo = /^\/admin-[a-z]+\.html/.test(a.url || '') ? a.url : (daily ? 'admin-agenda.html' : 'admin-alunos.html');
+              if (document.documentElement.classList.contains('fda-caderno')) { window.parent.postMessage({ fdaIr: alvo }, location.origin); return; } /* dentro do caderno quem navega é o caderno: vira a página no lugar certo */
+              location.href = alvo;
+            };
             if (a.lido) { ir(); return; }
             C.from('avisos_recebidos').update({ lido: true }).eq('id', a.id).then(ir, ir);
           });

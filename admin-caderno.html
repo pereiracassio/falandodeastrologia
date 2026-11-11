@@ -679,6 +679,14 @@
       else if (m[1] === 'estudos') { estSel = q.get('estudo') || null; estVer = null; estAula = q.get('aula') || null; }
       irPara(m[1]); if (m[1] === 'producao' && prodVideo) paginaCel(prodCorte ? 'p2' : 'p1');
     }
+    /* os avisos (e telas de dentro) pedem ao caderno para ir ao lugar do aviso: Produção, Projetos, Estudos e Financeiro viram a página; a Agenda abre o Dia; o resto abre a tela no lugar, com a costura */
+    window.addEventListener('message', function (e) {
+      var d = e.data; if (e.origin !== location.origin || !d || !d.fdaIr) return;
+      var u = String(d.fdaIr).replace(/^\//, '');
+      if (/^admin-(projetos|estudos|producao|financeiro)\.html/.test(u)) abrirTela(u);
+      else if (/^admin-(agenda|caderno)\.html/.test(u)) irPara('dia');
+      else if (/^admin-[a-z]+\.html/.test(u)) { urlForcada = u; mostrarVisao(); }
+    });
     function rotuloDiaTodo(iso) {
       var hoje = isoDia(Date.now()), amanha = somaDias(hoje, 1);
       return iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEMANA[diaSem(iso)] + ', ' + (+iso.slice(8)) + ' de ' + MES3[+iso.slice(5, 7) - 1];
