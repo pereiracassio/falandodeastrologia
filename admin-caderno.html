@@ -359,6 +359,7 @@
     }
 
     /* ---------- capa ---------- */
+    window.addEventListener('storage', function (ev) { if (ev.key === 'fda_caderno_capa' && ev.newValue && CAPAS.some(function (x) { return x[0] === ev.newValue; }) && ev.newValue !== capa) pintarCapa(ev.newValue); }); /* a cor escolhida em Configurações (janela de dentro) vale na hora */
     function pintarCapa(c) {
       capa = c;
       var papiro = c === 'papiro';

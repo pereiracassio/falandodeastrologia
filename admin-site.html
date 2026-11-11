@@ -151,7 +151,8 @@
           b.style.cssText = 'width:40px;height:40px;border-radius:50%;padding:0;border:3px solid ' + (x[0] === atual ? 'var(--preto-tinta)' : 'transparent') + ';background:' + (x[0] === 'papiro' ? 'var(--papiro-fundo-simples);outline:2px solid #1034A6;outline-offset:-5px' : '#' + x[0]);
           b.addEventListener('click', function () {
             atual = x[0]; desenhar();
-            C.from('site_config').upsert({ chave: 'daily_capa', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' });
+            try { localStorage.setItem('fda_caderno_capa', atual); } catch (e) { /* o caderno aberto na outra janela troca a capa na hora */ }
+            C.from('site_config').upsert({ chave: 'daily_capa', valor: JSON.stringify(atual), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (g) { if (g && g.error) alert('Não foi possível salvar a cor da capa (' + P.traduzErro(g.error.message) + ').'); }, function () { alert('Não foi possível salvar a cor da capa.'); });
           });
           linha.appendChild(b);
         });
