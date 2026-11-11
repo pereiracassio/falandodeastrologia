@@ -104,13 +104,13 @@
     /* página da direita: o dia em horas planetárias */
     .cad .diatodo{display:flex;align-items:center;gap:10px;padding:0 0 8px 76px;min-height:34px;flex-wrap:wrap}
     .cad .bloco{background:var(--ocre);color:#16233F;padding:3px 10px;font-size:15px}
-    .cad .linha{position:relative;flex:1;min-height:0}
+    .cad .linha{position:relative;flex:1;min-height:0;margin-top:30px} /* o que se escreve fica EM CIMA da linha da hora (como à mão, no caderno pautado): sobra um espaço em cima para o texto da primeira linha */
     .cad .hp{position:absolute;left:0;right:0;border-top:1px solid var(--azul-egipcio-claro);display:flex;align-items:flex-start}
-    .cad .hp .r{width:76px;display:flex;align-items:center;gap:7px;padding-top:2px;font-size:13px}
+    .cad .hp .r{position:absolute;left:0;bottom:calc(100% + 1px);width:76px;display:flex;align-items:center;gap:7px;padding:0;font-size:13px;line-height:1.2}
     .cad .hp .r .ic{font-size:20px;width:22px;text-align:center}
     .cad .ev{position:absolute;left:84px;right:4px;padding:0 10px;line-height:1.25;min-height:22px;font-size:15px;overflow:hidden;display:flex;gap:10px;align-items:baseline;text-decoration:none;cursor:pointer}
     .cad .ev small{font-size:12px}
-    .cad .evt{position:absolute;left:84px;right:4px;padding:3px 10px 0;display:flex;flex-direction:column;gap:1px;z-index:1}
+    .cad .evt{position:absolute;left:84px;right:4px;padding:0 10px 2px;margin-top:-1px;transform:translateY(-100%);display:flex;flex-direction:column;gap:1px;z-index:1}
     .cad .evl{display:flex;gap:8px;align-items:baseline;line-height:1.25;font-size:15px;text-decoration:none;cursor:pointer;min-width:0}
     .cad .evl .q{flex:0 0 auto;width:10px;height:10px;align-self:center;display:inline-block}
     .cad .evl .evt-titulo{color:var(--terracota)}.cad .evl small{font-size:12px;color:var(--azul-egipcio-escuro,#1034A6);white-space:nowrap}
@@ -450,10 +450,12 @@
       var d0 = doIso(ancora), d1 = d0 + DIA, agora = Date.now(), linha = document.getElementById('linha'), todo = document.getElementById('diaTodo');
       linha.textContent = ''; todo.textContent = '';
       var horas = HP.horasEntre(d0, d1, LAT, LON).map(function (h) { return { ini: Math.max(h.ini, d0), fim: Math.min(h.fim, d1), planeta: h.planeta, noite: h.noite }; }).filter(function (s) { return s.fim > s.ini; });
+      /* a hora que vem da noite anterior e acaba poucos minutos depois da meia-noite não ganha linha própria (viraria um risco colado, com dois ícones um por cima do outro): a linha da meia-noite fica com a hora seguinte */
+      if (horas.length > 1 && horas[0].fim - horas[0].ini < 20 * 60000) { horas.shift(); horas[0].pos = d0; }
       function pct(ms) { return ((ms - d0) / (d1 - d0) * 100).toFixed(3) + '%'; }
       var corDe = function (h) { return h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)'; }, icH = document.getElementById('icHora'), ate = document.getElementById('ateHora'); icH.textContent = ''; ate.textContent = '';
       horas.forEach(function (h) {
-        var e = el('div', { class: 'hp', style: 'top:' + pct(h.ini) + ';height:' + ((h.fim - h.ini) / (d1 - d0) * 100).toFixed(3) + '%' }, [el('div', { class: 'r' }, [el('span', { class: 'ic', text: icone(h.planeta), style: 'color:' + corDe(h) }), el('span', { text: hhmm(h.ini) })])]);
+        var e = el('div', { class: 'hp', style: 'top:' + pct(h.pos || h.ini) + ';height:' + ((h.fim - (h.pos || h.ini)) / (d1 - d0) * 100).toFixed(3) + '%' }, [el('div', { class: 'r' }, [el('span', { class: 'ic', text: icone(h.planeta), style: 'color:' + corDe(h) }), el('span', { text: hhmm(h.ini) })])]);
         linha.appendChild(e);
         if (ancora === hojeIso && agora >= h.ini && agora < h.fim) { icH.textContent = icone(h.planeta); icH.style.color = corDe(h); ate.textContent = 'até ' + hhmm(h.fim); }
       });
@@ -473,7 +475,7 @@
           b.addEventListener('click', function (ev) { ev.preventDefault(); modAgenda().abrirEvento(e); });
           (porHora[k] = porHora[k] || []).push(b);
         });
-        Object.keys(porHora).forEach(function (k) { var h = horas[k], c = el('div', { class: 'evt', style: 'top:' + pct(h.ini) }, porHora[k]); linha.appendChild(c); });
+        Object.keys(porHora).forEach(function (k) { var h = horas[k], c = el('div', { class: 'evt', style: 'top:' + pct(h.pos || h.ini) }, porHora[k]); linha.appendChild(c); });
         if (!todo.firstChild) todo.appendChild(el('span', { class: 'rotulo-fixo', text: 'dia todo' }));
         else todo.insertBefore(el('span', { class: 'rotulo-fixo', text: 'dia todo' }), todo.firstChild);
       }, function (er) {
