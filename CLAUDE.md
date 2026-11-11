@@ -506,3 +506,6 @@ O caderno (`admin-caderno.html`, a Agenda do Hellenic Daily) só foi feito e tes
 
 ## Curso: datas das etapas da aula não gravavam (11/11/2026) — não repetir
 A data posta em cima de cada etapa (barra de etapas da aula, `etapasDaAula` em `admin-curso.html`) nunca era enviada ao banco: **no Supabase, `C.from(...).update(...).eq(...)` sem `.then(...)` NÃO envia nada** (o pedido só sai quando alguém espera a resposta). Além disso, na tela da aula o salvar sozinho regravava `datas_etapas` com uma cópia velha. Agora a barra é a única dona das datas (grava na hora e mostra erro com `falhou`), os campos "Data: ..." de baixo são espelho dela, e o Salvar da aula não mexe em `datas_etapas`. **Toda gravação nova: sempre `.then` com o erro à mostra.** Não era o SQL.
+
+## Caderno: volta-se com o DEDO, sem o botão ← voltar do topinho (11/11/2026) — pedido dele
+O caderno não mostra mais o `← voltar` pequeno do topo da página (`voltarTab`, `atualizarVoltar` em `admin-caderno.html` o mantém sempre escondido): ele vira a página com o dedo. Os `← Voltar` que as telas copiadas (Projetos, Estudos, Produção, Leitor) trazem por conta própria continuam; se ele pedir, tirar também.
