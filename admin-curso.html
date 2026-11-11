@@ -203,7 +203,7 @@
         });
         return b;
       });
-      return P.barraComDatas(botoes, lista.map(function (x) { return x[0]; }), a.datas_etapas, function (o) { a.datas_etapas = o; C.from('curso_aulas').update({ datas_etapas: o }).eq('id', a.id); });
+      return P.barraComDatas(botoes, lista.map(function (x) { return x[0]; }), a.datas_etapas, function (o) { a.datas_etapas = o; C.from('curso_aulas').update({ datas_etapas: o }).eq('id', a.id).then(function (r) { falhou(r); }); });
     }
 
     /* ---------- cursos ---------- */
@@ -688,7 +688,7 @@
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
-          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: false, datas_etapas: datasEt, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
+          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: false, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
             .then(function (x) {
               if (x.error) { msgErro(msg, x.error); return; }
               if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
@@ -699,13 +699,20 @@
             });
         });
         var partes = [].concat([el('h2', { text: (aoVivoA ? 'Aula ao vivo ' : 'Aula ') + a.ordem })]);
-        if (curso.construindo !== false && !aoVivoA) partes.push(etapasDaAula(a, curso, null, null));
-        var datasEt = Object.assign({}, a.datas_etapas || {}), camposEt = [];
-        if (curso.construindo !== false && !aoVivoA) etapasDe(curso).filter(function (k) { return k !== 'upload'; }).forEach(function (k) {
-          var di = el('input', { type: 'date', style: 'width:auto' }); di.value = datasEt[k] || '';
-          di.addEventListener('change', function () { datasEt[k] = di.value || null; });
-          camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
-        });
+        /* as datas das etapas têm UM dono só: a barra de etapas (grava na hora). Os campos "Data: ..." de baixo são espelho dela. */
+        var camposEt = [];
+        if (curso.construindo !== false && !aoVivoA) {
+          var barraEt = etapasDaAula(a, curso, null, null); partes.push(barraEt);
+          var chavesEt = ETAPAS.map(function (e) { return e[0]; }).filter(function (k) { return etapasDe(curso).indexOf(k) >= 0; });
+          var daBarra = barraEt.querySelectorAll('.prod-data-cel input');
+          chavesEt.forEach(function (k, i) {
+            if (k === 'upload' || !daBarra[i]) return;
+            var di = el('input', { type: 'date', style: 'width:auto' }); di.value = (a.datas_etapas || {})[k] || '';
+            di.addEventListener('change', function () { if (daBarra[i].value === di.value) return; daBarra[i].value = di.value; daBarra[i].dispatchEvent(new Event('change', { bubbles: true })); });
+            daBarra[i].addEventListener('change', function () { if (di.value !== daBarra[i].value) di.value = daBarra[i].value; });
+            camposEt.push(P.colunaData(di, 'Data: ' + ETAPAS.filter(function (e) { return e[0] === k; })[0][1].toLowerCase()));
+          });
+        }
         corpo.appendChild(el('div', { class: 'portal-cartao' }, [].concat(
           partes, aoVivoA ? [] : campo('Nome', tit), aoVivoA ? [vivoBloco] : [], camposEt.length ? [P.linhaDatas(camposEt)] : [], campo(aoVivoA ? 'Link da gravação' : 'Link do vídeo', cod), [prev, msg, el('div', { style: 'display:none' }, [salvar])]))); P.salvarSozinho(salvar);
         var apagar = P.botaoApagar('Apagar esta aula');
