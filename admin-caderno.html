@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script>try{if(localStorage.getItem('fda_daily_visual')==='padrao'&&window.top===window.self)location.replace('admin-agenda.html'+(/^#v=(horas|todo)/.test(location.hash)?location.hash.replace(/&d=.*/,''):''))}catch(e){}</script>
   <meta charset="UTF-8">
   <script>try{if(localStorage.getItem('fda_admin'))document.documentElement.className+=' fda-admin-tela'}catch(e){}</script>
   <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
@@ -257,7 +258,7 @@
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=170"></script>
+  <script src="portal.js?v=172"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="caderno-leitor.js?v=8"></script>
@@ -1040,7 +1041,7 @@
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
       cad.classList.add('on', pagCel);
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
-      var h = /#v=(\w+)&d=(\d{4}-\d{2}-\d{2})/.exec(location.hash); if (h && ABAS.some(function (y) { return y[0] === h[1]; })) { visao = h[1]; ancora = h[2]; }
+      var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && ABAS.some(function (y) { return y[0] === h[1]; })) { visao = h[1]; if (h[2]) ancora = h[2]; }
       irPara(visao);
     }
     function iniciar(user) {
@@ -1048,7 +1049,7 @@
       C.rpc('sou_admin').then(function (r) {
         if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
         mostrar();
-        valorSite('daily_visual').then(function (v) { if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + location.hash); });
+        valorSite('daily_visual').then(function (v) { P.guardarModoDaily(v); if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + (/^#v=(horas|todo)/.test(location.hash) ? location.hash.replace(/&d=.*/, '') : '')); });
         valorSite('daily_capa').then(function (c) { if (c && CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); });
       });
     }

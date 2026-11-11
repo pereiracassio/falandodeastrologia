@@ -575,9 +575,13 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     var doDaily = PAGINAS_DAILY.test(String(url || '').split(/[?#]/)[0]);
     return (appDaPagina() === 'daily') === doDaily;
   }
+  /* visualização do Hellenic Daily: a escolha mora no Supabase (site_config.daily_visual); aqui fica só a cópia do aparelho, para os botões já apontarem para a página certa */
+  function modoDaily() { try { return localStorage.getItem('fda_daily_visual') === 'padrao' ? 'padrao' : 'caderno'; } catch (e) { return 'caderno'; } }
+  function guardarModoDaily(v) { try { localStorage.setItem('fda_daily_visual', v === 'padrao' ? 'padrao' : 'caderno'); } catch (e) { /* sem armazenamento */ } }
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
-    var itens = [['agenda', 'Agenda', 'admin-caderno.html'], ['horas', 'Horas', 'admin-caderno.html#v=horas'], ['todo', 'To do', 'admin-caderno.html#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['quadro', 'Quadro', 'admin-quadro.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
+    var bAg = modoDaily() === 'padrao' ? 'admin-agenda.html' : 'admin-caderno.html'; /* cada visualização abre direto a página dela, sem passar pela outra */
+    var itens = [['agenda', 'Agenda', bAg], ['horas', 'Horas', bAg + '#v=horas'], ['todo', 'To do', bAg + '#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['quadro', 'Quadro', 'admin-quadro.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* cada app mostra só as abas dele, em ordem alfabética; a ⚙ (configurações) fica no fim */
     var DAILY = { agenda: 1, estudos: 1, financeiro: 1, horas: 1, leitor: 1, producao: 1, projetos: 1, todo: 1 };
     var appAtual = appDaPagina();
@@ -1563,7 +1567,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
-    client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
+    modoDaily: modoDaily, guardarModoDaily: guardarModoDaily, client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
     avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias, tempoNoPreenchimento: tempoNoPreenchimento
@@ -1637,5 +1641,24 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       }).observe(document.body, { childList: true, subtree: true, characterData: true });
     }
     if (document.body) iniciar(); else document.addEventListener('DOMContentLoaded', iniciar);
+  })();
+  /* Hellenic Daily: as telas antigas (Agenda, Projetos, Estudos, Produção, Financeiro) mandam para o CADERNO sozinhas, a menos que ele tenha escolhido "Visualização padrão" em Configurações.
+     Assim o app aberto numa tela antiga (ícone salvo nela) cai no caderno, sem precisar passar pela aba Agenda. */
+  (function irParaCaderno() {
+    try {
+      var m = /\/admin-(agenda|projetos|estudos|producao|financeiro)\.html$/.exec(location.pathname);
+      if (!/\/(admin-[a-z]+|capa)\.html$/.test(location.pathname) || /\/admin-caderno\.html$/.test(location.pathname) || window.top !== window.self || /[?&]caderno=1/.test(location.search)) return;
+      client.auth.getSession().then(function (r) {
+        if (!r.data || !r.data.session) return;
+        return client.from('site_config').select('valor').eq('chave', 'daily_visual').maybeSingle().then(function (g) {
+          var v = null; try { v = g && g.data && g.data.valor ? JSON.parse(g.data.valor) : null; } catch (e) { /* padrão */ }
+          if (!g || g.error) return; /* sem resposta: fica como está */
+          guardarModoDaily(v);
+          if (v === 'padrao' || !m) return;
+          var hash = location.hash && /^#v=/.test(location.hash) ? location.hash : (m[1] === 'agenda' ? '' : '#v=' + m[1]);
+          location.replace('admin-caderno.html' + hash);
+        });
+      }).catch(function () { /* fica na tela antiga */ });
+    } catch (e) { /* fica na tela antiga */ }
   })();
 })();
