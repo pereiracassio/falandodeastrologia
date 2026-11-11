@@ -18,7 +18,7 @@
   function signo(i) { return NOMES[14 + i]; }
   /* cor do signo = a do elemento, igual ao Astro Hellenic (paleta de época: fogo laranja, terra marrom, ar cinza, água azul), i % 4 */
   var COR_ELEMENTO = ['#D0610F', '#6B4A2B', '#6B7780', '#1F5FA3'];
-  function sig(i) { var e = el('span', { class: 'oe-sg', style: 'color:' + COR_ELEMENTO[i % 4] }); e.appendChild(el('span', { class: 'oe-ic', style: 'color:inherit', text: icone(signo(i)) })); e.appendChild(document.createTextNode(' ' + signo(i))); return e; }
+  function sig(i) { var e = el('span', { class: 'oe-sg', style: 'color:' + COR_ELEMENTO[i % 4] }); e.appendChild(el('span', { class: 'oe-ic', style: 'color:inherit', text: icone(signo(i)) })); e.title = signo(i); return e; }
   function ler() {
     if (escolhido !== undefined) return Promise.resolve(escolhido);
     return C.from('site_config').select('valor').eq('chave', CHAVE).maybeSingle().then(function (r) {
@@ -63,8 +63,10 @@
     partes.forEach(function (p) { if (typeof p === 'string') v.appendChild(document.createTextNode(p)); else v.appendChild(p); });
     return el('div', { class: 'oe-l' }, [el('span', { class: 'oe-r', text: rotulo }), v]);
   }
-  function grupo(titulo, linhas) {
-    var g = el('div', { class: 'oe-g' }, [el('div', { class: 'rotulo-fixo', text: titulo })]);
+  function grupo(titulo, linhas, iconeNome) {
+    var t = el('div', { class: 'rotulo-fixo', text: titulo });
+    if (iconeNome) { t.appendChild(document.createTextNode(' ')); t.appendChild(el('span', { class: 'oe-ic', text: icone(iconeNome) })); }
+    var g = el('div', { class: 'oe-g' }, [t]);
     linhas.forEach(function (l) { g.appendChild(l); });
     return g;
   }
@@ -72,14 +74,14 @@
     alvo.textContent = '';
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var circ = r.circumambulacao, ls = [];
-    if (circ.aspecto) ls.push(linha('Aspecto', [ASPECTO[circ.aspecto.tipo] + ' com ', glifo(PLANETA[circ.aspecto.planetId]), ' ' + PLANETA[circ.aspecto.planetId]]));
-    if (circ.termo) ls.push(linha('Termo', [glifo(PLANETA[circ.termo.planetId]), ' ' + PLANETA[circ.termo.planetId] + ' em ', sig(circ.termo.signIdx)]));
+    if (circ.aspecto) ls.push(linha('Aspecto', [ASPECTO[circ.aspecto.tipo] + ' ', glifo(PLANETA[circ.aspecto.planetId])]));
+    if (circ.termo) ls.push(linha('Termo', [glifo(PLANETA[circ.termo.planetId]), '  ', sig(circ.termo.signIdx)]));
     alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
       var niv = r.liberacao[x[0]];
-      alvo.appendChild(grupo('Liberação · ' + x[1], niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)]); }) : [linha('', ['Fora do período'])]));
+      alvo.appendChild(grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)]); }) : [linha('', ['Fora do período'])], x[1]));
     });
-    alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [glifo(PLANETA[n.planetId]), ' ' + PLANETA[n.planetId]]); }) : [linha('', ['Fora do período'])]));
+    alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [glifo(PLANETA[n.planetId])]); }) : [linha('', ['Fora do período'])]));
     var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)])];
     if (pf.mes) pl.push(linha('Mês', [sig(pf.mes.signIdx)]));
     if (pf.passo) pl.push(linha('60 horas', [sig(pf.passo.signIdx)]));
