@@ -75,7 +75,7 @@
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var circ = r.circumambulacao, ls = [];
     if (circ.aspecto) ls.push(linha('Aspecto', [ASPECTO[circ.aspecto.tipo] + ' ', glifo(PLANETA[circ.aspecto.planetId])]));
-    if (circ.termo) ls.push(linha('Termo', [glifo(PLANETA[circ.termo.planetId]), '  ', sig(circ.termo.signIdx)]));
+    if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', glifo(PLANETA[circ.termo.planetId])]));
     alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
       var niv = r.liberacao[x[0]];
