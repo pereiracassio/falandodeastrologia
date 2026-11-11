@@ -53,26 +53,13 @@
     .prod-acoes-topo{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
     .prod-vazio{color:var(--preto-tinta,#16233F);opacity:.75;font-size:14px;margin:6px 0}
   
-/* TODA barra de etapas do caderno (com ou sem datas) cabe na página SEM rolar de lado: as etapas quebram em fileiras de 5 (cada data fica em cima da sua etapa) e a letra é proporcional à largura da página */
-.prod-seg,.prod-seg.com-datas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:none;grid-auto-flow:row;grid-auto-columns:auto;overflow:visible;border:0;padding:1px 0 0 1px;row-gap:3px;align-items:end}
-.prod-seg .prod-chip,.prod-seg .prod-chip.on,.prod-seg.com-datas .prod-chip.prod-chip,.prod-seg.com-datas .prod-chip.on.on{min-width:0;margin:-1px 0 0 -1px;border:1px solid var(--azul-egipcio-claro,#1F5FA3);white-space:normal;font-size:clamp(8px,2.8cqw,12px);line-height:1.15;padding:5px 1px;overflow-wrap:normal;word-break:keep-all;text-align:center}
-.prod-seg .prod-chip.on,.prod-seg.com-datas .prod-chip.on.on{background:var(--azul-egipcio-claro,#1F5FA3);color:var(--vazado,#F3E3B8)}
-.prod-seg.com-datas .prod-data-cel{padding:0;min-width:0;margin-left:-1px;justify-content:center}
-.prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:clamp(6px,2.1cqw,10px);gap:1px;line-height:22px}
-.prod-seg.com-datas .prod-data-cel .data-caderno{min-height:22px;margin:0}
-.prod-seg.com-datas>:nth-child(1){grid-column:1;grid-row:1}.prod-seg.com-datas>:nth-child(2){grid-column:1;grid-row:2}
-.prod-seg.com-datas>:nth-child(3){grid-column:2;grid-row:1}.prod-seg.com-datas>:nth-child(4){grid-column:2;grid-row:2}
-.prod-seg.com-datas>:nth-child(5){grid-column:3;grid-row:1}.prod-seg.com-datas>:nth-child(6){grid-column:3;grid-row:2}
-.prod-seg.com-datas>:nth-child(7){grid-column:4;grid-row:1}.prod-seg.com-datas>:nth-child(8){grid-column:4;grid-row:2}
-.prod-seg.com-datas>:nth-child(9){grid-column:5;grid-row:1}.prod-seg.com-datas>:nth-child(10){grid-column:5;grid-row:2}
-.prod-seg.com-datas>:nth-child(11){grid-column:1;grid-row:3}.prod-seg.com-datas>:nth-child(12){grid-column:1;grid-row:4}
-.prod-seg.com-datas>:nth-child(13){grid-column:2;grid-row:3}.prod-seg.com-datas>:nth-child(14){grid-column:2;grid-row:4}
-.prod-seg.com-datas>:nth-child(15){grid-column:3;grid-row:3}.prod-seg.com-datas>:nth-child(16){grid-column:3;grid-row:4}
-.prod-seg.com-datas>:nth-child(17){grid-column:4;grid-row:3}.prod-seg.com-datas>:nth-child(18){grid-column:4;grid-row:4}
-.prod-seg.com-datas>:nth-child(19){grid-column:5;grid-row:3}.prod-seg.com-datas>:nth-child(20){grid-column:5;grid-row:4}
-.prod-seg.com-datas>:nth-child(21){grid-column:1;grid-row:5}.prod-seg.com-datas>:nth-child(22){grid-column:1;grid-row:6}
-.prod-seg.com-datas>:nth-child(23){grid-column:2;grid-row:5}.prod-seg.com-datas>:nth-child(24){grid-column:2;grid-row:6}
-.prod-seg.com-datas>:nth-child(25){grid-column:3;grid-row:5}.prod-seg.com-datas>:nth-child(26){grid-column:3;grid-row:6}
-.prod-seg.com-datas>:nth-child(27){grid-column:4;grid-row:5}.prod-seg.com-datas>:nth-child(28){grid-column:4;grid-row:6}
-.prod-seg.com-datas>:nth-child(29){grid-column:5;grid-row:5}.prod-seg.com-datas>:nth-child(30){grid-column:5;grid-row:6}
-.prod-seg.com-datas>:nth-child(31){grid-column:1;grid-row:7}.prod-seg.com-datas>:nth-child(32){grid-column:1;grid-row:8}
+/* TODA barra de etapas do caderno (com ou sem datas) é UMA fileira só, que ENCOLHE para caber na página, sem rolar de lado: colunas iguais, letra e datas proporcionais à largura da página
+   (o nome da etapa pode passar para a linha de baixo dentro da própria coluna; nos estreitos a data mostra só dia/mês) */
+.prod-seg,.prod-seg.com-datas{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);grid-template-rows:auto auto;overflow:visible;border:0;align-items:stretch}
+.prod-seg:not(.com-datas){grid-template-rows:auto;border:1px solid var(--azul-egipcio-claro,#1F5FA3)}
+.prod-seg .prod-chip,.prod-seg .prod-chip.on,.prod-seg.com-datas .prod-chip.prod-chip,.prod-seg.com-datas .prod-chip.on.on{min-width:0;flex:none;display:flex;align-items:center;justify-content:center;white-space:normal;font-size:clamp(4.5px,2.15cqw,12px);line-height:1.12;padding:4px 0;overflow-wrap:normal;word-break:keep-all;text-align:center}
+.prod-seg.com-datas .prod-data-cel{padding:0;min-width:0}
+.prod-seg.com-datas .prod-data-cel .data-caderno{min-height:20px;margin:0}
+.prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:clamp(5px,2.5cqw,10px);gap:0;line-height:20px}
+.prod-seg.com-datas .prod-data-cel .data-caderno-texto i{padding:0}
+@container (max-width:560px){.prod-seg.com-datas .prod-data-cel .dc-a,.prod-seg.com-datas .prod-data-cel .data-caderno-texto b:last-of-type{display:none}}

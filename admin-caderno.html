@@ -29,7 +29,7 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <link rel="stylesheet" href="caderno-financeiro.css?v=1">
-  <link rel="stylesheet" href="caderno-producao.css?v=6">
+  <link rel="stylesheet" href="caderno-producao.css?v=9">
   <link rel="stylesheet" href="caderno-projetos.css?v=1">
   <style>
     /* CADERNO do Hellenic Daily: uma folha aberta (duas páginas) dentro de uma capa de cor escolhida, com marcadores dos dois lados.
@@ -660,10 +660,14 @@
     /* ---------- To do: tudo o que precisa ser feito, em duas páginas (as fontes são as do To do da Agenda: todo-dados.js) ---------- */
     var TD = null, todoDados = null;
     function tdPronto() { if (!TD) TD = window.TodoDados({ P: P, C: C, el: el, HP: HP, FdaTema: window.FdaTema, lat: LAT, lon: LON }); TD.setLugar(LAT, LON); return TD; }
-    function abrirTela(url) { /* a tela de antes que cabe no caderno abre dentro dele; as outras (alunos, clientes, curso) abrem como sempre */
-      var m = /admin-(projetos|estudos|producao|financeiro)\.html/.exec(url || '');
+    function abrirTela(url) { /* tocar num item do To do ENTRA no lugar dele, virando a página (as duas páginas do caderno), nunca numa tela inteira */
+      var m = /admin-(projetos|estudos|producao|financeiro)\.html(?:#(.*))?$/.exec(url || '');
       if (!m) { if (url) location.href = url; return; }
-      urlForcada = url; irPara(m[1]);
+      var q = new URLSearchParams(m[2] || '');
+      if (m[1] === 'producao') { prodSerie = q.get('serie') || null; prodVideo = q.get('video') || null; prodCorte = prodVideo ? (q.get('corte') || null) : null; }
+      else if (m[1] === 'projetos') { projSel = q.get('projeto') || null; projVer = null; }
+      else if (m[1] === 'estudos') { estSel = q.get('estudo') || null; estVer = null; estAula = q.get('aula') || null; }
+      irPara(m[1]);
     }
     function rotuloDiaTodo(iso) {
       var hoje = isoDia(Date.now()), amanha = somaDias(hoje, 1);
