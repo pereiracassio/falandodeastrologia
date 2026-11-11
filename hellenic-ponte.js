@@ -70,6 +70,13 @@
   }
 
   /* ---------- desenho da lista (página da esquerda do Dia) ---------- */
+  /* planeta: na seita do mapa = terracota, fora da seita = azul egípcio (como no Astro Hellenic) */
+  var seitaAtual = null;
+  function gp(id) {
+    var e = glifo(PLANETA[id]);
+    if (seitaAtual && seitaAtual[id] !== undefined) e.style.color = seitaAtual[id] ? '#A03E25' : '#1F5FA3';
+    return e;
+  }
   function glifo(nome) { return el('span', { class: 'oe-ic', text: icone(nome) }); }
   function linha(rotulo, partes) {
     var v = el('span', { class: 'oe-v' });
@@ -84,17 +91,17 @@
     return g;
   }
   function desenhar(alvo, r) {
-    alvo.textContent = '';
+    alvo.textContent = ''; seitaAtual = r.planetasNaSeita || null;
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var circ = r.circumambulacao, ls = [];
-    if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', glifo(PLANETA[circ.aspecto.planetId])]));
-    if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', glifo(PLANETA[circ.termo.planetId])]));
+    if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', gp(circ.aspecto.planetId)]));
+    if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', gp(circ.termo.planetId)]));
     alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
       var niv = r.liberacao[x[0]];
       alvo.appendChild(grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)]); }) : [linha('', ['Fora do período'])], x[1]));
     });
-    alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [glifo(PLANETA[n.planetId])]); }) : [linha('', ['Fora do período'])]));
+    alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [gp(n.planetId)]); }) : [linha('', ['Fora do período'])]));
     var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)])];
     if (pf.mes) pl.push(linha('Mês', [sig(pf.mes.signIdx)]));
     if (pf.passo) pl.push(linha('60 horas', [sig(pf.passo.signIdx)]));
