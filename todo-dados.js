@@ -7,7 +7,7 @@ window.TodoDados = function (ctx) {
   function loc(ms) { return new Date(ms + HP.FUSO); }
   function isoDia(ms) { var d = loc(ms); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
   function doIso(dia, hora) { var a = dia.split('-'), h = (hora || '00:00').split(':'); return Date.UTC(+a[0], +a[1] - 1, +a[2], +h[0], +h[1]) - HP.FUSO; }
-    var ETV = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
+    var ETV = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'E. grossa'], ['edicao_fina', 'E. fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
     var ETC = [['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
     function carregarAniversarios() {
       var pega = function (tabela, tipo, tabCod, colCod) {

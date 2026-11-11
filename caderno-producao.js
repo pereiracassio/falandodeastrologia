@@ -7,7 +7,7 @@ window.ProducaoCaderno = function (ctx) {
     var DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
     var DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    var ETAPAS = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
+    var ETAPAS = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'E. grossa'], ['edicao_fina', 'E. fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
     /* Público só existe no vídeo marcado como público; Capa se marca sozinha (tem foto = feita) */
     function etapasDoVideo(v) { return ETAPAS.filter(function (e) { return e[0] !== 'publico_ok' || (v.acesso || 'publico') !== 'membros'; }); }
     /* Público se marca sozinho: já está para os membros (link do YouTube) e chegou o dia marcado para ficar público */

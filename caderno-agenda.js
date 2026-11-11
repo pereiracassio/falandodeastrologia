@@ -665,7 +665,7 @@ window.AgendaCaderno = function (ctx) {
       return js[0].ini;
     }
     /* as mesmas duas barras da Produção (etapas feitas em azul com o nome vazado + o tempo até a data); montadas na hora de desenhar, para o To do poder ser guardado pronto */
-    var ETV = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'Edição grossa'], ['edicao_fina', 'Edição fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
+    var ETV = [['roteiro_ok', 'Roteiro'], ['gravado', 'Gravação'], ['editado', 'E. grossa'], ['edicao_fina', 'E. fina'], ['capa', 'Capa'], ['seo_ok', 'SEO'], ['no_ar', 'Membros'], ['publico_ok', 'Público'], ['cortes_feitos', 'Cortes'], ['blog_ok', 'Blog']];
     var ETC = [['legenda_ok', 'Legenda'], ['seo_ok', 'SEO'], ['shorts', 'YouTube Shorts'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
     function barrasDe(item, etapas, criado, fim) {
       if (etapas === ETV) etapas = ETV.filter(function (e) { return e[0] !== 'publico_ok' || (item.acesso || 'publico') !== 'membros'; }); /* Público só no vídeo público */
