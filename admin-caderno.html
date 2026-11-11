@@ -278,7 +278,7 @@
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=177"></script>
+  <script src="portal.js?v=178"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="hellenic-ponte.js?v=7"></script>
@@ -308,8 +308,8 @@
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var EXTRAS = { config: 'admin-site.html?app=daily', avisos: 'admin-avisos.html?app=daily', mensagens: 'admin-mensagens.html' };
     var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
-      ['projetos', 'Projetos'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
-    var ROT = { dia: ['diário', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
+      ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
+    var ROT = { dia: ['diário', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], compras: ['na lista', 'no carrinho'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
     var espTodo = 0, ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -565,7 +565,7 @@
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
       if (visao !== 'todo') espTodo = 0;
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, compras: vistaCompras, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -966,6 +966,48 @@
       if (!projMod) projMod = window.ProjetosCaderno(projCtx);
       projCtx.esq = rolaE; projCtx.dir = rolaD; projMod.ir(projSel, projVer);
       projMod.carregar().then(function () { if (eu !== pedido) return; }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os projetos.' })); } });
+    }
+
+    /* ---------- Compras: na lista (esquerda) · no carrinho (direita). Marcar leva ao carrinho; no carrinho, desmarcar volta à lista; "Comprei tudo" tira o carrinho da tela ---------- */
+    function vistaCompras() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      function falhou(r) { toast('Não foi possível gravar: ' + P.traduzErro(r.error.message)); }
+      function desenharCompras(itens) {
+        if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
+        var campo = el('input', { type: 'text', autocomplete: 'off' }), adicionar = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' });
+        function incluir() {
+          var nome = campo.value.trim(); if (!nome) return; adicionar.disabled = true;
+          C.from('compras_itens').insert({ nome: nome }).then(function (r) { adicionar.disabled = false; if (r.error) { falhou(r); return; } vistaCompras(); });
+        }
+        adicionar.addEventListener('click', incluir);
+        campo.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); incluir(); } });
+        rolaE.appendChild(el('div', { style: 'display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:14px 0 14px' }, [el('div', { style: 'flex:1;min-width:180px' }, [el('label', { text: 'Novo item' }), campo]), adicionar]));
+        function linha(x) {
+          var no = x.estado === 'carrinho', cx = el('button', { type: 'button', class: 'cx', 'aria-label': no ? 'Voltar para a lista' : 'Pôr no carrinho', text: no ? '✓' : '' });
+          cx.addEventListener('click', function () { C.from('compras_itens').update({ estado: no ? 'lista' : 'carrinho' }).eq('id', x.id).then(function (r) { if (r.error) falhou(r); else vistaCompras(); }); });
+          var ap = P.botaoApagar('Apagar');
+          ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.nome + '"?')) return; C.from('compras_itens').delete().eq('id', x.id).then(function (r) { if (r.error) falhou(r); else vistaCompras(); }); });
+          return el('div', { class: 'tarefa' }, [cx, el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'nome', text: x.nome }), ap])]);
+        }
+        var naLista = itens.filter(function (x) { return x.estado === 'lista'; }), noCarrinho = itens.filter(function (x) { return x.estado === 'carrinho'; });
+        var bl = el('div', { class: 'dia-lista' }, [el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'Na lista' })]);
+        naLista.forEach(function (x) { bl.appendChild(linha(x)); }); if (!naLista.length) bl.appendChild(el('p', { class: 'vazio', text: 'Nada na lista.' })); rolaE.appendChild(bl);
+        var br = el('div', { class: 'dia-lista' }, [el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: 'No carrinho' })]);
+        noCarrinho.forEach(function (x) { br.appendChild(linha(x)); }); if (!noCarrinho.length) br.appendChild(el('p', { class: 'vazio', text: 'Nada no carrinho.' }));
+        if (noCarrinho.length) {
+          var comprei = el('button', { type: 'button', class: 'portal-btn', text: 'Comprei tudo' });
+          comprei.addEventListener('click', function () { comprei.disabled = true; C.from('compras_itens').update({ estado: 'comprado', comprado_em: new Date().toISOString() }).eq('estado', 'carrinho').then(function (r) { if (r.error) { comprei.disabled = false; falhou(r); } else vistaCompras(); }); });
+          br.appendChild(el('div', { style: 'margin-top:18px' }, [comprei]));
+        }
+        rolaD.appendChild(br);
+      }
+      C.from('compras_itens').select('id,nome,estado,criado_em').in('estado', ['lista', 'carrinho']).order('criado_em').then(function (r) {
+        if (eu !== pedido) return;
+        if (r.error) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar as compras (' + P.traduzErro(r.error.message) + ').' })); return; }
+        desenharCompras(r.data);
+      });
     }
 
     /* ---------- Estudos: a tela COMPLETA (caderno-estudos-tela.js), de página em página: próximas aulas · estudos → estudo · aulas → aula · questões ---------- */

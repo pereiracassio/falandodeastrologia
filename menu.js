@@ -41,16 +41,17 @@
       { label: "Estudos", href: "admin-estudos.html" },
       { label: "Produção", href: "admin-producao.html" },
       { label: "Projetos", href: "admin-projetos.html" },
+      { label: "Compras", href: "admin-compras.html" },
       { label: "Psicanálise", href: "https://pereiracassio.com.br/admin.html" },
       { label: "Ver o site", href: "index.html", sep: true }
     ];
     /* cada app mostra só as abas dele, em ordem alfabética (o "Ver o site", que é o último, fica de fora); Configurações no fim */
     var verSite = links.pop();
-    var DAILY = { "Agenda": 1, "Estudos": 1, "Financeiro": 1, "Horas": 1, "Leitor": 1, "Produção": 1, "Projetos": 1, "To do": 1 };
+    var DAILY = { "Agenda": 1, "Compras": 1, "Estudos": 1, "Financeiro": 1, "Horas": 1, "Leitor": 1, "Produção": 1, "Projetos": 1, "To do": 1 };
     var appAtual = (window.portal && window.portal.appDaPagina) ? window.portal.appDaPagina() : "falando";
     links = links.filter(function (l) { return appAtual === "daily" ? DAILY[l.label] : !DAILY[l.label]; });
     /* Falando de Astrologia em ordem alfabética; Hellenic Daily na ordem escolhida pelo astrólogo */
-    var ORDEM_DAILY = ["To do", "Agenda", "Produção", "Projetos", "Estudos", "Financeiro", "Horas", "Leitor"];
+    var ORDEM_DAILY = ["To do", "Agenda", "Produção", "Projetos", "Compras", "Estudos", "Financeiro", "Horas", "Leitor"];
     if (appAtual === "daily") links.sort(function (a, b) { return ORDEM_DAILY.indexOf(a.label) - ORDEM_DAILY.indexOf(b.label); });
     else links.sort(function (a, b) { return a.label.localeCompare(b.label, "pt"); });
     links.push({ label: "Configurações", href: "admin-site.html?app=" + appAtual });

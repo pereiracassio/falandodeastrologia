@@ -551,7 +551,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   }
   /* Dois apps no mesmo site: Hellenic Daily (agenda, horas, to do, estudos, produção, projetos, financeiro, leitor) e Falando de Astrologia (o resto).
      As telas compartilhadas (⚙ Configurações e Avisos) ficam no app em que a pessoa estava (guardado na sessão, com reserva no aparelho). */
-  var PAGINAS_DAILY = /\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor)\.html$/;
+  var PAGINAS_DAILY = /\/admin-(agenda|caderno|compras|estudos|producao|projetos|financeiro|leitor)\.html$/;
   function appDaPagina() {
     var caminho = location.pathname;
     if (PAGINAS_DAILY.test(caminho)) return 'daily';
@@ -595,13 +595,13 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   function navAdmin(atual, texto, aoSair) {
     sinoAdmin();
     var bAg = modoDaily() === 'padrao' ? 'admin-agenda.html' : 'admin-caderno.html'; /* cada visualização abre direto a página dela, sem passar pela outra */
-    var itens = [['agenda', 'Agenda', bAg], ['horas', 'Horas', bAg + '#v=horas'], ['todo', 'To do', bAg + '#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['quadro', 'Quadro', 'admin-quadro.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
+    var itens = [['agenda', 'Agenda', bAg], ['horas', 'Horas', bAg + '#v=horas'], ['todo', 'To do', bAg + '#v=todo'], ['aplicacoes', 'Aplicações', 'admin-aplicacoes.html'], ['alunos', 'Alunos', 'admin-alunos.html'], ['clientes', 'Clientes', 'admin-clientes.html'], ['checkouts', 'Checkouts', 'admin-checkouts.html'], ['financeiro', 'Financeiro', 'admin-financeiro.html'], ['capa', 'Capa', 'capa.html'], ['blog', 'Blog', 'admin-blog.html'], ['visitas', 'Visitas', 'admin-visitas.html'], ['curso', 'Curso', 'admin-curso.html'], ['leitor', 'Leitor', 'admin-leitor.html'], ['quadro', 'Quadro', 'admin-quadro.html'], ['estudos', 'Estudos', 'admin-estudos.html'], ['producao', 'Produção', 'admin-producao.html'], ['projetos', 'Projetos', 'admin-projetos.html'], ['compras', 'Compras', 'admin-compras.html'], ['psicanalise', 'Psicanálise', 'https://pereiracassio.com.br/admin.html']];
     /* cada app mostra só as abas dele, em ordem alfabética; a ⚙ (configurações) fica no fim */
-    var DAILY = { agenda: 1, estudos: 1, financeiro: 1, horas: 1, leitor: 1, producao: 1, projetos: 1, todo: 1 };
+    var DAILY = { agenda: 1, compras: 1, estudos: 1, financeiro: 1, horas: 1, leitor: 1, producao: 1, projetos: 1, todo: 1 };
     var appAtual = appDaPagina();
     itens = itens.filter(function (i) { return appAtual === 'daily' ? DAILY[i[0]] : !DAILY[i[0]]; });
     /* Falando de Astrologia em ordem alfabética; Hellenic Daily na ordem que o astrólogo escolheu */
-    var ORDEM_DAILY = ['todo', 'agenda', 'producao', 'projetos', 'estudos', 'financeiro', 'horas', 'leitor'];
+    var ORDEM_DAILY = ['todo', 'agenda', 'producao', 'projetos', 'compras', 'estudos', 'financeiro', 'horas', 'leitor'];
     if (appAtual === 'daily') itens.sort(function (a, b) { return ORDEM_DAILY.indexOf(a[0]) - ORDEM_DAILY.indexOf(b[0]); });
     else itens.sort(function (a, b) { return a[1].localeCompare(b[1], 'pt'); });
     itens.push(['site', '\u2699\uFE0E', 'admin-site.html?app=' + appAtual]);
