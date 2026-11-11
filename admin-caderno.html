@@ -542,7 +542,7 @@
     }
     function desenhar() {
       var x = ABAS.filter(function (y) { return y[0] === visao; })[0] || (EXTRAS[visao] ? [visao, '', EXTRAS[visao]] : null), embutida = urlForcada || (x && x[2]);
-      cad.classList.toggle('v-embed', !!embutida); cad.classList.toggle('v-config', visao === 'config');
+      cad.classList.toggle('v-embed', !!embutida); cad.classList.toggle('v-config', !!EXTRAS[visao] && !urlForcada); /* configurações, avisos e mensagens são duas páginas: a costura do meio aparece */
       atualizarVoltar();
       cad.classList.toggle('v-outra', !embutida && visao !== 'dia');
       var rot = ROT[visao] || ROT.dia; document.getElementById('t1').textContent = rot[0]; document.getElementById('t2').textContent = rot[1];
