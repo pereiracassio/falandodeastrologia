@@ -693,8 +693,9 @@
           if (!atual || atual.nome !== nome) { atual = { nome: nome, itens: [] }; grupos.push(atual); }
           atual.itens.push({ x: x, iso: iso });
         });
-        var total = grupos.reduce(function (s, g) { return s + 1 + g.itens.length; }, 0), soma = 0;
+        var limite = isoDia(base + 7 * DIA); /* a direita mostra só os próximos 7 dias; a esquerda é atrasados, hoje e o que não tem data */
         grupos.forEach(function (g) {
+          if (g.nome !== 'Atrasados' && g.nome !== 'Sem data' && g.nome > limite) return;
           var bl = el('div', { class: 'dia-lista' }, [el('div', { class: 'rotulo-grupo', style: 'color:var(--terracota);padding:2px 0 4px', text: g.nome === 'Atrasados' || g.nome === 'Sem data' ? g.nome : rotuloDiaTodo(g.nome) })]);
           g.itens.forEach(function (it) {
             var x = it.x, caixa = (x.chave || x.tarefa || x.passoId) ? el('button', { type: 'button', class: 'cx', 'aria-label': 'Marcar como feito' }) : el('span', { class: 'cx', style: 'border-color:transparent' });
@@ -707,7 +708,7 @@
             if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; linha.appendChild(el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? '#1F5FA3' : '#B5852F') : '#A03E25'), text: icone(pl) })); }
             bl.appendChild(linha);
           });
-          (soma < total / 2 ? rolaE : rolaD).appendChild(bl); soma += 1 + g.itens.length;
+          (g.nome === 'Atrasados' || g.nome === 'Sem data' || g.nome <= hoje ? rolaE : rolaD).appendChild(bl);
         });
       }
       function horaDoInstante(ms) { var d0 = doIso(isoDia(ms)), hs = HP.horasEntre(d0, d0 + DIA, LAT, LON); for (var k = 0; k < hs.length; k++) if (ms >= hs[k].ini && ms < hs[k].fim) return hs[k]; return null; }
