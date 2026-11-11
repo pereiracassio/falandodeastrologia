@@ -903,7 +903,7 @@
     function vistaProducao() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!prodMod) prodMod = window.ProducaoCaderno(prodCtx);
       prodCtx.esq = rolaE; prodCtx.dir = rolaD;
       prodMod.carregar().then(function () {
@@ -920,7 +920,7 @@
     function vistaProjetos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!projMod) projMod = window.ProjetosCaderno(projCtx);
       projCtx.esq = rolaE; projCtx.dir = rolaD; projMod.ir(projSel, projVer);
       projMod.carregar().then(function () { if (eu !== pedido) return; }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os projetos.' })); } });
@@ -934,7 +934,7 @@
     function vistaEstudos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!estMod) estMod = window.EstudosCaderno(estCtx);
       estCtx.esq = rolaE; estCtx.dir = rolaD; estMod.ir(estSel, estVer, estAula);
       estMod.carregar().then(function () { if (eu !== pedido) return; rolaE.textContent = ''; estMod.desenhar(); }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os estudos (' + ((er && er.message) || '') + ').' })); } });
@@ -948,7 +948,7 @@
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], F = finPronto();
       if (!finMes) { var h = new Date(); finMes = { ano: h.getFullYear(), mes: h.getMonth() }; }
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       var ini = finMes.ano + '-' + p2(finMes.mes + 1) + '-01', fim = (finMes.mes === 11 ? finMes.ano + 1 : finMes.ano) + '-' + p2(finMes.mes === 11 ? 1 : finMes.mes + 2) + '-01';
       var estatico = finEst ? Promise.resolve(finEst) : Promise.all([C.from('fin_areas').select('*').order('ordem').order('nome'), C.from('clientes').select('id,nome').order('nome'), C.from('cliente_codigos').select('cliente_id,codigo'),
         C.from('fin_entradas').select('data,valor,area_id,produto,cliente_nome,forma_pagamento').order('data').range(0, 9999), C.from('fin_servicos').select('*').order('nome'), C.from('alunos').select('id,nome').order('nome'), C.from('aluno_codigos').select('aluno_id,codigo')]).then(function (r) {
@@ -1011,7 +1011,7 @@
       if (leitorLivro) { vistaLivro(); return; }
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
-      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola' }); esq.appendChild(rolaE); dir.appendChild(el('div', { style: 'height:66px;flex:none' })); dir.appendChild(rolaD); carregando(rolaE);
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       Promise.all([lerCaminhoLeitor(), P.tokenGoogle(), C.from('leitor_livros').select('*').order('atualizado_em', { ascending: false })]).then(function (r) {
         var token = r[1], livros = (r[2] && r[2].data) || [], porDrive = {}; livros.forEach(function (l) { porDrive[l.drive_id] = l; });
         var d = leitorCam.length - 1;
