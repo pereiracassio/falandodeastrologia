@@ -741,7 +741,7 @@
         function blocoDia(iso) { return blocoGrupo(byNome[iso] || { nome: iso, itens: [] }, conclDe(iso), iso < hoje ? 'Nada foi marcado como feito.' : 'Nada para este dia.'); }
         /* cada página é um dia: a primeira folha tem atrasados e hoje à esquerda e amanhã à direita; virando, dois dias por folha */
         if (kTodo === 0) {
-          ['Atrasados', 'Sem data'].forEach(function (n) { if (byNome[n]) rolaE.appendChild(blocoGrupo(byNome[n], [], '')); });
+          if (byNome['Atrasados']) rolaE.appendChild(blocoGrupo(byNome['Atrasados'], [], '')); /* o que não tem data não entra no dia dele */
           rolaE.appendChild(blocoDia(hoje)); rolaD.appendChild(blocoDia(somaDias(hoje, 1)));
         } else { rolaE.appendChild(blocoDia(somaDias(hoje, 2 * kTodo))); rolaD.appendChild(blocoDia(somaDias(hoje, 2 * kTodo + 1))); }
       }
