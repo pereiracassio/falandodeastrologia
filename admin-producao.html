@@ -496,10 +496,10 @@
         if (falta.length) { avisoFlutuante('Falta preencher: ' + falta.join(', '), true); pintarEtapas(v); return Promise.resolve({ error: null }); }
       }
       if ((campo === 'no_ar' || campo === 'publico_ok') && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
-      /* marcou como feita: a data da etapa passa a ser hoje (Membros, Público e Capa se marcam sozinhas e ficam de fora) */
+      /* marcou como feita: a data da etapa passa a ser hoje (Público e Capa se marcam sozinhas e ficam de fora) */
       var hoje = iso(new Date());
-      if (valor && ['no_ar', 'publico_ok', 'capa'].indexOf(campo) < 0) {
-        var COL = { gravado: 'data_gravar', cortes_feitos: 'data_cortes', blog_ok: 'data_blog' };
+      if (valor && ['publico_ok', 'capa'].indexOf(campo) < 0) {
+        var COL = { gravado: 'data_gravar', no_ar: 'data_postar', cortes_feitos: 'data_cortes', blog_ok: 'data_blog' };
         if (COL[campo]) campos[COL[campo]] = hoje; else { var de = Object.assign({}, v.datas_etapas); de[campo] = hoje; campos.datas_etapas = de; }
         dataDaEtapaNaTela('[data-video="' + v.id + '"][data-etapa="' + campo + '"]', hoje);
       }
