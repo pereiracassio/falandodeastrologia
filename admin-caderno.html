@@ -278,11 +278,15 @@
       .cad .troca{display:none}
       .cad .pag,.cad .pag.dir{padding:calc(130px*var(--moldura-m) + 14px) calc(80px*var(--moldura-m) + 16px)}
       .cad .folha.vf .pag.dir{animation:entraDir .38s ease-out}.cad .folha.vt .pag.esq{animation:entraEsq .38s ease-out}
-      /* a folha acompanha o dedo: a página da frente gira em volta da lombada (à esquerda) e deixa a outra aparecer por baixo */
+      /* a folha acompanha o dedo: a página dobra numa linha que vai com o dedo; a parte dobrada mostra o verso */
+      .cad.virando .folha{overflow:hidden}
       .cad.virando .pag{display:flex!important;position:absolute;top:0;bottom:0;left:0;right:0;width:auto}
       .cad.virando .pag.dir{z-index:1}
-      .cad.virando .pag.esq{z-index:2;transform-origin:0 50%;background:var(--papiro-fundo);will-change:transform}
-      .cad.virando .pag.esq::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(40,22,6,0) 0,rgba(40,22,6,var(--sombra,0)) 100%)}
+      .cad.virando .pag.esq{z-index:2;background:var(--papiro-fundo)}
+      .cad .flap{position:absolute;inset:0;z-index:4;pointer-events:none}
+      .cad .flap-dentro{position:absolute;inset:0;background:var(--papiro-fundo);overflow:hidden}
+      .cad .flap-sombra{position:absolute;inset:0;pointer-events:none}
+      .cad .flap-fenda{position:absolute;top:0;bottom:0;width:46px;z-index:3;pointer-events:none;background:linear-gradient(90deg,rgba(40,22,6,.34),rgba(40,22,6,0))}
     }
   </style>
 </head>
@@ -1436,29 +1440,46 @@
         });
       } catch (er) { /* sem histórico */ }
     }
-    /* A FOLHA QUE ACOMPANHA O DEDO (iPad em pé, entre as duas páginas): a página da frente gira em volta da lombada, com sombra, e a outra aparece por baixo.
-       Solta passando do meio, a folha termina de virar; senão volta. Para a esquerda na primeira página abre a segunda; para a direita na segunda volta à primeira. */
+    /* A FOLHA QUE ACOMPANHA O DEDO (iPad em pé, entre as duas páginas): a página dobra numa linha que vai com o dedo; a parte dobrada mostra o VERSO (a outra página, espelhada),
+       com sombra, e por baixo aparece a outra página. Solta passando de um terço do caminho, a folha termina de virar; senão volta.
+       Para a esquerda na primeira página abre a segunda; para a direita na segunda volta à primeira. */
     (function () {
-      var folha = cad, st = null, folhaEl = null, id = -1, x0 = 0, y0 = 0, w = 1;
+      var folha = cad, st = null, id = -1, x0 = 0, w = 1, fl = null;
       var livre = function (ev) { return ev.pointerType === 'touch' && modoPe() && !cad.classList.contains('v-embed') && !cad.classList.contains('v-livro') && !(ev.target.closest && ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"],.leitor-barra,.troca')) && !(ev.target.closest && ev.target.closest('canvas') && !ev.target.closest('.lp')); };
-      var el1 = function () { return cad.querySelector('.pag.esq'); };
-      function pose(p) { /* p: 0 = a folha deitada em cima da outra; 1 = a folha toda virada */
-        var e = el1(); if (!e) return; p = Math.max(0, Math.min(1, p));
-        e.style.transform = 'perspective(3600px) rotateY(' + (-100 * p).toFixed(1) + 'deg)';
-        e.style.setProperty('--sombra', (0.5 * p).toFixed(2));
-        e.style.boxShadow = (4 + 16 * p).toFixed(0) + 'px 0 ' + (12 + 28 * p).toFixed(0) + 'px rgba(40,22,6,' + (0.34 * (1 - Math.abs(p - 0.5) * 0.8)).toFixed(2) + ')';
-        e.style.visibility = p >= 0.995 ? 'hidden' : '';
-        st.p = p;
+      var pag1 = function () { return cad.querySelector('.pag.esq'); };
+      function montar() { /* o verso: uma cópia da outra página, espelhada, dentro de uma folha que joga sombra */
+        var dir = cad.querySelector('.pag.dir'), mf = cad.querySelector('.folha');
+        var cp = dir.cloneNode(true); [].forEach.call(cp.querySelectorAll('[id]'), function (n) { n.removeAttribute('id'); }); cp.removeAttribute('id');
+        var dentro = el('div', { class: 'flap-dentro' }, [cp, el('div', { class: 'flap-sombra' })]);
+        var flap = el('div', { class: 'flap' }, [dentro]), fenda = el('div', { class: 'flap-fenda' });
+        mf.appendChild(fenda); mf.appendChild(flap);
+        fl = { flap: flap, dentro: dentro, fenda: fenda, sombra: dentro.lastChild };
+      }
+      function pose(p) { /* p: 0 = a folha inteira deitada; 1 = toda virada. A dobra fica em x = f */
+        p = Math.max(0, Math.min(1, p)); st.p = p;
+        var f = Math.round(w * (1 - p)), e = pag1();
+        e.style.clipPath = 'inset(0 ' + (w - f) + 'px 0 0)';
+        e.style.visibility = f <= 1 ? 'hidden' : '';
+        fl.dentro.style.clipPath = 'inset(0 0 0 ' + f + 'px)';
+        fl.dentro.style.transformOrigin = f + 'px 0';
+        fl.dentro.style.transform = 'scaleX(-1)';
+        fl.sombra.style.background = 'linear-gradient(90deg,rgba(40,22,6,0) ' + f + 'px,rgba(40,22,6,.30) ' + w + 'px)';
+        fl.flap.style.filter = 'drop-shadow(-7px 0 9px rgba(40,22,6,' + (0.38 * Math.min(1, p * 6)).toFixed(2) + '))';
+        fl.fenda.style.left = f + 'px'; fl.fenda.style.opacity = Math.min(1, p * 6).toFixed(2);
       }
       function terminar(paraP, pagina) {
-        var e = el1(); if (!e) { st = null; return; }
-        e.style.transition = 'transform .28s ease-out, box-shadow .28s ease-out'; pose(paraP);
-        setTimeout(function () {
-          e.style.transition = ''; e.style.transform = ''; e.style.boxShadow = ''; e.style.visibility = ''; e.style.removeProperty('--sombra');
+        var p0 = st.p, t0 = performance.now(), dur = 280;
+        (function passo(t) {
+          var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+          pose(p0 + (paraP - p0) * e);
+          if (k < 1) { requestAnimationFrame(passo); return; }
+          var pg = pag1(); pg.style.clipPath = ''; pg.style.visibility = '';
+          if (fl) { fl.flap.remove(); fl.fenda.remove(); fl = null; }
           cad.classList.remove('virando'); if (pagina) paginaCel(pagina); st = null;
-        }, 300);
+        })(t0);
       }
-      folha.addEventListener('pointerdown', function (ev) { if (st && st.fim) return; if (!livre(ev)) { id = -1; return; } id = ev.pointerId; x0 = ev.clientX; y0 = ev.clientY; }, true);
+      folha.addEventListener('pointerdown', function (ev) { if (st) return; if (!livre(ev)) { id = -1; return; } id = ev.pointerId; x0 = ev.clientX; y0 = ev.clientY; }, true);
+      var y0 = 0;
       folha.addEventListener('pointermove', function (ev) {
         if (ev.pointerId !== id) return;
         var dx = ev.clientX - x0, dy = ev.clientY - y0;
@@ -1467,14 +1488,14 @@
           var frente = dx < 0 && pagCel === 'p1', tras = dx > 0 && pagCel === 'p2';
           if (!frente && !tras) { id = -1; return; } /* nas pontas segue o gesto de sempre (voltar, avançar, mês, dia) */
           w = Math.max(200, cad.querySelector('.folha').clientWidth); st = { dir: frente ? 'frente' : 'tras', p: frente ? 0 : 1 };
-          cad.classList.add('virando'); pose(st.p);
+          cad.classList.add('virando'); montar(); pose(st.p);
         }
         ev.stopImmediatePropagation();
-        pose(st.dir === 'frente' ? -dx / (w * 0.75) : 1 - dx / (w * 0.75));
+        pose(st.dir === 'frente' ? -dx / (w * 0.85) : 1 - dx / (w * 0.85));
       }, true);
       var solta = function (ev) {
         if (ev.pointerId !== id) return; id = -1;
-        if (!st) return; ev.stopImmediatePropagation(); st.fim = true;
+        if (!st) return; ev.stopImmediatePropagation();
         if (st.dir === 'frente') { if (st.p > 0.3) terminar(1, 'p2'); else terminar(0, null); }
         else { if (st.p < 0.7) terminar(0, 'p1'); else terminar(1, null); }
       };
