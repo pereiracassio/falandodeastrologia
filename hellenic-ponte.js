@@ -44,7 +44,7 @@
   var carregados;
   function carregarScripts() {
     if (carregados) return carregados;
-    carregados = ['tz-lookup.js', 'retificacao-calculos.js', 'onde-estou.js'].reduce(function (p, arq) {
+    carregados = ['tz-lookup.js', 'camadas-tempo.js', 'retificacao-calculos.js', 'onde-estou.js'].reduce(function (p, arq) {
       return p.then(function () {
         return new Promise(function (ok, erro) {
           var s = document.createElement('script'); s.src = BASE + arq; s.onload = ok;
@@ -87,15 +87,15 @@
     var curto = (ate - de) <= 7 * 86400000, hm = function (d) { return dd(d.getHours()) + ':' + dd(d.getMinutes()); };
     return curto ? dm(de) + ' ' + hm(de) + ' – ' + dm(ate) + ' ' + hm(ate) : dm(de) + '/' + de.getFullYear() + ' – ' + dm(ate) + '/' + ate.getFullYear();
   }
-  function linha(rotulo, partes, periodo) {
+  function linha(rotulo, partes, periodo, unidade) {
     var v = el('span', { class: 'oe-v' });
     partes.forEach(function (p) { if (typeof p === 'string') v.appendChild(document.createTextNode(p)); else v.appendChild(p); });
     var tem = periodo && periodo.de && periodo.ate, topo = [el('span', { class: 'oe-r', text: rotulo }), v];
     var de = tem ? new Date(periodo.de) : null, ate = tem ? new Date(periodo.ate) : null;
     if (tem) topo.push(el('span', { class: 'oe-datas', text: textoDatas(de, ate) }));
     var l = el('div', { class: 'oe-l' + (tem ? ' oe-com-barra' : '') }, [el('div', { class: 'oe-topo' }, topo)]);
-    /* a MESMA barra de tempo do resto do site: "62% [barra] 12/23 dias" */
-    if (tem) l.appendChild(P.barraTempoDias(de, ate, agoraLista));
+    /* a MESMA barra de tempo das ferramentas do Astro Hellenic (camadas-tempo.js: "62% [barra] 11/20 meses"), na unidade de cada nível */
+    if (tem && typeof barraTempo === 'function') { var w = el('div'); w.innerHTML = barraTempo(de, ate, 'margin:3px 0 0;', 13, unidade, agoraLista); l.appendChild(w); }
     return l;
   }
   function grupo(titulo, linhas, iconeNome) {
@@ -109,17 +109,17 @@
     alvo.textContent = ''; seitaAtual = r.planetasNaSeita || null; agoraLista = r.agora || new Date();
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var circ = r.circumambulacao, ls = [];
-    if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', gp(circ.aspecto.planetId)], circ.aspecto));
-    if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', gp(circ.termo.planetId)], circ.termo));
+    if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', gp(circ.aspecto.planetId)], circ.aspecto, 'anosCivis'));
+    if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', gp(circ.termo.planetId)], circ.termo, 'anosCivis'));
     alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
       var niv = r.liberacao[x[0]];
-      alvo.appendChild(grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)], n); }) : [linha('', ['Fora do período'])], x[1]));
+      alvo.appendChild(grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)], n, ['anos', 'meses', 'dias', 'horas'][n.nivel - 1]); }) : [linha('', ['Fora do período'])], x[1]));
     });
-    alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [gp(n.planetId)], n); }) : [linha('', ['Fora do período'])]));
-    var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)], pf.ano)];
-    if (pf.mes) pl.push(linha('Mês', [sig(pf.mes.signIdx)], pf.mes));
-    if (pf.passo) pl.push(linha('60 horas', [sig(pf.passo.signIdx)], pf.passo));
+    alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [gp(n.planetId)], n, ['meses', 'meses', 'dias'][n.nivel - 1]); }) : [linha('', ['Fora do período'])]));
+    var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)], pf.ano, 'meses')];
+    if (pf.mes) pl.push(linha('Mês', [sig(pf.mes.signIdx)], pf.mes, 'dias'));
+    if (pf.passo) pl.push(linha('60 horas', [sig(pf.passo.signIdx)], pf.passo, 'horas'));
     alvo.appendChild(grupo('Profecção', pl));
   }
 
