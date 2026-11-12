@@ -56,11 +56,13 @@
     try { return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ''); }
     catch (e) { return String(iso || '').slice(0, 10); }
   }
-  var noFim = function () { return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 220; };
-  var irAoFim = function () { window.scrollTo(0, document.documentElement.scrollHeight); };
+  var rol = null; /* quando a tela mora dentro de uma coluna que rola por dentro (caderno), é ela que rola, não a página */
+  var noFim = function () { return rol ? rol.clientHeight + rol.scrollTop >= rol.scrollHeight - 220 : window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 220; };
+  var irAoFim = function () { if (rol) rol.scrollTop = rol.scrollHeight; else window.scrollTo(0, document.documentElement.scrollHeight); };
 
   function tela(cfg) {
     var minha = cfg.souAdmin ? 'cassio' : 'aluno';
+    rol = cfg.rolagem || null;
     var caixa = el('div', {});
     estilosDosBaloes();
     var lista = el('div', { style: 'display:flex;flex-direction:column' });
