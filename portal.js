@@ -1160,11 +1160,12 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     if (inp.classList.contains('data-caderno-input') || !inp.parentNode) return inp;
     inp.classList.add('data-caderno-input');
     var dd = el('i', { class: 'dc-d' }), mm = el('i', { class: 'dc-m' }), aa = el('i', { class: 'dc-a' });
-    var texto = el('span', { class: 'data-caderno-texto', 'aria-hidden': 'true' }, [dd, el('b', { text: '/' }), mm, el('b', { text: '/' }), aa]);
+    var icone = el('span', { class: 'dc-icone' }); icone.innerHTML = '<svg viewBox="0 0 64 64" width="15" height="15" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="8" y="12" width="48" height="44"/><line x1="8" y1="26" x2="56" y2="26"/><line x1="20" y1="6" x2="20" y2="18"/><line x1="44" y1="6" x2="44" y2="18"/></svg>'; /* o desenho de calendário do Astro Hellenic, canto reto: vazio mostra só ele; com data, ele vem antes da data */
+    var texto = el('span', { class: 'data-caderno-texto', 'aria-hidden': 'true' }, [icone, dd, el('b', { text: '/' }), mm, el('b', { text: '/' }), aa]);
     var env = el('span', { class: 'data-caderno' });
     function pinta() {
       var v = String(inp.value || '').split('-'), ok = v.length === 3;
-      [[dd, ok ? v[2] : 'dd'], [mm, ok ? v[1] : 'mm'], [aa, ok ? v[0] : 'aaaa']].forEach(function (p) { p[0].textContent = p[1]; p[0].classList.toggle('vazio', !ok); });
+      [[dd, ok ? v[2] : ''], [mm, ok ? v[1] : ''], [aa, ok ? v[0] : '']].forEach(function (p) { p[0].textContent = p[1]; }); texto.classList.toggle('sem-data', !ok);
     }
     inp.parentNode.insertBefore(env, inp); env.appendChild(texto); env.appendChild(inp);
     var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value'); /* quando o código troca o .value, o desenho acompanha */

@@ -114,3 +114,9 @@ textarea.escrita-livre:focus{outline:none}
 .tempo-trilho { border-style: solid; border-width: 1px; border-image: var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25)) 1 !important; }
 .tempo-pct { color: var(--azul-egipcio-claro, #1F5FA3) !important; }
 .tempo-fim { color: var(--terracota, #A03E25) !important; }
+/* data vazia = só o desenho de calendário; com data, o desenho + dd / mm / aaaa */
+.data-caderno-texto .dc-icone{display:inline-flex;align-self:center;color:var(--azul-egipcio-escuro,#1034A6);margin-right:4px}
+.data-caderno-texto.sem-data i,.data-caderno-texto.sem-data b{display:none}
+.data-caderno-texto.sem-data .dc-icone{margin:0}
+.data-caderno-texto.sem-data{min-width:30px}
+.prod-seg.com-datas .prod-data-cel .dc-icone svg{width:11px;height:11px}
