@@ -278,16 +278,16 @@
       .cad .troca{display:none}
       .cad .pag,.cad .pag.dir{padding:calc(130px*var(--moldura-m) + 14px) calc(80px*var(--moldura-m) + 16px)}
       .cad .folha.vf .pag.dir{animation:entraDir .38s ease-out}.cad .folha.vt .pag.esq{animation:entraEsq .38s ease-out}
-      /* a folha acompanha o dedo: a página dobra numa linha que vai com o dedo; a parte dobrada mostra o verso */
-      .cad.virando .folha{overflow:hidden}
-      .cad.virando .pag{display:flex!important;position:absolute;top:0;bottom:0;left:0;right:0;width:auto}
-      .cad.virando .pag.dir{z-index:1}
-      .cad.virando .pag.esq{z-index:2;background:var(--papiro-fundo)}
-      .cad .flap{position:absolute;inset:0;z-index:4;pointer-events:none}
-      .cad .flap-dentro{position:absolute;inset:0;background:var(--papiro-fundo);overflow:hidden}
-      .cad .flap-sombra{position:absolute;inset:0;pointer-events:none}
-      .cad .flap-fenda{position:absolute;top:0;bottom:0;width:46px;z-index:3;pointer-events:none;background:linear-gradient(90deg,rgba(40,22,6,.34),rgba(40,22,6,0))}
     }
+
+    /* a virada de folha (foto de antes dobrando sobre a tela nova; a parte dobrada mostra o verso) */
+    .cad .virada{position:absolute;z-index:8;pointer-events:none;overflow:hidden}
+    .cad .virada .v-folha{position:absolute;inset:0;width:auto;height:auto;box-shadow:none}
+    .cad .virada .v-a,.cad .virada .v-flap{position:absolute;inset:0}
+    .cad .virada .v-dentro{position:absolute;inset:0;background:var(--papiro-fundo);overflow:hidden}
+    .cad .virada .v-sombra{position:absolute;inset:0;pointer-events:none}
+    .cad .virada .v-fenda{position:absolute;top:0;bottom:0;width:46px;pointer-events:none}
+    .cad.virando .folha:not(.v-folha),.cad.virando .folha:not(.v-folha) *{animation:none!important}
   </style>
 </head>
 <body>
@@ -657,7 +657,8 @@
     var hist = [], hpos = -1, aplicando = false;
     function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, projVer: projVer, estSel: estSel, estVer: estVer, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
     function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } atualizarVoltar(); gravarHash(); }
-    function virar(sentido) { var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
+    var viradaAuto = function () { return false; }; /* definida mais abaixo: a virada de folha com o efeito (foto da folha de antes dobrando sobre a nova) */
+    function virar(sentido) { if (viradaAuto(sentido)) return; var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
     function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && hist[hpos - 1].visao === visao; } /* o histórico é de dentro da aba: nunca volta para outra aba */
     function podeAvancar() { return hpos < hist.length - 1 && !!hist[hpos + 1] && hist[hpos + 1].visao === visao; }
@@ -1440,68 +1441,126 @@
         });
       } catch (er) { /* sem histórico */ }
     }
-    /* A FOLHA QUE ACOMPANHA O DEDO (iPad em pé, entre as duas páginas): a página dobra numa linha que vai com o dedo; a parte dobrada mostra o VERSO (a outra página, espelhada),
-       com sombra, e por baixo aparece a outra página. Solta passando de um terço do caminho, a folha termina de virar; senão volta.
-       Para a esquerda na primeira página abre a segunda; para a direita na segunda volta à primeira. */
+    /* A VIRADA DE FOLHA, EM QUALQUER LUGAR E EM QUALQUER POSIÇÃO DO APARELHO.
+       Funciona com duas fotos da folha: a de ANTES (tirada quando o dedo encosta) e a de DEPOIS (tirada quando a tela já mudou). A de antes dobra numa linha reta e a parte dobrada
+       mostra o VERSO (a foto de depois, espelhada), com sombra; por baixo já está a tela nova de verdade. Para a esquerda a dobra sai da direita; para a direita, da esquerda.
+       - Com o dedo: a dobra acompanha o dedo; solta passando de um quarto do caminho, a folha termina de virar; senão volta (desfaz a mudança).
+       - Sem o dedo (setas, abas, tocar num item): a mesma folha vira sozinha (quem chama virar() ganha o efeito de graça). */
     (function () {
-      var folha = cad, st = null, id = -1, x0 = 0, w = 1, fl = null;
-      var livre = function (ev) { return ev.pointerType === 'touch' && modoPe() && !cad.classList.contains('v-embed') && !cad.classList.contains('v-livro') && !(ev.target.closest && ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"],.leitor-barra,.troca')) && !(ev.target.closest && ev.target.closest('canvas') && !ev.target.closest('.lp')); };
-      var pag1 = function () { return cad.querySelector('.pag.esq'); };
-      function montar() { /* o verso: uma cópia da outra página, espelhada, dentro de uma folha que joga sombra */
-        var dir = cad.querySelector('.pag.dir'), mf = cad.querySelector('.folha');
-        var cp = dir.cloneNode(true); [].forEach.call(cp.querySelectorAll('[id]'), function (n) { n.removeAttribute('id'); }); cp.removeAttribute('id');
-        var dentro = el('div', { class: 'flap-dentro' }, [cp, el('div', { class: 'flap-sombra' })]);
-        var flap = el('div', { class: 'flap' }, [dentro]), fenda = el('div', { class: 'flap-fenda' });
-        mf.appendChild(fenda); mf.appendChild(flap);
-        fl = { flap: flap, dentro: dentro, fenda: fenda, sombra: dentro.lastChild };
+      var miolo = cad.querySelector('.miolo'), folhaEl = function () { return cad.querySelector('.folha'); };
+      var imgAntes = null, imgT = 0, ativa = null, manual = false, st = null, id = -1, x0 = 0, y0 = 0;
+      function foto() {
+        var f = folhaEl(); if (!f) return null;
+        var c = f.cloneNode(true); c.classList.remove('vf', 'vt'); c.classList.add('v-folha');
+        [].forEach.call(c.querySelectorAll('[id]'), function (n) { n.removeAttribute('id'); }); c.removeAttribute('id');
+        return c;
       }
-      function pose(p) { /* p: 0 = a folha inteira deitada; 1 = toda virada. A dobra fica em x = f */
-        p = Math.max(0, Math.min(1, p)); st.p = p;
-        var f = Math.round(w * (1 - p)), e = pag1();
-        e.style.clipPath = 'inset(0 ' + (w - f) + 'px 0 0)';
-        e.style.visibility = f <= 1 ? 'hidden' : '';
-        fl.dentro.style.clipPath = 'inset(0 0 0 ' + f + 'px)';
-        fl.dentro.style.transformOrigin = f + 'px 0';
-        fl.dentro.style.transform = 'scaleX(-1)';
-        fl.sombra.style.background = 'linear-gradient(90deg,rgba(40,22,6,0) ' + f + 'px,rgba(40,22,6,.30) ' + w + 'px)';
-        fl.flap.style.filter = 'drop-shadow(-7px 0 9px rgba(40,22,6,' + (0.38 * Math.min(1, p * 6)).toFixed(2) + '))';
-        fl.fenda.style.left = f + 'px'; fl.fenda.style.opacity = Math.min(1, p * 6).toFixed(2);
+      var vale = function () { return cad.classList.contains('on') && !cad.classList.contains('v-embed') && !cad.classList.contains('v-livro') && !cad.querySelector('.cad-fundo'); };
+      function limpar() { if (ativa) { ativa.raiz.remove(); ativa = null; } cad.classList.remove('virando'); }
+      function montar(antes, depois, sentido) {
+        limpar();
+        var f = folhaEl(), mr = miolo.getBoundingClientRect(), fr = f.getBoundingClientRect(), w = fr.width;
+        var raiz = el('div', { class: 'virada' }); raiz.style.cssText = 'left:' + (fr.left - mr.left) + 'px;top:' + (fr.top - mr.top) + 'px;width:' + fr.width + 'px;height:' + fr.height + 'px';
+        var a = el('div', { class: 'v-a' }, [antes]);
+        var sombra = el('div', { class: 'v-sombra' }), dentro = el('div', { class: 'v-dentro' }, [depois, sombra]);
+        var flap = el('div', { class: 'v-flap' }, [dentro]), fenda = el('div', { class: 'v-fenda' });
+        raiz.appendChild(fenda); raiz.appendChild(a); raiz.appendChild(flap); miolo.appendChild(raiz); cad.classList.add('virando');
+        ativa = { raiz: raiz, a: a, dentro: dentro, sombra: sombra, flap: flap, fenda: fenda, w: w, sentido: sentido, p: 0 };
+        pose(0);
       }
-      function terminar(paraP, pagina) {
-        var p0 = st.p, t0 = performance.now(), dur = 280;
+      function pose(p) { /* p: 0 = a folha de antes inteira; 1 = toda virada */
+        var v = ativa; if (!v) return; p = Math.max(0, Math.min(1, p)); v.p = p;
+        var w = v.w, frente = v.sentido === 'frente', f = Math.round(frente ? w * (1 - p) : w * p), sh = Math.min(1, p * 6);
+        if (frente) {
+          v.a.style.clipPath = 'inset(0 ' + (w - f) + 'px 0 0)';
+          v.dentro.style.clipPath = 'inset(0 0 0 ' + f + 'px)';
+          v.sombra.style.background = 'linear-gradient(90deg,rgba(40,22,6,0) ' + f + 'px,rgba(40,22,6,.30) ' + w + 'px)';
+          v.flap.style.filter = 'drop-shadow(-7px 0 9px rgba(40,22,6,' + (0.38 * sh).toFixed(2) + '))';
+          v.fenda.style.cssText = 'left:' + f + 'px;opacity:' + sh.toFixed(2) + ';background:linear-gradient(90deg,rgba(40,22,6,.34),rgba(40,22,6,0))';
+        } else {
+          v.a.style.clipPath = 'inset(0 0 0 ' + f + 'px)';
+          v.dentro.style.clipPath = 'inset(0 ' + (w - f) + 'px 0 0)';
+          v.sombra.style.background = 'linear-gradient(90deg,rgba(40,22,6,.30) 0,rgba(40,22,6,0) ' + f + 'px)';
+          v.flap.style.filter = 'drop-shadow(7px 0 9px rgba(40,22,6,' + (0.38 * sh).toFixed(2) + '))';
+          v.fenda.style.cssText = 'left:' + (f - 46) + 'px;opacity:' + sh.toFixed(2) + ';background:linear-gradient(90deg,rgba(40,22,6,0),rgba(40,22,6,.34))';
+        }
+        v.dentro.style.transformOrigin = f + 'px 0'; v.dentro.style.transform = 'scaleX(-1)';
+        v.a.style.visibility = p >= 0.995 ? 'hidden' : '';
+      }
+      function animar(paraP, dur, fim) {
+        var v = ativa; if (!v) { if (fim) fim(); return; }
+        var p0 = v.p, t0 = performance.now();
         (function passo(t) {
+          if (ativa !== v) return;
           var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
           pose(p0 + (paraP - p0) * e);
           if (k < 1) { requestAnimationFrame(passo); return; }
-          var pg = pag1(); pg.style.clipPath = ''; pg.style.visibility = '';
-          if (fl) { fl.flap.remove(); fl.fenda.remove(); fl = null; }
-          cad.classList.remove('virando'); if (pagina) paginaCel(pagina); st = null;
+          limpar(); if (fim) fim();
         })(t0);
       }
-      folha.addEventListener('pointerdown', function (ev) { if (st) return; if (!livre(ev)) { id = -1; return; } id = ev.pointerId; x0 = ev.clientX; y0 = ev.clientY; }, true);
-      var y0 = 0;
-      folha.addEventListener('pointermove', function (ev) {
+      /* a virada sozinha: virar() chama isto depois de a tela já ter mudado */
+      viradaAuto = function (sentido) {
+        if (manual) return true;
+        if (!vale() || !imgAntes || Date.now() - imgT > 1500) return false;
+        var antes = imgAntes; imgAntes = null;
+        var depois = foto(); if (!depois) return false;
+        montar(antes, depois, sentido); animar(1, 380);
+        return true;
+      };
+      /* foto de antes: quando o dedo (ou o mouse) encosta */
+      cad.addEventListener('pointerdown', function (ev) {
+        if (ev.pointerType === 'pen' || !vale() || st) return;
+        if (ev.target.closest && ev.target.closest('canvas,.cad-fundo')) return;
+        if (ativa) limpar();
+        imgAntes = foto(); imgT = Date.now();
+      }, true);
+      /* setas ‹ › (dia, mês, ano, semana...): não chamam virar(); a virada sai logo depois do clique */
+      cad.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('.seta'); if (!b || manual || !vale()) return;
+        var tras = /‹|ant|menos/i.test((b.textContent || '') + (b.id || '') + (b.getAttribute('aria-label') || ''));
+        setTimeout(function () { if (!ativa && imgAntes) viradaAuto(tras ? 'tras' : 'frente'); }, 0);
+      }, true);
+
+      /* a virada com o dedo */
+      function plano(d) { /* d = +1 avança (dedo para a esquerda), -1 volta (dedo para a direita): o que o dedo faria, e como desfazer */
+        if (cad.classList.contains('v-embed') || cad.classList.contains('v-livro') || (visao === 'leitor' && leitorLivro)) return null;
+        if (modoPe()) {
+          if (d > 0 && pagCel === 'p1') return { acao: function () { paginaCel('p2'); }, inv: function () { paginaCel('p1'); } };
+          if (d < 0 && pagCel === 'p2') return { acao: function () { paginaCel('p1'); }, inv: function () { paginaCel('p2'); } };
+        }
+        if (visao === 'financeiro') return { acao: function () { finMudarMes(d); }, inv: function () { finMudarMes(-d); } };
+        if (visao === 'diario') return { acao: function () { diarioVirar(d); }, inv: function () { diarioVirar(-d); } };
+        if (d < 0) return podeVoltar() ? { acao: voltarPagina, inv: avancarPagina } : { acao: function () { periodo(-1); }, inv: function () { periodo(1); } };
+        return podeAvancar() ? { acao: avancarPagina, inv: voltarPagina } : { acao: function () { periodo(1); }, inv: function () { periodo(-1); } };
+      }
+      var livre = function (ev) { return ev.pointerType === 'touch' && vale() && !(ev.target.closest && ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"],.leitor-barra,.troca')) && !(ev.target.closest && ev.target.closest('canvas') && !ev.target.closest('.lp')); };
+      cad.addEventListener('pointerdown', function (ev) { if (st) return; if (!livre(ev)) { id = -1; return; } id = ev.pointerId; x0 = ev.clientX; y0 = ev.clientY; }, true);
+      cad.addEventListener('pointermove', function (ev) {
         if (ev.pointerId !== id) return;
         var dx = ev.clientX - x0, dy = ev.clientY - y0;
         if (!st) {
-          if (Math.abs(dx) < 14 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
-          var frente = dx < 0 && pagCel === 'p1', tras = dx > 0 && pagCel === 'p2';
-          if (!frente && !tras) { id = -1; return; } /* nas pontas segue o gesto de sempre (voltar, avançar, mês, dia) */
-          w = Math.max(200, cad.querySelector('.folha').clientWidth); st = { dir: frente ? 'frente' : 'tras', p: frente ? 0 : 1 };
-          cad.classList.add('virando'); montar(); pose(st.p);
+          if (Math.abs(dx) < 24 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
+          var d = dx < 0 ? 1 : -1, pl = plano(d);
+          if (!pl || !imgAntes || Date.now() - imgT > 1500) { id = -1; return; }
+          var antes = imgAntes; imgAntes = null; var assina = function () { return cad.className + '|' + folhaEl().innerHTML; }, html0 = assina();
+          manual = true; try { pl.acao(); } finally { manual = false; }
+          if (assina() === html0) { st = { vazio: true }; ev.stopImmediatePropagation(); return; } /* nada mudou (ponta do caderno): sem efeito, e o gesto fica por conta desta virada (não repete a ação) */
+          var depois = foto(); montar(antes, depois, d > 0 ? 'frente' : 'tras'); st = { d: d, pl: pl };
         }
         ev.stopImmediatePropagation();
-        pose(st.dir === 'frente' ? -dx / (w * 0.85) : 1 - dx / (w * 0.85));
+        if (st.vazio) return;
+        pose(Math.abs(dx) / ((ativa ? ativa.w : 600) * 0.85));
       }, true);
       var solta = function (ev) {
         if (ev.pointerId !== id) return; id = -1;
         if (!st) return; ev.stopImmediatePropagation();
-        if (st.dir === 'frente') { if (st.p > 0.3) terminar(1, 'p2'); else terminar(0, null); }
-        else { if (st.p < 0.7) terminar(0, 'p1'); else terminar(1, null); }
+        var s0 = st; st = null; if (s0.vazio) return;
+        if (ativa && ativa.p > 0.25) animar(1, 260);
+        else { manual = true; try { s0.pl.inv(); } finally { manual = false; } animar(0, 220); } /* soltou cedo: volta (e desfaz a mudança) */
       };
-      folha.addEventListener('pointerup', solta, true); folha.addEventListener('pointercancel', solta, true);
+      cad.addEventListener('pointerup', solta, true); cad.addEventListener('pointercancel', solta, true);
       /* o gesto de reserva (eventos de toque) não pode virar a página de novo enquanto a folha está sendo arrastada */
-      ['touchmove', 'touchend'].forEach(function (n) { folha.addEventListener(n, function (ev) { if (st) ev.stopImmediatePropagation(); }, true); });
+      ['touchmove', 'touchend'].forEach(function (n) { cad.addEventListener(n, function (ev) { if (st) ev.stopImmediatePropagation(); }, true); });
     })();
     (function () { /* o dedo vira a página: para a direita volta, para a esquerda avança */
       var folha = cad, x0 = 0, /* o gesto vale em QUALQUER ponto do caderno (de cima a baixo, nos cantos, em cima de campos e botões), menos nas abas */ y0 = 0, t0 = 0, ativo = false, id = 0;
