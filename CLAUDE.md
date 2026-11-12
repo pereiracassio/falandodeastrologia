@@ -526,3 +526,6 @@ Lista de abas à esquerda (de cima para baixo; a aberta em ocre) e a tela da aba
 
 **Lista "onde estou hoje" do Dia, o que entra (dele, 11/11/2026):** só estas linhas, nesta ordem de ideia: **Circumambulação** pelo Ascendente, 2 linhas (aspecto e termo); **Liberação zodiacal** só de **Fortuna, Espírito e Eros** (não os 7 lotes), 4 linhas para cada (níveis 1 a 4, o signo de cada); **Decênios**, 3 linhas (níveis 1 a 3, o planeta); **Profecção**, 3 linhas (ano, mês, 60 horas, o signo). Nada de escolher técnica ou lote na tela.
 
+
+## SQL: NUNCA mandar o mesmo SQL de novo (12/11/2026) — bronca dele
+Só mandar SQL quando ele for **diferente** do que já foi mandado (um que substitui o anterior). Se já mandei, não repito, **nem dizendo "pode rodar de novo sem problema"**: ele acha que é outro e roda duas vezes algo que já tinha feito, e isso atrapalha. Na dúvida, **perguntar "você já rodou o SQL?"**, nunca reenviar. Quando as mensagens dele chegam em sequência, conferir o que ele já disse (ex.: "já rodei") antes de responder.
