@@ -136,7 +136,7 @@
   function linha(rotulo, partes, periodo, unidade) {
     var v = el('span', { class: 'oe-v' });
     partes.forEach(function (p) { if (typeof p === 'string') v.appendChild(document.createTextNode(p)); else v.appendChild(p); });
-    var tem = periodo && periodo.de && periodo.ate, topo = [el('span', { class: 'oe-r', text: rotulo }), v];
+    var tem = periodo && periodo.de && periodo.ate, topo = [el('span', { class: 'oe-r rotulo-fixo', text: rotulo }), v];
     var de = tem ? new Date(periodo.de) : null, ate = tem ? new Date(periodo.ate) : null;
     if (tem) topo.push(el('span', { class: 'oe-datas', text: textoDatas(de, ate) }));
     var l = el('div', { class: 'oe-l' + (tem ? ' oe-com-barra' : '') }, [el('div', { class: 'oe-topo' }, topo)]);

@@ -8,6 +8,9 @@
     if (!app) return;
     var u = localStorage.getItem('fda_ultima_pagina_daily');
     var destino = u && !/[?&]caderno=1/.test(u) && /^\/admin-(agenda|caderno|estudos|producao|projetos|financeiro|leitor|site|avisos)\.html/.test(u) ? u : '/admin-caderno.html';
+    /* número novo a cada abertura: o aparelho nunca reaproveita uma cópia velha da página depois de uma atualização do site */
+    var partes = destino.split('#'), cam = partes[0].replace(/([?&])r=\d+&?/, '$1').replace(/[?&]$/, '');
+    destino = cam + (cam.indexOf('?') >= 0 ? '&' : '?') + 'r=' + Date.now() + (partes[1] !== undefined ? '#' + partes.slice(1).join('#') : '');
     location.replace(destino);
   } catch (e) { location.replace('/admin-caderno.html'); } })();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

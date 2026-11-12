@@ -102,8 +102,8 @@
     html body .pagina-papiro .cad .reg .rotulo-fixo:not(.impresso){color:var(--preto-tinta,#1A1410)!important} /* "dia de" e "hora de" em preto: qualquer cor se mistura com a cor do planeta */
     .cad .dianotas:empty{display:none}.cad .dianotas{margin:0 0 10px}
     .cad .nota-dia{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--azul-egipcio-claro);cursor:pointer}
-    .cad .nota-dia .oe-tec{flex:none;color:var(--terracota);min-width:34px;white-space:nowrap}
-    .cad .nota-linha .oe-tec{color:var(--terracota);margin-right:2px}
+    .cad .nota-dia .oe-tec{flex:none;color:var(--ocre);min-width:34px;white-space:nowrap}
+    .cad .nota-linha .oe-tec{color:var(--ocre);margin-right:2px}
     .cad .diario-barra{display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px}.cad .diario-cont{font-size:13px;color:var(--preto-tinta)}
     .cad .diario-ordem{background:transparent;border:0;border-radius:0;padding:2px 4px;color:var(--terracota);cursor:pointer}
     .cad .nota-diario:last-child{border-bottom:0}.cad .nota-diario .oe-tec{min-width:56px}
@@ -113,7 +113,7 @@
     .cad #diario{margin-top:18px;padding-top:16px;border-top:2px solid var(--azul-egipcio-claro)}
     .cad .oe-g{margin:0 0 14px;padding:0 0 14px;border-bottom:1.5px solid var(--azul-egipcio-claro)}.cad .oe-g:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}.cad .oe-g .rotulo-fixo{margin:0 0 4px}
     .cad .oe-l{display:flex;gap:12px;align-items:baseline;padding:4px 0}
-    .cad .oe-r{flex:none;width:84px;font-size:13px;color:var(--terracota)}
+    .cad .oe-r{flex:none;width:84px}
     .cad .oe-v{font-size:17px;overflow-wrap:anywhere}
     .cad .oe-l.oe-com-barra{display:block;padding:6px 0}
     .cad .oe-topo{display:flex;gap:12px;align-items:baseline}
@@ -297,7 +297,7 @@
   <script src="portal.js?v=178"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=21"></script>
+  <script src="hellenic-ponte.js?v=22"></script>
   <script src="caderno-leitor.js?v=8"></script>
   <script src="caderno-producao.js?v=5"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -539,7 +539,7 @@
     function abrirNota(id, nota) {
       var H = window.hellenicPonte, dia = nota ? String(nota.dia).slice(0, 10) : ancora, p2 = function (n) { return String(n).padStart(2, '0'); }, agoraHm = p2(new Date().getHours()) + ':' + p2(new Date().getMinutes());
       folhaPequena(function (caixa, fechar) {
-        var tit = el('h2', {}, [H.iconeTecnica(id, 26), document.createTextNode('  ' + H.nomeTecnica(id))]);
+        var tit = el('h2', { style: 'color:var(--ocre)' }, [H.iconeTecnica(id, 26), document.createTextNode('  ' + H.nomeTecnica(id))]); /* ocre, como o título da técnica no diário */
         var hora = el('input', { type: 'time', 'aria-label': 'Hora', style: 'min-height:36px;min-width:120px' }); hora.value = nota && nota.hora ? String(nota.hora).slice(0, 5) : agoraHm;
         var campo = el('textarea', { 'aria-label': 'Anotação' }), msg = el('p', { class: 'portal-msg' });
         campo.value = nota ? nota.texto : '';
@@ -631,7 +631,7 @@
       pedido++;
       if (leitorAtual && !(visao === 'leitor' && leitorLivro)) { leitorAtual.fechar(); leitorAtual = null; }
       cad.classList.toggle('v-livro', visao === 'leitor' && !!leitorLivro && !embutida);
-      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { var jaTinha = !!f.getAttribute('data-url'); f.setAttribute('data-url', alvo); try { if (jaTinha && f.contentWindow) f.contentWindow.location.replace(url); else f.src = url; } catch (e) { f.src = url; } } return; }
+      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1&r=' + Date.now() + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { var jaTinha = !!f.getAttribute('data-url'); f.setAttribute('data-url', alvo); try { if (jaTinha && f.contentWindow) f.contentWindow.location.replace(url); else f.src = url; } catch (e) { f.src = url; } } return; }
       if (visao !== 'todo') espTodo = 0;
       if (visao === 'dia') { desenharDia(); return; }
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, diario: vistaDiario, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, compras: vistaCompras, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
