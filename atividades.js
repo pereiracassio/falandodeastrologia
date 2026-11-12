@@ -66,11 +66,11 @@
   var hojeISO = function () { return new Date().toLocaleDateString('sv-SE'); }; /* AAAA-MM-DD no dia do aparelho */
   var diaDe = function (iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; };
   var COLUNAS_BASE = 'id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga';
-  var COLUNAS = COLUNAS_BASE + ',imagem_caminho,somente_leitura,rascunho,data_limite';
+  var COLUNAS = COLUNAS_BASE + ',imagem_caminho,somente_leitura,rascunho,data_limite,data_inicio';
   /* lista as atividades do aluno; se a coluna da imagem ainda não existe no banco, tenta de novo sem ela (nunca derruba a tela) */
   function atividadesDoAluno(alunoId, ordem) {
     var pedir = function (cols) { var q = C.from('atividades').select(cols).eq('aluno_id', alunoId); return ordem ? ordenar(q) : q; };
-    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho|somente_leitura|rascunho|data_limite/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
+    return pedir(COLUNAS).then(function (r) { return r.error && /imagem_caminho|somente_leitura|rascunho|data_limite|data_inicio/i.test(r.error.message || '') ? pedir(COLUNAS_BASE) : r; });
   }
   var ordenar = function (q) { return q.order('data_atividade', { ascending: false, nullsFirst: false }).order('criado_em', { ascending: false }); };
   var dataPostagem = function (a) { return a.data_atividade || diaDe(a.criado_em); };
@@ -78,6 +78,7 @@
   function linhaDatas(a) {
     if (a.somente_leitura) return 'Texto para leitura · ' + dataCurta(dataPostagem(a));
     var p = ['Postada em ' + dataCurta(dataPostagem(a))];
+    if (a.data_inicio && a.data_inicio > hojeISO()) p.push('Libera para o aluno em ' + dataCurta(a.data_inicio));
     if (a.data_limite && !a.enviada_em) p.push('Responder até ' + dataCurta(a.data_limite));
     if (a.enviada_em) p.push('Respondida em ' + dataCurta(a.enviada_em));
     if (a.corrigida_em) p.push('Corrigida em ' + dataCurta(a.corrigida_em));
@@ -526,6 +527,7 @@
             if (!leit && !perguntas.length) { puladas++; return; }
             var registro = { aluno_id: aluno.id, titulo: tit, descricao: item.descricao ? String(item.descricao).trim() : null, data_atividade: hojeISO(), antiga: leit, rascunho: true };
             if (/^\d{4}-\d{2}-\d{2}$/.test(item.limite || '')) registro.data_limite = item.limite;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(item.inicio || '')) registro.data_inicio = item.inicio; /* o aluno só vê a atividade a partir desse dia */
             if (leit) { registro.somente_leitura = true; registro.enviada_em = new Date().toISOString(); }
             return C.from('atividades').insert(registro).select('id').single().then(function (r) {
               if (r.error) throw r.error;
@@ -598,6 +600,9 @@
       areaDatasAntiga.appendChild(el('label', { text: 'Data da correção (opcional; se não souber, deixe em branco)' })); areaDatasAntiga.appendChild(dCorrecao);
       /* texto para leitura: sem perguntas, só título, data, texto (e imagem, se quiser); entra no caderno na ordem da data */
       var dLeitura = el('input', { type: 'date' });
+      /* atividade comum: dia em que ela abre para o aluno (antes disso ele não vê nem responde) e dia limite */
+      var dInicioNova = el('input', { type: 'date' }), dLimiteNova = el('input', { type: 'date' });
+      var areaLibera = el('div', {}, [el('label', { text: 'Libera para o aluno no dia (opcional)' }), dInicioNova, el('label', { text: 'Responder até (opcional)' }), dLimiteNova]);
       var areaDataLeitura = el('div', {}, [el('label', { text: 'Data do texto' }), dLeitura]);
       areaDataLeitura.style.display = 'none';
       function desenharModo() {
@@ -610,6 +615,7 @@
       function aplicarModo() {
         desenharModo();
         areaDataLeitura.style.display = leitura ? '' : 'none';
+        areaLibera.style.display = (leitura || antiga) ? 'none' : '';
         areaPerguntas.style.display = leitura ? 'none' : '';
         areaMais.style.display = leitura ? 'none' : '';
         descricaoRotulo.textContent = leitura ? 'Texto (o que o aluno vai ler)' : 'Texto antes das perguntas (opcional)';
@@ -686,6 +692,7 @@
         salvar.disabled = true; P.mensagem(msg, 'Salvando...');
         var idNova = null;
         var registro = { aluno_id: aluno.id, titulo: titulo.value.trim(), descricao: descricao.value.trim() || null, data_atividade: antiga ? dAtividade.value : (leitura && dLeitura.value ? dLeitura.value : hojeISO()), antiga: antiga || leitura };
+        if (!antiga && !leitura) { if (dInicioNova.value) registro.data_inicio = dInicioNova.value; if (dLimiteNova.value) registro.data_limite = dLimiteNova.value; }
         if (leitura) { registro.somente_leitura = true; registro.enviada_em = new Date().toISOString(); } /* sem perguntas: já nasce "enviada" (nada pra responder nem corrigir) */
         if (antiga) {
           registro.enviada_em = new Date((dResposta.value || dAtividade.value) + 'T12:00:00').toISOString(); /* já feita: entra como enviada */
@@ -733,6 +740,7 @@
       corpo.appendChild(el('label', { text: 'Título' })); corpo.appendChild(titulo);
       corpo.appendChild(areaDatasAntiga);
       corpo.appendChild(areaDataLeitura);
+      corpo.appendChild(areaLibera);
       corpo.appendChild(descricaoRotulo); corpo.appendChild(descricao);
       corpo.appendChild(areaImagem);
       corpo.appendChild(areaPerguntas);
@@ -776,6 +784,7 @@
         /* datas da atividade (dá pra acertar à mão, principalmente nas antigas) */
         var dAt = el('input', { type: 'date' }); dAt.value = dataPostagem(a);
         var dLim = el('input', { type: 'date' }); dLim.value = a.data_limite || '';
+        var dIni = el('input', { type: 'date' }); dIni.value = a.data_inicio || '';
         var ehAntigaOuLeitura = !!(a.antiga || a.somente_leitura);
         var dResp = el('input', { type: 'date' }); dResp.value = a.enviada_em ? diaDe(a.enviada_em) : '';
         var dCorr = el('input', { type: 'date' }); dCorr.value = a.corrigida_em || '';
@@ -784,7 +793,7 @@
         salvarDatas.addEventListener('click', function () {
           var campos = { corrigida_em: dCorr.value || null };
           if (ehAntigaOuLeitura) campos.data_atividade = dAt.value || null; /* a data de postagem só se acerta à mão nas antigas; nas outras é o dia do envio */
-          else campos.data_limite = dLim.value || null;
+          else { campos.data_limite = dLim.value || null; campos.data_inicio = dIni.value || null; }
           if (a.enviada_em && dResp.value) campos.enviada_em = new Date(dResp.value + 'T12:00:00').toISOString();
           salvarDatas.disabled = true;
           C.from('atividades').update(campos).eq('id', a.id).then(function (r) {
@@ -794,7 +803,8 @@
           });
         });
         var cartaoDatas = el('div', { class: 'portal-cartao' }, [el('p', { class: 'portal-item-titulo rotulo-fixo', text: 'Datas' }),
-          ehAntigaOuLeitura ? el('label', { text: 'Data da atividade' }) : el('label', { text: 'Data limite para responder' }), ehAntigaOuLeitura ? dAt : dLim]);
+          ehAntigaOuLeitura ? el('label', { text: 'Data da atividade' }) : el('label', { text: 'Libera para o aluno no dia' }), ehAntigaOuLeitura ? dAt : dIni]);
+        if (!ehAntigaOuLeitura) { cartaoDatas.appendChild(el('label', { text: 'Data limite para responder' })); cartaoDatas.appendChild(dLim); }
         if (a.enviada_em && !a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data em que o aluno respondeu' })); cartaoDatas.appendChild(dResp); }
         if (!a.somente_leitura) { cartaoDatas.appendChild(el('label', { text: 'Data da correção (opcional)' })); cartaoDatas.appendChild(dCorr); }
         cartaoDatas.appendChild(msgDatas); cartaoDatas.appendChild(salvarDatas);
