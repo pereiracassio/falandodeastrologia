@@ -24,7 +24,7 @@
   <script src="moldura.js?v=20261109a"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
-  <link rel="stylesheet" href="page.css?v=91">
+  <link rel="stylesheet" href="page.css?v=92">
   <link rel="stylesheet" href="portal.css?v=33">
   <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
@@ -232,7 +232,7 @@
       fatosLink.addEventListener('change', function () { agendarFatos(300); });
       fatosLink.addEventListener('input', function () { agendarFatos(1500); });
       fatosServico.addEventListener('change', function () { agendarFatos(300); });
-      abaServicos.appendChild(el('div', { class: 'portal-cartao' }, [
+      abaServicos.appendChild(el('div', { class: 'portal-cartao termina-em-campo' }, [
         el('h2', { text: 'Link dos fatos' }),
         el('label', { for: 'clienteFatosLink', text: 'Link' }), fatosLink,
         el('label', { for: 'clienteFatosServico', text: 'Ligar a um serviço (opcional)', style: 'margin-top:20px;display:block' }), fatosServico, msgFatos

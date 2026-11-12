@@ -366,3 +366,7 @@ html.fda-caderno .pagina{padding:0!important;margin:0!important;min-height:0!imp
 html.fda-caderno .cab-papiro,html.fda-caderno .sidemenu-toggle,html.fda-caderno .cart-toggle,html.fda-caderno .hermes-toggle,html.fda-caderno .sidemenu-overlay,html.fda-caderno .sidemenu-panel,html.fda-caderno h1.portal-titulo,html.fda-caderno .fundo-presa{display:none!important}
 html.fda-caderno .portal-caixa,html.fda-caderno .portal{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}
 html.fda-caderno .cab-horas,html.fda-caderno .barra-agenda{position:static!important}
+
+/* cartão que termina num campo (a linha de baixo do campo JÁ é a divisória): o cartão seguinte não leva a linha de cima, senão ficam duas linhas com um vão no meio */
+.pagina-papiro .portal-cartao.termina-em-campo{padding-bottom:0!important;margin-bottom:0!important}
+.pagina-papiro .portal-cartao.termina-em-campo+.portal-cartao{border-top:0!important;padding-top:34px!important}
