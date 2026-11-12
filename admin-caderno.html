@@ -310,7 +310,7 @@
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=3"></script>
   <script src="caderno-estudos-tela.js?v=1"></script>
-  <script src="todo-dados.js?v=5"></script>
+  <script src="todo-dados.js?v=6"></script>
   <script src="carrinho.js?v=6"></script>
   <script src="caderno-financeiro.js?v=1"></script>
   <script>
@@ -891,11 +891,12 @@
         var itens = dados.fora.filter(function (x) { return !x.chave || !dados.feitos[x.chave]; });
         dados.tarefas.forEach(function (t) { itens.push({ tarefa: t, quando: t.data ? doIso(String(t.data).slice(0, 10), t.hora ? String(t.hora).slice(0, 5) : '00:00') : Infinity, diaTodo: !t.hora, titulo: t.titulo, sub: t.url_rotulo || '', url: t.url || '', cor: '#B5852F', semData: !t.data }); });
         itens.sort(function (a, b) { return a.quando === b.quando ? ((a.ord || 0) - (b.ord || 0)) : a.quando < b.quando ? -1 : 1; });
-        function conclDe(iso) { return (dados.concluidos || []).filter(function (c) { return isoDia(c.t) === iso; }).sort(function (a, b) { return a.t - b.t; }); }
+        function conclDe(iso) { return (dados.concluidos || []).filter(function (c) { return (c.iso || isoDia(c.t)) === iso; }).sort(function (a, b) { return a.t - b.t; }); }
         function linhaFeita(c) {
           var meio = el('div', { style: 'flex:1;min-width:0' }, [el('div', { class: 'nome', text: c.titulo }), c.sub ? el('div', { class: 'det', text: c.sub }) : null]);
           var cx = (c.passoId || c.tarefaId || c.chave) ? el('button', { type: 'button', class: 'cx', 'aria-label': 'Desmarcar', text: '✓' }) : el('span', { class: 'cx', style: 'border-color:var(--azul-egipcio-claro)', text: '✓' });
           if (cx.tagName === 'BUTTON') cx.addEventListener('click', function () { desfazerFeito(c, cx); });
+          if (c.url) { meio.style.cursor = 'pointer'; meio.addEventListener('click', function () { abrirTela(c.url); }); }
           return el('div', { class: 'tarefa feita' }, [el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + (c.cor || '#B5852F') }), cx, meio]);
         }
         var grupos = [], atual = null;
@@ -940,9 +941,9 @@
       preparar().then(function () {
         var td = tdPronto();
         return Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), td.itensDaProducao(), Promise.all([td.itensDeProjetosEEstudos(), td.itensDeAulasEstudo(), td.itensDoCurso()]).then(function (x) { return x[0].concat(x[1], x[2]); }), td.itensDePassos(),
-          C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), td.codigosDosAtendimentos(), td.carregarAniversarios(), valorSite('todo_concluidos')]);
+          C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), td.codigosDosAtendimentos(), td.carregarAniversarios(), valorSite('todo_concluidos'), td.itensFeitos().then(null, function () { return []; })]);
       }).then(function (r) {
-        if (eu !== pedido) return; todoDados = tdPronto().montarItens(r.slice(0, 7), de, ate, agora); todoDados.concluidos = Array.isArray(r[8]) ? r[8] : []; desenharItens();
+        if (eu !== pedido) return; todoDados = tdPronto().montarItens(r.slice(0, 7), de, ate, agora); todoDados.concluidos = (Array.isArray(r[8]) ? r[8] : []).filter(function (i) { return i.chave && !i.passoId && !i.tarefaId; }).concat(r[9] || []); /* o registro antigo só vale para compromissos e avisos; o resto sai das datas de conclusão */ desenharItens();
       }, function (er) { if (eu !== pedido) return; rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível carregar (' + (er.message || 'erro') + ').' })); });
     }
     var recarregarTodo = function () {};

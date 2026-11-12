@@ -167,6 +167,51 @@ window.TodoDados = function (ctx) {
         return saida;
       });
     }
+
+    /* O QUE FOI FEITO, no dia em que foi feito: sai direto das datas de conclusão que já estão gravadas (passos de projeto, tarefas, trilhas, etapas dos
+       vídeos e dos cortes da Produção, etapas das aulas e apostilas do curso), não de um registro à parte; assim vale para o que se marca em qualquer tela. */
+    function itensFeitos() {
+      var pega = function (q) { return q.then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; }); };
+      return Promise.all([
+        pega(C.from('projeto_passos').select('id,titulo,projeto_id,feito_em').eq('feito', true).not('feito_em', 'is', null)), pega(C.from('projetos').select('id,nome')),
+        pega(C.from('todo_tarefas').select('id,titulo,url_rotulo,feito_em').eq('feito', true).not('feito_em', 'is', null)),
+        pega(C.from('aluno_trilha_passos').select('titulo,trilha_id,feito_em').eq('feito', true).not('feito_em', 'is', null)), pega(C.from('aluno_trilhas').select('id,nome,aluno_id')), pega(C.from('alunos').select('id,nome')),
+        pega(C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,no_ar,roteiro_ok,gravado,editado,edicao_fina,seo_ok,publico_ok,cortes_feitos,blog_ok,datas_etapas,data_gravar,data_postar,data_publico,data_cortes,data_blog')),
+        pega(C.from('prod_cortes').select('id,video_id,ordem,titulo,legenda_ok,seo_ok,shorts,instagram,tiktok,datas_etapas')),
+        pega(C.from('cursos').select('id,titulo')), pega(C.from('curso_modulos').select('id,curso_id,ordem,titulo,apostila_ok,data_apostila')), pega(C.from('curso_aulas').select('id,modulo_id,titulo,gravacao,edicao_grossa,edicao_fina,capa,video_codigo,datas_etapas,tipo'))
+      ]).then(function (r) {
+        var saida = [], porId = function (l, id) { return l.filter(function (x) { return x.id === id; })[0]; };
+        var dia = function (v) { return String(v || '').slice(0, 10); };
+        r[0].forEach(function (x) { var p = porId(r[1], x.projeto_id), t = Date.parse(x.feito_em); saida.push({ t: t, iso: isoDia(t), passoId: x.id, titulo: x.titulo, sub: 'projeto · ' + (p ? p.nome : ''), url: 'admin-projetos.html#projeto=' + encodeURIComponent(x.projeto_id), cor: FdaTema.cor('terracota') }); });
+        r[2].forEach(function (x) { var t = Date.parse(x.feito_em); saida.push({ t: t, iso: isoDia(t), tarefaId: x.id, titulo: x.titulo, sub: x.url_rotulo || '', cor: FdaTema.cor('ocre') }); });
+        r[3].forEach(function (x) { var tr = porId(r[4], x.trilha_id), al = tr ? porId(r[5], tr.aluno_id) : null, t = Date.parse(x.feito_em); if (!tr) return; saida.push({ t: t, iso: isoDia(t), titulo: x.titulo, sub: 'trilha ' + tr.nome + (al ? ' · ' + al.nome : ''), url: 'admin-alunos.html#aluno=' + encodeURIComponent(tr.aluno_id) + '&aba=trilha', cor: FdaTema.cor('terracota') }); });
+        var NV = { roteiro_ok: 'roteiro', gravado: 'gravação', editado: 'edição grossa', edicao_fina: 'edição fina', seo_ok: 'SEO', no_ar: 'no YouTube (membros)', publico_ok: 'público', cortes_feitos: 'cortes', blog_ok: 'blog' };
+        var COLV = { gravado: 'data_gravar', no_ar: 'data_postar', publico_ok: 'data_publico', cortes_feitos: 'data_cortes', blog_ok: 'data_blog' };
+        r[6].forEach(function (v) {
+          var dt = v.datas_etapas || {}, nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título');
+          Object.keys(NV).forEach(function (k) {
+            if (!v[k]) return; var d = dia(COLV[k] ? v[COLV[k]] : dt[k]); if (!d) return;
+            saida.push({ t: doIso(d), iso: d, titulo: nome, sub: NV[k], url: 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id), cor: FdaTema.cor('azul-egipcio-escuro') });
+          });
+        });
+        var NC = { legenda_ok: 'legenda', seo_ok: 'SEO', shorts: 'YouTube Shorts', instagram: 'Instagram', tiktok: 'TikTok' };
+        r[7].forEach(function (c) {
+          var v = porId(r[6], c.video_id), dt = c.datas_etapas || {};
+          Object.keys(NC).forEach(function (k) {
+            if (!c[k]) return; var d = dia(dt[k]); if (!d) return;
+            saida.push({ t: doIso(d), iso: d, titulo: (c.titulo || 'Corte ' + c.ordem) + (v && v.numero ? ' · ' + v.numero : ''), sub: 'corte · ' + NC[k], url: v ? 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + '&vt=corte&corte=' + encodeURIComponent(c.id) : '', cor: FdaTema.cor('azul-egipcio-escuro') });
+          });
+        });
+        var NK = { gravacao: 'gravação', edicao_grossa: 'edição grossa', edicao_fina: 'edição fina', capa: 'capa', upload: 'vídeo colocado' }, mods = {};
+        r[9].forEach(function (m) { mods[m.id] = m; });
+        r[9].forEach(function (m) { var cu = porId(r[8], m.curso_id), d = dia(m.data_apostila); if (m.apostila_ok && d && cu) saida.push({ t: doIso(d), iso: d, titulo: 'Apostila: ' + (m.ordem === 0 ? '' : 'módulo ' + m.ordem + ' · ') + m.titulo, sub: cu.titulo, url: 'admin-curso.html#modulo=' + encodeURIComponent(m.id), cor: FdaTema.cor('azul-egipcio-escuro') }); });
+        r[10].forEach(function (a) {
+          var m = mods[a.modulo_id], cu = m ? porId(r[8], m.curso_id) : null, dt = a.datas_etapas || {}; if (!cu || a.tipo === 'ao_vivo') return;
+          Object.keys(NK).forEach(function (k) { if (!(k === 'upload' ? a.video_codigo : a[k])) return; var d = dia(dt[k]); if (!d) return; saida.push({ t: doIso(d), iso: d, titulo: a.titulo, sub: NK[k] + ' · ' + cu.titulo, url: 'admin-curso.html#aula=' + encodeURIComponent(a.id), cor: FdaTema.cor('azul-egipcio-escuro') }); });
+        });
+        return saida;
+      });
+    }
     function codigosDosAtendimentos() {
       var pega = function (q) { return q.then(function (r) { return r.data || []; }, function () { return []; }); };
       return Promise.all([pega(C.from('cliente_codigos').select('cliente_id,codigo')), pega(C.from('aluno_codigos').select('aluno_id,codigo')),
@@ -204,6 +249,6 @@ window.TodoDados = function (ctx) {
     dados.fora = dados.fora.concat(r[2], r[3], r[4]);
     return dados;
   }
-  return { carregarAniversarios: carregarAniversarios, itensDaProducao: itensDaProducao, itensDeProjetosEEstudos: itensDeProjetosEEstudos, itensDeAulasEstudo: itensDeAulasEstudo, itensDoCurso: itensDoCurso, itensDePassos: itensDePassos,
+  return { carregarAniversarios: carregarAniversarios, itensDaProducao: itensDaProducao, itensDeProjetosEEstudos: itensDeProjetosEEstudos, itensDeAulasEstudo: itensDeAulasEstudo, itensDoCurso: itensDoCurso, itensDePassos: itensDePassos, itensFeitos: itensFeitos,
     codigosDosAtendimentos: codigosDosAtendimentos, aniversariosEntre: aniversariosEntre, montarItens: montarItens, barrasDe: barrasDe, ETV: ETV, ETC: ETC, setLugar: function (la, lo) { LAT = la; LON = lo; } };
 };
