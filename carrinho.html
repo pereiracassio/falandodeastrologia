@@ -366,9 +366,14 @@
         window.portal.client.from("pedidos").insert({ order_nsu: pedido, nome: nome, email: email.toLowerCase(), whatsapp: whatsapp, servicos: titulos.slice(0, 900) }).then(ok, ok);
       } catch (e) { ok(); }
     });
-    guardado.then(function () {
+    /* guarda neste aparelho os dados da volta do pagamento: se o InfinitePay devolver a pessoa SEM eles no endereço, o Seu espaço os acha aqui (cliente.html, parametrosDaVolta) */
+    try { localStorage.setItem("fda_ultimo_pedido", JSON.stringify({ t: Date.now(), q: redirectUrl.slice(redirectUrl.indexOf("?") + 1) })); } catch (e) { /* sem armazenamento */ }
+    guardado.then(function () { criarLink(0); });
+    function criarLink(tentativa) {
       var controle = new AbortController();
       var timer = setTimeout(function () { controle.abort(); }, 8000);
+      /* o link falhou? tenta mais uma vez antes de cair no link fixo (o fixo não leva o serviço de volta para o Seu espaço) */
+      var falhou = function () { clearTimeout(timer); if (tentativa < 1) criarLink(tentativa + 1); else reserva(); };
 
       fetch(INFINITEPAY_API, {
         method: "POST",
@@ -385,9 +390,9 @@
       }).then(function (r) { return r.json(); }).then(function (j) {
         clearTimeout(timer);
         var url = acharEnderecoPagamento(j);
-        if (url) { Carrinho.marcarSaida(); window.location.href = url; } else { reserva(); }
-      }).catch(function () { clearTimeout(timer); reserva(); });
-    });
+        if (url) { Carrinho.marcarSaida(); window.location.href = url; } else { falhou(); }
+      }).catch(falhou);
+    }
     });
   });
 </script>

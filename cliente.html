@@ -59,8 +59,18 @@
        Sinastria e retificação sempre passam pelo formulário (precisam de dados novos). */
     var FORM_BASE = 'https://astrohellenic.com/formulario.html';
     var AGENDA_BASE = 'https://astrohellenic.com/agendar.html';
+    /* os dados da volta do pagamento vêm no endereço; se o InfinitePay devolveu a pessoa SEM eles, vale o que o carrinho guardou neste aparelho (até 3 horas) */
+    function parametrosDaVolta() {
+      var q = new URLSearchParams(location.search);
+      if (q.get('servico') || q.get('ver')) return q;
+      try {
+        var g = JSON.parse(localStorage.getItem('fda_ultimo_pedido') || 'null');
+        if (g && g.q && Date.now() - g.t < 3 * 3600 * 1000) return new URLSearchParams(g.q);
+      } catch (e) { /* sem armazenamento */ }
+      return q;
+    }
     function cartaoFormulario() {
-      var q = new URLSearchParams(location.search), f = new URLSearchParams();
+      var q = parametrosDaVolta(), f = new URLSearchParams();
       if (!q.get('u') || !q.get('servico')) return null;
       /* quem chega aqui já pagou: o carrinho se esvazia (senão a bolinha do carrinho continua mostrando o serviço comprado) */
       try { localStorage.removeItem('fda_carrinho'); localStorage.removeItem('fda_carrinho_saida'); } catch (e) { /* sem armazenamento */ }
