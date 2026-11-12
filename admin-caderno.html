@@ -1175,8 +1175,7 @@
       cad.classList.add('on', pagCel);
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
       var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && (ABAS.some(function (y) { return y[0] === h[1]; }) || EXTRAS[h[1]])) { /* configurações, avisos e mensagens também voltam */
-        visao = h[1]; var hashDeHoje = true; try { hashDeHoje = localStorage.getItem('fda_caderno_hash_dia') === isoDia(Date.now()); } catch (e) { /* sem armazenamento */ }
-        if (h[2] && hashDeHoje) ancora = h[2]; /* o dia guardado no endereço só vale no mesmo dia em que foi guardado: abrir o app no dia seguinte cai no HOJE, nunca no dia de ontem */
+        visao = h[1]; /* a aba volta ao lugar onde estava, mas o DIA é sempre o de hoje ao abrir: o d= do endereço não vale (ele escolheu assim, 12/11/2026) */
         var hq = new URLSearchParams(location.hash.replace(/^#/, ''));
         if (visao === 'producao') { prodSerie = hq.get('ps') || null; prodVideo = hq.get('pv') || null; prodCorte = prodVideo ? (hq.get('pc') || null) : null; }
         else if (visao === 'projetos') { projSel = hq.get('pj') || null; projVer = hq.get('pjv') || null; }
