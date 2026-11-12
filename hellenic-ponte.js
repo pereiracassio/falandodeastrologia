@@ -10,7 +10,7 @@
   var AH_URL = 'https://ndgjenvddkmztmdixjhc.supabase.co', AH_KEY = 'sb_publishable_VTjldgs8Hv1RODaMg7T57Q_ISzbnm5C';
   var BASE = 'https://astrohellenic.com/', CHAVE = 'daily_hellenic_mapa';
   /* os scripts do Astro Hellenic são pedidos com este número: o aparelho nunca fica com uma cópia velha deles (subir o número quando eles mudarem) */
-  var VERSAO_MODULO = '20261112a';
+  var VERSAO_MODULO = '20261112b';
   var NOMES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno', 'Fortuna', 'Espírito', 'Necessidade', 'Eros', 'Coragem', 'Vitória', 'Nêmesis', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'];
   var PLANETA = { Sun: 'Sol', Moon: 'Lua', Mercury: 'Mercúrio', Venus: 'Vênus', Mars: 'Marte', Jupiter: 'Júpiter', Saturn: 'Saturno' };
   /* ícones dos aspectos: os mesmos desenhos da Circumambulação do Astro Hellenic (direcoes.js, getAspectSymbolSVGDir), nas cores dos aspectos do papiro */
@@ -128,7 +128,7 @@
   }
   function extrairPosicao(r, tecId) {
     var ns = r.planetasNaSeita || {};
-    if (tecId.indexOf('liberacao_') === 0) { var niv = r.liberacao[tecId.slice(10)]; return niv ? { k: 'lib', s: niv.filter(Boolean).map(function (n) { return n.signIdx; }) } : null; }
+    if (tecId.indexOf('liberacao_') === 0) { var niv = r.liberacao[tecId.slice(10)]; if (!niv) return null; var ls = niv.filter(Boolean); return { k: 'lib', s: ls.map(function (n) { return n.signIdx; }), sl: ls.map(function (n) { return !!n.lysis; }), pc: ls.map(function (n) { return !!n.pico; }) }; }
     if (tecId === 'decenios') return r.decenios ? { k: 'dec', p: r.decenios.map(function (n) { return n.planetId; }), ns: r.decenios.map(function (n) { return !!ns[n.planetId]; }) } : null;
     if (tecId === 'profeccao') { var pf = r.profeccao; return { k: 'prof', s: [pf.ano.signIdx, pf.mes ? pf.mes.signIdx : null, pf.passo ? pf.passo.signIdx : null] }; }
     if (tecId === 'circumambulacao') { var c = r.circumambulacao; return { k: 'circ', ts: c.termo ? c.termo.signIdx : null, tp: c.termo ? c.termo.planetId : null, tn: c.termo ? !!ns[c.termo.planetId] : false, at: c.aspecto ? c.aspecto.tipo : null, ap: c.aspecto ? c.aspecto.planetId : null, an: c.aspecto ? !!ns[c.aspecto.planetId] : false }; }
@@ -140,7 +140,7 @@
     if (!p || !p.k) return null;
     var w = el('span', { class: 'nota-pos' });
     function par(rot, filho) { w.appendChild(el('span', { class: 'np-r', text: rot })); w.appendChild(filho); }
-    if (p.k === 'lib') (p.s || []).forEach(function (s, i) { par('N' + (i + 1), sig(s)); });
+    if (p.k === 'lib') (p.s || []).forEach(function (s, i) { var f = el('span'); f.appendChild(sig(s)); if (p.sl && p.sl[i]) f.appendChild(selo('salto', true, true)); if (p.pc && p.pc[i]) f.appendChild(selo('pico', false, true)); par('N' + (i + 1), f); });
     else if (p.k === 'dec') (p.p || []).forEach(function (id, i) { par('N' + (i + 1), gpCor(id, p.ns && p.ns[i])); });
     else if (p.k === 'prof') { par('Ano', sig(p.s[0])); if (p.s[1] != null) par('Mês', sig(p.s[1])); if (p.s[2] != null) par('60h', sig(p.s[2])); }
     else if (p.k === 'circ') {
@@ -168,6 +168,9 @@
     var curto = (ate - de) <= 7 * 86400000, hm = function (d) { return dd(d.getHours()) + ':' + dd(d.getMinutes()); };
     return curto ? dm(de) + ' ' + hm(de) + ' – ' + dm(ate) + ' ' + hm(ate) : dm(de) + '/' + de.getFullYear() + ' – ' + dm(ate) + '/' + ate.getFullYear();
   }
+  /* SALTO (o período é o Lysis) e PICO (signo angular a partir da Fortuna): os mesmos selos da Liberação do Astro Hellenic, só quando o nível tem */
+  function selo(txt, salto, pequeno) { return el('span', { class: 'selo-lib botao-fixo' + (salto ? ' salto' : '') + (pequeno ? ' pq' : ''), text: txt }); }
+  function selosDe(n) { var r = []; if (n.lysis) r.push(selo('salto', true)); if (n.pico) r.push(selo('pico', false)); return r; }
   function linha(rotulo, partes, periodo, unidade) {
     var v = el('span', { class: 'oe-v' });
     partes.forEach(function (p) { if (typeof p === 'string') v.appendChild(document.createTextNode(p)); else v.appendChild(p); });
@@ -195,7 +198,7 @@
     blocos.circumambulacao = [grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])])];
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
       var niv = r.liberacao[x[0]];
-      blocos['liberacao_' + x[0]] = [grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)], n, ['anos', 'meses', 'dias', 'horas'][n.nivel - 1]); }) : [linha('', ['Fora do período'])], x[1])];
+      blocos['liberacao_' + x[0]] = [grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)].concat(selosDe(n)), n, ['anos', 'meses', 'dias', 'horas'][n.nivel - 1]); }) : [linha('', ['Fora do período'])], x[1])];
     });
     blocos.decenios = [grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [gp(n.planetId)], n, ['meses', 'meses', 'dias'][n.nivel - 1]); }) : [linha('', ['Fora do período'])])];
     var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)], pf.ano, 'meses')];
