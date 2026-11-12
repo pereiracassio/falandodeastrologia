@@ -302,7 +302,7 @@
   <script src="portal.js?v=178"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=24"></script>
+  <script src="hellenic-ponte.js?v=25"></script>
   <script src="caderno-leitor.js?v=8"></script>
   <script src="caderno-producao.js?v=5"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -494,6 +494,7 @@
       Promise.all([eventosEntre(d0, d1), pNotas]).then(function (res) {
         var evs = res[0], notasDoDia = res[1];
         if (eu !== pedido) return;
+        if (window.hellenicPonte) window.hellenicPonte.completarPosicoes(notasDoDia).then(function (mudou) { if (mudou && eu === pedido) desenharHoras(eu, hojeIso); });
         if (evs.falhas && evs.falhas.length) todo.parentNode.insertBefore(el('p', { class: 'falha', text: 'Não consegui ler: ' + evs.falhas.join(', ') }), linha);
         var porHora = {};
         evs.forEach(function (e) {
@@ -536,6 +537,7 @@
           l.addEventListener('click', function () { abrirNota(n.tecnica, n); });
           alvo.appendChild(l);
         });
+        H.completarPosicoes(rows).then(function (mudou) { if (mudou && eu === pedido) desenharNotas(eu); });
       }, function () { alvo.textContent = ''; });
     }
     function atualizarNotas() { if (visao === 'diario') { vistaDiario(); return; } desenharNotas(pedido); desenharHoras(pedido, isoDia(Date.now())); } /* a lista de cima (sem hora) e a linha do tempo (com hora) */
@@ -753,15 +755,16 @@
       diarioNav = null; diarioRefaz = null;
       cabVista(esq, 'Diário', function () { diarioVirar(-1); }, function () { diarioVirar(1); });
       esq.appendChild(barra); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
-      Promise.all([valorSite('daily_diario_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000)]).then(function (res) {
+      Promise.all([valorSite('daily_diario_aba_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000)]).then(function (res) {
         if (eu !== pedido) return;
         var desc = res[0] !== 'asc', r = res[1];
         rolaE.textContent = '';
         if (r.error) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações (' + P.traduzErro(r.error.message) + ').' })); return; }
+        window.hellenicPonte.completarPosicoes(r.data || []).then(function (mudou) { if (mudou && eu === pedido) vistaDiario(); });
         var notas = (r.data || []).slice(); if (!desc) notas.reverse();
         var inverter = el('button', { type: 'button', class: 'diario-ordem', title: desc ? 'Mais novo primeiro (tocar para inverter)' : 'Mais antigo primeiro (tocar para inverter)', 'aria-label': 'Inverter a ordem' }), contador = el('span', { class: 'diario-cont' });
         inverter.innerHTML = '<svg width="24" height="24" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' + ORDEM_ICONES[desc ? 'desc' : 'asc'] + '</svg>';
-        inverter.addEventListener('click', function () { diarioIdx = 0; gravarSite('daily_diario_ordem', desc ? 'asc' : 'desc').then(function () { vistaDiario(); }); });
+        inverter.addEventListener('click', function () { diarioIdx = 0; gravarSite('daily_diario_aba_ordem', desc ? 'asc' : 'desc').then(function () { vistaDiario(); }); });
         barra.appendChild(contador); barra.appendChild(inverter);
         if (!notas.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma anotação ainda.' })); return; }
         /* as linhas, na ordem: título do dia e as anotações dele */

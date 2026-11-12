@@ -134,6 +134,20 @@
     if (tecId === 'circumambulacao') { var c = r.circumambulacao; return { k: 'circ', ts: c.termo ? c.termo.signIdx : null, tp: c.termo ? c.termo.planetId : null, tn: c.termo ? !!ns[c.termo.planetId] : false, at: c.aspecto ? c.aspecto.tipo : null, ap: c.aspecto ? c.aspecto.planetId : null, an: c.aspecto ? !!ns[c.aspecto.planetId] : false }; }
     return null;
   }
+  /* anotações feitas antes de a posição ser guardada: calcula agora (a posição de um momento passado é sempre a mesma) e guarda de uma vez, para nunca mais recalcular */
+  var posTentadas = {};
+  function completarPosicoes(rows) {
+    var falta = (rows || []).filter(function (n) { return !n.posicao && n.id && !posTentadas[n.id]; }).slice(0, 150);
+    if (!falta.length) return Promise.resolve(false);
+    falta.forEach(function (n) { posTentadas[n.id] = true; });
+    return Promise.all(falta.map(function (n) {
+      return posicaoEm(String(n.dia).slice(0, 10), n.hora ? String(n.hora).slice(0, 5) : '12:00', n.tecnica).then(function (p) {
+        if (!p) return false;
+        n.posicao = p;
+        return C.from('diario_notas').update({ posicao: p }).eq('id', n.id).then(function () { return true; }, function () { return true; });
+      }, function () { return false; });
+    })).then(function (r) { return r.some(Boolean); });
+  }
   function gpCor(id, naSeita) { var e = glifo(PLANETA[id]); e.style.color = naSeita ? '#A03E25' : '#1F5FA3'; return e; }
   /* a linha da posição: "N1 ♑ N2 ♒ N3 ♈ N4 ♉" (Liberação), "N1 ☽ N2 ♂ N3 ♄" (Decênios), "Ano ♒ Mês ♓ 60h ♈" (Profecção), "Termo ♓ ♃ Aspecto △ ♃" (Circumambulação) */
   function posicaoEl(p) {
@@ -319,5 +333,5 @@
     return cx;
   }
 
-  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
+  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, completarPosicoes: completarPosicoes, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
 })();
