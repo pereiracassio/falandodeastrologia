@@ -295,8 +295,9 @@
       .cad.v-livro .leitor-barra .lb-g{flex:0 0 auto;flex-wrap:nowrap;justify-content:flex-start;padding:0 2px}
       .cad.v-livro .leitor-barra .portal-btn{white-space:nowrap!important;flex:none!important}
     }
-    /* tema escuro: a página do PDF é papel claro (a letra do PDF é escura; sobre fundo escuro sumia) */
-    html.tema-escuro .cad .lp{background:#EDE6D2!important}
+    /* tema escuro: a página do PDF fica escura e a letra num cinza clarinho (o PDF e a tinta da caneta são invertidos; o marca-texto clareia em vez de escurecer) */
+    html.tema-escuro .cad .lp canvas:nth-child(1),html.tema-escuro .cad .lp canvas:nth-child(3){filter:invert(.88) hue-rotate(180deg)}
+    html.tema-escuro .cad .lp canvas:nth-child(2){mix-blend-mode:screen!important;opacity:.4!important}
   </style>
 </head>
 <body>
