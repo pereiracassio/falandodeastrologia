@@ -64,15 +64,14 @@
   var carregados;
   function carregarScripts() {
     if (carregados) return carregados;
-    carregados = ['tz-lookup.js', 'camadas-tempo.js', 'retificacao-calculos.js', 'onde-estou.js'].reduce(function (p, arq) {
-      return p.then(function () {
-        return new Promise(function (ok, erro) {
-          var s = document.createElement('script'); s.src = BASE + arq + '?v=' + VERSAO_MODULO; s.onload = ok;
-          s.onerror = function () { erro(new Error('Não consegui carregar ' + arq + ' do Astro Hellenic.')); };
-          document.head.appendChild(s);
-        });
+    /* os quatro de uma vez (não um depois do outro): nenhum precisa do outro para ser carregado, só na hora de calcular */
+    carregados = Promise.all(['tz-lookup.js', 'camadas-tempo.js', 'retificacao-calculos.js', 'onde-estou.js'].map(function (arq) {
+      return new Promise(function (ok, erro) {
+        var s = document.createElement('script'); s.src = BASE + arq + '?v=' + VERSAO_MODULO; s.onload = ok;
+        s.onerror = function () { erro(new Error('Não consegui carregar ' + arq + ' do Astro Hellenic.')); };
+        document.head.appendChild(s);
       });
-    }, Promise.resolve());
+    }));
     carregados.catch(function () { carregados = null; });
     return carregados;
   }
