@@ -103,6 +103,7 @@
     .cad .dianotas:empty{display:none}.cad .dianotas{margin:0 0 10px}
     .cad .nota-dia{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--azul-egipcio-claro);cursor:pointer}
     .cad .nota-dia .oe-tec{flex:none;color:var(--terracota);min-width:34px;white-space:nowrap}
+    .cad .nota-linha .oe-tec{color:var(--terracota);margin-right:2px}
     .cad .nota-dia .nh{flex:none;font-size:13px;color:var(--preto-tinta);min-width:40px;padding-top:2px}
     .cad .nota-dia .nt{font-size:15px;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
     .cad #diario{margin-top:18px;padding-top:16px;border-top:2px solid var(--azul-egipcio-claro)}
@@ -292,7 +293,7 @@
   <script src="portal.js?v=178"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=20"></script>
+  <script src="hellenic-ponte.js?v=21"></script>
   <script src="caderno-leitor.js?v=8"></script>
   <script src="caderno-producao.js?v=5"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -480,7 +481,9 @@
       document.getElementById('regHora').style.display = icH.textContent ? '' : 'none'; /* "hora de" só aparece quando há uma hora agora (dia de hoje); em outro dia fica vazio */
       var regente = REGENTE[diaSem(ancora)]; document.getElementById('icDia').textContent = icone(regente);
       if (ancora === hojeIso) { var ag = el('div', { class: 'agora', style: 'top:' + pct(agora) }, [el('i', { text: hhmm(agora) })]); linha.appendChild(ag); }
-      eventosEntre(d0, d1).then(function (evs) {
+      var pNotas = window.hellenicPonte ? window.hellenicPonte.notasDoDia(ancora).then(function (n) { return n; }, function () { return []; }) : Promise.resolve([]);
+      Promise.all([eventosEntre(d0, d1), pNotas]).then(function (res) {
+        var evs = res[0], notasDoDia = res[1];
         if (eu !== pedido) return;
         if (evs.falhas && evs.falhas.length) todo.parentNode.insertBefore(el('p', { class: 'falha', text: 'Não consegui ler: ' + evs.falhas.join(', ') }), linha);
         var porHora = {};
@@ -492,6 +495,15 @@
           for (var j = 0; j < horas.length; j++) if (ini >= horas[j].ini) k = j;
           var b = el('a', { class: 'evl', href: '#' }, [el('i', { class: 'q', style: 'background:' + cor }), el('span', { class: 'evt-titulo', text: e.titulo }), el('small', { text: hhmm(e.ini) + ' às ' + hhmm(e.fim) })]);
           b.addEventListener('click', function (ev) { ev.preventDefault(); modAgenda().abrirEvento(e); });
+          (porHora[k] = porHora[k] || []).push(b);
+        });
+        /* as anotações do diário que têm hora ficam na linha da hora planetária em que caem, como um compromisso */
+        notasDoDia.forEach(function (n) {
+          if (!n.hora) return;
+          var t = doIso(ancora, String(n.hora).slice(0, 5)), k = 0;
+          for (var j = 0; j < horas.length; j++) if (t >= horas[j].ini) k = j;
+          var b = el('a', { class: 'evl nota-linha', href: '#' }, [window.hellenicPonte.iconeTecnica(n.tecnica, 16), el('span', { class: 'evt-titulo', text: n.texto }), el('small', { text: String(n.hora).slice(0, 5) })]);
+          b.addEventListener('click', function (ev) { ev.preventDefault(); abrirNota(n.tecnica, n); });
           (porHora[k] = porHora[k] || []).push(b);
         });
         Object.keys(porHora).forEach(function (k) { var h = horas[k], c = el('div', { class: 'evt', style: 'top:' + pct(h.pos || h.ini) }, porHora[k]); linha.appendChild(c); });
@@ -510,13 +522,14 @@
       H.notasDoDia(ancora).then(function (rows) {
         if (eu !== pedido) return;
         alvo.textContent = '';
-        rows.forEach(function (n) {
+        rows.filter(function (n) { return !n.hora; }).forEach(function (n) {
           var l = el('div', { class: 'nota-dia', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nt', text: n.texto })]);
           l.addEventListener('click', function () { abrirNota(n.tecnica, n); });
           alvo.appendChild(l);
         });
       }, function () { alvo.textContent = ''; });
     }
+    function atualizarNotas() { desenharNotas(pedido); desenharHoras(pedido, isoDia(Date.now())); } /* a lista de cima (sem hora) e a linha do tempo (com hora) */
     /* nota = a anotação que já existe (editar) ou nada (anotação nova). A hora vem preenchida com a de agora e pode ser trocada.
        NADA é salvo ao mexer na hora (o seletor do iPhone dispara "change" ao abrir): só no botão Salvar, ou ao fechar tocando fora. */
     function abrirNota(id, nota) {
@@ -530,13 +543,13 @@
         function mudou() { return campo.value !== textoInicial || hora.value !== horaInicial; }
         function guardar(depois) {
           if (salvando) return; salvando = true;
-          H.salvarNota(dia, id, campo.value, hora.value, nota ? nota.id : null).then(function () { desenharNotas(pedido); if (depois) depois(); }, function (er) { salvando = false; P.mensagem(msg, 'Não guardou (' + P.traduzErro(er.message) + ').', 'erro'); });
+          H.salvarNota(dia, id, campo.value, hora.value, nota ? nota.id : null).then(function () { atualizarNotas(); if (depois) depois(); }, function (er) { salvando = false; P.mensagem(msg, 'Não guardou (' + P.traduzErro(er.message) + ').', 'erro'); });
         }
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () { guardar(fechar); });
         nao.addEventListener('click', fechar);
         var linhaBt = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:12px' }, [ok, nao]);
-        if (nota) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar esta anotação?')) return; H.apagarNota(nota.id).then(function () { desenharNotas(pedido); fechar(); }, function (er) { P.mensagem(msg, 'Não apagou (' + P.traduzErro(er.message) + ').', 'erro'); }); }); linhaBt.appendChild(ap); }
+        if (nota) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar esta anotação?')) return; H.apagarNota(nota.id).then(function () { atualizarNotas(); fechar(); }, function (er) { P.mensagem(msg, 'Não apagou (' + P.traduzErro(er.message) + ').', 'erro'); }); }); linhaBt.appendChild(ap); }
         caixa.appendChild(tit); caixa.appendChild(P.colunaData ? el('div', { style: 'margin-bottom:8px' }, [el('label', { text: 'Hora' }), hora]) : hora); caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(linhaBt);
         /* tocar fora fecha a folha (quem fecha é folhaPequena); se havia texto novo, guarda antes de ir embora */
         var fundo = caixa.parentNode; if (fundo) fundo.addEventListener('click', function (ev) { if (ev.target === fundo && mudou() && campo.value.trim() && !salvando) guardar(); });
