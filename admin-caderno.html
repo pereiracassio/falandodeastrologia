@@ -58,21 +58,26 @@
     .cad .rolagem{flex:1;min-height:0;overflow-y:auto}
 
     /* marcadores presos na capa */
-    .cad .abas{position:absolute;top:56px;bottom:56px;width:56px;display:flex;flex-direction:column;gap:3px;z-index:2}
+    .cad .abas{position:absolute;top:56px;bottom:56px;width:56px;display:flex;flex-direction:column;gap:0;z-index:2}
     .cad .abas.esq{left:20px}.cad .abas.dir{right:20px;width:84px}
-    .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;background:var(--papiro-fundo-simples);display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important}
-    .cad .abas.esq .aba{clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 calc(100% - 12px),0 12px)}
-    .cad .abas.dir .aba{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 14px) 100%,0 100%)}
+    /* aba de caderno de verdade: o desenho (e o recorte) fica no ::before e a sombra no botão, senão o recorte cortaria a sombra. Contorno discreto + sombrinha: cada aba fica por cima da anterior (janeiro embaixo, dezembro em cima) e joga uma sombra para cima nela */
+    .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;position:relative;background:none;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important;filter:drop-shadow(0 0 .6px rgba(26,20,16,.6)) drop-shadow(0 -2px 2px rgba(26,20,16,.32))}
+    .cad .aba::before{content:'';position:absolute;inset:0;background:var(--papiro-fundo-simples);z-index:0}
+    .cad .abas .aba+.aba{margin-top:-5px}
+    .cad .abas.esq .aba::before{clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 calc(100% - 12px),0 12px)}
+    .cad .abas.dir .aba::before{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 14px) 100%,0 100%)}
+    .cad .aba span{position:relative;z-index:1}
     .cad .aba span{writing-mode:vertical-rl;transform:rotate(180deg)}
     .cad .abas.dir .aba span{writing-mode:horizontal-tb;transform:none;white-space:nowrap}
     .cad .aba.aberta{color:var(--ocre)}
     /* aba pintada pela pessoa (Configurações → Personalização → cor das abas): a aba toda na cor escolhida e o nome num papelzinho claro por cima, para a letra continuar legível */
     .cad{--postit:color-mix(in srgb,#fffdf5 60%,#e6d3a0)}
     html:not(.tema-papiro) .cad{--postit:var(--fundo-creme)}
-    .cad .aba.colorida{background:var(--aba-cor)}
+    .cad .aba.colorida::before{background:var(--aba-cor)}
     .cad .aba.colorida span{background:var(--postit);padding:7px 2px}
     .cad .abas.dir .aba.colorida span{padding:2px 7px}
     .cad .abas.esq .aba.aberta{margin-right:-8px}.cad .abas.dir .aba.aberta{margin-left:-8px}
+    .cad .abas .aba.aberta{z-index:2}
     .cad .abas.dir .aba.peq{flex:.55}
     .cad .abas.dir .aba.peq span{writing-mode:horizontal-tb;transform:none}
     .cad .abas.dir .vao{flex:.4}
@@ -171,7 +176,9 @@
       .cad .miolo{inset:58px 12px 64px}
       .cad .abas.esq,.cad .ano{display:none}
       .cad .abas.dir{flex-direction:row;height:44px;width:auto;top:10px;bottom:auto;left:14px;right:14px;overflow-x:auto;overflow-y:hidden;gap:3px}
-      .cad .abas.dir .aba{flex:0 0 auto;min-width:74px;padding:0 10px;clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);font-size:12px}
+      .cad .abas.dir .aba{flex:0 0 auto;min-width:74px;padding:0 10px;font-size:12px}
+      .cad .abas.dir .aba::before{clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%)}
+      .cad .abas.dir .aba+.aba{margin:0 0 0 -6px}
       .cad .abas.dir .aba span{writing-mode:horizontal-tb;transform:none}
       .cad .abas.dir .aba.aberta{margin:0 0 -6px}
       .cad .abas.dir .vao{display:none}
