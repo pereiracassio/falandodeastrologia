@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Daily">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=10"></script>
+  <script src="tema.js?v=11"></script>
   <meta name="theme-color" content="#e6d3a0">
   <title>Hellenic Daily</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -253,7 +253,7 @@
       <section class="pag esq"><button type="button" class="voltar-tab botao-fixo" id="voltarTab" hidden>← voltar</button><div class="vdia" id="diaEsq">
         <div class="topo">
           <div class="hoje">
-            <img class="logo-daily" src="img/logo-menu-daily-linha.svg?v=1" alt="Hellenic Daily" width="1100" height="190">
+            <img class="logo-daily" src="img/logo-menu-daily-linha.svg?v=2" alt="Hellenic Daily" width="1100" height="190">
             <div class="num-linha"><button type="button" class="seta" id="diaAnt" aria-label="Dia anterior">‹</button><div class="num botao-fixo" id="numDia"></div><button type="button" class="seta" id="diaProx" aria-label="Próximo dia">›</button></div>
             <p class="sem" id="semana"></p>
             <div class="reg"><span><span class="rotulo-fixo">dia de</span> <span class="ic" id="icDia" style="color:var(--terracota)"></span></span><span><span class="rotulo-fixo">hora de</span> <span class="ic" id="icHora"></span> <span id="ateHora"></span></span></div>
@@ -586,7 +586,7 @@
       return a;
     }
     function cabVista(esq, titulo, ant, prox) {
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var partes = [el('span', { class: 't botao-fixo', text: titulo })];
       if (ant) { var a = el('button', { type: 'button', class: 'seta', 'aria-label': 'Anterior', text: '‹' }), b = el('button', { type: 'button', class: 'seta', 'aria-label': 'Próximo', text: '›' }); a.addEventListener('click', ant); b.addEventListener('click', prox); partes = [a, partes[0], b]; }
       esq.appendChild(el('div', { class: 'cab-vista' }, partes));
@@ -821,7 +821,7 @@
     function vistaHoras() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], a = ancora.split('-'), agora = Date.now();
       var longa = SEMANA[diaSem(ancora)] + ', ' + (+a[2]) + ' de ' + MESES[+a[1] - 1];
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var corpoE = el('div', { class: 'rola' }), corpoD = el('div', { class: 'rola' }); esq.appendChild(corpoE);
       cabNav(dir, longa, function () { ancora = somaDias(ancora, -1); desenhar(); }, function () { ancora = somaDias(ancora, 1); desenhar(); }); dir.appendChild(corpoD); carregando(corpoE);
       preparar().then(function () {
@@ -945,7 +945,7 @@
     function dataCurta(s) { var iso = String(s).slice(0, 10); return SEMANA[diaSem(iso)].slice(0, 3) + ' ' + (+iso.slice(8)) + '/' + (+iso.slice(5, 7)); }
     function vistaProducao() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!prodMod) prodMod = window.ProducaoCaderno(prodCtx);
       prodCtx.esq = rolaE; prodCtx.dir = rolaD;
@@ -962,7 +962,7 @@
       rotulos: function (a, b) { document.getElementById('t1').textContent = a; document.getElementById('t2').textContent = b; } };
     function vistaProjetos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!projMod) projMod = window.ProjetosCaderno(projCtx);
       projCtx.esq = rolaE; projCtx.dir = rolaD; projMod.ir(projSel, projVer);
@@ -972,7 +972,7 @@
     /* ---------- Compras: na lista (esquerda) · no carrinho (direita). Marcar leva ao carrinho; no carrinho, desmarcar volta à lista; "Comprei tudo" tira o carrinho da tela ---------- */
     function vistaCompras() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       function falhou(r) { toast('Não foi possível gravar: ' + P.traduzErro(r.error.message)); }
       function desenharCompras(itens) {
@@ -1018,7 +1018,7 @@
       rotulos: function (a, b) { document.getElementById('t1').textContent = a; document.getElementById('t2').textContent = b; } };
     function vistaEstudos() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!estMod) estMod = window.EstudosCaderno(estCtx);
       estCtx.esq = rolaE; estCtx.dir = rolaD; estMod.ir(estSel, estVer, estAula);
@@ -1032,7 +1032,7 @@
     function vistaFinanceiro() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], F = finPronto();
       if (!finMes) { var h = new Date(); finMes = { ano: h.getFullYear(), mes: h.getMonth() }; }
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       var ini = finMes.ano + '-' + p2(finMes.mes + 1) + '-01', fim = (finMes.mes === 11 ? finMes.ano + 1 : finMes.ano) + '-' + p2(finMes.mes === 11 ? 1 : finMes.mes + 2) + '-01';
       var estatico = finEst ? Promise.resolve(finEst) : Promise.all([C.from('fin_areas').select('*').order('ordem').order('nome'), C.from('clientes').select('id,nome').order('nome'), C.from('cliente_codigos').select('cliente_id,codigo'),
@@ -1095,7 +1095,7 @@
       cad.classList.toggle('v-livro', !!leitorLivro);
       if (leitorLivro) { vistaLivro(); return; }
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
-      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=1', alt: 'Hellenic Daily', width: '1100', height: '190' }));
+      esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       Promise.all([lerCaminhoLeitor(), P.tokenGoogle(), C.from('leitor_livros').select('*').order('atualizado_em', { ascending: false })]).then(function (r) {
         var token = r[1], livros = (r[2] && r[2].data) || [], porDrive = {}; livros.forEach(function (l) { porDrive[l.drive_id] = l; });
