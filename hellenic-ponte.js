@@ -26,6 +26,22 @@
     return e;
   }
   var escolhido; /* undefined = ainda não leu; null = sem mapa escolhido */
+  /* ordem das técnicas no diário (escolha dele, guardada em site_config.daily_diario_ordem, vale em qualquer aparelho) */
+  var TECNICAS = [['circumambulacao', 'Circumambulação'], ['liberacao', 'Liberação'], ['decenios', 'Decênios'], ['profeccao', 'Profecção']];
+  var ordemSalva; /* undefined = ainda não leu */
+  function ordemValida(v) {
+    var ids = TECNICAS.map(function (t) { return t[0]; });
+    var r = (Array.isArray(v) ? v : []).filter(function (x, i, a) { return ids.indexOf(x) >= 0 && a.indexOf(x) === i; });
+    ids.forEach(function (x) { if (r.indexOf(x) < 0) r.push(x); }); /* técnica nova entra no fim */
+    return r;
+  }
+  function lerOrdem() {
+    if (ordemSalva !== undefined) return Promise.resolve(ordemSalva);
+    return C.from('site_config').select('valor').eq('chave', 'daily_diario_ordem').maybeSingle().then(function (r) {
+      var v = null; try { v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { v = null; }
+      ordemSalva = ordemValida(v); return ordemSalva;
+    }, function () { ordemSalva = ordemValida(null); return ordemSalva; });
+  }
 
   function icone(nome) { var i = NOMES.indexOf(nome); return i < 0 ? '' : String.fromCharCode(0xE000 + i); }
   function signo(i) { return NOMES[14 + i]; }
@@ -59,12 +75,13 @@
 
   /* ---------- a lista para um dia ('AAAA-MM-DD') ---------- */
   function ondeEstou(diaIso) {
-    return ler().then(function (m) {
+    return Promise.all([ler(), lerOrdem()]).then(function (x) {
+      var m = x[0], ordem = x[1];
       if (!m) return { semMapa: true };
       return carregarScripts().then(function () {
         var hoje = new Date(), a = diaIso.split('-'), agora = new Date(+a[0], +a[1] - 1, +a[2], 12, 0);
         if (hoje.getFullYear() === agora.getFullYear() && hoje.getMonth() === agora.getMonth() && hoje.getDate() === agora.getDate()) agora = hoje;
-        return window.ondeEstouHoje(m.nasc, agora).then(function (r) { r.nome = m.nome; r.agora = agora; return r; });
+        return window.ondeEstouHoje(m.nasc, agora).then(function (r) { r.nome = m.nome; r.agora = agora; r.ordem = ordem; return r; });
       });
     });
   }
@@ -108,19 +125,46 @@
   function desenhar(alvo, r) {
     alvo.textContent = ''; seitaAtual = r.planetasNaSeita || null; agoraLista = r.agora || new Date();
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
-    var circ = r.circumambulacao, ls = [];
+    var blocos = {}, circ = r.circumambulacao, ls = [];
     if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', gp(circ.aspecto.planetId)], circ.aspecto, 'anosCivis'));
     if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', gp(circ.termo.planetId)], circ.termo, 'anosCivis'));
-    alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
-    [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
+    blocos.circumambulacao = [grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])])];
+    blocos.liberacao = [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].map(function (x) {
       var niv = r.liberacao[x[0]];
-      alvo.appendChild(grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)], n, ['anos', 'meses', 'dias', 'horas'][n.nivel - 1]); }) : [linha('', ['Fora do período'])], x[1]));
+      return grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)], n, ['anos', 'meses', 'dias', 'horas'][n.nivel - 1]); }) : [linha('', ['Fora do período'])], x[1]);
     });
-    alvo.appendChild(grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [gp(n.planetId)], n, ['meses', 'meses', 'dias'][n.nivel - 1]); }) : [linha('', ['Fora do período'])]));
+    blocos.decenios = [grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [gp(n.planetId)], n, ['meses', 'meses', 'dias'][n.nivel - 1]); }) : [linha('', ['Fora do período'])])];
     var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)], pf.ano, 'meses')];
     if (pf.mes) pl.push(linha('Mês', [sig(pf.mes.signIdx)], pf.mes, 'dias'));
     if (pf.passo) pl.push(linha('60 horas', [sig(pf.passo.signIdx)], pf.passo, 'horas'));
-    alvo.appendChild(grupo('Profecção', pl));
+    blocos.profeccao = [grupo('Profecção', pl)];
+    ordemValida(r.ordem).forEach(function (id) { blocos[id].forEach(function (g) { alvo.appendChild(g); }); });
+  }
+
+  /* ---------- cartão em Configurações → Personalização: a ordem das técnicas no diário ---------- */
+  function cartaoOrdem() {
+    var cx = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Ordem do diário' })]), lista = el('div'), msg = el('p', { class: 'portal-msg' });
+    cx.appendChild(lista); cx.appendChild(msg);
+    function desenharLista() {
+      lista.textContent = '';
+      var ordem = ordemSalva || ordemValida(null);
+      ordem.forEach(function (id, i) {
+        var nome = TECNICAS.filter(function (t) { return t[0] === id; })[0][1];
+        var sobe = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '↓', 'aria-label': 'Descer' });
+        sobe.disabled = i === 0; desce.disabled = i === ordem.length - 1;
+        sobe.addEventListener('click', function () { mover(i, -1); }); desce.addEventListener('click', function () { mover(i, 1); });
+        lista.appendChild(el('div', { style: 'display:flex;align-items:center;gap:14px;padding:6px 0' }, [el('span', { class: 'portal-item-titulo', style: 'flex:1', text: nome }), sobe, desce]));
+      });
+    }
+    function mover(i, d) {
+      var o = (ordemSalva || ordemValida(null)).slice(), j = i + d; if (j < 0 || j >= o.length) return;
+      var t = o[i]; o[i] = o[j]; o[j] = t; ordemSalva = o; desenharLista();
+      C.from('site_config').upsert({ chave: 'daily_diario_ordem', valor: JSON.stringify(o), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (g) {
+        if (g.error) P.mensagem(msg, 'Não guardou (' + P.traduzErro(g.error.message) + ').', 'erro'); else P.mensagem(msg, '');
+      });
+    }
+    desenharLista(); lerOrdem().then(desenharLista);
+    return cx;
   }
 
   /* ---------- cartão de Configurações → Conta: entrar no Astro Hellenic e escolher o mapa ---------- */
@@ -201,5 +245,5 @@
     return cx;
   }
 
-  window.hellenicPonte = { cartao: cartao, ondeEstou: ondeEstou, desenhar: desenhar };
+  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar };
 })();
