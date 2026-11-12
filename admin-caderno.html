@@ -108,6 +108,9 @@
     .cad .diario-ordem{background:transparent;border:0;border-radius:0;padding:2px 4px;color:var(--terracota);cursor:pointer}
     .cad .nota-diario:last-child{border-bottom:0}.cad .nota-diario .oe-tec{min-width:56px}
     .cad .nota-diario .nt{-webkit-line-clamp:unset;display:block;white-space:pre-wrap}
+    .cad .nota-pos{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:13px;margin:0 0 3px}.cad .nota-pos .np-r{color:var(--ocre);font-weight:700;margin-right:-4px}.cad .nota-pos .oe-ic{font-size:18px}.cad .nota-pos .oe-as svg{height:18px;width:auto}
+    .cad .nota-dia .nc{flex:1;min-width:0}.cad .pos-previa:not(:empty){margin:2px 0 10px}
+    .cad .nota-linha .nota-pos{flex-wrap:nowrap;margin:0 6px 0 0;white-space:nowrap}
     .cad .nota-dia .nh{flex:none;font-size:13px;color:var(--preto-tinta);min-width:40px;padding-top:2px}
     .cad .nota-dia .nt{font-size:15px;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
     .cad #diario{margin-top:18px;padding-top:16px;border-top:2px solid var(--azul-egipcio-claro)}
@@ -297,7 +300,7 @@
   <script src="portal.js?v=178"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=22"></script>
+  <script src="hellenic-ponte.js?v=23"></script>
   <script src="caderno-leitor.js?v=8"></script>
   <script src="caderno-producao.js?v=5"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -506,7 +509,7 @@
           if (!n.hora) return;
           var t = doIso(ancora, String(n.hora).slice(0, 5)), k = 0;
           for (var j = 0; j < horas.length; j++) if (t >= horas[j].ini) k = j;
-          var b = el('a', { class: 'evl nota-linha', href: '#' }, [window.hellenicPonte.iconeTecnica(n.tecnica, 16), el('span', { class: 'evt-titulo', text: n.texto }), el('small', { text: String(n.hora).slice(0, 5) })]);
+          var b = el('a', { class: 'evl nota-linha', href: '#' }, [window.hellenicPonte.iconeTecnica(n.tecnica, 16), window.hellenicPonte.posicaoEl(n.posicao), el('span', { class: 'evt-titulo', text: n.texto }), el('small', { text: String(n.hora).slice(0, 5) })].filter(Boolean));
           b.addEventListener('click', function (ev) { ev.preventDefault(); abrirNota(n.tecnica, n); });
           (porHora[k] = porHora[k] || []).push(b);
         });
@@ -527,7 +530,7 @@
         if (eu !== pedido) return;
         alvo.textContent = '';
         rows.filter(function (n) { return !n.hora; }).forEach(function (n) {
-          var l = el('div', { class: 'nota-dia', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nt', text: n.texto })]);
+          var l = el('div', { class: 'nota-dia', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, [H.posicaoEl(n.posicao), el('div', { class: 'nt', text: n.texto })].filter(Boolean))]);
           l.addEventListener('click', function () { abrirNota(n.tecnica, n); });
           alvo.appendChild(l);
         });
@@ -541,22 +544,26 @@
       folhaPequena(function (caixa, fechar) {
         var tit = el('h2', { style: 'color:var(--ocre)' }, [H.iconeTecnica(id, 26), document.createTextNode('  ' + H.nomeTecnica(id))]); /* ocre, como o título da técnica no diário */
         var hora = el('input', { type: 'time', 'aria-label': 'Hora', style: 'min-height:36px;min-width:120px' }); hora.value = nota && nota.hora ? String(nota.hora).slice(0, 5) : agoraHm;
-        var campo = el('textarea', { 'aria-label': 'Anotação' }), msg = el('p', { class: 'portal-msg' });
+        var campo = el('textarea', { 'aria-label': 'Anotação' }), msg = el('p', { class: 'portal-msg' }), posBox = el('div', { class: 'pos-previa' }), posAtual = nota && nota.posicao ? nota.posicao : null, contaPos = 0;
+        function mostrarPos() { posBox.textContent = ''; var e = H.posicaoEl(posAtual); if (e) posBox.appendChild(e); }
+        /* onde a técnica estava nesse dia e hora: só CALCULA e mostra (nada é salvo aqui); vai junto na hora de Salvar */
+        function calcularPos() { var k = ++contaPos; H.posicaoEm(dia, hora.value, id).then(function (p) { if (k === contaPos && p) { posAtual = p; mostrarPos(); } }, function () { /* sem o mapa */ }); }
         campo.value = nota ? nota.texto : '';
         var textoInicial = campo.value, horaInicial = hora.value, salvando = false;
         function mudou() { return campo.value !== textoInicial || hora.value !== horaInicial; }
         function guardar(depois) {
           if (salvando) return; salvando = true;
-          H.salvarNota(dia, id, campo.value, hora.value, nota ? nota.id : null).then(function () { atualizarNotas(); if (depois) depois(); }, function (er) { salvando = false; P.mensagem(msg, 'Não guardou (' + P.traduzErro(er.message) + ').', 'erro'); });
+          H.salvarNota(dia, id, campo.value, hora.value, nota ? nota.id : null, posAtual).then(function () { atualizarNotas(); if (depois) depois(); }, function (er) { salvando = false; P.mensagem(msg, 'Não guardou (' + P.traduzErro(er.message) + ').', 'erro'); });
         }
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () { guardar(fechar); });
         nao.addEventListener('click', fechar);
         var linhaBt = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:12px' }, [ok, nao]);
         if (nota) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar esta anotação?')) return; H.apagarNota(nota.id).then(function () { atualizarNotas(); fechar(); }, function (er) { P.mensagem(msg, 'Não apagou (' + P.traduzErro(er.message) + ').', 'erro'); }); }); linhaBt.appendChild(ap); }
-        caixa.appendChild(tit); caixa.appendChild(P.colunaData ? el('div', { style: 'margin-bottom:8px' }, [el('label', { text: 'Hora' }), hora]) : hora); caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(linhaBt);
+        caixa.appendChild(tit); caixa.appendChild(posBox); caixa.appendChild(P.colunaData ? el('div', { style: 'margin-bottom:8px' }, [el('label', { text: 'Hora' }), hora]) : hora); caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(linhaBt);
         /* tocar fora fecha a folha (quem fecha é folhaPequena); se havia texto novo, guarda antes de ir embora */
         var fundo = caixa.parentNode; if (fundo) fundo.addEventListener('click', function (ev) { if (ev.target === fundo && mudou() && campo.value.trim() && !salvando) guardar(); });
+        mostrarPos(); calcularPos(); hora.addEventListener('change', calcularPos); /* só recalcula a posição; salvar é só no botão */
         setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
       });
     }
@@ -764,7 +771,7 @@
             var b = el('button', { type: 'button', class: 'dsem-cab botao-fixo diario-dia' + (l.iso === hojeIso ? ' eh-hoje' : ''), text: rot });
             b.addEventListener('click', function () { irAoDia(l.iso); }); return b;
           }
-          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nt', text: n.texto })]);
+          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, [H.posicaoEl(n.posicao), el('div', { class: 'nt', text: n.texto })].filter(Boolean))]);
           x.addEventListener('click', function () { abrirNota(n.tecnica, n); }); return x;
         }
         var paginas = [], spreads = 0;

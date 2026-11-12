@@ -105,15 +105,50 @@
     return C.from('diario_notas').select('*').eq('dia', iso).order('hora').order('criado_em').then(function (r) { if (r.error) throw r.error; return r.data || []; });
   }
   /* idNota vazio = anotação nova; texto vazio apaga a anotação que já existia (e não cria nada se era nova) */
-  function salvarNota(iso, tecnica, texto, hora, idNota) {
+  function salvarNota(iso, tecnica, texto, hora, idNota, posicao) {
     var t = String(texto || '').trim();
     if (!t) return idNota ? C.from('diario_notas').delete().eq('id', idNota).then(function (r) { if (r.error) throw r.error; }) : Promise.resolve();
     var dados = { texto: t, hora: hora || null, atualizado_em: new Date().toISOString() };
+    if (posicao) dados.posicao = posicao; /* onde a técnica estava no dia e na hora da anotação */
     if (idNota) return C.from('diario_notas').update(dados).eq('id', idNota).then(function (r) { if (r.error) throw r.error; });
     dados.dia = iso; dados.tecnica = tecnica;
     return C.from('diario_notas').insert(dados).then(function (r) { if (r.error) throw r.error; });
   }
   function apagarNota(idNota) { return C.from('diario_notas').delete().eq('id', idNota).then(function (r) { if (r.error) throw r.error; }); }
+
+  /* ---------- onde a técnica estava NO MOMENTO da anotação (guardado junto com ela) ---------- */
+  function posicaoEm(iso, hhmm, tecId) {
+    return ler().then(function (m) {
+      if (!m) return null;
+      return carregarScripts().then(function () {
+        var a = iso.split('-'), h = String(hhmm || '12:00').split(':'), quando = new Date(+a[0], +a[1] - 1, +a[2], +h[0] || 0, +h[1] || 0);
+        return window.ondeEstouHoje(m.nasc, quando).then(function (r) { return extrairPosicao(r, tecId); });
+      });
+    }, function () { return null; });
+  }
+  function extrairPosicao(r, tecId) {
+    var ns = r.planetasNaSeita || {};
+    if (tecId.indexOf('liberacao_') === 0) { var niv = r.liberacao[tecId.slice(10)]; return niv ? { k: 'lib', s: niv.filter(Boolean).map(function (n) { return n.signIdx; }) } : null; }
+    if (tecId === 'decenios') return r.decenios ? { k: 'dec', p: r.decenios.map(function (n) { return n.planetId; }), ns: r.decenios.map(function (n) { return !!ns[n.planetId]; }) } : null;
+    if (tecId === 'profeccao') { var pf = r.profeccao; return { k: 'prof', s: [pf.ano.signIdx, pf.mes ? pf.mes.signIdx : null, pf.passo ? pf.passo.signIdx : null] }; }
+    if (tecId === 'circumambulacao') { var c = r.circumambulacao; return { k: 'circ', ts: c.termo ? c.termo.signIdx : null, tp: c.termo ? c.termo.planetId : null, tn: c.termo ? !!ns[c.termo.planetId] : false, at: c.aspecto ? c.aspecto.tipo : null, ap: c.aspecto ? c.aspecto.planetId : null, an: c.aspecto ? !!ns[c.aspecto.planetId] : false }; }
+    return null;
+  }
+  function gpCor(id, naSeita) { var e = glifo(PLANETA[id]); e.style.color = naSeita ? '#A03E25' : '#1F5FA3'; return e; }
+  /* a linha da posição: "N1 ♑ N2 ♒ N3 ♈ N4 ♉" (Liberação), "N1 ☽ N2 ♂ N3 ♄" (Decênios), "Ano ♒ Mês ♓ 60h ♈" (Profecção), "Termo ♓ ♃ Aspecto △ ♃" (Circumambulação) */
+  function posicaoEl(p) {
+    if (!p || !p.k) return null;
+    var w = el('span', { class: 'nota-pos' });
+    function par(rot, filho) { w.appendChild(el('span', { class: 'np-r', text: rot })); w.appendChild(filho); }
+    if (p.k === 'lib') (p.s || []).forEach(function (s, i) { par('N' + (i + 1), sig(s)); });
+    else if (p.k === 'dec') (p.p || []).forEach(function (id, i) { par('N' + (i + 1), gpCor(id, p.ns && p.ns[i])); });
+    else if (p.k === 'prof') { par('Ano', sig(p.s[0])); if (p.s[1] != null) par('Mês', sig(p.s[1])); if (p.s[2] != null) par('60h', sig(p.s[2])); }
+    else if (p.k === 'circ') {
+      if (p.ts != null) { var t = el('span'); t.appendChild(sig(p.ts)); t.appendChild(document.createTextNode(' ')); t.appendChild(gpCor(p.tp, p.tn)); par('Termo', t); }
+      if (p.at) { var a = el('span'); a.appendChild(aspectoIcone(p.at)); a.appendChild(document.createTextNode(' ')); a.appendChild(gpCor(p.ap, p.an)); par('Aspecto', a); }
+    }
+    return w;
+  }
 
   /* ---------- desenho da lista (página da esquerda do Dia) ---------- */
   /* planeta: na seita do mapa = terracota, fora da seita = azul egípcio (como no Astro Hellenic) */
@@ -281,5 +316,5 @@
     return cx;
   }
 
-  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
+  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
 })();
