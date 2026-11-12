@@ -39,8 +39,8 @@
     ids.forEach(function (x) { if (r.indexOf(x) < 0) r.push(x); }); /* técnica nova entra no fim */
     return r;
   }
-  function lerOrdem() {
-    if (ordemSalva !== undefined) return Promise.resolve(ordemSalva);
+  function lerOrdem(frescor) { /* o diário (no caderno) e as Configurações (em outra janela) são páginas separadas: o diário lê a ordem de novo a cada vez, senão ficava com a antiga */
+    if (ordemSalva !== undefined && !frescor) return Promise.resolve(ordemSalva);
     return C.from('site_config').select('valor').eq('chave', 'daily_diario_ordem').maybeSingle().then(function (r) {
       var v = null; try { v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { v = null; }
       ordemSalva = ordemValida(v); return ordemSalva;
@@ -79,7 +79,7 @@
 
   /* ---------- a lista para um dia ('AAAA-MM-DD') ---------- */
   function ondeEstou(diaIso) {
-    return Promise.all([ler(), lerOrdem()]).then(function (x) {
+    return Promise.all([ler(), lerOrdem(true)]).then(function (x) {
       var m = x[0], ordem = x[1];
       if (!m) return { semMapa: true };
       return carregarScripts().then(function () {
