@@ -164,6 +164,8 @@
     blocos.profeccao = [grupo('Profecção', pl)];
     ordemValida(r.ordem).forEach(function (id) {
       blocos[id].forEach(function (g) {
+        var tit = g.firstChild; /* o ícone da técnica ANTES do nome, na ordem em que se lê: [ícone] Profecção */
+        tit.insertBefore(document.createTextNode(' '), tit.firstChild); tit.insertBefore(iconeTecnica(id.indexOf('liberacao') === 0 ? 'liberacao' : id, 20), tit.firstChild);
         if (aoTocar) { var t = g.firstChild; t.style.cursor = 'pointer'; t.setAttribute('role', 'button'); t.addEventListener('click', function () { aoTocar(id); }); } /* tocar no título da técnica abre a anotação dela */
         alvo.appendChild(g);
       });
