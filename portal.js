@@ -1282,10 +1282,14 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
      botoes = os botões de etapa já montados; chaves = a chave de cada etapa (mesma ordem); datas = {chave: 'aaaa-mm-dd'}; salvar(objeto) só grava (nada é redesenhado: o calendário não fecha).
      Vale para toda barra de etapas do software (Produção: vídeo e corte; Curso: aulas). */
   function barraComDatas(botoes, chaves, datas, salvar, aoSair) {
-    var obj = Object.assign({}, datas || {}), caixa = el('div', { class: 'prod-seg com-datas' });
+    var obj = Object.assign({}, datas || {}), caixa = el('div', { class: 'prod-seg com-datas' }), campos = [];
     botoes.forEach(function (b, i) {
-      var inp = el('input', { type: 'date', 'aria-label': 'Data para fazer' }); inp.value = obj[chaves[i]] || '';
-      inp.addEventListener('change', function () { if (inp.value) obj[chaves[i]] = inp.value; else delete obj[chaves[i]]; salvar(Object.assign({}, obj)); });
+      var inp = el('input', { type: 'date', 'aria-label': 'Data para fazer' }); inp.value = obj[chaves[i]] || ''; campos.push(inp);
+      inp.addEventListener('change', function () {
+        /* relê todos os campos: a data de uma etapa pode ter mudado sozinha (ao marcá-la como feita) e não pode voltar à antiga */
+        campos.forEach(function (c, k) { if (c.value) obj[chaves[k]] = c.value; else delete obj[chaves[k]]; });
+        salvar(Object.assign({}, obj));
+      });
       if (aoSair) inp.addEventListener('blur', aoSair);
       var cel = el('div', { class: 'prod-data-cel' }, [inp]);
       cel.addEventListener('click', function (e) { e.stopPropagation(); }); /* mexer na data nunca abre a linha */

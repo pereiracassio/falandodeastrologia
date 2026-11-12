@@ -324,6 +324,7 @@ window.ProducaoCaderno = function (ctx) {
         var b = chip(rd[1], !!c[rd[0]], function () {
           var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
           if (novo) (ANTES_NO_CORTE[rd[0]] || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
+          if (novo) { var hojeC = iso(new Date()), dc = Object.assign({}, c.datas_etapas); dc[rd[0]] = hojeC; campos.datas_etapas = dc; dataDaEtapaNaTela('[data-corte="' + c.id + '"][data-campo="' + rd[0] + '"]', hojeC); } /* feita: a data passa a ser hoje */
           Object.keys(campos).forEach(function (k) { c[k] = campos[k]; });
           pintarCorte(c);
           gravar('prod_cortes', cortes, c, campos);
@@ -358,6 +359,13 @@ window.ProducaoCaderno = function (ctx) {
     /* marcar "No YouTube" marca também o que vem antes (roteiro, gravado, as duas edições, SEO); desmarcar não mexe nos outros.
        "Cortes feitos" e "No blog" ficam de fora: cortes é você que marca, e o blog pode sair antes do vídeo. */
     var ANTES_DO_YOUTUBE = ['roteiro_ok', 'gravado', 'editado', 'edicao_fina', 'seo_ok'];
+    /* se a barra com datas está na tela, o campo de data em cima da etapa mostra a nova data (sem disparar nada) */
+    function dataDaEtapaNaTela(seletor, data) {
+      [].forEach.call(document.querySelectorAll(seletor), function (b) {
+        var cel = b.previousElementSibling;
+        if (cel && cel.classList.contains('prod-data-cel')) { var inp = cel.querySelector('input[type="date"]'); if (inp) inp.value = data; }
+      });
+    }
     function marcarEtapa(v, campo, valor) {
       var campos = {}; campos[campo] = valor;
       if (campo === 'seo_ok' && valor) {
@@ -365,6 +373,13 @@ window.ProducaoCaderno = function (ctx) {
         if (falta.length) { avisoFlutuante('Falta preencher: ' + falta.join(', '), true); pintarEtapas(v); return Promise.resolve({ error: null }); }
       }
       if ((campo === 'no_ar' || campo === 'publico_ok') && valor) ANTES_DO_YOUTUBE.forEach(function (c) { if (!v[c]) campos[c] = true; });
+      /* marcou como feita: a data da etapa passa a ser hoje (Membros, Público e Capa se marcam sozinhas e ficam de fora) */
+      var hoje = iso(new Date());
+      if (valor && ['no_ar', 'publico_ok', 'capa'].indexOf(campo) < 0) {
+        var COL = { gravado: 'data_gravar', cortes_feitos: 'data_cortes', blog_ok: 'data_blog' };
+        if (COL[campo]) campos[COL[campo]] = hoje; else { var de = Object.assign({}, v.datas_etapas); de[campo] = hoje; campos.datas_etapas = de; }
+        dataDaEtapaNaTela('[data-video="' + v.id + '"][data-etapa="' + campo + '"]', hoje);
+      }
       Object.keys(campos).forEach(function (k) { v[k] = campos[k]; });
       pintarEtapas(v);
       return gravar('prod_videos', videos, v, campos);
