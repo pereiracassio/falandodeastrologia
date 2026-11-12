@@ -27,11 +27,13 @@
   }
   var escolhido; /* undefined = ainda não leu; null = sem mapa escolhido */
   /* ordem das técnicas no diário (escolha dele, guardada em site_config.daily_diario_ordem, vale em qualquer aparelho) */
-  var TECNICAS = [['circumambulacao', 'Circumambulação'], ['liberacao', 'Liberação'], ['decenios', 'Decênios'], ['profeccao', 'Profecção']];
+  var TECNICAS = [['circumambulacao', 'Circumambulação'], ['liberacao_fortune', 'Liberação da Fortuna'], ['liberacao_spirit', 'Liberação do Espírito'], ['liberacao_venus', 'Liberação de Eros'], ['decenios', 'Decênios'], ['profeccao', 'Profecção']];
   var ordemSalva; /* undefined = ainda não leu */
   function ordemValida(v) {
     var ids = TECNICAS.map(function (t) { return t[0]; });
-    var r = (Array.isArray(v) ? v : []).filter(function (x, i, a) { return ids.indexOf(x) >= 0 && a.indexOf(x) === i; });
+    var legado = []; /* ordem salva antes de separar os lotes: 'liberacao' vira Fortuna, Espírito e Eros, no mesmo lugar */
+    (Array.isArray(v) ? v : []).forEach(function (x) { if (x === 'liberacao') legado.push('liberacao_fortune', 'liberacao_spirit', 'liberacao_venus'); else legado.push(x); });
+    var r = legado.filter(function (x, i, a) { return ids.indexOf(x) >= 0 && a.indexOf(x) === i; });
     ids.forEach(function (x) { if (r.indexOf(x) < 0) r.push(x); }); /* técnica nova entra no fim */
     return r;
   }
@@ -129,9 +131,9 @@
     if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', gp(circ.aspecto.planetId)], circ.aspecto, 'anosCivis'));
     if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', gp(circ.termo.planetId)], circ.termo, 'anosCivis'));
     blocos.circumambulacao = [grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])])];
-    blocos.liberacao = [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].map(function (x) {
+    [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
       var niv = r.liberacao[x[0]];
-      return grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)], n, ['anos', 'meses', 'dias', 'horas'][n.nivel - 1]); }) : [linha('', ['Fora do período'])], x[1]);
+      blocos['liberacao_' + x[0]] = [grupo('Liberação', niv ? niv.filter(Boolean).map(function (n) { return linha('Nível ' + n.nivel, [sig(n.signIdx)], n, ['anos', 'meses', 'dias', 'horas'][n.nivel - 1]); }) : [linha('', ['Fora do período'])], x[1])];
     });
     blocos.decenios = [grupo('Decênios', r.decenios ? r.decenios.map(function (n) { return linha('Nível ' + n.nivel, [gp(n.planetId)], n, ['meses', 'meses', 'dias'][n.nivel - 1]); }) : [linha('', ['Fora do período'])])];
     var pf = r.profeccao, pl = [linha('Ano', [sig(pf.ano.signIdx)], pf.ano, 'meses')];
