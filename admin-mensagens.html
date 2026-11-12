@@ -40,7 +40,7 @@
   html.fda-caderno #app.msg2.msg-aberta .msg-esq{display:none}
   html.fda-caderno #app.msg2.msg-aberta .msg-dir{display:block}
   html.fda-caderno #app.msg2.msg-aberta .msg-volta{display:inline-block}
-  html.fda-caderno .msg-volta{margin:0 0 10px;padding:0;border:0;background:transparent;cursor:pointer;font:700 14px Cinzel,serif;text-transform:lowercase;color:var(--terracota,#A03E25);text-decoration:underline}
+  html.fda-caderno .msg-volta{margin:0 0 10px;padding:0;border:0;background:transparent;cursor:pointer;font-weight:700;font-size:14px;color:var(--terracota,#A03E25);text-decoration:underline}
   html.fda-caderno .msg-sel .portal-item-titulo{text-decoration:underline}
   @media (min-width:900px){
     html.fda-caderno #app.msg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:88px}
@@ -118,7 +118,7 @@
         if (selecionado) selecionado.classList.remove('msg-sel');
         selecionado = linha; if (linha) linha.classList.add('msg-sel');
         dir.textContent = '';
-        var volta = el('button', { type: 'button', class: 'msg-volta', text: '‹ mensagens' });
+        var volta = el('button', { type: 'button', class: 'msg-volta botao-fixo', text: '‹ mensagens' });
         volta.addEventListener('click', function () { app.classList.remove('msg-aberta'); dir.textContent = ''; });
         dir.appendChild(volta);
         dir.appendChild(el('p', { class: 'portal-item-titulo', style: 'margin:0 0 12px;color:var(--terracota,#A03E25)', text: nome }));
