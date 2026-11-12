@@ -47,7 +47,7 @@ async function enviarAviso(id: string) {
   if (aparelhos.length) {
     const k = await chaves();
     webpush.setVapidDetails(CONTATO, k.publica, k.privada);
-    const carga = JSON.stringify({ title: a.titulo, body: a.corpo, url: a.url, contagem: naoLidos });
+    const carga = JSON.stringify({ id: a.id, title: a.titulo, body: a.corpo, url: a.url, contagem: naoLidos });
     for (const s of aparelhos) {
       try {
         // urgência alta: no Android o aviso normal pode esperar o celular "acordar" e chegar minutos depois
@@ -64,6 +64,27 @@ async function enviarAviso(id: string) {
   return { ok: true, enviados, removidos, falhas, resultado };
 }
 
+// aviso lido em um aparelho: manda aos aparelhos do mesmo app um "fechar", para a notificação sumir de todos (e o número do ícone acertar)
+async function fecharAviso(id: string) {
+  const r = await supa("/rest/v1/avisos_recebidos?id=eq." + id + "&select=email,url,push_enviado_em");
+  if (!r || !r[0] || !r[0].push_enviado_em) return { ok: true, motivo: "aviso não enviado" };
+  const a = r[0];
+  const email = String(a.email || "").toLowerCase();
+  const doApp = (u: unknown) => /^\/admin-(agenda|estudos|producao|projetos|financeiro|leitor)\.html/.test(String(u || "")) ? "daily" : "falando";
+  const app = doApp(a.url);
+  const naoLidos = ((await supa("/rest/v1/avisos_recebidos?select=url&lido=eq.false&email=eq." + encodeURIComponent(email))) || []).filter((x: any) => doApp(x.url) === app).length;
+  const aparelhos = (await supa("/rest/v1/push_inscricoes?select=endpoint,p256dh,auth&app=eq." + app + "&email=eq." + encodeURIComponent(email))) || [];
+  if (!aparelhos.length) return { ok: true, motivo: "nenhum aparelho" };
+  const k = await chaves();
+  webpush.setVapidDetails(CONTATO, k.publica, k.privada);
+  const carga = JSON.stringify({ fechar: id, contagem: naoLidos });
+  let enviados = 0;
+  for (const s of aparelhos) {
+    try { await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, carga, { TTL: 3600, urgency: "high" }); enviados++; } catch (_) { /* aparelho que não responde: o aviso de verdade já cuida de limpar */ }
+  }
+  return { ok: true, enviados };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   const json = (d: unknown, status = 200) => new Response(JSON.stringify(d), { status, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -72,9 +93,9 @@ Deno.serve(async (req: Request) => {
     if (req.method === "GET" && url.searchParams.get("acao") === "chave") return json({ chave: (await chaves()).publica });
     if (req.method === "POST") {
       const corpo = await req.json().catch(() => ({}));
-      const id = String(corpo.id || "");
+      const id = String(corpo.fechar || corpo.id || "");
       if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ erro: "Aviso inválido." }, 400);
-      return json(await enviarAviso(id));
+      return json(corpo.fechar ? await fecharAviso(id) : await enviarAviso(id));
     }
     return json({ erro: "Pedido desconhecido." }, 400);
   } catch (e: any) {

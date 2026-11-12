@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=92">
-  <link rel="stylesheet" href="portal.css?v=33">
+  <link rel="stylesheet" href="portal.css?v=39">
   <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
@@ -44,7 +44,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=179"></script>
+  <script src="portal.js?v=183"></script>
   <script src="conversa.js?v=12"></script>
   <script src="atividades.js?v=46"></script>
   <script>
@@ -240,7 +240,7 @@
       var raiz = el('div');
       var trilhas = [], passos = [], itensAluno = [], ativsAluno = [], abertaConcl = null;
       var barra = function (pct) { return el('div', { style: 'height:14px;border:1px solid var(--azul-egipcio-claro,#1F5FA3);margin:8px 0 6px' }, [el('i', { style: 'display:block;height:100%;background:var(--azul-egipcio-claro,#1F5FA3);width:' + pct + '%' })]); };
-      var mini = function (txt, aoClicar, desligado) { var b = el('button', { type: 'button', text: txt, style: 'background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:var(--preto-tinta,#16233F);opacity:' + (desligado ? '.2' : '.6') + ';cursor:pointer;text-decoration:underline' }); b.disabled = !!desligado; b.addEventListener('click', aoClicar); return b; };
+      var mini = function (txt, aoClicar, desligado) { var b = el('button', { type: 'button', text: txt, style: 'flex:none;white-space:nowrap;background:transparent;border:0;border-radius:0;padding:2px 4px;min-height:0;font-size:13px;color:var(--preto-tinta,#16233F);opacity:' + (desligado ? '.2' : '.6') + ';cursor:pointer;text-decoration:underline' }); b.disabled = !!desligado; b.addEventListener('click', aoClicar); return b; };
       var rotulo = function (t) { return el('p', { text: t, class: 'rotulo-grupo', style: "font-weight:700;font-size:14px;color:var(--terracota,#A03E25);margin:20px 0 6px;text-transform:lowercase" }); };
       /* O formulário dos fatos fica no banco do Astro Hellenic. Pergunta lá (função pública, só com o link do passo: u, m e t) se o cliente já enviou. */
       function fatosEnviadosDoLink(link) {
@@ -389,7 +389,8 @@
           texto.push(P.colunaData(dataP, 'Até quando (opcional)'));
         }
         if (!leitura) {
-          var acoes = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:6px' });
+          /* os botões nunca encolhem nem quebram: a linha rola para o lado quando não cabem todos */
+          var acoes = el('div', { class: 'acoes-passo', style: 'display:flex;gap:18px;align-items:center;margin-top:6px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;padding-bottom:6px;scrollbar-width:none' });
           var troca = function (com) { Promise.all([P.client.from('aluno_trilha_passos').update({ ordem: com.ordem }).eq('id', x.id), P.client.from('aluno_trilha_passos').update({ ordem: x.ordem }).eq('id', com.id)]).then(carregar); };
           /* passo com data se ordena sozinho pela data; as setas só valem entre passos sem data */
           var vizAnt = grupo[i - 1], vizPro = grupo[i + 1];
@@ -741,7 +742,9 @@
           var data = el('input', { type: 'date', id: 'it' + id + 'D' });
           var descricao = el('textarea', { id: 'it' + id + 'S', rows: '4', placeholder: o.placeholder });
           var link = el('input', { type: 'url', id: 'it' + id + 'L', placeholder: 'https://drive.google.com/... ou https://archive.org/...', required: '' });
+          var hojeLocal = new Date().toLocaleDateString('sv-SE'); /* sem data escolhida, vale a de HOJE */
           if (item) { titulo.value = item.titulo; data.value = item.data || ''; descricao.value = item.descricao || ''; link.value = item.link; }
+          else data.value = hojeLocal;
           var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Salvar' });
           var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
           cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
@@ -759,7 +762,7 @@
             var seguro = P.linkSeguro(link.value);
             if (!seguro) { P.mensagem(msg, 'O link precisa começar com https://', 'erro'); return; }
             salvar.disabled = true;
-            var campos = { bloco: item ? item.bloco : o.bloco, titulo: titulo.value.trim(), link: seguro, data: data.value || null, descricao: descricao.value.trim() || null };
+            var campos = { bloco: item ? item.bloco : o.bloco, titulo: titulo.value.trim(), link: seguro, data: data.value || hojeLocal, descricao: descricao.value.trim() || null };
             var pedido = item ? P.client.from('itens').update(campos).eq('id', item.id) : P.client.from('itens').insert(Object.assign({ aluno_id: aluno.id }, campos)).select('id');
             pedido.then(function (r) {
               salvar.disabled = false;
