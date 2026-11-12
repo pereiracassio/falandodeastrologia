@@ -684,6 +684,14 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       localStorage.setItem(appDaPagina() === 'daily' ? 'fda_ultima_pagina_daily' : 'fda_ultima_pagina', location.pathname + location.search + location.hash);
     } catch (e) { /* sem armazenamento */ }
   }
+  /* abriu pelo toque no aviso (?lido=<id>): marca como lido e tira o parâmetro do endereço */
+  try {
+    var uL = new URL(location.href), idL = uL.searchParams.get('lido');
+    if (idL && /^[0-9a-f-]{36}$/i.test(idL)) {
+      uL.searchParams.delete('lido'); history.replaceState(null, '', uL.pathname + uL.search + uL.hash);
+      client.auth.getSession().then(function () { return client.from('avisos_recebidos').update({ lido: true }).eq('id', idL); }).then(function () {}, function () {});
+    }
+  } catch (e) { /* sem suporte */ }
   lembrarOndeParou();
   try { sessionStorage.setItem('fda_app_aberto', '1'); } catch (e) { /* sem armazenamento */ } /* qualquer página aberta conta como "app já aberto": só a abertura do zero volta ao último lugar */
   var gravarEstado = estado.gravar;
