@@ -120,3 +120,5 @@ textarea.escrita-livre:focus{outline:none}
 .data-caderno-texto.sem-data .dc-icone{margin:0}
 .data-caderno-texto.sem-data{min-width:30px}
 .prod-seg.com-datas .prod-data-cel .dc-icone svg{width:11px;height:11px}
+/* com data escrita não precisa do desenho do calendário */
+.data-caderno-texto:not(.sem-data) .dc-icone{display:none}
