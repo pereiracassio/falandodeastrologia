@@ -145,8 +145,8 @@
     .cad .diatodo{display:flex;align-items:center;gap:10px;padding:0 0 8px 76px;min-height:34px;flex-wrap:wrap}
     .cad .bloco{background:var(--ocre);color:#16233F;padding:3px 10px;font-size:15px}
     .cad .linha{position:relative;flex:1;min-height:0;margin-top:30px} /* o que se escreve fica EM CIMA da linha da hora (como à mão, no caderno pautado): sobra um espaço em cima para o texto da primeira linha */
-    .cad .hp{position:absolute;left:0;right:0;border-top:1px solid var(--azul-egipcio-claro);display:flex;align-items:flex-start}
-    .cad .hp .r{position:absolute;left:0;bottom:calc(100% + 1px);width:76px;display:flex;align-items:center;gap:7px;padding:0;font-size:13px;line-height:1.2}
+    .cad .hp{position:absolute;left:0;right:0;border-bottom:1px solid var(--azul-egipcio-claro);display:flex;align-items:flex-start} /* a linha FECHA a faixa da hora: o nome da hora fica dentro da faixa, em cima da linha de baixo; a linha de agora cai na faixa certa */
+    .cad .hp .r{position:absolute;left:0;bottom:1px;width:76px;display:flex;align-items:center;gap:7px;padding:0;font-size:13px;line-height:1.2}
     .cad .hp .r .ic{font-size:20px;width:22px;text-align:center}
     .cad .ev{position:absolute;left:84px;right:4px;padding:0 10px;line-height:1.25;min-height:22px;font-size:15px;overflow:hidden;display:flex;gap:10px;align-items:baseline;text-decoration:none;cursor:pointer}
     .cad .ev small{font-size:12px}
@@ -543,13 +543,17 @@
       var horas = HP.horasEntre(d0, d1, LAT, LON).map(function (h) { return { ini: Math.max(h.ini, d0), fim: Math.min(h.fim, d1), planeta: h.planeta, noite: h.noite }; }).filter(function (s) { return s.fim > s.ini; });
       /* a hora que vem da noite anterior e acaba poucos minutos depois da meia-noite não ganha linha própria (viraria um risco colado, com dois ícones um por cima do outro): a linha da meia-noite fica com a hora seguinte */
       if (horas.length > 1 && horas[0].fim - horas[0].ini < 20 * 60000) { horas.shift(); horas[0].pos = d0; }
+      /* o mesmo no fim do dia: a hora que começa poucos minutos antes da meia-noite não ganha linha própria (a linha de baixo da faixa anterior desce até o fim do dia); ela só conta para "hora de agora" */
+      var horaCurtaFinal = null;
+      if (horas.length > 1 && horas[horas.length - 1].fim - horas[horas.length - 1].ini < 20 * 60000) { horaCurtaFinal = horas.pop(); horas[horas.length - 1].linhaFim = d1; }
       function pct(ms) { return ((ms - d0) / (d1 - d0) * 100).toFixed(3) + '%'; }
       var corDe = function (h) { return h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)'; }, icH = document.getElementById('icHora'), ate = document.getElementById('ateHora'); icH.textContent = ''; ate.textContent = '';
       horas.forEach(function (h) {
-        var e = el('div', { class: 'hp', style: 'top:' + pct(h.pos || h.ini) + ';height:' + ((h.fim - (h.pos || h.ini)) / (d1 - d0) * 100).toFixed(3) + '%' }, [el('div', { class: 'r' }, [el('span', { class: 'ic', text: icone(h.planeta), style: 'color:' + corDe(h) }), el('span', { text: hhmm(h.ini) })])]);
+        var e = el('div', { class: 'hp', style: 'top:' + pct(h.pos || h.ini) + ';height:' + (((h.linhaFim || h.fim) - (h.pos || h.ini)) / (d1 - d0) * 100).toFixed(3) + '%' }, [el('div', { class: 'r' }, [el('span', { class: 'ic', text: icone(h.planeta), style: 'color:' + corDe(h) }), el('span', { text: hhmm(h.ini) })])]);
         linha.appendChild(e);
         if (ancora === hojeIso && agora >= h.ini && agora < h.fim) { icH.textContent = icone(h.planeta); icH.style.color = corDe(h); ate.textContent = 'até ' + hhmm(h.fim); }
       });
+      if (horaCurtaFinal && ancora === hojeIso && agora >= horaCurtaFinal.ini && agora < horaCurtaFinal.fim) { icH.textContent = icone(horaCurtaFinal.planeta); icH.style.color = corDe(horaCurtaFinal); ate.textContent = 'até ' + hhmm(horaCurtaFinal.fim); }
       document.getElementById('regHora').style.display = icH.textContent ? '' : 'none'; /* "hora de" só aparece quando há uma hora agora (dia de hoje); em outro dia fica vazio */
       var regente = REGENTE[diaSem(ancora)]; document.getElementById('icDia').textContent = icone(regente);
       if (ancora === hojeIso) { var ag = el('div', { class: 'agora', style: 'top:' + pct(agora) }, [el('i', { text: hhmm(agora) })]); linha.appendChild(ag); }
@@ -579,7 +583,7 @@
           b.addEventListener('click', function (ev) { ev.preventDefault(); abrirNota(n.tecnica, n); });
           (porHora[k] = porHora[k] || []).push(b);
         });
-        Object.keys(porHora).forEach(function (k) { var h = horas[k], c = el('div', { class: 'evt', style: 'top:' + pct(h.pos || h.ini) }, porHora[k]); linha.appendChild(c); });
+        Object.keys(porHora).forEach(function (k) { var h = horas[k], c = el('div', { class: 'evt', style: 'top:' + pct(h.linhaFim || h.fim) }, porHora[k]); linha.appendChild(c); });
         if (!todo.firstChild) todo.appendChild(el('span', { class: 'rotulo-fixo', text: 'dia todo' }));
         else todo.insertBefore(el('span', { class: 'rotulo-fixo', text: 'dia todo' }), todo.firstChild);
       }, function (er) {
@@ -1457,7 +1461,7 @@
        - Sem o dedo (setas, abas, tocar num item): a mesma folha vira sozinha (quem chama virar() ganha o efeito de graça). */
     (function () {
       var miolo = cad.querySelector('.miolo'), folhaEl = function () { return cad.querySelector('.folha'); };
-      var imgAntes = null, imgT = 0, ativa = null, manual = false, st = null, id = -1, x0 = 0, y0 = 0;
+      var imgAntes = null, imgT = 0, ativa = null, manual = false, st = null, id = -1, x0 = 0, y0 = 0, amostras = [];
       function foto() {
         var f = folhaEl(); if (!f) return null;
         var c = f.cloneNode(true); c.classList.remove('vf', 'vt'); c.classList.add('v-folha');
@@ -1551,21 +1555,26 @@
           if (Math.abs(dx) < 24 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
           var d = dx < 0 ? 1 : -1, pl = plano(d);
           if (!pl || !imgAntes || Date.now() - imgT > 1500) { id = -1; return; }
-          var antes = imgAntes; imgAntes = null; var assina = function () { return cad.className + '|' + folhaEl().innerHTML; }, html0 = assina();
+          amostras = [[performance.now(), ev.clientX]]; var antes = imgAntes; imgAntes = null; var assina = function () { return cad.className + '|' + folhaEl().innerHTML; }, html0 = assina();
           manual = true; try { pl.acao(); } finally { manual = false; }
           if (assina() === html0) { st = { vazio: true }; ev.stopImmediatePropagation(); return; } /* nada mudou (ponta do caderno): sem efeito, e o gesto fica por conta desta virada (não repete a ação) */
           var depois = foto(); montar(antes, depois, d > 0 ? 'frente' : 'tras'); st = { d: d, pl: pl };
         }
-        ev.stopImmediatePropagation();
+        ev.stopImmediatePropagation(); ultimoGesto = Date.now(); /* os gestos de borda do navegador, que chegam por outro caminho, não viram a página de novo */
+        amostras.push([performance.now(), ev.clientX]); if (amostras.length > 6) amostras.shift();
         if (st.vazio) return;
-        pose(Math.abs(dx) / ((ativa ? ativa.w : 600) * 0.85));
+        pose(Math.abs(dx) / (ativa ? ativa.w : 600)); /* a dobra anda junto com o dedo, na mesma velocidade */
       }, true);
       var solta = function (ev) {
         if (ev.pointerId !== id) return; id = -1;
         if (!st) return; ev.stopImmediatePropagation();
-        var s0 = st; st = null; if (s0.vazio) return;
-        if (ativa && ativa.p > 0.25) animar(1, 260);
-        else { manual = true; try { s0.pl.inv(); } finally { manual = false; } animar(0, 220); } /* soltou cedo: volta (e desfaz a mudança) */
+        var s0 = st; st = null; ultimoGesto = Date.now(); if (s0.vazio) return;
+        /* decide pela velocidade do dedo ao soltar (um tranco rápido vira; um tranco para trás volta) e, sem tranco, pelo tanto que a folha andou (passou de 40%) */
+        var vel = 0; if (amostras.length > 1) { var a0 = amostras[0], a1 = amostras[amostras.length - 1]; vel = (a1[1] - a0[1]) / Math.max(1, a1[0] - a0[0]); }
+        var rumo = s0.d > 0 ? -vel : vel; /* + = no rumo da virada */
+        var vira = rumo > 0.5 ? true : rumo < -0.5 ? false : (ativa && ativa.p > 0.4);
+        if (ativa && vira) animar(1, Math.max(140, Math.min(300, 300 * (1 - ativa.p) + 120)));
+        else { manual = true; try { s0.pl.inv(); } finally { manual = false; } animar(0, 200); } /* soltou sem força: volta (e desfaz a mudança) */
       };
       cad.addEventListener('pointerup', solta, true); cad.addEventListener('pointercancel', solta, true);
       /* o gesto de reserva (eventos de toque) não pode virar a página de novo enquanto a folha está sendo arrastada */
