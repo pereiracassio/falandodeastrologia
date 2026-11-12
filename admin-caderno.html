@@ -68,6 +68,7 @@
     .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;position:relative;background:none;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important;filter:drop-shadow(0 0 .6px rgba(26,20,16,.6)) drop-shadow(0 -2px 2px rgba(26,20,16,.32))}
     .cad .aba::before{content:'';position:absolute;inset:0;background:var(--papiro-fundo-simples);z-index:0}
     .cad .abas .aba+.aba{margin-top:-5px}
+    .cad .abas.dir .aba.peq,.cad .abas.dir .aba.peq+.aba{margin-top:0} /* as abinhas do fim (avisos, msg, configurações, hoje, +) não se sobrepõem: o texto delas ficava um em cima do outro */
     .cad .abas.esq .aba::before{clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 calc(100% - 12px),0 12px)}
     .cad .abas.dir .aba::before{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 14px) 100%,0 100%)}
     .cad .aba span{position:relative;z-index:1}
