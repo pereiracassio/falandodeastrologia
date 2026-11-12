@@ -1154,15 +1154,25 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     var dd = el('i', { class: 'dc-d' }), mm = el('i', { class: 'dc-m' }), aa = el('i', { class: 'dc-a' });
     var texto = el('span', { class: 'data-caderno-texto', 'aria-hidden': 'true' }, [dd, el('b', { text: '/' }), mm, el('b', { text: '/' }), aa]);
     var env = el('span', { class: 'data-caderno' });
+    /* "hoje": atalho para a data de hoje. O seletor do iPhone/iPad não avisa quando se escolhe o dia que ele já mostra (hoje), então sozinho ele não aceitava hoje. */
+    var hoje = el('button', { type: 'button', class: 'data-hoje botao-fixo', text: 'hoje', 'aria-label': 'Colocar a data de hoje' });
+    hoje.addEventListener('click', function () {
+      var d = new Date(), iso = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+      inp.value = iso;
+      ['input', 'change'].forEach(function (n) { var e = new Event(n, { bubbles: true }); e.fdaHoje = true; inp.dispatchEvent(e); });
+    });
     function pinta() {
+      var d0 = new Date(), iso0 = d0.getFullYear() + '-' + ('0' + (d0.getMonth() + 1)).slice(-2) + '-' + ('0' + d0.getDate()).slice(-2);
+      hoje.style.display = (inp.value === iso0 || inp.style.display === 'none' || inp.disabled) ? 'none' : '';
       var v = String(inp.value || '').split('-'), ok = v.length === 3;
       [[dd, ok ? v[2] : 'dd'], [mm, ok ? v[1] : 'mm'], [aa, ok ? v[0] : 'aaaa']].forEach(function (p) { p[0].textContent = p[1]; p[0].classList.toggle('vazio', !ok); });
     }
     inp.parentNode.insertBefore(env, inp); env.appendChild(texto); env.appendChild(inp);
+    env.parentNode.insertBefore(hoje, env.nextSibling);
     var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value'); /* quando o código troca o .value, o desenho acompanha */
     Object.defineProperty(inp, 'value', { configurable: true, get: function () { return desc.get.call(this); }, set: function (x) { desc.set.call(this, x); pinta(); } });
     inp.addEventListener('input', pinta); inp.addEventListener('change', pinta);
-    new MutationObserver(function () { env.style.display = inp.style.display === 'none' ? 'none' : ''; }).observe(inp, { attributes: true, attributeFilter: ['style'] });
+    new MutationObserver(function () { env.style.display = inp.style.display === 'none' ? 'none' : ''; pinta(); }).observe(inp, { attributes: true, attributeFilter: ['style'] });
     pinta();
     return inp;
   }
@@ -1182,7 +1192,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     ['pointerdown', 'touchstart', 'focusin'].forEach(function (n) { document.addEventListener(n, marca, true); });
     ['change', 'input'].forEach(function (n) {
       document.addEventListener(n, function (ev) {
-        var t = ev.target; if (!ehData(t)) return;
+        var t = ev.target; if (!ehData(t) || ev.fdaHoje) return; /* fdaHoje: veio do botão "hoje", é escolha de verdade */
         var a = abertura.get(t); if (!a) return;
         if (a.bloqueado && Date.now() - a.bloqueado < 400) { ev.stopImmediatePropagation(); return; } /* o "mudou" que vem junto com o "input" do mesmo gesto */
         if (Date.now() - a.quando < 1200 && t.value === hojeISO() && t.value !== a.antes) {

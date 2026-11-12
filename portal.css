@@ -114,3 +114,6 @@ textarea.escrita-livre:focus{outline:none}
 .tempo-trilho { border-style: solid; border-width: 1px; border-image: var(--grad-tempo, linear-gradient(to right, #1F5FA3, #B5852F, #A03E25)) 1 !important; }
 .tempo-pct { color: var(--azul-egipcio-claro, #1F5FA3) !important; }
 .tempo-fim { color: var(--terracota, #A03E25) !important; }
+/* "hoje": atalho ao lado do campo de data (discreto, só a palavra sublinhada) */
+.data-hoje{background:transparent;border:0;border-radius:0;padding:2px 4px;margin:0 0 14px 6px;min-height:0;font-size:12px;color:var(--preto-tinta,#16233F);opacity:.6;cursor:pointer;text-decoration:underline;vertical-align:top;line-height:36px}
+.prod-seg.com-datas .prod-data-cel .data-hoje{display:none!important}
