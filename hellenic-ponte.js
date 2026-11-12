@@ -84,9 +84,30 @@
       return carregarScripts().then(function () {
         var hoje = new Date(), a = diaIso.split('-'), agora = new Date(+a[0], +a[1] - 1, +a[2], 12, 0);
         if (hoje.getFullYear() === agora.getFullYear() && hoje.getMonth() === agora.getMonth() && hoje.getDate() === agora.getDate()) agora = hoje;
-        return window.ondeEstouHoje(m.nasc, agora).then(function (r) { r.nome = m.nome; r.agora = agora; r.ordem = ordem; return r; });
+        return window.ondeEstouHoje(m.nasc, agora).then(function (r) { r.nome = m.nome; r.agora = agora; r.ordem = ordem; r.dia = diaIso; return r; });
       });
     });
+  }
+
+  /* ícones das técnicas: os MESMOS da barra de cima do Astro Hellenic (index.html, botões das ferramentas), desenho em grade 64 */
+  var ICONES_TEC = {"circumambulacao": {"sw": "3", "inner": "<path d=\"M 32 8 A 24 24 0 1 1 10 24\"/> <polyline points=\"18,16 10,24 6,14\"/> <circle cx=\"32\" cy=\"32\" r=\"3\" fill=\"currentColor\" stroke=\"none\"/>"}, "liberacao": {"sw": "4", "inner": "<rect x=\"14\" y=\"28\" width=\"36\" height=\"28\" rx=\"5\"/> <path d=\"M22,28 V18 A12,12 0 0 1 44,10\"/> <circle cx=\"32\" cy=\"40\" r=\"3\" fill=\"currentColor\" stroke=\"none\"/> <line x1=\"32\" y1=\"43\" x2=\"32\" y2=\"49\"/>"}, "decenios": {"sw": "3", "inner": "<path d=\"M14,6 H50 M14,58 H50\"/> <path d=\"M16,6 C16,24 48,24 48,6\"/> <path d=\"M16,58 C16,40 48,40 48,58\"/> <path d=\"M28,26 L36,26 L32,32 Z\" fill=\"currentColor\" stroke=\"none\"/>"}, "profeccao": {"sw": "3", "inner": "<circle cx=\"32\" cy=\"32\" r=\"26\"/> <line x1=\"32\" y1=\"6\" x2=\"32\" y2=\"58\"/> <line x1=\"6\" y1=\"32\" x2=\"58\" y2=\"32\"/> <line x1=\"14\" y1=\"14\" x2=\"50\" y2=\"50\"/> <line x1=\"50\" y1=\"14\" x2=\"14\" y2=\"50\"/> <path d=\"M32,32 L48,20\" stroke-width=\"3.5\"/> <polyline points=\"42,18 48,20 46,26\" stroke-width=\"3.5\"/>"}};
+  var NOME_TEC = { circumambulacao: 'Circumambulação', liberacao_fortune: 'Liberação da Fortuna', liberacao_spirit: 'Liberação do Espírito', liberacao_venus: 'Liberação de Eros', decenios: 'Decênios', profeccao: 'Profecção' };
+  var LOTE_TEC = { liberacao_fortune: 'Fortuna', liberacao_spirit: 'Espírito', liberacao_venus: 'Eros' };
+  /* o ícone da técnica (e, na Liberação, o do lote logo depois) */
+  function iconeTecnica(id, tam) {
+    var base = id.indexOf('liberacao') === 0 ? 'liberacao' : id, d = ICONES_TEC[base], e = el('span', { class: 'oe-tec', title: NOME_TEC[id] || '' });
+    if (d) { var sv = el('span'); sv.innerHTML = '<svg width="' + (tam || 22) + '" height="' + (tam || 22) + '" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="' + d.sw + '" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px">' + d.inner + '</svg>'; e.appendChild(sv); }
+    if (LOTE_TEC[id]) e.appendChild(el('span', { class: 'oe-ic', style: 'margin-left:4px', text: icone(LOTE_TEC[id]) }));
+    return e;
+  }
+  /* anotações do diário: tabela diario_notas (uma por dia e técnica), no Supabase do Falando de Astrologia */
+  function notasDoDia(iso) {
+    return C.from('diario_notas').select('*').eq('dia', iso).order('criado_em').then(function (r) { if (r.error) throw r.error; return r.data || []; });
+  }
+  function salvarNota(iso, id, texto) {
+    var t = String(texto || '').trim();
+    if (!t) return C.from('diario_notas').delete().eq('dia', iso).eq('tecnica', id).then(function (r) { if (r.error) throw r.error; });
+    return C.from('diario_notas').upsert({ dia: iso, tecnica: id, texto: t, atualizado_em: new Date().toISOString() }, { onConflict: 'dia,tecnica' }).then(function (r) { if (r.error) throw r.error; });
   }
 
   /* ---------- desenho da lista (página da esquerda do Dia) ---------- */
@@ -125,7 +146,7 @@
     linhas.forEach(function (l) { g.appendChild(l); });
     return g;
   }
-  function desenhar(alvo, r) {
+  function desenhar(alvo, r, aoTocar) {
     alvo.textContent = ''; seitaAtual = r.planetasNaSeita || null; agoraLista = r.agora || new Date();
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var blocos = {}, circ = r.circumambulacao, ls = [];
@@ -141,7 +162,12 @@
     if (pf.mes) pl.push(linha('Mês', [sig(pf.mes.signIdx)], pf.mes, 'dias'));
     if (pf.passo) pl.push(linha('60 horas', [sig(pf.passo.signIdx)], pf.passo, 'horas'));
     blocos.profeccao = [grupo('Profecção', pl)];
-    ordemValida(r.ordem).forEach(function (id) { blocos[id].forEach(function (g) { alvo.appendChild(g); }); });
+    ordemValida(r.ordem).forEach(function (id) {
+      blocos[id].forEach(function (g) {
+        if (aoTocar) { var t = g.firstChild; t.style.cursor = 'pointer'; t.setAttribute('role', 'button'); t.addEventListener('click', function () { aoTocar(id); }); } /* tocar no título da técnica abre a anotação dela */
+        alvo.appendChild(g);
+      });
+    });
   }
 
   /* ---------- cartão em Configurações → Personalização: a ordem das técnicas no diário ---------- */
@@ -248,5 +274,5 @@
     return cx;
   }
 
-  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar };
+  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, iconeTecnica: iconeTecnica, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
 })();

@@ -100,6 +100,10 @@
     .cad .tarefa .det{font-size:13px;margin-top:2px;color:var(--terracota)}
     .cad .vazio{opacity:.7;margin:14px 0}
     html body .pagina-papiro .cad .reg .rotulo-fixo:not(.impresso){color:var(--preto-tinta,#1A1410)!important} /* "dia de" e "hora de" em preto: qualquer cor se mistura com a cor do planeta */
+    .cad .dianotas:empty{display:none}.cad .dianotas{margin:0 0 10px}
+    .cad .nota-dia{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--azul-egipcio-claro);cursor:pointer}
+    .cad .nota-dia .oe-tec{flex:none;color:var(--terracota);min-width:34px;white-space:nowrap}
+    .cad .nota-dia .nt{font-size:15px;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
     .cad #diario{margin-top:18px;padding-top:16px;border-top:2px solid var(--azul-egipcio-claro)}
     .cad .oe-g{margin:0 0 14px;padding:0 0 14px;border-bottom:1.5px solid var(--azul-egipcio-claro)}.cad .oe-g:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}.cad .oe-g .rotulo-fixo{margin:0 0 4px}
     .cad .oe-l{display:flex;gap:12px;align-items:baseline;padding:4px 0}
@@ -271,6 +275,7 @@
       </div><div class="vout" id="outEsq"></div></section>
       <div class="dobra"></div>
       <section class="pag dir"><div class="vdia" id="diaDir">
+        <div class="dianotas" id="diaNotas"></div>
         <div class="diatodo" id="diaTodo"></div>
         <div class="linha" id="linha"></div>
       </div><div class="vout" id="outDir"></div></section>
@@ -286,7 +291,7 @@
   <script src="portal.js?v=178"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=17"></script>
+  <script src="hellenic-ponte.js?v=18"></script>
   <script src="caderno-leitor.js?v=8"></script>
   <script src="caderno-producao.js?v=5"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -456,7 +461,7 @@
         }
         mini.appendChild(tr);
       }
-      desenharHoras(eu, hojeIso); desenharDiario(eu);
+      desenharHoras(eu, hojeIso); desenharDiario(eu); desenharNotas(eu);
     }
     function desenharHoras(eu, hojeIso) {
       var d0 = doIso(ancora), d1 = d0 + DIA, agora = Date.now(), linha = document.getElementById('linha'), todo = document.getElementById('diaTodo');
@@ -498,12 +503,41 @@
     }
 
     /* esquerda do Dia: o diário astrológico, por ora só "onde estou hoje" no mapa dele (ponte com o Astro Hellenic, hellenic-ponte.js) */
+    /* anotações do diário: uma por dia e técnica (tabela diario_notas); aparecem na página da direita com o ícone da técnica */
+    function desenharNotas(eu) {
+      var alvo = document.getElementById('diaNotas'), H = window.hellenicPonte; if (!alvo || !H) return;
+      H.notasDoDia(ancora).then(function (rows) {
+        if (eu !== pedido) return;
+        alvo.textContent = '';
+        rows.forEach(function (n) {
+          var l = el('div', { class: 'nota-dia', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nt', text: n.texto })]);
+          l.addEventListener('click', function () { abrirNota(n.tecnica); });
+          alvo.appendChild(l);
+        });
+      }, function () { alvo.textContent = ''; });
+    }
+    function abrirNota(id) {
+      var H = window.hellenicPonte, dia = ancora, tempo = null;
+      folhaPequena(function (caixa, fechar) {
+        var tit = el('h2', {}, [H.iconeTecnica(id, 26), document.createTextNode('  ' + H.nomeTecnica(id))]);
+        var campo = el('textarea', { 'aria-label': 'Anotação' }), msg = el('p', { class: 'portal-msg' });
+        var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Fechar' });
+        function guardar() {
+          H.salvarNota(dia, id, campo.value).then(function () { P.mensagem(msg, 'Salvo.', 'ok'); desenharNotas(pedido); }, function (er) { P.mensagem(msg, 'Não guardou (' + P.traduzErro(er.message) + ').', 'erro'); });
+        }
+        campo.addEventListener('input', function () { clearTimeout(tempo); tempo = setTimeout(guardar, 900); }); /* salva sozinho, sem botão */
+        ok.addEventListener('click', function () { if (tempo) { clearTimeout(tempo); guardar(); } fechar(); });
+        caixa.appendChild(tit); caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'margin-top:12px' }, [ok]));
+        H.notasDoDia(dia).then(function (rows) { var n = rows.filter(function (x) { return x.tecnica === id; })[0]; if (n && !campo.value) { campo.value = n.texto; campo.dispatchEvent(new Event('input')); clearTimeout(tempo); tempo = null; } }, function () { /* sem a tabela ainda */ });
+        setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
+      });
+    }
     function desenharDiario(eu) {
       var alvo = document.getElementById('diario'); if (!alvo || !window.hellenicPonte) return;
       alvo.textContent = '';
       window.hellenicPonte.ondeEstou(ancora).then(function (r) {
         if (eu !== pedido) return;
-        window.hellenicPonte.desenhar(alvo, r);
+        window.hellenicPonte.desenhar(alvo, r, abrirNota);
       }, function (er) {
         if (eu !== pedido) return;
         alvo.textContent = ''; alvo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível calcular (' + er.message + ').' }));
