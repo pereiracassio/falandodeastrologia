@@ -473,7 +473,7 @@
 
     /* ---------- a folha ---------- */
     /* cor de cada aba (meses 'm1'..'m12' e as do outro lado 'v:<aba>'), guardada no aparelho como a cor da capa; o valor é o NOME da cor do tema, então muda junto com o tema */
-    var CHAVE_ABAS = 'fda_caderno_abas_cores', CORES_ABAS = ['terracota', 'ocre', 'azul-egipcio-claro', 'azul-egipcio-escuro', 'verde', 'preto-tinta', 'cinza'];
+    var CHAVE_ABAS = 'fda_caderno_abas_cores', CORES_ABAS = ['azul-egipcio-escuro', 'azul-egipcio-claro', 'preto-tinta', 'ocre', 'terracota', 'laranja', 'marrom', 'cinza', 'verde', 'fundo-creme']; /* a paleta inteira do tema (temas.css) */
     function pintarAbas() {
       var m = {}; try { m = JSON.parse(localStorage.getItem(CHAVE_ABAS) || '{}') || {}; } catch (e) { /* sem cor guardada */ }
       var poe = function (b, chave) {
