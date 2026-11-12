@@ -191,7 +191,7 @@
       var CHAVE = 'fda_caderno_abas_cores';
       var PALETA = [['terracota', 'Terracota'], ['ocre', 'Ocre'], ['azul-egipcio-claro', 'Azul egípcio claro'], ['azul-egipcio-escuro', 'Azul egípcio'], ['verde', 'Verde'], ['preto-tinta', 'Azul-noite'], ['cinza', 'Cinza']];
       var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-      var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['diario', 'Diário'], ['todo', 'To do'], ['horas', 'Horas'], ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
+      var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['diario', 'Diário'], ['horas', 'Horas'], ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cor das abas' })]), corpo = el('div'), sel = 'm1', cores = {};
       try { cores = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch (e) { cores = {}; }
       function guardar() {
