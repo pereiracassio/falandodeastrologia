@@ -9,6 +9,8 @@
   var P = window.portal, el = P.el, C = P.client;
   var AH_URL = 'https://ndgjenvddkmztmdixjhc.supabase.co', AH_KEY = 'sb_publishable_VTjldgs8Hv1RODaMg7T57Q_ISzbnm5C';
   var BASE = 'https://astrohellenic.com/', CHAVE = 'daily_hellenic_mapa';
+  /* os scripts do Astro Hellenic são pedidos com este número: o aparelho nunca fica com uma cópia velha deles (subir o número quando eles mudarem) */
+  var VERSAO_MODULO = '20261112a';
   var NOMES = ['Sol', 'Lua', 'Mercúrio', 'Vênus', 'Marte', 'Júpiter', 'Saturno', 'Fortuna', 'Espírito', 'Necessidade', 'Eros', 'Coragem', 'Vitória', 'Nêmesis', 'Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'];
   var PLANETA = { Sun: 'Sol', Moon: 'Lua', Mercury: 'Mercúrio', Venus: 'Vênus', Mars: 'Marte', Jupiter: 'Júpiter', Saturn: 'Saturno' };
   /* ícones dos aspectos: os mesmos desenhos da Circumambulação do Astro Hellenic (direcoes.js, getAspectSymbolSVGDir), nas cores dos aspectos do papiro */
@@ -65,7 +67,7 @@
     carregados = ['tz-lookup.js', 'camadas-tempo.js', 'retificacao-calculos.js', 'onde-estou.js'].reduce(function (p, arq) {
       return p.then(function () {
         return new Promise(function (ok, erro) {
-          var s = document.createElement('script'); s.src = BASE + arq; s.onload = ok;
+          var s = document.createElement('script'); s.src = BASE + arq + '?v=' + VERSAO_MODULO; s.onload = ok;
           s.onerror = function () { erro(new Error('Não consegui carregar ' + arq + ' do Astro Hellenic.')); };
           document.head.appendChild(s);
         });
