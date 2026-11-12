@@ -100,15 +100,20 @@
     if (LOTE_TEC[id]) e.appendChild(el('span', { class: 'oe-ic', style: 'margin-left:4px', text: icone(LOTE_TEC[id]) }));
     return e;
   }
-  /* anotações do diário: tabela diario_notas (uma por dia e técnica), no Supabase do Falando de Astrologia */
+  /* anotações do diário: tabela diario_notas (várias por dia e técnica, cada uma com a hora), no Supabase do Falando de Astrologia */
   function notasDoDia(iso) {
-    return C.from('diario_notas').select('*').eq('dia', iso).order('criado_em').then(function (r) { if (r.error) throw r.error; return r.data || []; });
+    return C.from('diario_notas').select('*').eq('dia', iso).order('hora').order('criado_em').then(function (r) { if (r.error) throw r.error; return r.data || []; });
   }
-  function salvarNota(iso, id, texto) {
+  /* idNota vazio = anotação nova; texto vazio apaga a anotação que já existia (e não cria nada se era nova) */
+  function salvarNota(iso, tecnica, texto, hora, idNota) {
     var t = String(texto || '').trim();
-    if (!t) return C.from('diario_notas').delete().eq('dia', iso).eq('tecnica', id).then(function (r) { if (r.error) throw r.error; });
-    return C.from('diario_notas').upsert({ dia: iso, tecnica: id, texto: t, atualizado_em: new Date().toISOString() }, { onConflict: 'dia,tecnica' }).then(function (r) { if (r.error) throw r.error; });
+    if (!t) return idNota ? C.from('diario_notas').delete().eq('id', idNota).then(function (r) { if (r.error) throw r.error; }) : Promise.resolve();
+    var dados = { texto: t, hora: hora || null, atualizado_em: new Date().toISOString() };
+    if (idNota) return C.from('diario_notas').update(dados).eq('id', idNota).then(function (r) { if (r.error) throw r.error; });
+    dados.dia = iso; dados.tecnica = tecnica;
+    return C.from('diario_notas').insert(dados).then(function (r) { if (r.error) throw r.error; });
   }
+  function apagarNota(idNota) { return C.from('diario_notas').delete().eq('id', idNota).then(function (r) { if (r.error) throw r.error; }); }
 
   /* ---------- desenho da lista (página da esquerda do Dia) ---------- */
   /* planeta: na seita do mapa = terracota, fora da seita = azul egípcio (como no Astro Hellenic) */
@@ -276,5 +281,5 @@
     return cx;
   }
 
-  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, iconeTecnica: iconeTecnica, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
+  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
 })();
