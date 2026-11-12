@@ -1268,15 +1268,16 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     ]);
   }
   /* o tempo de um prazo: dias que já passaram sobre o total de dias (datas AAAA-MM-DD); a cor vai de azul a ocre e terracota */
-  function tempoDias(inicio, fimData) {
+  /* inicio/fimData: 'AAAA-MM-DD' (dia inteiro) ou Date (instante exato, p.ex. o diário astrológico); agoraOpc = outro "agora" (padrão: este momento) */
+  function tempoDias(inicio, fimData, agoraOpc) {
     if (!inicio || !fimData) return null;
-    var fim = new Date(fimData + 'T23:59:59'), ini = new Date(inicio + 'T00:00:00'), agora = new Date();
+    var fim = fimData instanceof Date ? fimData : new Date(fimData + 'T23:59:59'), ini = inicio instanceof Date ? inicio : new Date(inicio + 'T00:00:00'), agora = agoraOpc || new Date();
     var f = fim > ini ? Math.min(1, Math.max(0, (agora - ini) / (fim - ini))) : 1;
     var A = [31, 95, 163], O = [181, 133, 47], T = [160, 62, 37], de = f < 0.5 ? A : O, para = f < 0.5 ? O : T, t = f < 0.5 ? f / 0.5 : (f - 0.5) / 0.5;
     var total = Math.max(1, Math.ceil((fim - ini) / 86400000)), passou = Math.max(0, Math.min(total, Math.floor((agora - ini) / 86400000) + 1));
     return { pct: Math.floor(f * 100), cor: 'rgb(' + de.map(function (c, k) { return Math.round(c + (para[k] - c) * t); }).join(',') + ')', texto: passou + '/' + total + ' dias' };
   }
-  function barraTempoDias(inicio, fimData) { var t = tempoDias(inicio, fimData); return t ? barraLinha(t.pct, t.cor, t.texto, true) : null; }
+  function barraTempoDias(inicio, fimData, agoraOpc) { var t = tempoDias(inicio, fimData, agoraOpc); return t ? barraLinha(t.pct, t.cor, t.texto, true) : null; }
   function linhaDatas(colunas) { return el('div', { class: 'data-linha' }, colunas); }
   /* BARRA DE ETAPAS COM DATAS (opcionais): acima de CADA etapa fica um campo de data, sem nada escrito (é a data em que aquela etapa deve estar pronta).
      botoes = os botões de etapa já montados; chaves = a chave de cada etapa (mesma ordem); datas = {chave: 'aaaa-mm-dd'}; salvar(objeto) só grava (nada é redesenhado: o calendário não fecha).

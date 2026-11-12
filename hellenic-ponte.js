@@ -80,25 +80,22 @@
   function glifo(nome) { return el('span', { class: 'oe-ic', text: icone(nome) }); }
   var agoraLista = new Date();
   function dd(n) { return String(n).padStart(2, '0'); }
-  /* datas curtas: dd/mm/aaaa; período de poucos dias (níveis 3 e 4 da Liberação, passo de 60 horas) leva também a hora */
-  function fmtData(d, comHora) { return dd(d.getDate()) + '/' + dd(d.getMonth() + 1) + '/' + d.getFullYear() + (comHora ? ' ' + dd(d.getHours()) + ':' + dd(d.getMinutes()) : ''); }
-  /* barra do período: começa no início, termina no fim; o degradê azul → ocre → terracota é fixo e o preenchimento revela até onde o tempo chegou (mesmo desenho das barras de tempo do site) */
-  function barraPeriodo(de, ate) {
-    de = new Date(de); ate = new Date(ate);
-    var f = ate > de ? Math.min(1, Math.max(0, (agoraLista - de) / (ate - de))) : 1, pct = Math.round(f * 100);
-    var curto = (ate - de) < 3 * 86400000 * 1.01;
-    var enche = el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:linear-gradient(to right,#1F5FA3,#B5852F,#A03E25) 0 0/' + (pct > 0 ? (10000 / pct).toFixed(2) : 100) + '% 100% no-repeat' });
-    var trilho = el('div', { class: 'oe-trilho' }, [enche]);
-    var datas = el('div', { class: 'oe-datas' }, [el('span', { text: fmtData(de, curto) }), el('span', { text: fmtData(ate, curto) })]);
-    /* padrão do site: "62% [barra]" (a porcentagem ANTES da barra); as datas ficam embaixo da barra */
-    var linhaBarra = el('div', { class: 'oe-linha-barra' }, [el('span', { class: 'oe-pct', text: pct + '%' }), trilho]);
-    return el('div', { class: 'oe-barra' }, [linhaBarra, datas]);
+  /* barra do período: a MESMA barra de tempo do resto do site (P.barraTempoDias: "62% [barra] 12/23 dias"); as datas de início e fim ficam embaixo.
+     Período curto (60 horas, nível 4 da Liberação) leva só dia/mês e a hora, sem o ano. */
+  function dm(d) { return dd(d.getDate()) + '/' + dd(d.getMonth() + 1); }
+  function textoDatas(de, ate) {
+    var curto = (ate - de) <= 7 * 86400000, hm = function (d) { return dd(d.getHours()) + ':' + dd(d.getMinutes()); };
+    return curto ? dm(de) + ' ' + hm(de) + ' – ' + dm(ate) + ' ' + hm(ate) : dm(de) + '/' + de.getFullYear() + ' – ' + dm(ate) + '/' + ate.getFullYear();
   }
   function linha(rotulo, partes, periodo) {
     var v = el('span', { class: 'oe-v' });
     partes.forEach(function (p) { if (typeof p === 'string') v.appendChild(document.createTextNode(p)); else v.appendChild(p); });
-    var l = el('div', { class: 'oe-l' + (periodo && periodo.de && periodo.ate ? ' oe-com-barra' : '') }, [el('span', { class: 'oe-r', text: rotulo }), v]);
-    if (periodo && periodo.de && periodo.ate) l.appendChild(barraPeriodo(periodo.de, periodo.ate));
+    var tem = periodo && periodo.de && periodo.ate, topo = [el('span', { class: 'oe-r', text: rotulo }), v];
+    var de = tem ? new Date(periodo.de) : null, ate = tem ? new Date(periodo.ate) : null;
+    if (tem) topo.push(el('span', { class: 'oe-datas', text: textoDatas(de, ate) }));
+    var l = el('div', { class: 'oe-l' + (tem ? ' oe-com-barra' : '') }, [el('div', { class: 'oe-topo' }, topo)]);
+    /* a MESMA barra de tempo do resto do site: "62% [barra] 12/23 dias" */
+    if (tem) l.appendChild(P.barraTempoDias(de, ate, agoraLista));
     return l;
   }
   function grupo(titulo, linhas, iconeNome) {
@@ -112,7 +109,7 @@
     alvo.textContent = ''; seitaAtual = r.planetasNaSeita || null; agoraLista = r.agora || new Date();
     if (r.semMapa) { alvo.appendChild(el('p', { class: 'vazio', text: 'Escolha o seu mapa em Configurações → Conta.' })); return; }
     var circ = r.circumambulacao, ls = [];
-    if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', gp(circ.aspecto.planetId)]));
+    if (circ.aspecto) ls.push(linha('Aspecto', [aspectoIcone(circ.aspecto.tipo), '  ', gp(circ.aspecto.planetId)], circ.aspecto));
     if (circ.termo) ls.push(linha('Termo', [sig(circ.termo.signIdx), '  ', gp(circ.termo.planetId)], circ.termo));
     alvo.appendChild(grupo('Circumambulação', ls.length ? ls : [linha('', ['Fora dos 12 signos'])]));
     [['fortune', 'Fortuna'], ['spirit', 'Espírito'], ['venus', 'Eros']].forEach(function (x) {
