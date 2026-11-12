@@ -472,7 +472,8 @@ window.ProducaoCaderno = function (ctx) {
     function irPara(a, s, v) { aba = a; serieAberta = s || null; videoAberto = v || null; if (!(v)) { abaVideo = 'video'; abaVideoDe = null; } ctx.entrar(tela); }
 
     /* ---------- estrutura: abas ---------- */
-    function tela() { /* o caderno chama isto; desenha esquerda e direita conforme o nível */
+    function tela() { telaDesenhar(); if (ctx.sincronizar) ctx.sincronizar(); } /* depois de desenhar, o caderno guarda o lugar exato (série, vídeo, corte): é por ele que o app reabre no mesmo corte */
+    function telaDesenhar() { /* desenha esquerda e direita conforme o nível */
       var esq = ctx.esq, dir = ctx.dir; esq.textContent = ''; dir.textContent = ''; nos = null;
       var oculto = el('div'), nivel;
       if (aba === 'hoje') { telaHoje(esq); telaSeries(dir); ctx.rotulos('próximos', 'séries'); return; }
