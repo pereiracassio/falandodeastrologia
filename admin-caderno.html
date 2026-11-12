@@ -434,7 +434,7 @@
       var meses = document.getElementById('meses'); meses.textContent = '';
       MES3.forEach(function (m, i) {
         var b = el('button', { type: 'button', class: 'aba botao-fixo', 'data-mes': String(i + 1) }, [el('span', { text: m })]);
-        b.addEventListener('click', function () { var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; if (visao === 'ano') visao = 'mes'; if (visao === 'dia') ancora = a[0] + '-' + p2(i + 1) + '-' + p2(Math.min(+a[2], new Date(Date.UTC(+a[0], i + 1, 0)).getUTCDate())); irPara(visao); }); meses.appendChild(b);
+        b.addEventListener('click', function () { if (visao === 'todo') { irParaMesTodo(i + 1); return; } var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; if (visao === 'ano') visao = 'mes'; if (visao === 'dia') ancora = a[0] + '-' + p2(i + 1) + '-' + p2(Math.min(+a[2], new Date(Date.UTC(+a[0], i + 1, 0)).getUTCDate())); irPara(visao); }); meses.appendChild(b);
       });
       var dir = document.getElementById('abasDir'); dir.textContent = '';
       ABAS.forEach(function (x) {
@@ -450,6 +450,13 @@
       contarAvisos();
       var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); desenhar(); }); dir.appendChild(hj);
       var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); }); dir.appendChild(mais);
+    }
+    /* To do: a aba do mês leva ao mesmo dia daquele mês (cada página do To do é um dia; a folha mostra dois dias) */
+    function irParaMesTodo(mes) {
+      var hoje = isoDia(Date.now()), a = somaDias(hoje, 2 * (espTodo || 0)).split('-');
+      var alvo = a[0] + '-' + p2(mes) + '-' + p2(Math.min(+a[2], new Date(Date.UTC(+a[0], mes, 0)).getUTCDate()));
+      espTodo = Math.floor(Math.round((doIso(alvo) - doIso(hoje)) / DIA) / 2);
+      irPara('todo');
     }
     function desenharDia() {
       var a = ancora.split('-'), ano = +a[0], mes = +a[1], dia = +a[2], hojeIso = isoDia(Date.now()), eu = ++pedido;
@@ -880,10 +887,12 @@
     function vistaTodo() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1];
       var hojeT = isoDia(Date.now()), kTodo = espTodo || 0;
+      var mesDoTodo = +somaDias(hojeT, 2 * kTodo).slice(5, 7); Array.prototype.forEach.call(document.querySelectorAll('#meses .aba'), function (b) { b.classList.toggle('aberta', +b.getAttribute('data-mes') === mesDoTodo); });
       cabVista(esq, kTodo === 0 ? 'to do' : rotuloDiaTodo(somaDias(hojeT, 2 * kTodo)), function () { espTodo = kTodo - 1; desenhar(); }, function () { espTodo = kTodo + 1; desenhar(); });
       document.getElementById('t1').textContent = kTodo === 0 ? 'atrasados e hoje' : ''; document.getElementById('t2').textContent = kTodo === 0 ? 'amanhã' : '';
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       var agora = Date.now(), base = doIso(isoDia(agora)), de = base - 14 * DIA, ate = base + 61 * DIA;
+      if (kTodo) { var s0 = doIso(somaDias(hojeT, 2 * kTodo)); if (s0 < de || s0 + DIA >= ate) { de = s0 - DIA; ate = s0 + 3 * DIA; } } /* página longe de hoje (aba do mês): lê a agenda só em volta dos dias mostrados */
       function desenharItens() {
         if (eu !== pedido) return; rolaE.textContent = ''; rolaD.textContent = '';
         var dados = todoDados, hoje = isoDia(Date.now());
