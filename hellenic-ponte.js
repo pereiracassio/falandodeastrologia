@@ -90,7 +90,9 @@
     var enche = el('i', { style: 'display:block;height:100%;width:' + pct + '%;background:linear-gradient(to right,#1F5FA3,#B5852F,#A03E25) 0 0/' + (pct > 0 ? (10000 / pct).toFixed(2) : 100) + '% 100% no-repeat' });
     var trilho = el('div', { class: 'oe-trilho' }, [enche]);
     var datas = el('div', { class: 'oe-datas' }, [el('span', { text: fmtData(de, curto) }), el('span', { text: fmtData(ate, curto) })]);
-    return el('div', { class: 'oe-barra' }, [trilho, datas]);
+    /* padrão do site: "62% [barra]" (a porcentagem ANTES da barra); as datas ficam embaixo da barra */
+    var linhaBarra = el('div', { class: 'oe-linha-barra' }, [el('span', { class: 'oe-pct', text: pct + '%' }), trilho]);
+    return el('div', { class: 'oe-barra' }, [linhaBarra, datas]);
   }
   function linha(rotulo, partes, periodo) {
     var v = el('span', { class: 'oe-v' });
