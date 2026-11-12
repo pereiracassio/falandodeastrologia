@@ -1406,7 +1406,7 @@
         var h = hs.filter(function (x) { return agora >= x.ini && agora < x.fim; })[0], dia = hs[0], nascer = hs[0].ini, por = hs[12].ini, proximo = hs[23].fim;
         caixa.textContent = '';
         caixa.appendChild(el('div', { class: 'rotulo-fixo', text: 'Nascer do sol ' + hhmm(nascer) + ' · Pôr do sol ' + hhmm(por), style: 'text-align:center;font-size:' + (G ? 15 : 12) + 'px;margin:0 0 ' + (G ? 12 : 6) + 'px' }));
-        var rot = function (t) { return el('div', { text: t, class: 'rotulo-grupo', style: 'font-size:' + (G ? 13 : 10) + 'px;margin-bottom:' + (G ? 4 : 2) + 'px' }); };
+        var rot = function (t) { return el('div', { text: t, class: 'rotulo-grupo', style: 'color:var(--preto-tinta,#1A1410);font-size:' + (G ? 13 : 10) + 'px;margin-bottom:' + (G ? 4 : 2) + 'px' }); };
         var direita = el('div', { style: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px' }, [barraDe(nascer, proximo, agora, 'horas', false)]);
         if (h) {
           direita.appendChild(barraDe(h.ini, h.fim, agora, 'minutos', false));
