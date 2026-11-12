@@ -56,11 +56,13 @@
     try { return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ''); }
     catch (e) { return String(iso || '').slice(0, 10); }
   }
-  var noFim = function () { return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 220; };
-  var irAoFim = function () { window.scrollTo(0, document.documentElement.scrollHeight); };
+  var rol = null; /* quando a tela mora dentro de uma coluna que rola por dentro (caderno), é ela que rola, não a página */
+  var noFim = function () { return rol ? rol.clientHeight + rol.scrollTop >= rol.scrollHeight - 220 : window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 220; };
+  var irAoFim = function () { if (rol) rol.scrollTop = rol.scrollHeight; else window.scrollTo(0, document.documentElement.scrollHeight); };
 
   function tela(cfg) {
     var minha = cfg.souAdmin ? 'cassio' : 'aluno';
+    rol = cfg.rolagem || null;
     var caixa = el('div', {});
     estilosDosBaloes();
     var lista = el('div', { style: 'display:flex;flex-direction:column' });
@@ -196,7 +198,7 @@
       enviar.style.cssText = 'flex:0 0 auto;margin:0;min-height:44px;white-space:nowrap;background:' + TERRACOTA + ';color:#F3E3B8;border:0;border-radius:0;padding:0 22px;font:700 15px Cinzel,serif;text-transform:lowercase;letter-spacing:.03em;cursor:pointer';
       var erro = el('p', { class: 'portal-msg', style: 'margin:0 0 6px;max-width:720px;margin-left:auto;margin-right:auto' });
       var linha = el('div', { style: 'display:flex;gap:10px;align-items:flex-end;max-width:720px;margin:0 auto' }, [campo, enviar]);
-      barra = el('div', { style: 'position:fixed;left:0;right:0;bottom:0;z-index:90;padding:8px 14px calc(8px + env(safe-area-inset-bottom));box-sizing:border-box;background:var(--papiro-fundo-simples);border-top:2px solid ' + AZUL }, [erro, linha]);
+      barra = el('div', { class: 'conversa-barra', style: 'position:fixed;left:0;right:0;bottom:0;z-index:90;padding:8px 14px calc(8px + env(safe-area-inset-bottom));box-sizing:border-box;background:var(--papiro-fundo-simples);border-top:2px solid ' + AZUL }, [erro, linha]);
 
       function medir() { document.body.style.setProperty('padding-bottom', barra.offsetHeight + 'px', 'important'); document.documentElement.style.setProperty('--barra-conversa', barra.offsetHeight + 'px'); }   /* o Hermes do painel sobe junto, para não ficar em cima do Enviar */   /* reserva o lugar da barra: nada fica escondido atrás dela */
       barra.__restaurar = function () { document.body.style.removeProperty('padding-bottom'); document.documentElement.style.removeProperty('--barra-conversa'); };

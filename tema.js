@@ -8,6 +8,7 @@
   function app() {
     var c = location.pathname;
     if (DAILY.test(c)) return 'daily';
+    if (window.top !== window.self && /[?&]caderno=1/.test(location.search)) return 'daily'; /* tela aberta DENTRO do caderno (mensagens, avisos, configurações...): é do Hellenic Daily, vale o tema dele */
     if (/\/admin-(site|avisos)\.html$/.test(c)) { try { var q = new URLSearchParams(location.search).get('app'); if (q === 'falando' || q === 'daily') { sessionStorage.setItem('fda_app', q); return q; } return sessionStorage.getItem('fda_app') || localStorage.getItem('fda_app_ultimo') || 'falando'; } catch (e) { return 'falando'; } } /* ?app= vem do link que abriu a tela: é de qual app a pessoa saiu (a reserva do aparelho podia ser a do outro app) */
     return 'falando';
   }

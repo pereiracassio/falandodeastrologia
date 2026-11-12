@@ -13,13 +13,13 @@
   <meta name="apple-mobile-web-app-title" content="Daily">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=9"></script>
+  <script src="tema.js?v=10"></script>
   <meta name="theme-color" content="#e6d3a0">
   <title>Hellenic Daily</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="temas.css?v=5">
+  <link rel="stylesheet" href="temas.css?v=6">
   <script src="moldura.js?v=20261109a"></script>
   <link rel="stylesheet" href="papiro.css?v=6">
   <link rel="stylesheet" href="home.css?v=21">
@@ -118,9 +118,9 @@
     .cad .ev{position:absolute;left:84px;right:4px;padding:0 10px;line-height:1.25;min-height:22px;font-size:15px;overflow:hidden;display:flex;gap:10px;align-items:baseline;text-decoration:none;cursor:pointer}
     .cad .ev small{font-size:12px}
     .cad .evt{position:absolute;left:84px;right:4px;padding:0 10px 2px;margin-top:-1px;transform:translateY(-100%);display:flex;flex-direction:column;gap:1px;z-index:1}
-    .cad .evl{display:flex;gap:8px;align-items:baseline;line-height:1.25;font-size:15px;text-decoration:none;cursor:pointer;min-width:0}
+    .cad .evl{display:flex;gap:8px;align-items:baseline;line-height:1.25;font-size:15px;text-decoration:none;cursor:pointer;min-width:0;white-space:nowrap} /* UMA linha só, apoiada na linha da hora (como letra de caderno): texto que quebrava subia por cima das horas de antes e ninguém sabia em que linha o compromisso estava */
     .cad .evl .q{flex:0 0 auto;width:10px;height:10px;align-self:center;display:inline-block}
-    .cad .evl .evt-titulo{color:var(--terracota)}.cad .evl small{font-size:12px;color:var(--azul-egipcio-escuro,#1034A6);white-space:nowrap}
+    .cad .evl .evt-titulo{color:var(--terracota);min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}.cad .evl small{font-size:12px;color:var(--azul-egipcio-escuro,#1034A6);white-space:nowrap}
     .cad .agora{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--terracota);z-index:2}
     .cad .agora i{position:absolute;right:0;top:-11px;background:var(--terracota);color:#F3E3B8;font-style:normal;font-weight:700;font-size:12px;padding:2px 8px}
     .cad .falha{color:var(--terracota);font-size:13px;margin:0 0 6px 76px}
@@ -538,7 +538,7 @@
       var alvo = null;
       if (visao === 'dia') alvo = document.getElementById(d < 0 ? 'diaAnt' : 'diaProx');
       else { var bs = cad.querySelectorAll('.cab-vista .seta'); if (bs.length >= 2) alvo = d < 0 ? bs[0] : bs[bs.length - 1]; }
-      if (alvo && alvo.offsetParent !== null) alvo.click();
+      if (alvo && !cad.classList.contains('v-embed')) alvo.click(); /* no celular a seta fica na outra página (escondida): clica do mesmo jeito */
     }
     function gravarHash() { /* o endereço guarda a aba, o dia e o LUGAR EXATO (série, vídeo, corte, projeto, estudo, aula) por id: o app reabre exatamente aí */
       var q = ['v=' + visao, 'd=' + ancora];
@@ -546,7 +546,8 @@
       if (visao === 'producao') { add('ps', prodSerie); add('pv', prodVideo); add('pc', prodCorte); }
       else if (visao === 'projetos') { add('pj', projSel); add('pjv', projVer); }
       else if (visao === 'estudos') { add('es', estSel); add('esv', estVer); add('ea', estAula); }
-      try { history.replaceState(null, '', '#' + q.join('&')); } catch (e) { /* sem histórico */ }
+      try { history.replaceState(history.state, '', '#' + q.join('&')); } catch (e) { /* sem histórico */ }
+      try { localStorage.setItem('fda_caderno_hash_dia', isoDia(Date.now())); } catch (e) { /* sem armazenamento */ }
     }
     function mostrarVisao() {
       var v = visao; Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { b.classList.toggle('aberta', b.getAttribute('data-v') === v); });
@@ -563,7 +564,7 @@
       pedido++;
       if (leitorAtual && !(visao === 'leitor' && leitorLivro)) { leitorAtual.fechar(); leitorAtual = null; }
       cad.classList.toggle('v-livro', visao === 'leitor' && !!leitorLivro && !embutida);
-      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { f.setAttribute('data-url', alvo); f.src = url; } return; }
+      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { var jaTinha = !!f.getAttribute('data-url'); f.setAttribute('data-url', alvo); try { if (jaTinha && f.contentWindow) f.contentWindow.location.replace(url); else f.src = url; } catch (e) { f.src = url; } } return; }
       if (visao !== 'todo') espTodo = 0;
       if (visao === 'dia') { desenharDia(); return; }
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, compras: vistaCompras, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
@@ -1169,7 +1170,8 @@
       cad.classList.add('on', pagCel);
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
       var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && (ABAS.some(function (y) { return y[0] === h[1]; }) || EXTRAS[h[1]])) { /* configurações, avisos e mensagens também voltam */
-        visao = h[1]; if (h[2]) ancora = h[2];
+        visao = h[1]; var hashDeHoje = true; try { hashDeHoje = localStorage.getItem('fda_caderno_hash_dia') === isoDia(Date.now()); } catch (e) { /* sem armazenamento */ }
+        if (h[2] && hashDeHoje) ancora = h[2]; /* o dia guardado no endereço só vale no mesmo dia em que foi guardado: abrir o app no dia seguinte cai no HOJE, nunca no dia de ontem */
         var hq = new URLSearchParams(location.hash.replace(/^#/, ''));
         if (visao === 'producao') { prodSerie = hq.get('ps') || null; prodVideo = hq.get('pv') || null; prodCorte = prodVideo ? (hq.get('pc') || null) : null; }
         else if (visao === 'projetos') { projSel = hq.get('pj') || null; projVer = hq.get('pjv') || null; }
@@ -1181,13 +1183,19 @@
       app.textContent = '';
       C.rpc('sou_admin').then(function (r) {
         if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
-        mostrar();
+        mostrar(); armarGestoDeBorda();
         valorSite('daily_visual').then(function (v) { P.guardarModoDaily(v); if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + (/^#v=(horas|todo)/.test(location.hash) ? location.hash.replace(/&d=.*/, '') : '')); });
       });
     }
     try { var guardada = localStorage.getItem('fda_caderno_capa'); if (guardada && CAPAS.some(function (x) { return x[0] === guardada; })) capa = guardada; } catch (e) { /* sem armazenamento */ }
     pintarCapa(capa);
     ancora = isoDia(Date.now());
+    var hojeVisto = ancora;
+    document.addEventListener('visibilitychange', function () { /* app que ficou aberto de um dia para o outro: se estava no "hoje" de ontem, passa para o de hoje */
+      if (document.visibilityState !== 'visible') return;
+      var h = isoDia(Date.now()); if (h === hojeVisto) return;
+      if (ancora === hojeVisto) { ancora = h; hojeVisto = h; if (visao === 'dia' || visao === 'todo' || visao === 'horas') desenhar(); } else hojeVisto = h;
+    });
     montarMarcadores();
     document.getElementById('mesAnt').addEventListener('click', function () { ancora = mudaMes(ancora, -1); desenhar(); });
     document.getElementById('mesProx').addEventListener('click', function () { ancora = mudaMes(ancora, 1); desenhar(); });
@@ -1201,11 +1209,37 @@
     document.getElementById('t1').addEventListener('click', function () { paginaCel('p1'); });
     document.getElementById('t2').addEventListener('click', function () { paginaCel('p2'); });
     document.getElementById('tMais').addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); });
+    var ultimoGesto = 0;
+    function virarPeloDedo(d) { /* d = -1 volta, +1 avança (dedo OU gesto de borda do iPhone) */
+      if (Date.now() - ultimoGesto < 450) return; ultimoGesto = Date.now(); /* o mesmo movimento chega por mais de um caminho (ponteiro e toque): vale uma vez só */
+      if (visao === 'leitor' && leitorLivro && leitorAtual) { if (leitorAtual.zoom() === 1) { virar(d < 0 ? 'tras' : 'frente'); leitorAtual.virar(d); } return; }
+      if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(d); return; }
+      if (d < 0) { if (!voltarPagina()) periodo(-1); } else { if (!avancarPagina()) periodo(1); }
+    }
+    /* O gesto de borda do iPhone (voltar/avançar do navegador) vira o MESMO gesto do caderno: o histórico fica sempre [volta, aqui, avança] e cada gesto de borda
+       é lido como "voltar a página" ou "avançar a página", depois o histórico volta ao meio. Assim o app nunca sai para a tela de antes. */
+    function armarGestoDeBorda() {
+      try {
+        var u = location.href;
+        history.replaceState({ fda: 'prev' }, '', u); history.pushState({ fda: 'cur' }, '', u); history.pushState({ fda: 'next' }, '', u); history.go(-1);
+        window.addEventListener('popstate', function (e) {
+          var st = e.state && e.state.fda;
+          if (st === 'prev') { virarPeloDedo(-1); history.go(1); }
+          else if (st === 'next') { virarPeloDedo(1); history.go(-1); }
+        });
+      } catch (er) { /* sem histórico */ }
+    }
     (function () { /* o dedo vira a página: para a direita volta, para a esquerda avança */
       var folha = cad, x0 = 0, /* o gesto vale em QUALQUER ponto do caderno (de cima a baixo, nos cantos, em cima de campos e botões), menos nas abas */ y0 = 0, t0 = 0, ativo = false, id = 0;
       folha.addEventListener('pointerdown', function (ev) { var t = ev; if (ev.pointerType !== 'touch' || (ev.target.closest && (ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"]') || (ev.target.closest('canvas') && !ev.target.closest('.lp'))))) { ativo = false; return; } if (ativo) { ativo = false; return; } id = ev.pointerId; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; });
+      /* a página da direita (horários, listas) rola na vertical: o navegador começava a rolar e cancelava o gesto antes do dedo soltar. Por isso o gesto vale AO MOVER, assim que o movimento é claramente para o lado (sem esperar soltar) */
+      folha.addEventListener('pointermove', function (ev) { if (!ativo || ev.pointerId !== id) return; var dx = ev.clientX - x0, dy = ev.clientY - y0; if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8 || Date.now() - t0 > 1500) return; ativo = false; virarPeloDedo(dx > 0 ? -1 : 1); });
+      /* reserva: os eventos de TOQUE seguem chegando mesmo quando o navegador já começou a rolar a lista (o ponteiro é cancelado nesse caso) */
+      var tx = 0, ty = 0, tt = 0, tOk = false;
+      folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; tOk = ev.touches.length === 1 && !(ev.target.closest && (ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"]') || (ev.target.closest('canvas') && !ev.target.closest('.lp')))); tx = t.clientX; ty = t.clientY; tt = Date.now(); }, { passive: true });
+      folha.addEventListener('touchmove', function (ev) { if (!tOk) return; var t = ev.touches[0], dx = t.clientX - tx, dy = t.clientY - ty; if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8 || Date.now() - tt > 1500) return; tOk = false; ativo = false; virarPeloDedo(dx > 0 ? -1 : 1); }, { passive: true });
       folha.addEventListener('pointercancel', function () { ativo = false; });
-      folha.addEventListener('pointerup', function (ev) { if (!ativo || ev.pointerId !== id) return; ativo = false; var t = ev, dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 1500 || Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8) return; if (visao === 'leitor' && leitorLivro && leitorAtual) { if (leitorAtual.zoom() === 1) { virar(dx > 0 ? 'tras' : 'frente'); leitorAtual.virar(dx > 0 ? -1 : 1); } return; } if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(dx > 0 ? -1 : 1); return; } if (dx > 0) { if (!voltarPagina()) periodo(-1); } else { if (!avancarPagina()) periodo(1); }});
+      folha.addEventListener('pointerup', function (ev) { if (!ativo || ev.pointerId !== id) return; ativo = false; var t = ev, dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 1500 || Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8) return; virarPeloDedo(dx > 0 ? -1 : 1); });
     })();
     C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
   })();

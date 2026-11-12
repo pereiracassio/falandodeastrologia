@@ -8,7 +8,7 @@
   <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.png?v=3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="tema.js?v=9"></script>
+  <script src="tema.js?v=10"></script>
   <link rel="manifest" href="manifest-producao.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="temas.css?v=5">
+  <link rel="stylesheet" href="temas.css?v=6">
   <script src="moldura.js?v=20261109a"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
@@ -27,6 +27,29 @@
   <link rel="stylesheet" href="portal.css?v=33">
   <link rel="stylesheet" href="tema-paginas.css?v=42">
   <link rel="stylesheet" href="tipografia.css?v=37">
+  <style>
+  /* dentro do caderno: a lista de alunos é a página da esquerda e a conversa, a da direita (uma de cada vez no celular).
+     A página NÃO rola: cada coluna rola por dentro, então a lista fica parada e a conversa abre sempre no fim, sem sumir para cima. */
+  html.fda-caderno,html.fda-caderno body{height:100%;overflow:hidden}
+  html.fda-caderno .pagina,html.fda-caderno .folha-pagina,html.fda-caderno .portal,html.fda-caderno .portal-caixa{height:100%}
+  html.fda-caderno #app.msg2{display:block;column-count:auto!important;height:100vh}
+  html.fda-caderno .msg-volta{display:none}
+  html.fda-caderno #app.msg2 .msg-esq,html.fda-caderno #app.msg2 .msg-dir{height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;box-sizing:border-box;margin:0}
+  html.fda-caderno #app.msg2 .msg-esq::-webkit-scrollbar,html.fda-caderno #app.msg2 .msg-dir::-webkit-scrollbar{display:none}
+  html.fda-caderno #app.msg2 .msg-dir{display:none;padding-bottom:calc(var(--barra-conversa,72px) + 12px)}
+  html.fda-caderno #app.msg2.msg-aberta .msg-esq{display:none}
+  html.fda-caderno #app.msg2.msg-aberta .msg-dir{display:block}
+  html.fda-caderno #app.msg2.msg-aberta .msg-volta{display:inline-block}
+  html.fda-caderno .msg-volta{margin:0 0 10px;padding:0;border:0;background:transparent;cursor:pointer;font:700 14px Cinzel,serif;text-transform:lowercase;color:var(--terracota,#A03E25);text-decoration:underline}
+  html.fda-caderno .msg-sel .portal-item-titulo{text-decoration:underline}
+  @media (min-width:900px){
+    html.fda-caderno #app.msg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:88px}
+    html.fda-caderno #app.msg2 .msg-esq,html.fda-caderno #app.msg2.msg-aberta .msg-esq{display:block}
+    html.fda-caderno #app.msg2 .msg-dir,html.fda-caderno #app.msg2.msg-aberta .msg-dir{display:block}
+    html.fda-caderno .msg-volta,html.fda-caderno #app.msg2.msg-aberta .msg-volta{display:none}
+    html.fda-caderno .conversa-barra{left:calc(50% + 44px)!important;right:0!important;padding-left:0!important;padding-right:0!important;background:transparent!important;border-top:0!important}
+  }
+  </style>
   <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -44,6 +67,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="hora-planetaria.js"></script>
   <script src="portal.js?v=178"></script>
+  <script src="conversa.js?v=12"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -74,13 +98,33 @@
     /* uma linha por aluno que já trocou mensagem: a mais recente primeiro; o número em terracota = mensagens dele que você ainda não leu; tocar abre as mensagens dele */
     function tela() {
       limpar();
+      var NOCADERNO = document.documentElement.classList.contains('fda-caderno');
       app.appendChild(P.navAdmin('mensagens', '', sair));
-      app.appendChild(P.botaoVoltar(voltar));
-      var cartao = el('div', { class: 'portal-cartao' });
-      app.appendChild(cartao);
-      app.appendChild(P.botaoVoltar(voltar));
+      var cartao, dir = null, selecionado = null;
+      if (NOCADERNO) {
+        app.classList.add('msg2');
+        cartao = el('div', { class: 'portal-cartao msg-esq' });
+        dir = el('div', { class: 'msg-dir' });
+        app.appendChild(cartao); app.appendChild(dir);
+      } else {
+        app.appendChild(P.botaoVoltar(voltar));
+        cartao = el('div', { class: 'portal-cartao' });
+        app.appendChild(cartao);
+        app.appendChild(P.botaoVoltar(voltar));
+      }
       var lista = el('div', {});
       cartao.appendChild(lista);
+      function abrirConversa(c, nome, linha) { /* a conversa abre aqui mesmo, na página da direita: nada de abrir a tela antiga do aluno dentro do caderno */
+        if (selecionado) selecionado.classList.remove('msg-sel');
+        selecionado = linha; if (linha) linha.classList.add('msg-sel');
+        dir.textContent = '';
+        var volta = el('button', { type: 'button', class: 'msg-volta', text: '‹ mensagens' });
+        volta.addEventListener('click', function () { app.classList.remove('msg-aberta'); dir.textContent = ''; });
+        dir.appendChild(volta);
+        dir.appendChild(el('p', { class: 'portal-item-titulo', style: 'margin:0 0 12px;color:var(--terracota,#A03E25)', text: nome }));
+        dir.appendChild(window.conversa.tela({ rolagem: dir, alunoId: c.id, souAdmin: true, nomeAluno: String(nome || '').trim().split(/\s+/)[0], aoLer: function () { anterior = ''; carregar(); } }));
+        app.classList.add('msg-aberta');
+      }
       var anterior = '';
       function carregar() {
         Promise.all([
@@ -108,10 +152,11 @@
             total += c.novas;
             var nome = nomes[c.id] || 'Aluno';
             var previa = (c.ultima.de === 'cassio' ? 'Você: ' : '') + String(c.ultima.texto || '').replace(/\s+/g, ' ');
-            var abrir = function () { location.href = 'admin-alunos.html' + (document.documentElement.classList.contains('fda-caderno') ? '?caderno=1' : '') + '#aluno=' + encodeURIComponent(c.id) + '&aba=conversa'; };
+            var linha;
+            var abrir = function () { if (NOCADERNO) { abrirConversa(c, nome, linha); return; } location.href = 'admin-alunos.html' + (document.documentElement.classList.contains('fda-caderno') ? '?caderno=1' : '') + '#aluno=' + encodeURIComponent(c.id) + '&aba=conversa'; };
             var titulo = el('span', { class: 'portal-item-titulo', style: c.novas ? 'color:var(--terracota,#A03E25)' : '', text: nome + (c.novas ? ' (' : '') });
             if (c.novas) { titulo.appendChild(el('span', { text: String(c.novas) })); titulo.appendChild(document.createTextNode(')')); }
-            var linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', { style: 'min-width:0;flex:1' }, [
+            linha = el('div', { class: 'portal-item portal-item-clicavel', role: 'button', tabindex: '0' }, [el('div', { class: 'portal-item-linha' }, [el('div', { style: 'min-width:0;flex:1' }, [
               titulo,
               el('span', { class: 'portal-item-data', text: quando(c.ultima.criado_em) }),
               el('p', { style: 'margin:4px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (c.novas ? ';font-weight:700' : ''), text: previa })

@@ -27,8 +27,8 @@
 /* SULFITE — folha branca escrita à mão, com caneta. Mesmas cores de época, trocadas pelas cores das canetas.
    (.paleta-sulfite: a sonda do JS, ver paletaEpoca em papiro.js) */
 :root.tema-sulfite, .paleta-sulfite {
-    --azul-egipcio-escuro: #0C34B1;   /* azul egípcio arroxeado */
-    --azul-egipcio-claro: #01C7FC;    /* azul egípcio claro */
+    --azul-egipcio-escuro: #01C7FC;   /* trocado com o claro (pedido dele): o claro aparece muito mais, vira o escuro */
+    --azul-egipcio-claro: #0C34B1;    /* azul arroxeado de caneta Bic: agora é o "claro", o que mais aparece */
     --preto-tinta: #1C1C1C;           /* preto de tinta */
     --ocre: #B8860B;                  /* ocre (caneta amarela, tinta dourada) */
     --terracota: #BB0C34;             /* terracota (caneta vermelha) */
