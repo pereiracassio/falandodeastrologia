@@ -13,13 +13,9 @@ window.LeitorCaderno = function (P) {
     var PALETA = { caneta: ['#1A1410', '#1034A6', '#A03E25'], marca: ['#F2C230', '#7CC47C', '#F08FB0'] };
     var pilha = [], vistas = [];
 
-    /* celular e iPad em pé: UMA página por vez, grande, que ocupa a tela; deitado: as duas páginas abertas como um livro */
-    var MQ_UNICO = '(max-width:820px), (orientation:portrait) and (min-width:600px) and (max-width:1100px)';
-    var unico = !!(window.matchMedia && window.matchMedia(MQ_UNICO).matches);
-    function esqNum(i) { return unico ? (i + 1 <= total ? i + 1 : null) : (i === 0 ? null : (2 * i <= total ? 2 * i : null)); }
-    function dirNum(i) { return unico ? null : (i === 0 ? (total >= 1 ? 1 : null) : (2 * i + 1 <= total ? 2 * i + 1 : null)); }
-    function sMax() { return unico ? Math.max(0, total - 1) : Math.floor(total / 2); }
-    function idxDe(p) { return unico ? Math.max(0, p - 1) : (p <= 1 ? 0 : Math.floor(p / 2)); }
+    function esqNum(i) { return i === 0 ? null : (2 * i <= total ? 2 * i : null); }
+    function dirNum(i) { return i === 0 ? (total >= 1 ? 1 : null) : (2 * i + 1 <= total ? 2 * i + 1 : null); }
+    function sMax() { return Math.floor(total / 2); }
 
     /* ---------- uma página: o PDF, o marca-texto e a tinta, em três lonas ---------- */
     function criarPagina(host) {
@@ -159,7 +155,7 @@ window.LeitorCaderno = function (P) {
     var totalTxt = el('span', { text: '' }); totalTxt.style.cssText = 'font-size:14px;margin-right:4px;white-space:nowrap;flex:none';
     campo.setAttribute('inputmode', 'numeric'); campo.setAttribute('enterkeyhint', 'go'); campo.addEventListener('focus', function () { setTimeout(function () { try { campo.select(); } catch (e) { /* ok */ } }, 0); }); /* toca no número, digita a página e confirma */
     campo.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') campo.blur(); });
-    campo.addEventListener('change', function () { var p = Math.max(1, Math.min(total, parseInt(campo.value, 10) || 1)); virarPara(idxDe(p), 0); });
+    campo.addEventListener('change', function () { var p = Math.max(1, Math.min(total, parseInt(campo.value, 10) || 1)); virarPara(p <= 1 ? 0 : Math.floor(p / 2), 0); });
     var bAnt = btn('‹', function () { virar(-1); }, ';font-size:22px'), bProx = btn('›', function () { virar(1); }, ';font-size:22px'), bMenos = btn('−', function () { zoomar(0); }, ';font-size:22px'), bMais = btn('+', function () { zoomar(1); }, ';font-size:22px');
     var bVoltar = btn('← Voltar', function () { fechar(); o.voltar(); });
     /* ferramentas na página da esquerda, páginas e zoom na da direita: nada em cima da costura */
@@ -184,7 +180,7 @@ window.LeitorCaderno = function (P) {
       o.esq.style.visibility = e ? '' : 'visible';
       return Promise.all([pvE.mostrar(e), pvD.mostrar(d)]).then(function () { o.aoMudar && o.aoMudar(e, d); });
     }
-    function irPagina(p) { p = Math.max(1, Math.min(total, p)); virarPara(idxDe(p), 0); }
+    function irPagina(p) { p = Math.max(1, Math.min(total, p)); virarPara(p <= 1 ? 0 : Math.floor(p / 2), 0); }
     function virarPara(novo, sentido) {
       if (!pdf) return; novo = Math.max(0, Math.min(sMax(), novo)); if (novo === s && pvD.pag) return;
       Promise.all([pvE.gravar(), pvD.gravar()]).then(function () {
@@ -220,15 +216,11 @@ window.LeitorCaderno = function (P) {
     if (!pdfjsLib.GlobalWorkerOptions.workerSrc) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     Promise.resolve(o.obterPdf(function (txt) { if (!fechado) status.textContent = 'Abrindo... ' + txt; })).then(function (dados) { if (fechado) return; return pdfjsLib.getDocument({ data: dados }).promise; }).then(function (doc) {
       if (!doc || fechado) return; pdf = doc; total = doc.numPages; campo.max = String(total); totalTxt.textContent = 'de ' + total;
-      var pg = Math.max(1, Math.min(total, (o.livro && o.livro.pagina) || 1)); s = Math.min(sMax(), idxDe(pg));
+      var pg = Math.max(1, Math.min(total, (o.livro && o.livro.pagina) || 1)); s = pg <= 1 ? 0 : Math.min(sMax(), Math.floor(pg / 2));
       o.salvarPagina && o.salvarPagina(esqNum(s) || dirNum(s) || 1, total);
       return mostrarSpread().then(function () { return medirMargens(); });
     }).catch(function (e) { var m = e && e.message; status.style.display = ''; status.textContent = m === 'desconectado' ? 'O Google Drive não está conectado. Conecte em Configurações.' : m === 'sumiu' ? 'Esse arquivo não está mais no Drive.' : 'Não consegui abrir o arquivo.'; });
-    return { fechar: fechar, virar: virar, zoom: function () { return zoom; }, aoRedimensionar: function () {
-      var u = !!(window.matchMedia && window.matchMedia(MQ_UNICO).matches);
-      if (u !== unico && pdf) { var p = esqNum(s) || dirNum(s) || 1; unico = u; s = Math.min(sMax(), idxDe(p)); mostrarSpread(); return; } /* virou o aparelho: uma página ↔ duas páginas, na mesma página do livro */
-      pvE.renderizar(); pvD.renderizar();
-    } };
+    return { fechar: fechar, virar: virar, zoom: function () { return zoom; }, aoRedimensionar: function () { pvE.renderizar(); pvD.renderizar(); } };
   }
   return { abrir: abrir };
 };

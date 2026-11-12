@@ -289,17 +289,11 @@
     .cad .virada .v-fenda{position:absolute;top:0;bottom:0;width:46px;pointer-events:none}
     .cad.virando .folha:not(.v-folha),.cad.virando .folha:not(.v-folha) *{animation:none!important}
 
-    /* leitor de PDF no celular e no iPad em pé: uma página grande, ferramentas numa fileira que rola (nada empilhado) e o livro ocupa a tela */
+    /* leitor de PDF no celular: as ferramentas ocupavam uma coluna estreita (feita para o computador) e as letras ficavam empilhadas; agora a barra tem a largura da página e, se não couber, rola para o lado */
     @media (max-width:820px), (orientation:portrait) and (min-width:600px) and (max-width:1100px){
-      .cad.v-livro .miolo{inset:56px 4px 4px}
-      .cad.v-livro .troca{display:none}
-      .cad.v-livro .folha::before,.cad.v-livro .folha::after{display:none!important} /* sem a moldura de meandro: a página do PDF ocupa tudo */
-      .cad.v-livro .pag,.cad.v-livro .pag.dir{padding:46px 4px}
-      .cad.v-livro .leitor-barra,.cad.v-livro .leitor-barra.topo{display:flex;left:4px;right:4px;height:40px;justify-content:flex-start;align-items:center;flex-wrap:nowrap;gap:2px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}
-      .cad.v-livro .leitor-barra{top:auto;bottom:4px}
-      .cad.v-livro .leitor-barra.topo{top:4px;bottom:auto}
-      .cad.v-livro .leitor-barra .lb-g{flex:0 0 auto;display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:2px;padding:0 2px}
-      .cad.v-livro .leitor-barra .portal-btn{white-space:nowrap!important;flex:none!important;writing-mode:horizontal-tb}
+      .cad.v-livro .leitor-barra,.cad.v-livro .leitor-barra.topo{left:calc(80px*var(--moldura-m) + 14px);right:calc(80px*var(--moldura-m) + 14px);justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}
+      .cad.v-livro .leitor-barra .lb-g{flex:0 0 auto;flex-wrap:nowrap;justify-content:flex-start;padding:0 2px}
+      .cad.v-livro .leitor-barra .portal-btn{white-space:nowrap!important;flex:none!important}
     }
     /* tema escuro: a página do PDF é papel claro (a letra do PDF é escura; sobre fundo escuro sumia) */
     html.tema-escuro .cad .lp{background:#EDE6D2!important}
@@ -350,7 +344,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
   <script src="hellenic-ponte.js?v=25"></script>
-  <script src="caderno-leitor.js?v=9"></script>
+  <script src="caderno-leitor.js?v=10"></script>
   <script src="caderno-producao.js?v=8"></script>
   <script src="caderno-projetos.js?v=1"></script>
   <script src="caderno-agenda.js?v=5"></script>
@@ -1364,7 +1358,6 @@
     }
     function vistaLivro() {
       var o = preparaOut(), esq = o[0], dir = o[1], livro = leitorLivro; if (leitorAtual) { leitorAtual.fechar(); leitorAtual = null; }
-      if (window.matchMedia && window.matchMedia('(max-width:820px), (orientation:portrait) and (min-width:600px) and (max-width:1100px)').matches) paginaCel('p1'); /* uma página por vez: a do livro fica na primeira */
       leitorAtual = window.LeitorCaderno(P).abrir({
         esq: esq, dir: dir, barra: document.getElementById('leitorBarra'), barraTopo: document.getElementById('leitorBarraTopo'), livro: livro, aviso: toast,
         voltar: function () { leitorAtual = null; leitorLivro = null; empurrar(); mostrarVisao(); virar('tras'); }, /* sai do PDF e volta para a estante, para escolher outro */
