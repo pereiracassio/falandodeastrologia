@@ -104,6 +104,9 @@
     .cad .nota-dia{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--azul-egipcio-claro);cursor:pointer}
     .cad .nota-dia .oe-tec{flex:none;color:var(--terracota);min-width:34px;white-space:nowrap}
     .cad .nota-linha .oe-tec{color:var(--terracota);margin-right:2px}
+    .cad .diario-ordem{background:transparent;border:0;border-radius:0;padding:2px 4px;color:var(--terracota);cursor:pointer}
+    .cad .nota-diario:last-child{border-bottom:0}.cad .nota-diario .oe-tec{min-width:56px}
+    .cad .nota-diario .nt{-webkit-line-clamp:unset;display:block;white-space:pre-wrap}
     .cad .nota-dia .nh{flex:none;font-size:13px;color:var(--preto-tinta);min-width:40px;padding-top:2px}
     .cad .nota-dia .nt{font-size:15px;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
     .cad #diario{margin-top:18px;padding-top:16px;border-top:2px solid var(--azul-egipcio-claro)}
@@ -319,9 +322,9 @@
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var EXTRAS = { config: 'admin-site.html?app=daily', avisos: 'admin-avisos.html?app=daily', mensagens: 'admin-mensagens.html' };
-    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['horas', 'Horas'],
+    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['diario', 'Diário'], ['todo', 'To do'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
-    var ROT = { dia: ['diário', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], compras: ['na lista', 'no carrinho'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
+    var ROT = { dia: ['diário', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], diario: ['primeiras', 'seguintes'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], compras: ['na lista', 'no carrinho'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
     var espTodo = 0, ancora = '', calendarios = [], capa = 'A03E25', pagCel = 'p1', pedido = 0;
 
@@ -529,11 +532,11 @@
         });
       }, function () { alvo.textContent = ''; });
     }
-    function atualizarNotas() { desenharNotas(pedido); desenharHoras(pedido, isoDia(Date.now())); } /* a lista de cima (sem hora) e a linha do tempo (com hora) */
+    function atualizarNotas() { if (visao === 'diario') { vistaDiario(); return; } desenharNotas(pedido); desenharHoras(pedido, isoDia(Date.now())); } /* a lista de cima (sem hora) e a linha do tempo (com hora) */
     /* nota = a anotação que já existe (editar) ou nada (anotação nova). A hora vem preenchida com a de agora e pode ser trocada.
        NADA é salvo ao mexer na hora (o seletor do iPhone dispara "change" ao abrir): só no botão Salvar, ou ao fechar tocando fora. */
     function abrirNota(id, nota) {
-      var H = window.hellenicPonte, dia = ancora, p2 = function (n) { return String(n).padStart(2, '0'); }, agoraHm = p2(new Date().getHours()) + ':' + p2(new Date().getMinutes());
+      var H = window.hellenicPonte, dia = nota ? String(nota.dia).slice(0, 10) : ancora, p2 = function (n) { return String(n).padStart(2, '0'); }, agoraHm = p2(new Date().getHours()) + ':' + p2(new Date().getMinutes());
       folhaPequena(function (caixa, fechar) {
         var tit = el('h2', {}, [H.iconeTecnica(id, 26), document.createTextNode('  ' + H.nomeTecnica(id))]);
         var hora = el('input', { type: 'time', 'aria-label': 'Hora', style: 'min-height:36px;min-width:120px' }); hora.value = nota && nota.hora ? String(nota.hora).slice(0, 5) : agoraHm;
@@ -630,7 +633,7 @@
       if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1' + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { var jaTinha = !!f.getAttribute('data-url'); f.setAttribute('data-url', alvo); try { if (jaTinha && f.contentWindow) f.contentWindow.location.replace(url); else f.src = url; } catch (e) { f.src = url; } } return; }
       if (visao !== 'todo') espTodo = 0;
       if (visao === 'dia') { desenharDia(); return; }
-      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, compras: vistaCompras, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
+      ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, diario: vistaDiario, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, compras: vistaCompras, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -728,6 +731,40 @@
       lerEventos(doIso(ano + '-01-01'), doIso((ano + 1) + '-01-01'), eu, function (evs) { cacheAno[ano] = evs; marcar(evs); }, esq);
     }
 
+    /* ABA DIÁRIO: todas as anotações de todas as técnicas, em ordem cronológica (padrão: a mais nova primeiro; o botão ao lado do título inverte e a escolha fica guardada).
+       As duas páginas do caderno se dividem em dias: a primeira metade na esquerda, o resto na direita. */
+    var ORDEM_ICONES = { asc: '<path d="M18 10 V50 M8 40 L18 50 L28 40 M38 16 H44 M38 28 H50 M38 40 H56"/>', desc: '<path d="M18 54 V14 M8 24 L18 14 L28 24 M38 48 H44 M38 36 H50 M38 24 H56"/>' }; /* os mesmos ícones de ordem do Astro Hellenic */
+    function vistaDiario() {
+      var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now()), H = window.hellenicPonte;
+      cabVista(esq, 'Diário');
+      var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
+      Promise.all([valorSite('daily_diario_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000)]).then(function (res) {
+        if (eu !== pedido) return;
+        var desc = res[0] !== 'asc', r = res[1];
+        rolaE.textContent = '';
+        if (r.error) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações (' + P.traduzErro(r.error.message) + ').' })); return; }
+        var notas = (r.data || []).slice(); if (!desc) notas.reverse();
+        var inverter = el('button', { type: 'button', class: 'diario-ordem', title: desc ? 'Mais novo primeiro (tocar para inverter)' : 'Mais antigo primeiro (tocar para inverter)', 'aria-label': 'Inverter a ordem' });
+        inverter.innerHTML = '<svg width="24" height="24" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' + ORDEM_ICONES[desc ? 'desc' : 'asc'] + '</svg>';
+        inverter.addEventListener('click', function () { gravarSite('daily_diario_ordem', desc ? 'asc' : 'desc').then(function () { vistaDiario(); }); });
+        rolaE.appendChild(el('div', { style: 'display:flex;justify-content:flex-end;margin:6px 0 8px' }, [inverter]));
+        if (!notas.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma anotação ainda.' })); return; }
+        var dias = [], por = {};
+        notas.forEach(function (n) { var d = String(n.dia).slice(0, 10); if (!por[d]) { por[d] = []; dias.push(d); } por[d].push(n); });
+        var metade = Math.ceil(notas.length / 2), acum = 0;
+        dias.forEach(function (iso) {
+          var rot = SEMANA[diaSem(iso)] + ', ' + (+iso.slice(8)) + ' de ' + MESES[+iso.slice(5, 7) - 1] + (iso.slice(0, 4) !== hojeIso.slice(0, 4) ? ' de ' + iso.slice(0, 4) : '');
+          var bl = el('div', { class: 'dia-lista' }, [el('button', { type: 'button', class: 'dsem-cab botao-fixo' + (iso === hojeIso ? ' eh-hoje' : ''), text: rot })]);
+          bl.firstChild.addEventListener('click', function () { irAoDia(iso); });
+          por[iso].forEach(function (n) {
+            var l = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nt', text: n.texto })]);
+            l.addEventListener('click', function () { abrirNota(n.tecnica, n); });
+            bl.appendChild(l);
+          });
+          (acum < metade ? rolaE : rolaD).appendChild(bl); acum += por[iso].length;
+        });
+      }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações.' })); } });
+    }
     function vistaLista() { /* a Lista é do MÊS: esquerda dias 1 a 15, direita dia 16 até o fim do mês; ‹ › troca de mês */
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now());
       var ano = +ancora.slice(0, 4), mes = +ancora.slice(5, 7), mi = ancora.slice(0, 8) + '01', N = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
