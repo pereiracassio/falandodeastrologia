@@ -57,12 +57,12 @@ window.LeitorCaderno = function (P) {
       function pintarTracos() { [cvMarca, cvTinta].forEach(function (c) { c.getContext('2d').clearRect(0, 0, c.width, c.height); }); P_.tracos.forEach(desenhar); }
       function ctxDe(t) { return t.t === 'm' ? cvMarca : cvTinta; }
       function desenhar(t) {
-        var cv = ctxDe(t), g = cv.getContext('2d'); g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = t.c; g.fillStyle = t.c; g.lineWidth = t.w * cv.width; var p = t.p;
+        var cv = ctxDe(t), g = cv.getContext('2d'); g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = corTraco(t.c); g.fillStyle = corTraco(t.c); g.lineWidth = t.w * cv.width; var p = t.p;
         if (p.length === 1) { g.beginPath(); g.arc(p[0][0] * cv.width, p[0][1] * cv.height, g.lineWidth / 2, 0, 7); g.fill(); }
         else { g.beginPath(); g.moveTo(p[0][0] * cv.width, p[0][1] * cv.height); for (var i = 1; i < p.length; i++) g.lineTo(p[i][0] * cv.width, p[i][1] * cv.height); g.stroke(); }
         g.restore();
       }
-      function trecho(t, a, b) { var cv = ctxDe(t), g = cv.getContext('2d'); g.save(); g.lineCap = 'round'; g.strokeStyle = t.c; g.lineWidth = t.w * cv.width; g.beginPath(); g.moveTo(a[0] * cv.width, a[1] * cv.height); g.lineTo(b[0] * cv.width, b[1] * cv.height); g.stroke(); g.restore(); }
+      function trecho(t, a, b) { var cv = ctxDe(t), g = cv.getContext('2d'); g.save(); g.lineCap = 'round'; g.strokeStyle = corTraco(t.c); g.lineWidth = t.w * cv.width; g.beginPath(); g.moveTo(a[0] * cv.width, a[1] * cv.height); g.lineTo(b[0] * cv.width, b[1] * cv.height); g.stroke(); g.restore(); }
       function lonasDoTamanho() {
         var r = Math.min(dpr, Math.sqrt(16e6 / Math.max(1, P_.cssW * P_.cssH)));
         [cvMarca, cvTinta].forEach(function (c) { c.width = Math.max(1, Math.round(P_.cssW * r)); c.height = Math.max(1, Math.round(P_.cssH * r)); });
@@ -78,11 +78,28 @@ window.LeitorCaderno = function (P) {
         }
         g.putImageData(im, 0, 0);
       }
+      /* TEMA ESCURO: a letra do PDF (preta) passa a ser a cor de texto do tema (a mesma que o "preto de tinta" do escuro); o fundo já é transparente e deixa aparecer o fundo do tema */
+      function escuro() { return document.documentElement.classList.contains('tema-escuro'); }
+      function corDoTema(nome, padrao) {
+        var v = ''; try { v = getComputedStyle(document.documentElement).getPropertyValue('--' + nome).trim(); } catch (e) { /* sem estilo */ }
+        var m = /^#([0-9a-f]{6})$/i.exec(v || padrao); if (!m) m = /^#([0-9a-f]{6})$/i.exec(padrao);
+        var n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255];
+      }
+      function paraEscuro(g, w, h) {
+        var T = corDoTema('preto-tinta', '#E2E8F0'), im = g.getImageData(0, 0, w, h), d = im.data;
+        for (var i = 0; i < d.length; i += 4) {
+          if (d[i + 3] === 0) continue;
+          var k = 1 - (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255; /* quanto mais escuro o pixel, mais ele vira a cor do texto do tema */
+          d[i] = Math.round(d[i] * (1 - k) + T[0] * k); d[i + 1] = Math.round(d[i + 1] * (1 - k) + T[1] * k); d[i + 2] = Math.round(d[i + 2] * (1 - k) + T[2] * k);
+        }
+        g.putImageData(im, 0, 0);
+      }
+      function corTraco(c) { return escuro() && String(c).toLowerCase() === '#1a1410' ? '#' + corDoTema('preto-tinta', '#E2E8F0').map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join('') : c; } /* a tinta preta da caneta também vira a cor do texto */
       function renderizar() {
         if (!P_.pag) return; var eu = ++P_.idRender; if (P_.tarefa) { try { P_.tarefa.cancel(); } catch (e) { /* ok */ } }
         medir(); var r = lonasDoTamanho(), vp = P_.pag.getViewport({ scale: (P_.cssW / P_.pw) * r }), tmp = document.createElement('canvas'); tmp.width = Math.round(vp.width); tmp.height = Math.round(vp.height);
         P_.tarefa = P_.pag.render({ canvasContext: tmp.getContext('2d'), viewport: vp });
-        P_.tarefa.promise.then(function () { if (eu !== P_.idRender) return; cvPdf.width = tmp.width; cvPdf.height = tmp.height; var gp = cvPdf.getContext('2d'); gp.drawImage(tmp, 0, 0); tirarBranco(gp, cvPdf.width, cvPdf.height); }, function () { /* cancelado */ });
+        P_.tarefa.promise.then(function () { if (eu !== P_.idRender) return; cvPdf.width = tmp.width; cvPdf.height = tmp.height; var gp = cvPdf.getContext('2d'); gp.drawImage(tmp, 0, 0); tirarBranco(gp, cvPdf.width, cvPdf.height); if (escuro()) paraEscuro(gp, cvPdf.width, cvPdf.height); }, function () { /* cancelado */ });
       }
       function gravar() {
         clearTimeout(P_.espera); if (!P_.pendente || !P_.num) return Promise.resolve(); P_.pendente = false; var pg = P_.num, copia = P_.tracos.slice();
