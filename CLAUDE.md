@@ -529,3 +529,12 @@ Lista de abas à esquerda (de cima para baixo; a aberta em ocre) e a tela da aba
 
 ## SQL: NUNCA mandar o mesmo SQL de novo (12/11/2026) — bronca dele
 Só mandar SQL quando ele for **diferente** do que já foi mandado (um que substitui o anterior). Se já mandei, não repito, **nem dizendo "pode rodar de novo sem problema"**: ele acha que é outro e roda duas vezes algo que já tinha feito, e isso atrapalha. Na dúvida, **perguntar "você já rodou o SQL?"**, nunca reenviar. Quando as mensagens dele chegam em sequência, conferir o que ele já disse (ex.: "já rodei") antes de responder.
+
+## Campo de data: UM desenho só, vazio = só o calendário (12/11/2026) — regra dele, vale para TODA tela do Falando de Astrologia e do Hellenic Daily
+Todo `<input type="date">` vira sozinho (`dataCaderno`, `portal.js`): **vazio mostra só o desenhinho de calendário** (o do Astro Hellenic, canto reto, azul, pequeno); **com data mostra só a data** (dd / mm / aaaa), sem o desenho. Tocar abre o seletor. Nunca texto "dd / mm / aaaa" vazio, nunca botão "hoje" (ele odiou a gambiarra). Escolher hoje no seletor do iOS: o evento do "hoje" que o iOS dispara ao abrir é guardado e só vale quando o seletor fecha (`focusout`), sem redesenhar enquanto aberto. Gravação/material novos sem data entram com a data de HOJE. Peça nova: usar o input de data comum, nada de estilo próprio.
+
+## Avisos: tocar na notificação marca como lido; lido em um aparelho fecha nos outros (12/11/2026)
+`sw.js` põe `tag` por aviso e abre a página com `?lido=<id>` (o `portal.js` marca lido e tira o parâmetro). Para fechar nos OUTROS aparelhos: `supabase/functions/avisos/index.ts` (ação `fechar`) + gatilho `docs/avisos-fechar.sql`. **Pendente dele: colar o código novo na Edge Function `quick-service` e rodar o SQL** (ele avisa quando puder; não reenviar o SQL antes disso).
+
+## Trilha: a linha de botões do passo rola para o lado (12/11/2026)
+`.acoes-passo` em `admin-alunos.html` rola (nunca quebra nem corta); botões `flex:none`.
