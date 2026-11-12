@@ -261,7 +261,7 @@
             <img class="logo-daily" src="img/logo-menu-daily-linha.svg?v=1" alt="Hellenic Daily" width="1100" height="190">
             <div class="num-linha"><button type="button" class="seta" id="diaAnt" aria-label="Dia anterior">‹</button><div class="num botao-fixo" id="numDia"></div><button type="button" class="seta" id="diaProx" aria-label="Próximo dia">›</button></div>
             <p class="sem" id="semana"></p>
-            <div class="reg"><span><span class="rotulo-fixo">dia de</span> <span class="ic" id="icDia" style="color:var(--terracota)"></span></span><span><span class="rotulo-fixo">hora de</span> <span class="ic" id="icHora"></span> <span id="ateHora"></span></span></div>
+            <div class="reg"><span><span class="rotulo-fixo">dia de</span> <span class="ic" id="icDia" style="color:var(--terracota)"></span></span><span id="regHora"><span class="rotulo-fixo">hora de</span> <span class="ic" id="icHora"></span> <span id="ateHora"></span></span></div>
           </div>
           <div class="cal"><table class="mini" id="mini"></table>
             <div class="mes"><button type="button" class="seta" id="mesAnt" aria-label="Mês anterior">‹</button><span class="botao-fixo" id="tituloMes"></span><button type="button" class="seta" id="mesProx" aria-label="Próximo mês">›</button></div>
@@ -471,6 +471,7 @@
         linha.appendChild(e);
         if (ancora === hojeIso && agora >= h.ini && agora < h.fim) { icH.textContent = icone(h.planeta); icH.style.color = corDe(h); ate.textContent = 'até ' + hhmm(h.fim); }
       });
+      document.getElementById('regHora').style.display = icH.textContent ? '' : 'none'; /* "hora de" só aparece quando há uma hora agora (dia de hoje); em outro dia fica vazio */
       var regente = REGENTE[diaSem(ancora)]; document.getElementById('icDia').textContent = icone(regente);
       if (ancora === hojeIso) { var ag = el('div', { class: 'agora', style: 'top:' + pct(agora) }, [el('i', { text: hhmm(agora) })]); linha.appendChild(ag); }
       eventosEntre(d0, d1).then(function (evs) {
