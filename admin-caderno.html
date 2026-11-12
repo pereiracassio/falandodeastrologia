@@ -66,6 +66,12 @@
     .cad .aba span{writing-mode:vertical-rl;transform:rotate(180deg)}
     .cad .abas.dir .aba span{writing-mode:horizontal-tb;transform:none;white-space:nowrap}
     .cad .aba.aberta{color:var(--ocre)}
+    /* aba pintada pela pessoa (Configurações → Personalização → cor das abas): a aba toda na cor escolhida e o nome num papelzinho claro por cima, para a letra continuar legível */
+    .cad{--postit:color-mix(in srgb,#fffdf5 60%,#e6d3a0)}
+    html:not(.tema-papiro) .cad{--postit:var(--fundo-creme)}
+    .cad .aba.colorida{background:var(--aba-cor)}
+    .cad .aba.colorida span{background:var(--postit);padding:7px 2px}
+    .cad .abas.dir .aba.colorida span{padding:2px 7px}
     .cad .abas.esq .aba.aberta{margin-right:-8px}.cad .abas.dir .aba.aberta{margin-left:-8px}
     .cad .abas.dir .aba.peq{flex:.55}
     .cad .abas.dir .aba.peq span{writing-mode:horizontal-tb;transform:none}
@@ -430,6 +436,20 @@
     }
 
     /* ---------- a folha ---------- */
+    /* cor de cada aba (meses 'm1'..'m12' e as do outro lado 'v:<aba>'), guardada no aparelho como a cor da capa; o valor é o NOME da cor do tema, então muda junto com o tema */
+    var CHAVE_ABAS = 'fda_caderno_abas_cores', CORES_ABAS = ['terracota', 'ocre', 'azul-egipcio-claro', 'azul-egipcio-escuro', 'verde', 'preto-tinta', 'cinza'];
+    function pintarAbas() {
+      var m = {}; try { m = JSON.parse(localStorage.getItem(CHAVE_ABAS) || '{}') || {}; } catch (e) { /* sem cor guardada */ }
+      var poe = function (b, chave) {
+        var c = m[chave], ok = CORES_ABAS.indexOf(c) >= 0;
+        b.classList.toggle('colorida', ok);
+        if (ok) b.style.setProperty('--aba-cor', 'var(--' + c + ')'); else b.style.removeProperty('--aba-cor');
+      };
+      Array.prototype.forEach.call(document.querySelectorAll('#meses .aba[data-mes]'), function (b) { poe(b, 'm' + b.getAttribute('data-mes')); });
+      Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { poe(b, 'v:' + b.getAttribute('data-v')); });
+    }
+    window.fdaPintarAbas = pintarAbas; /* a janela de Configurações (dentro do caderno) chama isto ao escolher */
+    window.addEventListener('storage', function (ev) { if (ev.key === CHAVE_ABAS) pintarAbas(); });
     function montarMarcadores() {
       var meses = document.getElementById('meses'); meses.textContent = '';
       MES3.forEach(function (m, i) {
@@ -450,6 +470,7 @@
       contarAvisos();
       var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); desenhar(); }); dir.appendChild(hj);
       var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); }); dir.appendChild(mais);
+      pintarAbas();
     }
     /* To do: a aba do mês leva ao mesmo dia daquele mês (cada página do To do é um dia; a folha mostra dois dias) */
     function irParaMesTodo(mes) {

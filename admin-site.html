@@ -185,10 +185,53 @@
       try { var guardada = localStorage.getItem('fda_caderno_capa'); if (guardada && CAPAS.some(function (x) { return x[0] === guardada; })) { atual = guardada; desenhar(); } } catch (e) { /* padrão */ } /* a cor da capa é do APARELHO, não da conta */
       return cartao;
     }
+    /* cor de cada aba do caderno (meses e as do outro lado): a paleta é a do TEMA (as cores são nomes de variável, então mudam junto com o tema). Guardada no aparelho, como a cor da capa.
+       A lista de abas é a mesma do caderno (ABAS em admin-caderno.html): aba nova lá = entrada nova aqui. */
+    function cartaoCoresAbas() {
+      var CHAVE = 'fda_caderno_abas_cores';
+      var PALETA = [['terracota', 'Terracota'], ['ocre', 'Ocre'], ['azul-egipcio-claro', 'Azul egípcio claro'], ['azul-egipcio-escuro', 'Azul egípcio'], ['verde', 'Verde'], ['preto-tinta', 'Azul-noite'], ['cinza', 'Cinza']];
+      var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+      var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['diario', 'Diário'], ['todo', 'To do'], ['horas', 'Horas'], ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cor das abas' })]), corpo = el('div'), sel = 'm1', cores = {};
+      try { cores = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch (e) { cores = {}; }
+      function guardar() {
+        try { localStorage.setItem(CHAVE, JSON.stringify(cores)); } catch (e) { /* sem armazenamento */ }
+        try { if (window.parent !== window && window.parent.fdaPintarAbas) window.parent.fdaPintarAbas(); } catch (e) { /* fora do caderno */ }
+      }
+      function chip(chave, nome) {
+        var c = cores[chave], b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: nome });
+        b.style.cssText = 'padding:4px 6px;margin:0;border-bottom:4px solid ' + (c ? 'var(--' + c + ')' : 'transparent') + '!important';
+        if (chave === sel) b.style.setProperty('color', 'var(--terracota)', 'important');
+        b.addEventListener('click', function () { sel = chave; desenhar(); });
+        return b;
+      }
+      function grupo(rotulo, itens) {
+        corpo.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:14px 0 6px', text: rotulo }));
+        corpo.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:8px 14px' }, itens.map(function (x) { return chip(x[0], x[1]); })));
+      }
+      function desenhar() {
+        corpo.textContent = '';
+        grupo('meses', MESES.map(function (m, i) { return ['m' + (i + 1), m]; }));
+        grupo('do outro lado', ABAS.map(function (x) { return ['v:' + x[0], x[1]]; }));
+        var nome = sel.charAt(0) === 'm' ? MESES[+sel.slice(1) - 1] : (ABAS.filter(function (x) { return 'v:' + x[0] === sel; })[0] || [0, ''])[1];
+        corpo.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:18px 0 6px', text: 'cor de ' + nome }));
+        var linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:12px' });
+        PALETA.concat([['papiro', 'Sem cor (papiro)']]).forEach(function (x) {
+          var b = el('button', { type: 'button', title: x[1], 'aria-label': x[1] }), papiro = x[0] === 'papiro';
+          b.style.cssText = 'width:40px;height:40px;border-radius:50%;padding:0;border:3px solid transparent;background:' + (papiro ? 'var(--papiro-fundo-simples);outline:2px solid var(--azul-egipcio-escuro);outline-offset:-5px' : 'var(--' + x[0] + ')') + ';cursor:pointer';
+          if ((cores[sel] || 'papiro') === x[0]) b.style.boxShadow = 'inset 0 0 0 4px var(--preto-tinta), inset 0 0 0 6px #FFFFFF';
+          b.addEventListener('click', function () { if (papiro) delete cores[sel]; else cores[sel] = x[0]; guardar(); desenhar(); });
+          linha.appendChild(b);
+        });
+        corpo.appendChild(linha);
+      }
+      desenhar(); cartao.appendChild(corpo);
+      return cartao;
+    }
     /* Personalização: tudo o que é aparência num cartão só (tema, visualização da agenda, cor da capa) */
     function cartaoPersonalizacao() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Personalização' })]);
-      [['tema', cartaoTema('daily')], ['visualização da agenda', cartaoVisaoAgenda()], ['cor da capa', cartaoCapa()], ['ordem do diário', window.hellenicPonte.cartaoOrdem()]].forEach(function (x, i) {
+      [['tema', cartaoTema('daily')], ['visualização da agenda', cartaoVisaoAgenda()], ['cor da capa', cartaoCapa()], ['cor das abas', cartaoCoresAbas()], ['ordem do diário', window.hellenicPonte.cartaoOrdem()]].forEach(function (x, i) {
         cartao.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:' + (i ? '18px' : '6px') + ' 0 2px', text: x[0] }));
         [].slice.call(x[1].children, 1).forEach(function (f) { cartao.appendChild(f); });
       });
