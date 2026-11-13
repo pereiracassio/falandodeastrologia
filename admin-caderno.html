@@ -518,9 +518,10 @@
         b.addEventListener('click', function () { irPara(x[0]); }); botoes[x[0]] = b;
       });
       var hj = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': 'hoje' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ botoes.hoje = hj;
-      /* os blocos na ordem escolhida em Configurações; dentro de um bloco as abas ficam fixas, e entre os blocos há um pequeno espaço */
+      /* os blocos na ordem escolhida em Configurações; dentro de um bloco as abas ficam fixas, e o pequeno espaço fica só entre uma categoria e outra (Agenda, abinhas do fim e o grupo das abas sem categoria) */
+      var ehCategoria = function (id) { return id === 'agenda' || id === 'pequenas'; }; /* as demais abas não têm categoria: juntas contam como uma categoria só, sem espaço entre elas */
       ordemBlocos.forEach(function (id, i) {
-        (BLOCOS[id] || []).forEach(function (k, j) { var b = botoes[k]; if (!b) return; if (i > 0 && j === 0) b.classList.add('bloco-ini'); dir.appendChild(b); });
+        (BLOCOS[id] || []).forEach(function (k, j) { var b = botoes[k]; if (!b) return; if (i > 0 && j === 0 && (ehCategoria(id) || ehCategoria(ordemBlocos[i - 1]))) b.classList.add('bloco-ini'); dir.appendChild(b); });
       });
       contarAvisos();
       pintarAbas();
