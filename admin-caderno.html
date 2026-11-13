@@ -68,8 +68,6 @@
     .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;position:relative;background:none;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important;filter:drop-shadow(0 0 .6px rgba(26,20,16,.6)) drop-shadow(0 -2px 2px rgba(26,20,16,.32))}
     .cad .aba::before{content:'';position:absolute;inset:0;background:var(--papiro-fundo-simples);z-index:-1} /* atrás do texto (o filtro da aba já cria o contexto: sem isto o texto escrito direto no botão sumia) */
     .cad .abas .aba+.aba{margin-top:-5px}
-    .cad .abas.dir .aba.peq,.cad .abas.dir .aba.peq+.aba{margin-top:0}
-    .cad .abas.dir .aba.bloco-ini{margin-top:10px} /* pequeno espaço entre um bloco de abas e o outro */ /* as abinhas do fim (avisos, msg, configurações, hoje, +) não se sobrepõem: o texto delas ficava um em cima do outro */
     .cad .abas.esq .aba::before{clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 calc(100% - 12px),0 12px)}
     .cad .abas.dir .aba::before{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 14px) 100%,0 100%)}
     .cad .aba span{position:relative;z-index:1}
@@ -84,8 +82,6 @@
     .cad .abas.dir .aba.colorida span{padding:2px 7px}
     .cad .abas.esq .aba.aberta{margin-right:-8px}.cad .abas.dir .aba.aberta{margin-left:-8px}
     .cad .abas .aba.aberta{z-index:2}
-    .cad .abas.dir .aba.peq{flex:.85;min-height:30px} /* as abinhas do fim (avisos, msg, configurações, hoje) com mais espaço */
-    .cad .abas.dir .aba.peq span{writing-mode:horizontal-tb;transform:none}
     .cad .abas.dir .vao{flex:.4}
     .cad .ano{position:absolute;left:20px;width:56px;text-align:center;color:var(--capa-fio,#e6d3a0);font-size:13px;background:none;border:0;padding:0;z-index:2}
     .cad .ano.cima{top:20px}.cad .ano.baixo{bottom:20px}
@@ -187,9 +183,7 @@
       .cad .abas.dir .aba+.aba{margin:0 0 0 -6px}
       .cad .abas.dir .aba span{writing-mode:horizontal-tb;transform:none}
       .cad .abas.dir .aba.aberta{margin:0 0 -6px}
-      .cad .abas.dir .aba.bloco-ini{margin-top:0;margin-left:8px} /* na fileira do celular o espaço entre os blocos é do lado */
       .cad .abas.dir .vao{display:none}
-      .cad .abas.dir .aba.peq{min-width:56px;padding:0 8px} /* avisos, mensagens, configurações, hoje e + também no celular, no fim da fileira que rola */
       .cad .dobra{display:none}
       .cad .pag,.cad .pag.dir{padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 12px)}
       .cad.p1 .pag.dir,.cad.p2 .pag.esq{display:none}
@@ -249,7 +243,7 @@
     .cad.v-embed .embed{display:block}
     .cad.v-embed .pag,.cad.v-embed .dobra{visibility:hidden}
     .cad.v-config .dobra{visibility:visible}
-    .cad .abas.dir .aba:not(.peq){font-size:12px}
+    .cad .abas.dir .aba{font-size:12px} /* todas as abas do lado iguais, as abinhas do fim também */
     @media (max-width:820px){.cad .logo-topo{width:165px}.cad .grade-mes .cel .chip{font-size:9px}.cad .cel .n{font-size:12px}.cad .anos{gap:6px 10px}.cad .mm .g button{font-size:11px;padding:2px 0 5px}}
     .cad .folha.vf .pag.dir{animation:entraDir .32s ease-out}.cad .folha.vf .pag.esq{animation:entraFade .24s ease-out}
     .cad .folha.vt .pag.esq{animation:entraEsq .32s ease-out}.cad .folha.vt .pag.dir{animation:entraFade .24s ease-out}
@@ -514,15 +508,12 @@
         botoes[x[0]] = b;
       });
       [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '\u2699\uFE0E']].forEach(function (x) { /* \uFE0E = a engrenagem de TRAÇO (letra), nunca o emoji colorido do aparelho */
-        var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1], style: x[0] === 'config' ? 'font-size:1.5em;line-height:1;display:inline-block' : '' })]);
+        var b = el('button', { type: 'button', class: 'aba botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1], style: x[0] === 'config' ? 'font-size:1.5em;line-height:1;display:inline-block' : '' })]);
         b.addEventListener('click', function () { irPara(x[0]); }); botoes[x[0]] = b;
       });
-      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': 'hoje' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ botoes.hoje = hj;
-      /* os blocos na ordem escolhida em Configurações; dentro de um bloco as abas ficam fixas, e o pequeno espaço fica só entre uma categoria e outra (Agenda, abinhas do fim e o grupo das abas sem categoria) */
-      var ehCategoria = function (id) { return id === 'agenda' || id === 'pequenas'; }; /* as demais abas não têm categoria: juntas contam como uma categoria só, sem espaço entre elas */
-      ordemBlocos.forEach(function (id, i) {
-        (BLOCOS[id] || []).forEach(function (k, j) { var b = botoes[k]; if (!b) return; if (i > 0 && j === 0 && (ehCategoria(id) || ehCategoria(ordemBlocos[i - 1]))) b.classList.add('bloco-ini'); dir.appendChild(b); });
-      });
+      var hj = el('button', { type: 'button', class: 'aba botao-fixo', 'data-v': 'hoje' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ botoes.hoje = hj;
+      /* os blocos na ordem escolhida em Configurações; dentro de um bloco as abas ficam fixas. Todas as abas são iguais e coladas, sem espaço entre elas */
+      ordemBlocos.forEach(function (id) { (BLOCOS[id] || []).forEach(function (k) { var b = botoes[k]; if (b) dir.appendChild(b); }); });
       contarAvisos();
       pintarAbas();
     }
