@@ -87,9 +87,9 @@
       cartao.appendChild(msg);
       app.appendChild(cartao);
 
-      /* links que não são do carrinho do site: ficam guardados no Supabase (site_config) e você troca quando precisar */
+      /* links que não são do carrinho do site: ficam no código e são trocados pelo Claude quando o astrólogo pedir (nada de colar link na tela) */
       var meus = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Outros links' }),
-        el('p', { text: 'Links que você mesmo cria (InfinitePay, formulário do Astro Hellenic...). Cole o link uma vez e ele fica guardado aqui.' })]);
+        el('p', { text: 'Links que você mesmo cria (InfinitePay, formulário do Astro Hellenic...).' })]);
       var msg2 = el('p', { class: 'portal-msg' });
       var LINKS = [
         { chave: 'link_seu_espaco', nome: 'Seu espaço (o cliente entra com o Google)', padrao: SITE + '/cliente.html' },
@@ -103,24 +103,11 @@
           var caixa = el('div', { class: 'portal-item' });
           function desenhar() {
             caixa.textContent = '';
-            var url = guardados[l.chave] != null ? guardados[l.chave] : l.padrao;
+            var url = l.padrao;
             var acoes = el('div', { class: 'portal-acoes' });
             if (url) {
               acoes.appendChild(P.iconeLink(url));
             }
-            var trocar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: url ? 'Editar' : 'Colar o link' });
-            if (url) trocar.style.cssText = 'background:transparent;border:0;border-radius:0;padding:4px;font-size:12px;opacity:.6;text-decoration:underline;font-family:var(--fonte-mao)';
-            trocar.addEventListener('click', function () {
-              var novo = window.prompt('Cole o link (https://...):', url || '');
-              if (novo == null) return;
-              novo = novo.trim();
-              if (novo && !P.linkSeguro(novo)) { P.mensagem(msg2, 'O link precisa começar com https://', 'erro'); return; }
-              C.from('site_config').upsert({ chave: l.chave, valor: novo, atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (rs) {
-                if (rs.error) { P.mensagem(msg2, P.traduzErro(rs.error.message), 'erro'); return; }
-                guardados[l.chave] = novo; desenhar(); P.mensagem(msg2, 'Link guardado.', 'ok');
-              });
-            });
-            acoes.appendChild(trocar);
             var blocoL = el('div', {}, [el('span', { class: 'portal-item-titulo', text: l.nome }),
               el('span', { class: 'portal-item-data', text: url ? '' : 'Ainda sem link. ' + l.dica })]);
             caixa.appendChild(el('div', { class: 'portal-item-linha' }, [blocoL, acoes]));
