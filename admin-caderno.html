@@ -732,6 +732,18 @@
     function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && hist[hpos - 1].visao === visao; } /* o histórico é de dentro da aba: nunca volta para outra aba */
     function podeAvancar() { return hpos < hist.length - 1 && !!hist[hpos + 1] && hist[hpos + 1].visao === visao; }
     function atualizarVoltar() { var b = document.getElementById('voltarTab'); if (b) b.hidden = true; } /* no caderno volta-se com o DEDO (virar a página): o botão ← voltar do topinho não aparece em lugar nenhum */
+    /* SUBIR UM NÍVEL: quando não há histórico para voltar (o app foi fechado e aberto de novo, ou se entrou direto no lugar), voltar a página sobe pela hierarquia da própria aba:
+       corte → vídeo → série → início da Produção; aula → estudo → início; subprojeto/projeto → início. Devolve null quando já está no início. */
+    function subirNivel() {
+      var ant = { prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, projSel: projSel, projVer: projVer, estSel: estSel, estVer: estVer, estAula: estAula }, novo = null;
+      if (visao === 'producao') { if (prodCorte) novo = { prodCorte: null }; else if (prodVideo) novo = { prodVideo: null, prodCorte: null }; else if (prodSerie) novo = { prodSerie: null, prodVideo: null, prodCorte: null }; }
+      else if (visao === 'projetos') { if (projVer) novo = { projVer: null }; else if (projSel) novo = { projSel: null, projVer: null }; }
+      else if (visao === 'estudos') { if (estAula) novo = { estAula: null }; else if (estVer) novo = { estVer: null }; else if (estSel) novo = { estSel: null, estVer: null, estAula: null }; }
+      if (!novo) return null;
+      var poe = function (o) { if ('prodSerie' in o) prodSerie = o.prodSerie; if ('prodVideo' in o) prodVideo = o.prodVideo; if ('prodCorte' in o) prodCorte = o.prodCorte; if ('projSel' in o) projSel = o.projSel; if ('projVer' in o) projVer = o.projVer; if ('estSel' in o) estSel = o.estSel; if ('estVer' in o) estVer = o.estVer; if ('estAula' in o) estAula = o.estAula; };
+      var guarda = function () { if (hpos >= 0 && hist[hpos]) hist[hpos] = snapshot(); }; /* troca a entrada de agora (não empilha): senão o próximo voltar desceria de volta */
+      return { acao: function () { poe(novo); guarda(); mostrarVisao(); }, inv: function () { poe(ant); guarda(); mostrarVisao(); } };
+    }
     function voltarPagina() { if (!podeVoltar()) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (!podeAvancar()) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
     function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
@@ -1517,7 +1529,7 @@
       if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(d); return; }
       if (visao === 'diario' && !cad.classList.contains('v-embed')) { diarioVirar(d); return; } /* no Diário o dedo folheia as anotações, página a página */
       var borda = modoPe() && ((d > 0 && pagCel === 'p2') || (d < 0 && pagCel === 'p1')), h0 = borda ? cad.querySelector('.folha').innerHTML : '';
-      if (d < 0) { if (!voltarPagina()) periodo(-1); } else { if (!avancarPagina()) periodo(1); }
+      if (d < 0) { var sn = null; if (!voltarPagina()) { sn = subirNivel(); if (sn) { sn.acao(); virar('tras'); } else periodo(-1); } } else { if (!avancarPagina()) periodo(1); }
       if (borda && cad.querySelector('.folha').innerHTML !== h0) paginaCel(d > 0 ? 'p1' : 'p2'); /* uma página por vez: o dia seguinte abre na primeira página, o anterior na última */
     }
     /* O gesto de borda do iPhone (voltar/avançar do navegador) vira o MESMO gesto do caderno: o histórico fica sempre [volta, aqui, avança] e cada gesto de borda
@@ -1621,7 +1633,7 @@
         var base;
         if (visao === 'financeiro') base = { acao: function () { finMudarMes(d); }, inv: function () { finMudarMes(-d); } };
         else if (visao === 'diario') base = { acao: function () { diarioVirar(d); }, inv: function () { diarioVirar(-d); } };
-        else if (d < 0) base = podeVoltar() ? { acao: voltarPagina, inv: avancarPagina } : { acao: function () { periodo(-1); }, inv: function () { periodo(1); } };
+        else if (d < 0) base = podeVoltar() ? { acao: voltarPagina, inv: avancarPagina } : (subirNivel() || { acao: function () { periodo(-1); }, inv: function () { periodo(1); } });
         else base = podeAvancar() ? { acao: avancarPagina, inv: voltarPagina } : { acao: function () { periodo(1); }, inv: function () { periodo(-1); } };
         /* uma página por vez (iPad em pé): passando da última página de um dia vai para a PRIMEIRA do dia seguinte; passando da primeira, volta para a ÚLTIMA do dia anterior (1 diário, 1 horas, 2 diário, 2 horas...) */
         if (modoPe() && ((d > 0 && pagCel === 'p2') || (d < 0 && pagCel === 'p1'))) {
