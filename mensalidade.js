@@ -3,7 +3,7 @@
 (function () {
   var P = window.portal, el = P.el;
     var CHAVE_PIX = '11970404508';
-    var LINK_RECORRENTE_NOVO = 'https://invoice.infinitepay.io/plans/cassiopereira_/TnbWjchMtJ'; /* valor atual, para quem entra agora; quem já tinha o link antigo leva o seu na ficha (painel) */
+    var LINK_RECORRENTE_NOVO = 'https://invoice.infinitepay.io/plans/cassiopereira_/rzZNYKptzk'; /* R$ 453, para quem entra agora; quem já tinha o link antigo leva o seu na ficha (painel) */
 
     function dinheiro(v) { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     function rotuloMensalidade(texto) { return el('p', { class: 'impresso', style: 'margin:0 0 4px;font-weight:700;color:var(--terracota,#A03E25);font-size:14px', text: texto }); }
