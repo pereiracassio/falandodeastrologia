@@ -198,7 +198,7 @@
         var linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:12px;margin-top:18px' }); /* as bolinhas valem para o item escolhido acima (a capa, um mês ou uma aba), sem rótulo */
         PALETA.concat([['papiro', 'Sem cor (papiro)']]).forEach(function (x) {
           var b = el('button', { type: 'button', title: x[1], 'aria-label': x[1] }), papiro = x[0] === 'papiro';
-          b.style.cssText = 'width:40px;height:40px;border-radius:50%;padding:0;border:3px solid transparent;background:' + (papiro ? 'var(--papiro-fundo-simples);outline:2px solid var(--azul-egipcio-escuro);outline-offset:-5px' : 'var(--' + x[0] + ')') + ';cursor:pointer';
+          b.style.cssText = 'width:40px;height:40px;border-radius:50%;padding:0;border:3px solid transparent;background:' + (papiro ? 'var(--papiro-capa);outline:2px solid var(--azul-egipcio-escuro);outline-offset:-5px' : 'var(--' + x[0] + ')') + ';cursor:pointer';
           if ((sel === 'capa' ? capa : (cores[sel] || 'papiro')) === x[0]) b.style.boxShadow = 'inset 0 0 0 4px var(--preto-tinta), inset 0 0 0 6px #FFFFFF';
           b.addEventListener('click', function () {
             if (sel === 'capa') { capa = x[0]; try { localStorage.setItem(CHAVE_CAPA, capa); } catch (e) { /* sem armazenamento */ } try { if (window.parent !== window && window.parent.fdaPintarCapa) window.parent.fdaPintarCapa(capa); } catch (e) { /* fora do caderno */ } desenhar(); return; }
