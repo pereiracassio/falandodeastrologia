@@ -1205,13 +1205,31 @@
       area.appendChild(ce);
       var lista = cortesDe(v.id);
       var msgC = el('p', { class: 'portal-msg' });
+      var botCapitulos = botao('Cortes dos capítulos', function () {
+        /* lê as linhas "00:00 Título" depois de "Capítulos" no texto do vídeo; Início e Conclusão não viram corte; título que já é um corte não se repete */
+        var achou = false, titulos = [];
+        String(texto.value || '').split('\n').forEach(function (ln) {
+          if (/^\s*cap[ií]tulos\s*$/i.test(ln)) { achou = true; return; }
+          var m = achou && ln.match(/^\s*(?:\d{1,2}:)?\d{1,2}:\d{2}\s+(.+?)\s*$/);
+          if (m && !/^(in[ií]cio|conclus[aã]o)$/i.test(m[1])) titulos.push(m[1]);
+        });
+        var jaTem = lista.map(function (c) { return String(c.titulo || '').trim().toLowerCase(); });
+        var faltam = titulos.filter(function (t, i) { var k = t.toLowerCase(); return jaTem.indexOf(k) < 0 && titulos.findIndex(function (x) { return x.toLowerCase() === k; }) === i; });
+        if (!faltam.length) { P.mensagem(msgC, titulos.length ? 'Todos os capítulos já têm corte.' : 'Não achei capítulos no texto do vídeo.', 'erro'); return; }
+        var ordem = lista.reduce(function (m, c) { return Math.max(m, c.ordem || 0); }, 0);
+        var linhas = faltam.map(function (t) { ordem++; return { video_id: v.id, ordem: ordem, titulo: t }; });
+        C.from('prod_cortes').insert(linhas).select('*').then(function (r) {
+          if (r.error) { P.mensagem(msgC, P.traduzErro(r.error.message), 'erro'); return; }
+          (r.data || []).forEach(function (c) { cortes.push(c); }); tela();
+        });
+      }, false);
       cc.appendChild(el('div', { class: 'prod-acoes-topo' }, [botao('+ corte', function () {
         var ordem = lista.reduce(function (m, c) { return Math.max(m, c.ordem || 0); }, 0) + 1;
         C.from('prod_cortes').insert({ video_id: v.id, ordem: ordem, titulo: 'Corte ' + ordem }).select('*').single().then(function (r) {
           if (r.error) { P.mensagem(msgC, P.traduzErro(r.error.message), 'erro'); return; }
           cortes.push(r.data); corteAberto = r.data.id; abaVideo = 'corte'; abaVideoDe = v.id; tela(); /* o corte novo abre sozinho para editar */
         });
-      }, false)]));
+      }, false), botCapitulos]));
       /* link do vídeo no Google Fotos: campo de link padrão do site (colado vira o ícone; tocar copia; "Editar" troca). Campo vazio salva como sem link */
       var caixaFotos = el('div', { style: 'margin:0 0 16px;display:flex;align-items:center;gap:14px' });
       var campoL = el('input', { type: 'url', 'data-link-abre': '1', placeholder: 'Colar o link do vídeo no Google Fotos', style: 'margin:0' });
