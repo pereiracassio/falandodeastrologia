@@ -68,7 +68,8 @@
     .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;position:relative;background:none;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important;filter:drop-shadow(0 0 .6px rgba(26,20,16,.6)) drop-shadow(0 -2px 2px rgba(26,20,16,.32))}
     .cad .aba::before{content:'';position:absolute;inset:0;background:var(--papiro-fundo-simples);z-index:-1} /* atrás do texto (o filtro da aba já cria o contexto: sem isto o texto escrito direto no botão sumia) */
     .cad .abas .aba+.aba{margin-top:-5px}
-    .cad .abas.dir .aba.peq,.cad .abas.dir .aba.peq+.aba{margin-top:0} /* as abinhas do fim (avisos, msg, configurações, hoje, +) não se sobrepõem: o texto delas ficava um em cima do outro */
+    .cad .abas.dir .aba.peq,.cad .abas.dir .aba.peq+.aba{margin-top:0}
+    .cad .abas.dir .aba.bloco-ini{margin-top:10px} /* pequeno espaço entre um bloco de abas e o outro */ /* as abinhas do fim (avisos, msg, configurações, hoje, +) não se sobrepõem: o texto delas ficava um em cima do outro */
     .cad .abas.esq .aba::before{clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 calc(100% - 12px),0 12px)}
     .cad .abas.dir .aba::before{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 14px) 100%,0 100%)}
     .cad .aba span{position:relative;z-index:1}
@@ -186,6 +187,7 @@
       .cad .abas.dir .aba+.aba{margin:0 0 0 -6px}
       .cad .abas.dir .aba span{writing-mode:horizontal-tb;transform:none}
       .cad .abas.dir .aba.aberta{margin:0 0 -6px}
+      .cad .abas.dir .aba.bloco-ini{margin-top:0;margin-left:8px} /* na fileira do celular o espaço entre os blocos é do lado */
       .cad .abas.dir .vao{display:none}
       .cad .abas.dir .aba.peq{min-width:56px;padding:0 8px} /* avisos, mensagens, configurações, hoje e + também no celular, no fim da fileira que rola */
       .cad .dobra{display:none}
@@ -488,6 +490,16 @@
     }
     window.fdaPintarAbas = pintarAbas; /* a janela de Configurações (dentro do caderno) chama isto ao escolher */
     window.addEventListener('storage', function (ev) { if (ev.key === CHAVE_ABAS) pintarAbas(); });
+    /* ORDEM DAS ABAS DO LADO (Configurações → Personalização): cada bloco anda inteiro; dentro dele as abas ficam fixas. Quem não tem categoria é um bloco de uma aba só. Guardada em site_config.daily_abas_ordem (vale em qualquer aparelho; cópia no aparelho para abrir já na ordem) */
+    var BLOCOS = { todo: ['todo'], agenda: ['dia', 'semana', 'mes', 'ano', 'lista'], diario: ['diario'], horas: ['horas'], projetos: ['projetos'], compras: ['compras'], estudos: ['estudos'], producao: ['producao'], financeiro: ['financeiro'], leitor: ['leitor'], pequenas: ['avisos', 'mensagens', 'config', 'hoje'] };
+    var ORDEM_PADRAO = ['todo', 'agenda', 'diario', 'horas', 'projetos', 'compras', 'estudos', 'producao', 'financeiro', 'leitor', 'pequenas'];
+    function ordemDeBlocos(v) { /* aceita só uma lista que tenha todos os blocos, sem repetir; senão volta ao padrão */
+      var l = Array.isArray(v) ? v : (typeof v === 'string' ? (function () { try { return JSON.parse(v); } catch (e) { return null; } })() : null);
+      if (!Array.isArray(l) || l.length !== ORDEM_PADRAO.length || ORDEM_PADRAO.some(function (b) { return l.indexOf(b) < 0; })) return ORDEM_PADRAO.slice();
+      return l.slice();
+    }
+    var ordemBlocos = (function () { try { return ordemDeBlocos(localStorage.getItem('fda_caderno_abas_ordem')); } catch (e) { return ORDEM_PADRAO.slice(); } })();
+    window.fdaOrdemAbas = function (o) { ordemBlocos = ordemDeBlocos(o); try { localStorage.setItem('fda_caderno_abas_ordem', JSON.stringify(ordemBlocos)); } catch (e) { /* sem armazenamento */ } montarMarcadores(); };
     function montarMarcadores() {
       var meses = document.getElementById('meses'); meses.textContent = '';
       MES3.forEach(function (m, i) {
@@ -495,18 +507,22 @@
         b.addEventListener('click', function () { if (visao === 'todo') { irParaMesTodo(i + 1); return; } var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; if (visao === 'ano') visao = 'mes'; if (visao === 'dia') ancora = a[0] + '-' + p2(i + 1) + '-' + p2(Math.min(+a[2], new Date(Date.UTC(+a[0], i + 1, 0)).getUTCDate())); irPara(visao); }); meses.appendChild(b);
       });
       var dir = document.getElementById('abasDir'); dir.textContent = '';
+      var botoes = {};
       ABAS.forEach(function (x) {
         var b = el('button', { type: 'button', class: 'aba botao-fixo', 'data-v': x[0] }, [el('span', { text: x[1] })]);
         b.addEventListener('click', function () { irPara(x[0]); });
-        dir.appendChild(b);
+        botoes[x[0]] = b;
       });
-      dir.appendChild(el('div', { class: 'vao' }));
-            [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '\u2699\uFE0E']].forEach(function (x) { /* \uFE0E = a engrenagem de TRAÇO (letra), nunca o emoji colorido do aparelho */
+      [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '\u2699\uFE0E']].forEach(function (x) { /* \uFE0E = a engrenagem de TRAÇO (letra), nunca o emoji colorido do aparelho */
         var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1], style: x[0] === 'config' ? 'font-size:1.5em;line-height:1;display:inline-block' : '' })]);
-        b.addEventListener('click', function () { irPara(x[0]); }); dir.appendChild(b);
+        b.addEventListener('click', function () { irPara(x[0]); }); botoes[x[0]] = b;
+      });
+      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': 'hoje' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ botoes.hoje = hj;
+      /* os blocos na ordem escolhida em Configurações; dentro de um bloco as abas ficam fixas, e entre os blocos há um pequeno espaço */
+      ordemBlocos.forEach(function (id, i) {
+        (BLOCOS[id] || []).forEach(function (k, j) { var b = botoes[k]; if (!b) return; if (i > 0 && j === 0) b.classList.add('bloco-ini'); dir.appendChild(b); });
       });
       contarAvisos();
-      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': 'hoje' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ dir.appendChild(hj);
       pintarAbas();
     }
     /* To do: a aba do mês leva ao mesmo dia daquele mês (cada página do To do é um dia; a folha mostra dois dias) */
@@ -1492,6 +1508,7 @@
       app.textContent = '';
       C.rpc('sou_admin').then(function (r) {
         if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
+        valorSite('daily_abas_ordem').then(function (v) { var n = ordemDeBlocos(v); if (v && JSON.stringify(n) !== JSON.stringify(ordemBlocos)) window.fdaOrdemAbas(n); }, function () { /* fica a ordem do aparelho */ });
         mostrar(); /* (o gesto de borda do navegador não é mais armado: o dedo vira a página por dentro do caderno, de qualquer lugar, e o histórico do navegador fica sem entradas falsas, que mostravam a tela de trás do iPhone) */
         valorSite('daily_visual').then(function (v) { P.guardarModoDaily(v); if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + (/^#v=(horas|todo)/.test(location.hash) ? location.hash.replace(/&d=.*/, '') : '')); });
       });

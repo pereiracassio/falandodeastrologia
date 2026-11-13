@@ -211,10 +211,44 @@
       desenhar(); cartao.appendChild(corpo);
       return cartao;
     }
+    /* ordem das abas do lado do caderno: cada BLOCO anda inteiro (a Agenda leva dia, semana, mês, ano e lista; as abinhas do fim levam avisos, msg, configurações e hoje) e dentro do bloco as abas ficam fixas.
+       Quem não tem categoria é um bloco de uma aba só. Guardada em site_config.daily_abas_ordem (vale em qualquer aparelho). Os blocos são os mesmos de BLOCOS em admin-caderno.html. */
+    function cartaoOrdemAbas() {
+      var PADRAO = ['todo', 'agenda', 'diario', 'horas', 'projetos', 'compras', 'estudos', 'producao', 'financeiro', 'leitor', 'pequenas'];
+      var NOMES = { todo: 'To do', agenda: 'Agenda (dia, semana, mês, ano e lista)', diario: 'Diário', horas: 'Horas', projetos: 'Projetos', compras: 'Compras', estudos: 'Estudos', producao: 'Produção', financeiro: 'Financeiro', leitor: 'Leitor', pequenas: 'Avisos, msg, configurações e hoje' };
+      var valida = function (l) { return Array.isArray(l) && l.length === PADRAO.length && PADRAO.every(function (b) { return l.indexOf(b) >= 0; }) ? l.slice() : PADRAO.slice(); };
+      var ordem = PADRAO.slice(); try { ordem = valida(JSON.parse(localStorage.getItem('fda_caderno_abas_ordem') || 'null')); } catch (e) { /* padrão */ }
+      var cx = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Ordem das abas' })]), lista = el('div'), msg = el('p', { class: 'portal-msg' });
+      cx.appendChild(lista); cx.appendChild(msg);
+      function desenhar() {
+        lista.textContent = '';
+        ordem.forEach(function (id, i) {
+          var sobe = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '↑', 'aria-label': 'Subir' }), desce = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '↓', 'aria-label': 'Descer' });
+          sobe.disabled = i === 0; desce.disabled = i === ordem.length - 1;
+          sobe.addEventListener('click', function () { mover(i, -1); }); desce.addEventListener('click', function () { mover(i, 1); });
+          lista.appendChild(el('div', { style: 'display:flex;align-items:center;gap:14px;padding:6px 0' }, [el('span', { class: 'portal-item-titulo', style: 'flex:1', text: NOMES[id] }), sobe, desce]));
+        });
+      }
+      function mover(i, d) {
+        var j = i + d; if (j < 0 || j >= ordem.length) return;
+        var x = ordem[i]; ordem[i] = ordem[j]; ordem[j] = x; desenhar();
+        try { localStorage.setItem('fda_caderno_abas_ordem', JSON.stringify(ordem)); } catch (e) { /* sem armazenamento */ }
+        try { if (window.parent !== window && window.parent.fdaOrdemAbas) window.parent.fdaOrdemAbas(ordem); } catch (e) { /* fora do caderno */ }
+        C.from('site_config').upsert({ chave: 'daily_abas_ordem', valor: JSON.stringify(ordem), atualizado_em: new Date().toISOString() }, { onConflict: 'chave' }).then(function (g) {
+          if (g.error) P.mensagem(msg, 'Não guardou (' + P.traduzErro(g.error.message) + ').', 'erro'); else P.mensagem(msg, '');
+        });
+      }
+      desenhar();
+      C.from('site_config').select('valor').eq('chave', 'daily_abas_ordem').maybeSingle().then(function (r) {
+        var v = null; try { v = r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { /* padrão */ }
+        if (v) { ordem = valida(v); desenhar(); }
+      }, function () { /* fica a do aparelho */ });
+      return cx;
+    }
     /* Personalização: tudo o que é aparência num cartão só (tema, visualização da agenda, cor da capa) */
     function cartaoPersonalizacao() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Personalização' })]);
-      [['tema', cartaoTema('daily')], ['visualização da agenda', cartaoVisaoAgenda()], ['cores', cartaoCoresAbas()], ['ordem do diário', window.hellenicPonte.cartaoOrdem()]].forEach(function (x, i) {
+      [['tema', cartaoTema('daily')], ['visualização da agenda', cartaoVisaoAgenda()], ['cores', cartaoCoresAbas()], ['ordem das abas', cartaoOrdemAbas()], ['ordem do diário', window.hellenicPonte.cartaoOrdem()]].forEach(function (x, i) {
         cartao.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:' + (i ? '18px' : '6px') + ' 0 2px', text: x[0] }));
         [].slice.call(x[1].children, 1).forEach(function (f) { cartao.appendChild(f); });
       });
