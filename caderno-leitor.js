@@ -190,7 +190,21 @@ window.LeitorCaderno = function (P) {
     var status = el('div', { text: 'Abrindo...' }); status.style.cssText = 'position:absolute;left:0;right:0;top:42%;text-align:center;font-size:16px;padding:0 20px'; o.dir.appendChild(status);
     var ZOOMS = [1, 1.3, 1.7, 2.2, 3];
     function marcarZoom() { var c = o.barra.closest && o.barra.closest('.cad'); if (c) c.classList.toggle('leitor-zoom', zoom > 1); } /* sem zoom, o dedo desliza em qualquer lugar da página para virar */
-    function zoomar(mais) { var i = ZOOMS.indexOf(zoom); i = Math.max(0, Math.min(ZOOMS.length - 1, i + (mais ? 1 : -1))); zoom = ZOOMS[i]; marcarZoom(); pvE.renderizar(); pvD.renderizar(); }
+    function zoomar(mais) { var i = 0; ZOOMS.forEach(function (z, k) { if (Math.abs(z - zoom) < Math.abs(ZOOMS[i] - zoom)) i = k; }); i = Math.max(0, Math.min(ZOOMS.length - 1, i + (mais ? 1 : -1))); zoom = ZOOMS[i]; marcarZoom(); pvE.renderizar(); pvD.renderizar(); }
+
+    /* zoom de PINÇA (dois dedos) nas duas páginas: enquanto os dedos se mexem a folha só cresce na tela, ao soltar o PDF e a tinta são redesenhados nítidos; com zoom, um dedo arrasta */
+    (function ligarPinca() {
+      var d0 = 0, z0 = 1, vivo = false, fator = 1;
+      function dist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+      function alvo(f) { [o.esq, o.dir].forEach(function (h) { var j = h.querySelector('.lp'); if (j) { j.style.transformOrigin = '50% 50%'; j.style.transform = f === 1 ? '' : 'scale(' + f + ')'; } }); }
+      function ini(e) { if (e.touches.length === 2) { vivo = true; d0 = dist(e.touches); z0 = zoom; fator = 1; e.preventDefault(); } }
+      function mov(e) { if (!vivo || e.touches.length < 2) return; e.preventDefault(); fator = Math.max(1 / z0, Math.min(4 / z0, dist(e.touches) / d0)); alvo(fator); }
+      function fim(e) {
+        if (!vivo || e.touches.length >= 2) return; vivo = false; var z = Math.max(1, Math.min(4, z0 * fator)); alvo(1);
+        if (Math.abs(z - zoom) < 0.02) return; zoom = z < 1.05 ? 1 : z; marcarZoom(); pvE.renderizar(); pvD.renderizar();
+      }
+      [o.esq, o.dir].forEach(function (h) { h.addEventListener('touchstart', ini, { passive: false }); h.addEventListener('touchmove', mov, { passive: false }); h.addEventListener('touchend', fim); h.addEventListener('touchcancel', fim); });
+    })();
     function mostrarSpread() {
       var e = esqNum(s), d = dirNum(s); zoom = 1; marcarZoom(); status.style.display = 'none';
       campo.value = String(e || d || 1); marcar(bAnt, false);
