@@ -435,12 +435,13 @@
     }
 
     /* ---------- capa ---------- */
-    window.fdaPintarCapa = function (c) { if (CAPAS.some(function (x) { return x[0] === c; })) pintarCapa(c); }; /* a janela de Configurações (dentro do caderno) chama isto ao escolher a cor */
-    window.addEventListener('storage', function (ev) { if (ev.key === 'fda_caderno_capa' && ev.newValue && CAPAS.some(function (x) { return x[0] === ev.newValue; }) && ev.newValue !== capa) pintarCapa(ev.newValue); }); /* a cor escolhida em Configurações (janela de dentro) vale na hora */
+    var capaValida = function (c) { return !!c && (c === 'papiro' || /^[0-9a-f]{6}$/i.test(c) || CORES_ABAS.indexOf(c) >= 0); }; /* hex antigo, 'papiro' ou o NOME de uma cor do tema (muda junto com o tema) */
+    window.fdaPintarCapa = function (c) { if (capaValida(c)) pintarCapa(c); }; /* a janela de Configurações (dentro do caderno) chama isto ao escolher a cor */
+    window.addEventListener('storage', function (ev) { if (ev.key === 'fda_caderno_capa' && capaValida(ev.newValue) && ev.newValue !== capa) pintarCapa(ev.newValue); }); /* a cor escolhida em Configurações (janela de dentro) vale na hora */
     function pintarCapa(c) {
       capa = c;
       var papiro = c === 'papiro';
-      cad.style.setProperty('--capa', papiro ? 'var(--papiro-capa)' : '#' + c); /* a capa não muda com o tema: só as páginas */
+      cad.style.setProperty('--capa', papiro ? 'var(--papiro-capa)' : /^[0-9a-f]{6}$/i.test(c) ? '#' + c : 'var(--' + c + ')'); /* cor da paleta do tema: muda junto com o tema; hex antigo continua como era */
       cad.style.setProperty('--capa-fio', papiro ? '#1034A6' : '#e6d3a0');
       try { localStorage.setItem('fda_caderno_capa', c); } catch (e) { /* só cache de exibição */ }
     }
@@ -1454,7 +1455,7 @@
         valorSite('daily_visual').then(function (v) { P.guardarModoDaily(v); if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + (/^#v=(horas|todo)/.test(location.hash) ? location.hash.replace(/&d=.*/, '') : '')); });
       });
     }
-    try { var guardada = localStorage.getItem('fda_caderno_capa'); if (guardada && CAPAS.some(function (x) { return x[0] === guardada; })) capa = guardada; } catch (e) { /* sem armazenamento */ }
+    try { var guardada = localStorage.getItem('fda_caderno_capa'); if (capaValida(guardada)) capa = guardada; } catch (e) { /* sem armazenamento */ }
     pintarCapa(capa);
     ancora = isoDia(Date.now());
     var hojeVisto = ancora;

@@ -164,27 +164,6 @@
       return cartao;
     }
 
-    function cartaoCapa() {
-      var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cor da capa' })]), linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:12px;margin:8px 0' }), atual = 'A03E25';
-      function desenhar() {
-        linha.textContent = '';
-        CAPAS.forEach(function (x) {
-          var b = el('button', { type: 'button', title: x[1], 'aria-label': x[1] });
-          b.style.cssText = 'width:40px;height:40px;border-radius:50%;padding:0;border:3px solid ' + 'transparent;background:' + (x[0] === 'papiro' ? 'var(--papiro-fundo-simples);outline:2px solid #1034A6;outline-offset:-5px' : '#' + x[0]);
-          if (x[0] === atual) { var n = x[0] === 'papiro' ? 255 * 65793 : parseInt(x[0], 16), lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255); b.style.boxShadow = 'inset 0 0 0 4px ' + (lum > 140 ? '#1A1410' : '#FFFDF5'); } /* o anel de marcação é claro sobre cor escura e escuro sobre cor clara */
-          b.addEventListener('click', function () {
-            atual = x[0]; desenhar();
-            try { localStorage.setItem('fda_caderno_capa', atual); } catch (e) { /* o caderno aberto na outra janela troca a capa na hora */ }
-            try { if (window.parent !== window && window.parent.fdaPintarCapa) window.parent.fdaPintarCapa(atual); } catch (e) { /* fora do caderno */ }
-          });
-          linha.appendChild(b);
-        });
-      }
-      desenhar(); cartao.appendChild(linha);
-      try { var guardada = localStorage.getItem('fda_caderno_capa'); if (guardada && CAPAS.some(function (x) { return x[0] === guardada; })) { atual = guardada; desenhar(); } } catch (e) { /* padrão */ } /* a cor da capa é do APARELHO, não da conta */
-      return cartao;
-    }
     /* cor de cada aba do caderno (meses e as do outro lado): a paleta é a do TEMA (as cores são nomes de variável, então mudam junto com o tema). Guardada no aparelho, como a cor da capa.
        A lista de abas é a mesma do caderno (ABAS em admin-caderno.html): aba nova lá = entrada nova aqui. */
     function cartaoCoresAbas() {
@@ -192,15 +171,17 @@
       var PALETA = [['azul-egipcio-escuro', 'Azul egípcio'], ['azul-egipcio-claro', 'Azul egípcio claro (água)'], ['preto-tinta', 'Preto de tinta'], ['ocre', 'Ocre'], ['terracota', 'Terracota'], ['laranja', 'Laranja (fogo)'], ['marrom', 'Marrom (terra)'], ['cinza', 'Cinza (ar)'], ['verde', 'Verde'], ['violeta', 'Violeta (níveis)']]; /* as cores do tema para pintar (temas.css), na mesma ordem; o creme do fundo não entra: o "sem cor" já é o creme */
       var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
       var ABAS = [['todo', 'To do'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['diario', 'Diário'], ['horas', 'Horas'], ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor'], ['avisos', 'Avisos'], ['mensagens', 'Mensagens'], ['config', 'Configurações'], ['hoje', 'Hoje']]; /* a mesma lista do caderno, com as abinhas do fim */
-      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cor das abas' })]), corpo = el('div'), sel = 'm1', cores = {};
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cores' })]), corpo = el('div'), sel = 'm1', cores = {}, CHAVE_CAPA = 'fda_caderno_capa', capa = 'A03E25';
+      try { capa = localStorage.getItem(CHAVE_CAPA) || 'A03E25'; } catch (e) { /* padrão */ }
+      var corCapaCss = function () { return capa === 'papiro' ? '' : /^[0-9a-f]{6}$/i.test(capa) ? '#' + capa : 'var(--' + capa + ')'; };
       try { cores = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch (e) { cores = {}; }
       function guardar() {
         try { localStorage.setItem(CHAVE, JSON.stringify(cores)); } catch (e) { /* sem armazenamento */ }
         try { if (window.parent !== window && window.parent.fdaPintarAbas) window.parent.fdaPintarAbas(); } catch (e) { /* fora do caderno */ }
       }
       function chip(chave, nome) {
-        var c = cores[chave], b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: nome });
-        b.style.cssText = 'padding:4px 6px;margin:0;border-bottom:4px solid ' + (c ? 'var(--' + c + ')' : 'transparent') + '!important';
+        var c = cores[chave], b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: nome }), corTraco = chave === 'capa' ? (corCapaCss() || 'transparent') : (c ? 'var(--' + c + ')' : 'transparent');
+        b.style.cssText = 'padding:4px 6px;margin:0;border-bottom:4px solid ' + corTraco + '!important';
         if (chave === sel) b.style.setProperty('color', 'var(--terracota)', 'important');
         b.addEventListener('click', function () { sel = chave; desenhar(); });
         return b;
@@ -211,16 +192,18 @@
       }
       function desenhar() {
         corpo.textContent = '';
+        corpo.appendChild(el('div', { style: 'display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:6px' }, [chip('capa', 'Capa')]));
         grupo('meses', MESES.map(function (m, i) { return ['m' + (i + 1), m]; }));
         grupo('do outro lado', ABAS.map(function (x) { return ['v:' + x[0], x[1]]; }));
-        var nome = sel.charAt(0) === 'm' ? MESES[+sel.slice(1) - 1] : (ABAS.filter(function (x) { return 'v:' + x[0] === sel; })[0] || [0, ''])[1];
-        corpo.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:18px 0 6px', text: 'cor de ' + nome }));
-        var linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:12px' });
+        var linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:12px;margin-top:18px' }); /* as bolinhas valem para o item escolhido acima (a capa, um mês ou uma aba), sem rótulo */
         PALETA.concat([['papiro', 'Sem cor (papiro)']]).forEach(function (x) {
           var b = el('button', { type: 'button', title: x[1], 'aria-label': x[1] }), papiro = x[0] === 'papiro';
           b.style.cssText = 'width:40px;height:40px;border-radius:50%;padding:0;border:3px solid transparent;background:' + (papiro ? 'var(--papiro-fundo-simples);outline:2px solid var(--azul-egipcio-escuro);outline-offset:-5px' : 'var(--' + x[0] + ')') + ';cursor:pointer';
-          if ((cores[sel] || 'papiro') === x[0]) b.style.boxShadow = 'inset 0 0 0 4px var(--preto-tinta), inset 0 0 0 6px #FFFFFF';
-          b.addEventListener('click', function () { if (papiro) delete cores[sel]; else cores[sel] = x[0]; guardar(); desenhar(); });
+          if ((sel === 'capa' ? capa : (cores[sel] || 'papiro')) === x[0]) b.style.boxShadow = 'inset 0 0 0 4px var(--preto-tinta), inset 0 0 0 6px #FFFFFF';
+          b.addEventListener('click', function () {
+            if (sel === 'capa') { capa = x[0]; try { localStorage.setItem(CHAVE_CAPA, capa); } catch (e) { /* sem armazenamento */ } try { if (window.parent !== window && window.parent.fdaPintarCapa) window.parent.fdaPintarCapa(capa); } catch (e) { /* fora do caderno */ } desenhar(); return; }
+            if (papiro) delete cores[sel]; else cores[sel] = x[0]; guardar(); desenhar();
+          });
           linha.appendChild(b);
         });
         corpo.appendChild(linha);
@@ -231,7 +214,7 @@
     /* Personalização: tudo o que é aparência num cartão só (tema, visualização da agenda, cor da capa) */
     function cartaoPersonalizacao() {
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Personalização' })]);
-      [['tema', cartaoTema('daily')], ['visualização da agenda', cartaoVisaoAgenda()], ['cor da capa', cartaoCapa()], ['cor das abas', cartaoCoresAbas()], ['ordem do diário', window.hellenicPonte.cartaoOrdem()]].forEach(function (x, i) {
+      [['tema', cartaoTema('daily')], ['visualização da agenda', cartaoVisaoAgenda()], ['cores', cartaoCoresAbas()], ['ordem do diário', window.hellenicPonte.cartaoOrdem()]].forEach(function (x, i) {
         cartao.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:' + (i ? '18px' : '6px') + ' 0 2px', text: x[0] }));
         [].slice.call(x[1].children, 1).forEach(function (f) { cartao.appendChild(f); });
       });
