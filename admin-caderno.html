@@ -505,7 +505,7 @@
         b.addEventListener('click', function () { irPara(x[0]); }); dir.appendChild(b);
       });
       contarAvisos();
-      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); desenhar(); }); dir.appendChild(hj);
+      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ dir.appendChild(hj);
       var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); }); dir.appendChild(mais);
       pintarAbas();
     }
@@ -654,13 +654,18 @@
       folhaPequena(function (caixa, fechar) {
         caixa.appendChild(el('h2', { text: 'Nova tarefa' }));
         var campo = el('input', { type: 'text', placeholder: 'O que fazer', 'aria-label': 'O que fazer' }), msg = el('p', { class: 'portal-msg' });
+        /* o dia da tarefa começa no dia da folha que está aberta (no To do, o dia que aparece à esquerda; nas outras, o dia do caderno) e pode ser trocado */
+        var diaFolha = visao === 'todo' ? somaDias(isoDia(Date.now()), 2 * (espTodo || 0)) : ancora;
+        var dia = el('input', { type: 'date', 'aria-label': 'Dia' }); dia.value = diaFolha;
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () {
-          var t = campo.value.trim(); if (!t) return; ok.disabled = true;
-          C.from('todo_tarefas').insert({ titulo: t, data: ancora }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); if (visao === 'todo') recarregarTodo(); });
+          var t = campo.value.trim(); if (!t) return; var d = /^\d{4}-\d{2}-\d{2}$/.test(dia.value) ? dia.value : diaFolha; ok.disabled = true;
+          C.from('todo_tarefas').insert({ titulo: t, data: d }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); if (visao === 'todo') recarregarTodo(); });
         });
         nao.addEventListener('click', fechar);
-        caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
+        caixa.appendChild(campo);
+        caixa.appendChild(P.colunaData ? el('div', { style: 'margin-top:12px' }, [P.colunaData(dia, 'Dia')]) : el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Dia' }), dia]));
+        caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
         setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
       });
     }
