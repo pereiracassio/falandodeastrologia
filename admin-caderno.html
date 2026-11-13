@@ -725,12 +725,12 @@
        Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
     var hist = [], hpos = -1, aplicando = false;
     function snapshot() { return { visao: visao, ancora: ancora, projSel: projSel, projVer: projVer, estSel: estSel, estVer: estVer, estAula: estAula, prodSerie: prodSerie, prodVideo: prodVideo, prodCorte: prodCorte, leitorCam: leitorCam.slice(), leitorLivro: leitorLivro, embed: urlForcada }; }
-    function empurrar(cruza) { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (cruza) sn.cruza = true; /* esta entrada veio de OUTRA aba (ex.: um item do To do): voltar daqui leva de volta para lá */ if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } atualizarVoltar(); gravarHash(); }
+    function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } atualizarVoltar(); gravarHash(); }
     var viradaAuto = function () { return false; }; /* definida mais abaixo: a virada de folha com o efeito (foto da folha de antes dobrando sobre a nova) */
     function virar(sentido) { if (viradaAuto(sentido)) return; var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
     function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
-    function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && (hist[hpos - 1].visao === visao || !!hist[hpos].cruza); } /* o histórico é de dentro da aba; a única saída é para a aba de onde se veio (a entrada marcada com cruza) */
-    function podeAvancar() { return hpos < hist.length - 1 && !!hist[hpos + 1] && (hist[hpos + 1].visao === visao || !!hist[hpos + 1].cruza); }
+    function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && hist[hpos - 1].visao === visao; } /* o histórico é de dentro da aba: nunca volta para outra aba */
+    function podeAvancar() { return hpos < hist.length - 1 && !!hist[hpos + 1] && hist[hpos + 1].visao === visao; }
     function atualizarVoltar() { var b = document.getElementById('voltarTab'); if (b) b.hidden = true; } /* no caderno volta-se com o DEDO (virar a página): o botão ← voltar do topinho não aparece em lugar nenhum */
     function voltarPagina() { if (!podeVoltar()) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (!podeAvancar()) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
@@ -960,24 +960,24 @@
     function abrirTela(url) { /* tocar num item do To do ENTRA no lugar dele, virando a página (as duas páginas do caderno), nunca numa tela inteira */
       var m = /admin-(projetos|estudos|producao|financeiro)\.html(?:#(.*))?$/.exec(url || '');
       if (!m) { if (url) location.href = url; return; }
-      var q = new URLSearchParams(m[2] || ''), aba = m[1], deOutra = visao !== aba;
-      /* o lugar dele fica com TODOS os níveis de cima no histórico (primeira página da aba, série, vídeo...): voltar a página sobe um nível de cada vez, e do primeiro nível volta para a aba de onde se veio */
-      var passo = function (fn, cruza) { fn(); visao = aba; empurrar(cruza); };
+      var q = new URLSearchParams(m[2] || ''), aba = m[1];
+      /* o lugar dele fica com TODOS os níveis de cima no histórico (primeira página da aba, série, vídeo...): voltar a página sobe um nível de cada vez, até o início DAQUELA aba (para voltar à aba de antes, toca-se nela) */
+      var passo = function (fn) { fn(); visao = aba; empurrar(); };
       if (aba === 'producao') {
         var S = q.get('serie') || null, V = q.get('video') || null, Cc = V ? (q.get('corte') || null) : null;
         if (V) {
-          passo(function () { prodSerie = null; prodVideo = null; prodCorte = null; }, deOutra);
+          passo(function () { prodSerie = null; prodVideo = null; prodCorte = null; });
           if (S) passo(function () { prodSerie = S; prodVideo = null; prodCorte = null; });
           if (Cc) passo(function () { prodSerie = S; prodVideo = V; prodCorte = null; });
         }
         prodSerie = S; prodVideo = V; prodCorte = Cc;
       } else if (aba === 'projetos') {
         var Pj = q.get('projeto') || null;
-        if (Pj) passo(function () { projSel = null; projVer = null; }, deOutra);
+        if (Pj) passo(function () { projSel = null; projVer = null; });
         projSel = Pj; projVer = null;
       } else if (aba === 'estudos') {
         var E = q.get('estudo') || null, Au = q.get('aula') || null;
-        if (E) { passo(function () { estSel = null; estVer = null; estAula = null; }, deOutra); if (Au) passo(function () { estSel = E; estVer = null; estAula = null; }); }
+        if (E) { passo(function () { estSel = null; estVer = null; estAula = null; }); if (Au) passo(function () { estSel = E; estVer = null; estAula = null; }); }
         estSel = E; estVer = null; estAula = Au;
       }
       irPara(aba); if (aba === 'producao' && prodVideo) paginaCel(prodCorte ? 'p2' : 'p1');
