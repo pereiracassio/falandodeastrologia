@@ -1126,13 +1126,15 @@
       /* a foto vai para o servidor e fica guardada assim que é escolhida (sem botão Salvar) */
       function enviarCapaAgora() {
         if (!capaNova) return;
-        var blob = capaNova, caminho = 'blog-' + Date.now() + '.jpg';
+        var blob = capaNova, caminho = 'blog-' + Date.now() + '.jpg', tinhaCapa = !!v.capa_url;
         P.mensagem(msg, 'Enviando a foto...');
         C.storage.from('site').upload(caminho, blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
           if (r.error) throw r.error;
           capaUrl = C.storage.from('site').getPublicUrl(caminho).data.publicUrl; if (capaNova === blob) capaNova = null;
           mostrarCapa();
-          return gravar('prod_videos', videos, v, { capa_url: capaUrl }).then(function (x) { pintarEtapas(v); return x; });
+          var camposCapa = { capa_url: capaUrl };
+          if (!tinhaCapa) { var hoje = iso(new Date()), dc = Object.assign({}, v.datas_etapas); dc.capa = hoje; camposCapa.datas_etapas = dc; dataDaEtapaNaTela('[data-video="' + v.id + '"][data-etapa="capa"]', hoje); } /* a capa ficou pronta: a data da etapa passa a ser hoje */
+          return gravar('prod_videos', videos, v, camposCapa).then(function (x) { pintarEtapas(v); return x; });
         }).then(function (r) { if (r && !r.error) { P.mensagem(msg, 'Foto salva.', 'ok'); avisoFlutuante('Salvo'); marcarSeoSePronto(); } })
           .catch(function (e) { P.mensagem(msg, 'Não consegui enviar a foto (' + (e && e.message ? e.message : 'erro') + ')', 'erro'); });
       }
@@ -1144,6 +1146,7 @@
         faltaSeoLinha.textContent = v.seo_ok || !faltando.length ? '' : 'Falta para o SEO: ' + faltando.join(', ');
         if (v.seo_ok || faltando.length) return;
         var campos = { seo_ok: true, numero: vf.numero, data_postar: vf.data_postar, capa_url: vf.capa_url };
+        var hojeSeo = iso(new Date()), dSeo = Object.assign({}, v.datas_etapas); dSeo.seo_ok = hojeSeo; campos.datas_etapas = dSeo; dataDaEtapaNaTela('[data-video="' + v.id + '"][data-etapa="seo_ok"]', hojeSeo); /* o SEO se marcou sozinho: a data da etapa passa a ser hoje */
         gravar('prod_videos', videos, v, campos).then(function (r) { if (r && !r.error) { pintarEtapas(v); avisoFlutuante('Marcado: SEO'); } });
       }
       marcarSeoSePronto();
