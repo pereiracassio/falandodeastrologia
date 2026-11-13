@@ -1492,7 +1492,7 @@
       app.textContent = '';
       C.rpc('sou_admin').then(function (r) {
         if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
-        mostrar(); armarGestoDeBorda();
+        mostrar(); /* (o gesto de borda do navegador não é mais armado: o dedo vira a página por dentro do caderno, de qualquer lugar, e o histórico do navegador fica sem entradas falsas, que mostravam a tela de trás do iPhone) */
         valorSite('daily_visual').then(function (v) { P.guardarModoDaily(v); if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + (/^#v=(horas|todo)/.test(location.hash) ? location.hash.replace(/&d=.*/, '') : '')); });
       });
     }
@@ -1531,19 +1531,6 @@
       var borda = modoPe() && ((d > 0 && pagCel === 'p2') || (d < 0 && pagCel === 'p1')), h0 = borda ? cad.querySelector('.folha').innerHTML : '';
       if (d < 0) { var sn = null; if (!voltarPagina()) { sn = subirNivel(); if (sn) { sn.acao(); virar('tras'); } else periodo(-1); } } else { if (!avancarPagina()) periodo(1); }
       if (borda && cad.querySelector('.folha').innerHTML !== h0) paginaCel(d > 0 ? 'p1' : 'p2'); /* uma página por vez: o dia seguinte abre na primeira página, o anterior na última */
-    }
-    /* O gesto de borda do iPhone (voltar/avançar do navegador) vira o MESMO gesto do caderno: o histórico fica sempre [volta, aqui, avança] e cada gesto de borda
-       é lido como "voltar a página" ou "avançar a página", depois o histórico volta ao meio. Assim o app nunca sai para a tela de antes. */
-    function armarGestoDeBorda() {
-      try {
-        var u = location.href;
-        history.replaceState({ fda: 'prev' }, '', u); history.pushState({ fda: 'cur' }, '', u); history.pushState({ fda: 'next' }, '', u); history.go(-1);
-        window.addEventListener('popstate', function (e) {
-          var st = e.state && e.state.fda;
-          if (st === 'prev') { virarPeloDedo(-1); history.go(1); }
-          else if (st === 'next') { virarPeloDedo(1); history.go(-1); }
-        });
-      } catch (er) { /* sem histórico */ }
     }
     /* A VIRADA DE FOLHA, EM QUALQUER LUGAR E EM QUALQUER POSIÇÃO DO APARELHO.
        Funciona com duas fotos da folha: a de ANTES (tirada quando o dedo encosta) e a de DEPOIS (tirada quando a tela já mudou). A de antes dobra numa linha reta e a parte dobrada
