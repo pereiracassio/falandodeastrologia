@@ -211,12 +211,11 @@
       desenhar(); cartao.appendChild(corpo);
       return cartao;
     }
-    /* ordem das abas do lado do caderno: cada BLOCO anda inteiro (a Agenda leva dia, semana, mês, ano e lista; as abinhas do fim levam avisos, msg, configurações e hoje) e dentro do bloco as abas ficam fixas.
-       Quem não tem categoria é um bloco de uma aba só. Guardada em site_config.daily_abas_ordem (vale em qualquer aparelho). Os blocos são os mesmos de BLOCOS em admin-caderno.html. */
+    /* ordem das abas do lado do caderno: só a Agenda é um bloco que anda inteiro (leva dia, semana, mês, ano e lista, nessa ordem fixa); todas as outras abas andam sozinhas. Guardada em site_config.daily_abas_ordem (vale em qualquer aparelho). Os blocos são os mesmos de BLOCOS em admin-caderno.html. */
     function cartaoOrdemAbas() {
-      var PADRAO = ['todo', 'agenda', 'diario', 'horas', 'projetos', 'compras', 'estudos', 'producao', 'financeiro', 'leitor', 'pequenas'];
-      var NOMES = { todo: 'To do', agenda: 'Agenda (dia, semana, mês, ano e lista)', diario: 'Diário', horas: 'Horas', projetos: 'Projetos', compras: 'Compras', estudos: 'Estudos', producao: 'Produção', financeiro: 'Financeiro', leitor: 'Leitor', pequenas: 'Avisos, msg, configurações e hoje' };
-      var valida = function (l) { return Array.isArray(l) && l.length === PADRAO.length && PADRAO.every(function (b) { return l.indexOf(b) >= 0; }) ? l.slice() : PADRAO.slice(); };
+      var PADRAO = ['todo', 'agenda', 'diario', 'horas', 'projetos', 'compras', 'estudos', 'producao', 'financeiro', 'leitor', 'avisos', 'mensagens', 'config', 'hoje'];
+      var NOMES = { todo: 'To do', agenda: 'Agenda (dia, semana, mês, ano e lista)', diario: 'Diário', horas: 'Horas', projetos: 'Projetos', compras: 'Compras', estudos: 'Estudos', producao: 'Produção', financeiro: 'Financeiro', leitor: 'Leitor', avisos: 'Avisos', mensagens: 'Mensagens', config: 'Configurações', hoje: 'Hoje' };
+      var valida = function (l) { if (Array.isArray(l) && l.indexOf('pequenas') >= 0) { var n = []; l.forEach(function (x) { if (x === 'pequenas') n.push('avisos', 'mensagens', 'config', 'hoje'); else n.push(x); }); l = n; } return Array.isArray(l) && l.length === PADRAO.length && PADRAO.every(function (b) { return l.indexOf(b) >= 0; }) ? l.slice() : PADRAO.slice(); };
       var ordem = PADRAO.slice(); try { ordem = valida(JSON.parse(localStorage.getItem('fda_caderno_abas_ordem') || 'null')); } catch (e) { /* padrão */ }
       var cx = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Ordem das abas' })]), lista = el('div'), msg = el('p', { class: 'portal-msg' });
       cx.appendChild(lista); cx.appendChild(msg);

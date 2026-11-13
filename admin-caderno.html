@@ -485,10 +485,11 @@
     window.fdaPintarAbas = pintarAbas; /* a janela de Configurações (dentro do caderno) chama isto ao escolher */
     window.addEventListener('storage', function (ev) { if (ev.key === CHAVE_ABAS) pintarAbas(); });
     /* ORDEM DAS ABAS DO LADO (Configurações → Personalização): cada bloco anda inteiro; dentro dele as abas ficam fixas. Quem não tem categoria é um bloco de uma aba só. Guardada em site_config.daily_abas_ordem (vale em qualquer aparelho; cópia no aparelho para abrir já na ordem) */
-    var BLOCOS = { todo: ['todo'], agenda: ['dia', 'semana', 'mes', 'ano', 'lista'], diario: ['diario'], horas: ['horas'], projetos: ['projetos'], compras: ['compras'], estudos: ['estudos'], producao: ['producao'], financeiro: ['financeiro'], leitor: ['leitor'], pequenas: ['avisos', 'mensagens', 'config', 'hoje'] };
-    var ORDEM_PADRAO = ['todo', 'agenda', 'diario', 'horas', 'projetos', 'compras', 'estudos', 'producao', 'financeiro', 'leitor', 'pequenas'];
-    function ordemDeBlocos(v) { /* aceita só uma lista que tenha todos os blocos, sem repetir; senão volta ao padrão */
+    var BLOCOS = { todo: ['todo'], agenda: ['dia', 'semana', 'mes', 'ano', 'lista'], diario: ['diario'], horas: ['horas'], projetos: ['projetos'], compras: ['compras'], estudos: ['estudos'], producao: ['producao'], financeiro: ['financeiro'], leitor: ['leitor'], avisos: ['avisos'], mensagens: ['mensagens'], config: ['config'], hoje: ['hoje'] }; /* só a Agenda é um bloco fixo; todas as outras andam sozinhas */
+    var ORDEM_PADRAO = ['todo', 'agenda', 'diario', 'horas', 'projetos', 'compras', 'estudos', 'producao', 'financeiro', 'leitor', 'avisos', 'mensagens', 'config', 'hoje'];
+    function ordemDeBlocos(v) { /* aceita só uma lista que tenha todos os itens, sem repetir; senão volta ao padrão. A ordem antiga (com o bloco "pequenas") vira as quatro abas no mesmo lugar */
       var l = Array.isArray(v) ? v : (typeof v === 'string' ? (function () { try { return JSON.parse(v); } catch (e) { return null; } })() : null);
+      if (Array.isArray(l) && l.indexOf('pequenas') >= 0) { var n = []; l.forEach(function (x) { if (x === 'pequenas') n.push('avisos', 'mensagens', 'config', 'hoje'); else n.push(x); }); l = n; }
       if (!Array.isArray(l) || l.length !== ORDEM_PADRAO.length || ORDEM_PADRAO.some(function (b) { return l.indexOf(b) < 0; })) return ORDEM_PADRAO.slice();
       return l.slice();
     }
