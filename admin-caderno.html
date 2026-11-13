@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="temas.css?v=6">
+  <link rel="stylesheet" href="temas.css?v=7">
   <script src="moldura.js?v=20261109a"></script>
   <link rel="stylesheet" href="papiro.css?v=6">
   <link rel="stylesheet" href="home.css?v=21">
@@ -474,7 +474,7 @@
 
     /* ---------- a folha ---------- */
     /* cor de cada aba (meses 'm1'..'m12' e as do outro lado 'v:<aba>'), guardada no aparelho como a cor da capa; o valor é o NOME da cor do tema, então muda junto com o tema */
-    var CHAVE_ABAS = 'fda_caderno_abas_cores', CORES_ABAS = ['azul-egipcio-escuro', 'azul-egipcio-claro', 'preto-tinta', 'ocre', 'terracota', 'laranja', 'marrom', 'cinza', 'verde', 'fundo-creme']; /* a paleta inteira do tema (temas.css) */
+    var CHAVE_ABAS = 'fda_caderno_abas_cores', CORES_ABAS = ['azul-egipcio-escuro', 'azul-egipcio-claro', 'preto-tinta', 'ocre', 'terracota', 'laranja', 'marrom', 'cinza', 'verde', 'violeta']; /* as cores do tema (temas.css) */
     function pintarAbas() {
       var m = {}; try { m = JSON.parse(localStorage.getItem(CHAVE_ABAS) || '{}') || {}; } catch (e) { /* sem cor guardada */ }
       var poe = function (b, chave) {

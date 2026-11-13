@@ -41,7 +41,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="temas.css?v=6">
+  <link rel="stylesheet" href="temas.css?v=7">
   <script src="moldura.js?v=20261109a"></script>
   <link rel="stylesheet" href="papiro.css?v=5">
   <link rel="stylesheet" href="home.css?v=21">
@@ -189,7 +189,7 @@
        A lista de abas é a mesma do caderno (ABAS em admin-caderno.html): aba nova lá = entrada nova aqui. */
     function cartaoCoresAbas() {
       var CHAVE = 'fda_caderno_abas_cores';
-      var PALETA = [['azul-egipcio-escuro', 'Azul egípcio'], ['azul-egipcio-claro', 'Azul egípcio claro (água)'], ['preto-tinta', 'Preto de tinta'], ['ocre', 'Ocre'], ['terracota', 'Terracota'], ['laranja', 'Laranja (fogo)'], ['marrom', 'Marrom (terra)'], ['cinza', 'Cinza (ar)'], ['verde', 'Verde']]; /* as cores do tema para pintar (temas.css), na mesma ordem; o creme do fundo não entra: o "sem cor" já é o creme */
+      var PALETA = [['azul-egipcio-escuro', 'Azul egípcio'], ['azul-egipcio-claro', 'Azul egípcio claro (água)'], ['preto-tinta', 'Preto de tinta'], ['ocre', 'Ocre'], ['terracota', 'Terracota'], ['laranja', 'Laranja (fogo)'], ['marrom', 'Marrom (terra)'], ['cinza', 'Cinza (ar)'], ['verde', 'Verde'], ['violeta', 'Violeta (níveis)']]; /* as cores do tema para pintar (temas.css), na mesma ordem; o creme do fundo não entra: o "sem cor" já é o creme */
       var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
       var ABAS = [['todo', 'To do'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['diario', 'Diário'], ['horas', 'Horas'], ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor'], ['avisos', 'Avisos'], ['mensagens', 'Mensagens'], ['config', 'Configurações'], ['hoje', 'Hoje']]; /* a mesma lista do caderno, com as abinhas do fim */
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Cor das abas' })]), corpo = el('div'), sel = 'm1', cores = {};
