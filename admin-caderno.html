@@ -1583,16 +1583,14 @@
         montar(antes, depois, sentido); animar(1, 380);
         return true;
       };
-      /* foto de antes: quando o dedo (ou o mouse) encosta */
-      cad.addEventListener('pointerdown', function (ev) {
-        if (ev.pointerType === 'pen' || !vale() || st) return;
+      /* foto de antes dos TOQUES (abas, setas, itens): tirada no clique, antes de a tela mudar. Rolar ou começar um gesto não tira foto nenhuma (a tela de estudo é pesada e o primeiro toque travava) */
+      cad.addEventListener('click', function (ev) {
+        if (!vale() || manual || st) return;
         if (ev.target.closest && ev.target.closest('canvas,.cad-fundo')) return;
         if (ativa) limpar();
         imgAntes = foto(); imgT = Date.now();
-      }, true);
-      /* setas ‹ › (dia, mês, ano, semana...): não chamam virar(); a virada sai logo depois do clique */
-      cad.addEventListener('click', function (ev) {
-        var b = ev.target.closest && ev.target.closest('.seta'); if (!b || manual || !vale()) return;
+        var b = ev.target.closest && ev.target.closest('.seta'); if (!b) return;
+        /* setas ‹ › (dia, mês, ano, semana...): não chamam virar(); a virada sai logo depois do clique */
         var tras = /‹|ant|menos/i.test((b.textContent || '') + (b.id || '') + (b.getAttribute('aria-label') || ''));
         setTimeout(function () { if (!ativa && imgAntes) viradaAuto(tras ? 'tras' : 'frente'); }, 0);
       }, true);
@@ -1617,16 +1615,19 @@
         return base;
       }
       var livre = function (ev) { return ev.pointerType === 'touch' && vale() && !(ev.target.closest && ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"],.leitor-barra,.troca')) && !(ev.target.closest && ev.target.closest('canvas') && !ev.target.closest('.lp')); };
-      cad.addEventListener('pointerdown', function (ev) { if (st) return; if (!livre(ev)) { id = -1; return; } id = ev.pointerId; x0 = ev.clientX; y0 = ev.clientY; }, true);
+      var trava = null; /* 'h' = o dedo começou indo de lado; 'v' = começou indo para cima/baixo (rolar): nunca vira a página */
+      cad.addEventListener('pointerdown', function (ev) { if (st) return; if (!livre(ev)) { id = -1; return; } id = ev.pointerId; x0 = ev.clientX; y0 = ev.clientY; trava = null; }, true);
       cad.addEventListener('pointermove', function (ev) {
         if (ev.pointerId !== id) return;
         var dx = ev.clientX - x0, dy = ev.clientY - y0;
         if (!st) {
-          if (Math.abs(dx) < 24 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
+          if (!trava && Math.hypot(dx, dy) >= 10) trava = Math.abs(dx) >= 2 * Math.abs(dy) ? 'h' : 'v'; /* a direção do começo do dedo decide */
+          if (trava === 'v') { id = -1; return; }
+          if (trava !== 'h' || Math.abs(dx) < 32 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
           var d = dx < 0 ? 1 : -1, pl = plano(d);
-          if (!pl || !imgAntes || Date.now() - imgT > 1500) { id = -1; return; }
+          if (!pl) { id = -1; return; }
           try { cad.setPointerCapture(ev.pointerId); } catch (e) { /* sem captura */ } /* a tela é redesenhada na primeira mudança e o elemento tocado some: sem isto o dedo parava de chegar e a virada travava no meio */
-          amostras = [[performance.now(), ev.clientX]]; var antes = imgAntes; imgAntes = null; var assina = function () { return cad.className + '|' + folhaEl().innerHTML; }, html0 = assina();
+          amostras = [[performance.now(), ev.clientX]]; var antes = foto(); if (!antes) { id = -1; return; } var assina = function () { return cad.className + '|' + folhaEl().innerHTML; }, html0 = assina();
           manual = true; try { pl.acao(); } finally { manual = false; }
           if (assina() === html0) { st = { vazio: true }; ev.stopImmediatePropagation(); return; } /* nada mudou (ponta do caderno): sem efeito, e o gesto fica por conta desta virada (não repete a ação) */
           var depois = foto(); montar(antes, depois, d > 0 ? 'frente' : 'tras'); st = { d: d, pl: pl };
@@ -1655,13 +1656,13 @@
       var folha = cad, x0 = 0, /* o gesto vale em QUALQUER ponto do caderno (de cima a baixo, nos cantos, em cima de campos e botões), menos nas abas */ y0 = 0, t0 = 0, ativo = false, id = 0;
       folha.addEventListener('pointerdown', function (ev) { var t = ev; if (ev.pointerType !== 'touch' || (ev.target.closest && (ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"]') || (ev.target.closest('canvas') && !ev.target.closest('.lp'))))) { ativo = false; return; } if (ativo) { ativo = false; return; } id = ev.pointerId; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ativo = true; });
       /* a página da direita (horários, listas) rola na vertical: o navegador começava a rolar e cancelava o gesto antes do dedo soltar. Por isso o gesto vale AO MOVER, assim que o movimento é claramente para o lado (sem esperar soltar) */
-      folha.addEventListener('pointermove', function (ev) { if (!ativo || ev.pointerId !== id) return; var dx = ev.clientX - x0, dy = ev.clientY - y0; if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8 || Date.now() - t0 > 1500) return; ativo = false; virarPeloDedo(dx > 0 ? -1 : 1); });
+      folha.addEventListener('pointermove', function (ev) { if (!ativo || ev.pointerId !== id) return; var dx = ev.clientX - x0, dy = ev.clientY - y0; if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.5 || Date.now() - t0 > 1500) return; ativo = false; virarPeloDedo(dx > 0 ? -1 : 1); });
       /* reserva: os eventos de TOQUE seguem chegando mesmo quando o navegador já começou a rolar a lista (o ponteiro é cancelado nesse caso) */
       var tx = 0, ty = 0, tt = 0, tOk = false;
       folha.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; tOk = ev.touches.length === 1 && !(ev.target.closest && (ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"]') || (ev.target.closest('canvas') && !ev.target.closest('.lp')))); tx = t.clientX; ty = t.clientY; tt = Date.now(); }, { passive: true });
-      folha.addEventListener('touchmove', function (ev) { if (!tOk) return; var t = ev.touches[0], dx = t.clientX - tx, dy = t.clientY - ty; if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8 || Date.now() - tt > 1500) return; tOk = false; ativo = false; virarPeloDedo(dx > 0 ? -1 : 1); }, { passive: true });
+      folha.addEventListener('touchmove', function (ev) { if (!tOk) return; var t = ev.touches[0], dx = t.clientX - tx, dy = t.clientY - ty; if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.5 || Date.now() - tt > 1500) return; tOk = false; ativo = false; virarPeloDedo(dx > 0 ? -1 : 1); }, { passive: true });
       folha.addEventListener('pointercancel', function () { ativo = false; });
-      folha.addEventListener('pointerup', function (ev) { if (!ativo || ev.pointerId !== id) return; ativo = false; var t = ev, dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 1500 || Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8) return; virarPeloDedo(dx > 0 ? -1 : 1); });
+      folha.addEventListener('pointerup', function (ev) { if (!ativo || ev.pointerId !== id) return; ativo = false; var t = ev, dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 1500 || Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.5) return; virarPeloDedo(dx > 0 ? -1 : 1); });
     })();
     C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
   })();
