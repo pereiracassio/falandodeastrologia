@@ -662,6 +662,15 @@
         alvo.textContent = ''; alvo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível calcular (' + er.message + ').' }));
       });
     }
+    /* "o dia todo" ou um horário: a tarefa com horário aparece naquela hora (e avisa no celular na hora); sem horário fica no dia */
+    function campoHoraTarefa(horaAtual) {
+      var diaTodo = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'O dia todo' }), hora = el('input', { type: 'time', 'aria-label': 'Hora' });
+      diaTodo.checked = !horaAtual; hora.value = horaAtual ? String(horaAtual).slice(0, 5) : '09:00';
+      var linhaH = el('div', { style: 'margin-top:8px' }, [el('label', { text: 'Hora' }), hora]);
+      var rot = el('label', { style: 'display:flex;gap:10px;align-items:center;margin-top:14px;cursor:pointer' }, [diaTodo, el('span', { text: 'O dia todo' })]);
+      var mostrar = function () { linhaH.style.display = diaTodo.checked ? 'none' : ''; }; diaTodo.addEventListener('change', mostrar); mostrar();
+      return { caixa: [rot, linhaH], valor: function () { return diaTodo.checked ? null : (/^\d{2}:\d{2}/.test(hora.value) ? hora.value.slice(0, 5) : null); } };
+    }
     function novaTarefa(diaTocado) {
       folhaPequena(function (caixa, fechar) {
         caixa.appendChild(el('h2', { text: 'Nova tarefa' }));
@@ -669,20 +678,22 @@
         /* o dia da tarefa começa no dia da folha que está aberta (no To do, o dia que aparece à esquerda; nas outras, o dia do caderno) e pode ser trocado */
         var diaFolha = diaTocado || (visao === 'todo' ? somaDias(isoDia(Date.now()), 2 * (espTodo || 0)) : ancora);
         var dia = el('input', { type: 'date', 'aria-label': 'Dia' }); dia.value = diaFolha;
+        var hh = campoHoraTarefa(null);
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () {
           var t = campo.value.trim(); if (!t) return; var d = /^\d{4}-\d{2}-\d{2}$/.test(dia.value) ? dia.value : diaFolha; ok.disabled = true;
-          C.from('todo_tarefas').insert({ titulo: t, data: d }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); if (visao === 'todo') recarregarTodo(); });
+          C.from('todo_tarefas').insert({ titulo: t, data: d, hora: hh.valor() }).then(function (g) { if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; } fechar(); if (visao === 'todo') recarregarTodo(); });
         });
         nao.addEventListener('click', fechar);
         caixa.appendChild(campo);
         caixa.appendChild(P.colunaData ? el('div', { style: 'margin-top:12px' }, [P.colunaData(dia, 'Dia')]) : el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Dia' }), dia]));
+        hh.caixa.forEach(function (n) { caixa.appendChild(n); });
         caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
         setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
       });
     }
 
-    /* editar uma tarefa que já existe: nome e dia (a hora, se ela tiver, fica como está) */
+    /* editar uma tarefa que já existe: nome, dia e hora (ou o dia todo) */
     function editarTarefa(t) {
       folhaPequena(function (caixa, fechar) {
         caixa.appendChild(el('h2', { text: 'Tarefa' }));
@@ -690,18 +701,20 @@
         campo.value = t.titulo || '';
         var diaAtual = t.data ? String(t.data).slice(0, 10) : '';
         var dia = el('input', { type: 'date', 'aria-label': 'Dia' }); dia.value = diaAtual;
+        var hh = campoHoraTarefa(t.hora);
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () {
           var n = campo.value.trim(); if (!n) { P.mensagem(msg, 'Escreva o que fazer.', 'erro'); return; }
           var d = /^\d{4}-\d{2}-\d{2}$/.test(dia.value) ? dia.value : null; ok.disabled = true;
-          C.from('todo_tarefas').update({ titulo: n, data: d }).eq('id', t.id).then(function (g) {
+          C.from('todo_tarefas').update({ titulo: n, data: d, hora: hh.valor() }).eq('id', t.id).then(function (g) {
             if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; }
-            t.titulo = n; t.data = d; fechar(); if (visao === 'todo') recarregarTodo();
+            t.titulo = n; t.data = d; t.hora = hh.valor(); fechar(); if (visao === 'todo') recarregarTodo();
           });
         });
         nao.addEventListener('click', fechar);
         caixa.appendChild(campo);
         caixa.appendChild(P.colunaData ? el('div', { style: 'margin-top:12px' }, [P.colunaData(dia, 'Dia')]) : el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Dia' }), dia]));
+        hh.caixa.forEach(function (n) { caixa.appendChild(n); });
         caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
         setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
       });
