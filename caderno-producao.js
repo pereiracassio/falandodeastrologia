@@ -1134,7 +1134,7 @@ window.ProducaoCaderno = function (ctx) {
         t.addEventListener('input', function () { clearTimeout(tempoT); tempoT = setTimeout(function () { gravar('prod_cortes', cortes, c, { titulo: t.value.trim() || null }); }, 800); });
         t.addEventListener('change', function () { gravar('prod_cortes', cortes, c, { titulo: t.value.trim() || null }); });
         d.addEventListener('change', function () { gravar('prod_cortes', cortes, c, { data: d.value || null }); });
-        var tirar = el('button', { type: 'button', class: 'portal-btn portal-btn-perigo', text: 'Excluir' });
+        var tirar = P.botaoApagar('Excluir este corte'); /* discreto, no fim do corte (regra dos botões de apagar) */
         tirar.addEventListener('click', function () {
           if (!window.confirm('Excluir este corte?')) return;
           C.from('prod_cortes').delete().eq('id', c.id).then(function (r) {
@@ -1179,12 +1179,13 @@ window.ProducaoCaderno = function (ctx) {
         var editor = el('div', { class: 'prod-corte' }, [
           el('div', { class: 'prod-corte-topo' }, [campo('Título', t, function () { return t.value.trim(); }), P.colunaData(d, 'Data')]),
           barraTempo(c.criado_em, c.data, cortePostado(c)),
-          el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c, true), tirar]),
+          el('div', { class: 'prod-linha', style: 'border:0;padding:0 0 10px' }, [chipsDoCorte(c, true)]),
           faltaSeoCorte,
           caixaFotosC,
           campo('Texto', tx, function () { return tx.value; }),
           campo('Tags', tg, function () { return tg.value.trim(); }),
-          jupC
+          jupC,
+          el('div', { style: 'margin:56px 0 8px;text-align:center' }, [tirar])
         ]);
         ce.appendChild(editor); editores[c.id] = editor;
         verSeoCorte();
