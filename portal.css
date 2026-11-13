@@ -86,7 +86,7 @@ textarea.escrita-livre:focus{outline:none}
 /* data de caderno: dd / mm / aaaa com um traço embaixo de cada parte (o campo do navegador fica por cima, invisível; ver dataCaderno em portal.js) */
 .data-caderno{position:relative;display:inline-block;min-height:36px;margin:0 0 14px;vertical-align:top;cursor:pointer}
 .data-caderno-texto{display:inline-flex;align-items:baseline;gap:5px;font-family:var(--fonte-mao,inherit);font-size:17px;color:var(--preto-tinta,#16233F);line-height:36px;pointer-events:none;text-transform:none;letter-spacing:0}
-.data-caderno-texto i{font-style:normal;text-align:center;padding:0 3px;line-height:1.25}
+.data-caderno-texto i{font-style:normal;padding:0;line-height:1.25;white-space:nowrap}
 .data-caderno-texto .dc-d,.data-caderno-texto .dc-m{min-width:2.4ch}.data-caderno-texto .dc-a{min-width:4.6ch}
 .data-caderno-texto i.vazio{color:color-mix(in srgb,var(--preto-tinta,#16233F) 40%,transparent)}
 .data-caderno-texto b{font-weight:400}
