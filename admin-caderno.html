@@ -670,6 +670,31 @@
       });
     }
 
+    /* editar uma tarefa que já existe: nome e dia (a hora, se ela tiver, fica como está) */
+    function editarTarefa(t) {
+      folhaPequena(function (caixa, fechar) {
+        caixa.appendChild(el('h2', { text: 'Tarefa' }));
+        var campo = el('input', { type: 'text', 'aria-label': 'O que fazer' }), msg = el('p', { class: 'portal-msg' });
+        campo.value = t.titulo || '';
+        var diaAtual = t.data ? String(t.data).slice(0, 10) : '';
+        var dia = el('input', { type: 'date', 'aria-label': 'Dia' }); dia.value = diaAtual;
+        var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
+        ok.addEventListener('click', function () {
+          var n = campo.value.trim(); if (!n) { P.mensagem(msg, 'Escreva o que fazer.', 'erro'); return; }
+          var d = /^\d{4}-\d{2}-\d{2}$/.test(dia.value) ? dia.value : null; ok.disabled = true;
+          C.from('todo_tarefas').update({ titulo: n, data: d }).eq('id', t.id).then(function (g) {
+            if (g.error) { ok.disabled = false; P.mensagem(msg, 'Não foi possível salvar (' + g.error.message + ').', 'erro'); return; }
+            t.titulo = n; t.data = d; fechar(); if (visao === 'todo') recarregarTodo();
+          });
+        });
+        nao.addEventListener('click', fechar);
+        caixa.appendChild(campo);
+        caixa.appendChild(P.colunaData ? el('div', { style: 'margin-top:12px' }, [P.colunaData(dia, 'Dia')]) : el('div', { style: 'margin-top:12px' }, [el('label', { text: 'Dia' }), dia]));
+        caixa.appendChild(msg); caixa.appendChild(el('div', { style: 'display:flex;gap:16px;align-items:center;margin-top:12px' }, [ok, nao]));
+        setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
+      });
+    }
+
     /* ---------- as outras visões da folha: Semana, Mês, Ano e Lista ---------- */
     /* VIRAR A PÁGINA: cada entrada (tocar num marcador ou num item) vira a página; o que estava ali fica na esquerda e o novo na direita.
        Voltar a página (dedo para a direita, ou ← voltar) volta ao que estava; avançar (dedo para a esquerda) entra de novo onde se tinha tocado. */
@@ -990,7 +1015,7 @@
             var quando = x.semData || !isFinite(x.quando) ? '' : (g.nome === 'Atrasados' ? (+it.iso.slice(8)) + ' de ' + MES3[+it.iso.slice(5, 7) - 1] + ' · ' : '') + (x.diaTodo ? 'o dia todo' : hhmm(x.quando));
             var meio = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [quando ? el('div', { class: 'det', style: 'color:var(--azul-egipcio-escuro);margin:0 0 1px', text: quando }) : null, el('div', { class: 'nome', text: x.titulo }), x.sub ? el('div', { class: 'det', style: x.subOcre ? 'color:var(--ocre);font-weight:700' : 'opacity:.75;color:inherit', text: x.sub }) : null].filter(Boolean));
             var barras = x.bsp ? tdPronto().barrasDe(x.bsp[1], x.bsp[0] === 'v' ? tdPronto().ETV : tdPronto().ETC, x.bsp[2], x.bsp[3]) : []; /* as barras ocupam a largura toda: item com barra não tem caixinha nem ícone na frente delas */
-            meio.addEventListener('click', function () { if (x.url) { abrirTela(x.url); return; } if (x.evento && !x.evento.aniversario) modAgenda().abrirEvento(x.evento); });
+            meio.addEventListener('click', function () { if (x.url) { abrirTela(x.url); return; } if (x.tarefa) { editarTarefa(x.tarefa); return; } if (x.evento && !x.evento.aniversario) modAgenda().abrirEvento(x.evento); }); /* tocar na tarefa abre a folha para editar o nome e o dia */
             var corpoLinha = x.capa ? el('div', { style: 'flex:1;min-width:0' }, [el('img', { src: x.capa, alt: '', style: 'display:block;width:100%;max-width:260px;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--azul-egipcio-claro);margin:0 0 6px' }), meio]) : meio; /* a capinha do vídeo fica em cima, como no To do da Agenda */
             var faixa = el('span', { style: 'flex:none;width:4px;align-self:stretch;background:' + x.cor });
             var iconePl = null; if (isFinite(x.quando) && !x.semData) { var h = !x.diaTodo ? horaDoInstante(x.quando) : null, pl = h ? h.planeta : REGENTE[diaSem(it.iso || isoDia(x.quando))]; iconePl = el('span', { class: 'ic', style: 'font-size:22px;flex:none;color:' + (h ? (h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)') : 'var(--terracota)'), text: icone(pl) }); }
