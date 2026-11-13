@@ -60,6 +60,6 @@
 .prod-seg .prod-chip,.prod-seg .prod-chip.on,.prod-seg.com-datas .prod-chip.prod-chip,.prod-seg.com-datas .prod-chip.on.on{min-width:0;flex:none;display:flex;align-items:center;justify-content:center;white-space:normal;font-size:clamp(4.5px,2.15cqw,12px);line-height:1.12;padding:4px 0;overflow-wrap:normal;word-break:keep-all;text-align:center}
 .prod-seg.com-datas .prod-data-cel{padding:0;min-width:0}
 .prod-seg.com-datas .prod-data-cel .data-caderno{min-height:20px;margin:0}
-.prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:clamp(5px,2.5cqw,10px);gap:0;line-height:20px}
+.prod-seg.com-datas .prod-data-cel .data-caderno-texto{font-size:clamp(7px,3.2cqw,12px);gap:0;line-height:20px}
 .prod-seg.com-datas .prod-data-cel .data-caderno-texto i{padding:0}
 @container (max-width:560px){.prod-seg.com-datas .prod-data-cel .dc-a,.prod-seg.com-datas .prod-data-cel .data-caderno-texto b:last-of-type{display:none}}

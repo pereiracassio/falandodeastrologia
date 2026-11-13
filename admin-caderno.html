@@ -24,12 +24,12 @@
   <link rel="stylesheet" href="papiro.css?v=6">
   <link rel="stylesheet" href="home.css?v=21">
   <link rel="stylesheet" href="page.css?v=92">
-  <link rel="stylesheet" href="portal.css?v=40">
+  <link rel="stylesheet" href="portal.css?v=41">
   <link rel="stylesheet" href="tema-paginas.css?v=42">
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=37">
   <link rel="stylesheet" href="caderno-financeiro.css?v=1">
-  <link rel="stylesheet" href="caderno-producao.css?v=9">
+  <link rel="stylesheet" href="caderno-producao.css?v=10">
   <link rel="stylesheet" href="caderno-projetos.css?v=1">
   <style>
     /* CADERNO do Hellenic Daily: uma folha aberta (duas páginas) dentro de uma capa de cor escolhida, com marcadores dos dois lados.
@@ -38,9 +38,9 @@
     .cad.on{display:block}
     .cad::before{content:"";position:absolute;inset:8px;border:1.5px dashed var(--capa-fio,#e6d3a0);pointer-events:none}
     .cad .miolo{position:absolute;inset:22px 104px 22px 76px}
-    .cad .folha :where(*:not(canvas):not(.lp):not(.lp *)){touch-action:pan-y} /* as listas que rolam não engolem o gesto de virar a página */
-    .cad{touch-action:pan-y}
-    .cad .folha{touch-action:pan-y;position:relative;height:100%;background:var(--papiro-fundo);display:flex}
+    .cad .folha :where(*:not(canvas):not(.lp):not(.lp *)){touch-action:pan-y pinch-zoom} /* as listas que rolam não engolem o gesto de virar a página */
+    .cad{touch-action:pan-y pinch-zoom}
+    .cad .folha{touch-action:pan-y pinch-zoom;position:relative;height:100%;background:var(--papiro-fundo);display:flex}
     .cad .folha::after{z-index:3}
     /* folhas empilhadas na beira (como um caderno de verdade): três beiradas de folha aparecendo dos dois lados */
     .cad{--folha-b1:color-mix(in srgb,var(--papiro-base,#d2b980) 70%,#fff);--folha-b2:color-mix(in srgb,var(--papiro-base,#d2b980) 80%,#6b4a2b);--folha-b3:color-mix(in srgb,var(--papiro-base,#d2b980) 62%,#3a2410)}
