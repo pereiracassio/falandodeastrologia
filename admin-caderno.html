@@ -337,7 +337,7 @@
       <iframe class="embed" id="embed" title="Tela" allowtransparency="true"></iframe>
     </div></div>
     <div class="abas dir" id="abasDir"></div>
-    <div class="troca" id="troca"><button type="button" class="aba" id="t1">diário</button><button type="button" class="aba" id="t2">horários</button><button type="button" class="aba" id="tMais" style="flex:.4;color:var(--terracota);font-size:24px">+</button></div>
+    <div class="troca" id="troca"><button type="button" class="aba" id="t1">diário</button><button type="button" class="aba" id="t2">horários</button></div>
   </div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -506,7 +506,6 @@
       });
       contarAvisos();
       var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ dir.appendChild(hj);
-      var mais = el('button', { type: 'button', class: 'aba peq botao-fixo', title: 'Novo compromisso', 'aria-label': 'Novo compromisso', style: 'color:var(--terracota);font-size:26px' }, [el('span', { text: '+' })]); mais.addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); }); dir.appendChild(mais);
       pintarAbas();
     }
     /* To do: a aba do mês leva ao mesmo dia daquele mês (cada página do To do é um dia; a folha mostra dois dias) */
@@ -549,6 +548,18 @@
       if (horas.length > 1 && horas[horas.length - 1].fim - horas[horas.length - 1].ini < 20 * 60000) { horaCurtaFinal = horas.pop(); horas[horas.length - 1].linhaFim = d1; }
       function pct(ms) { return ((ms - d0) / (d1 - d0) * 100).toFixed(3) + '%'; }
       var corDe = function (h) { return h.noite ? 'var(--azul-egipcio-claro)' : 'var(--ocre)'; }, icH = document.getElementById('icHora'), ate = document.getElementById('ateHora'); icH.textContent = ''; ate.textContent = '';
+      /* tocar numa faixa de hora cria um compromisso naquela hora (o toque num compromisso já existente abre ele) */
+      linha._d0 = d0; linha._d1 = d1; linha._horas = horas;
+      if (!linha._tocar) {
+        linha._tocar = true;
+        linha.addEventListener('click', function (ev) {
+          if (ev.target.closest && ev.target.closest('.evl,.agora,a,button')) return;
+          var r = linha.getBoundingClientRect(); if (!r.height) return;
+          var f = (ev.clientY - r.top) / r.height; if (f < 0 || f > 1) return;
+          var ms = linha._d0 + f * (linha._d1 - linha._d0), hs = linha._horas || [], h = hs.filter(function (x) { return ms >= (x.pos || x.ini) && ms < (x.linhaFim || x.fim); })[0] || hs[hs.length - 1]; if (!h) return;
+          modAgenda().novo({ dia: ancora, ini: hhmm(Math.max(h.ini, linha._d0)), fim: hhmm(Math.min(h.fim, linha._d1 - 60000)) });
+        });
+      }
       horas.forEach(function (h) {
         var e = el('div', { class: 'hp', style: 'top:' + pct(h.pos || h.ini) + ';height:' + (((h.linhaFim || h.fim) - (h.pos || h.ini)) / (d1 - d0) * 100).toFixed(3) + '%' }, [el('div', { class: 'r' }, [el('span', { class: 'ic', text: icone(h.planeta), style: 'color:' + corDe(h) }), el('span', { text: hhmm(h.ini) })])]);
         linha.appendChild(e);
@@ -650,12 +661,12 @@
         alvo.textContent = ''; alvo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível calcular (' + er.message + ').' }));
       });
     }
-    function novaTarefa() {
+    function novaTarefa(diaTocado) {
       folhaPequena(function (caixa, fechar) {
         caixa.appendChild(el('h2', { text: 'Nova tarefa' }));
         var campo = el('input', { type: 'text', placeholder: 'O que fazer', 'aria-label': 'O que fazer' }), msg = el('p', { class: 'portal-msg' });
         /* o dia da tarefa começa no dia da folha que está aberta (no To do, o dia que aparece à esquerda; nas outras, o dia do caderno) e pode ser trocado */
-        var diaFolha = visao === 'todo' ? somaDias(isoDia(Date.now()), 2 * (espTodo || 0)) : ancora;
+        var diaFolha = diaTocado || (visao === 'todo' ? somaDias(isoDia(Date.now()), 2 * (espTodo || 0)) : ancora);
         var dia = el('input', { type: 'date', 'aria-label': 'Dia' }); dia.value = diaFolha;
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () {
@@ -790,6 +801,7 @@
         var cab = el('button', { type: 'button', class: 'dsem-cab botao-fixo' + (iso === hojeIso ? ' eh-hoje' : '') }, [el('span', { text: SEMANA[diaSem(iso)].split('-')[0] + ' ' + (+iso.slice(8)) }), el('span', { class: 'ic', text: icone(REGENTE[diaSem(iso)]) })]);
         cab.addEventListener('click', function () { irAoDia(iso); });
         var bl = el('div', { class: 'dsem', 'data-iso': iso }, [cab]); blocos.push(bl);
+        bl.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('.dsem-cab,.evl,a,button')) return; modAgenda().novo({ dia: iso }); }); /* tocar no dia cria um compromisso nele */
       })(somaDias(inicio, k));
       blocos.forEach(function (bl, i) { (i < 4 ? esq : dir).appendChild(bl); });
       dir.appendChild(el('div', { class: 'dsem' }, [el('span', { class: 'rotulo-fixo', text: 'notas' })]));
@@ -810,6 +822,7 @@
         var d = +iso.slice(8), c = diaSem(iso), dentro = iso.slice(0, 7) === primeiro.slice(0, 7);
         var n = el('button', { type: 'button', class: 'n', text: String(d) }); n.addEventListener('click', function () { irAoDia(iso); });
         var cel = el('div', { class: 'cel' + (dentro ? '' : ' fora') + (c === 0 || c === 6 ? ' fds' : '') + (iso === hojeIso ? ' eh-hoje' : '') }, [n]); cels[iso] = cel; grade.appendChild(cel);
+        cel.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('.n,.chip,.mais,a,button')) return; modAgenda().novo({ dia: iso }); }); /* tocar no dia cria um compromisso nele; o número leva ao Dia */
       })(somaDias(ini, k));
       esq.appendChild(grade); dir.appendChild(el('div', { class: 'rotulo-fixo', style: 'margin:4px 0 6px', text: 'neste mês' })); var rola = el('div', { class: 'rola' }); dir.appendChild(rola); carregando(rola);
       lerEventos(doIso(ini), doIso(ini) + 42 * DIA, eu, function (evs) {
@@ -1039,6 +1052,10 @@
         } else { rolaE.appendChild(blocoDia(somaDias(hoje, 2 * kTodo))); rolaD.appendChild(blocoDia(somaDias(hoje, 2 * kTodo + 1))); }
       }
       function horaDoInstante(ms) { var d0 = doIso(isoDia(ms)), hs = HP.horasEntre(d0, d0 + DIA, LAT, LON); for (var k = 0; k < hs.length; k++) if (ms >= hs[k].ini && ms < hs[k].fim) return hs[k]; return null; }
+      /* tocar num espaço vazio da página cria a tarefa naquele dia (esquerda e direita são dias diferentes) */
+      [[rolaE, function () { return kTodo === 0 ? hojeT : somaDias(hojeT, 2 * kTodo); }], [rolaD, function () { return kTodo === 0 ? somaDias(hojeT, 1) : somaDias(hojeT, 2 * kTodo + 1); }]].forEach(function (x) {
+        x[0].addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('.tarefa,a,button,.cx,.nota-dia,input,textarea,select')) return; novaTarefa(x[1]()); });
+      });
       recarregarTodo = function () { vistaTodo(); };
       preparar().then(function () {
         var td = tdPronto();
@@ -1458,7 +1475,6 @@
     document.getElementById('voltarTab').addEventListener('click', function () { voltarPagina(); });
     document.getElementById('t1').addEventListener('click', function () { paginaCel('p1'); });
     document.getElementById('t2').addEventListener('click', function () { paginaCel('p2'); });
-    document.getElementById('tMais').addEventListener('click', function () { if (visao === 'todo') novaTarefa(); else modAgenda().novo({ dia: ancora }); });
     var ultimoGesto = 0;
     function modoPe() { return !!(window.matchMedia && window.matchMedia('(max-width:820px), (orientation:portrait) and (min-width:600px) and (max-width:1100px)').matches); } /* celular e iPad em pé: uma página por vez, igual nos dois */
     function virarPeloDedo(d) { /* d = -1 volta, +1 avança (dedo OU gesto de borda do iPhone) */
