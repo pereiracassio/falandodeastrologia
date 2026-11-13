@@ -1470,7 +1470,9 @@
       }
       if (visao === 'financeiro' && !cad.classList.contains('v-embed')) { finMudarMes(d); return; }
       if (visao === 'diario' && !cad.classList.contains('v-embed')) { diarioVirar(d); return; } /* no Diário o dedo folheia as anotações, página a página */
+      var borda = modoPe() && ((d > 0 && pagCel === 'p2') || (d < 0 && pagCel === 'p1')), h0 = borda ? cad.querySelector('.folha').innerHTML : '';
       if (d < 0) { if (!voltarPagina()) periodo(-1); } else { if (!avancarPagina()) periodo(1); }
+      if (borda && cad.querySelector('.folha').innerHTML !== h0) paginaCel(d > 0 ? 'p1' : 'p2'); /* uma página por vez: o dia seguinte abre na primeira página, o anterior na última */
     }
     /* O gesto de borda do iPhone (voltar/avançar do navegador) vira o MESMO gesto do caderno: o histórico fica sempre [volta, aqui, avança] e cada gesto de borda
        é lido como "voltar a página" ou "avançar a página", depois o histórico volta ao meio. Assim o app nunca sai para a tela de antes. */
@@ -1572,10 +1574,17 @@
           if (d > 0 && pagCel === 'p1') return { acao: function () { paginaCel('p2'); }, inv: function () { paginaCel('p1'); } };
           if (d < 0 && pagCel === 'p2') return { acao: function () { paginaCel('p1'); }, inv: function () { paginaCel('p2'); } };
         }
-        if (visao === 'financeiro') return { acao: function () { finMudarMes(d); }, inv: function () { finMudarMes(-d); } };
-        if (visao === 'diario') return { acao: function () { diarioVirar(d); }, inv: function () { diarioVirar(-d); } };
-        if (d < 0) return podeVoltar() ? { acao: voltarPagina, inv: avancarPagina } : { acao: function () { periodo(-1); }, inv: function () { periodo(1); } };
-        return podeAvancar() ? { acao: avancarPagina, inv: voltarPagina } : { acao: function () { periodo(1); }, inv: function () { periodo(-1); } };
+        var base;
+        if (visao === 'financeiro') base = { acao: function () { finMudarMes(d); }, inv: function () { finMudarMes(-d); } };
+        else if (visao === 'diario') base = { acao: function () { diarioVirar(d); }, inv: function () { diarioVirar(-d); } };
+        else if (d < 0) base = podeVoltar() ? { acao: voltarPagina, inv: avancarPagina } : { acao: function () { periodo(-1); }, inv: function () { periodo(1); } };
+        else base = podeAvancar() ? { acao: avancarPagina, inv: voltarPagina } : { acao: function () { periodo(1); }, inv: function () { periodo(-1); } };
+        /* uma página por vez (iPad em pé): passando da última página de um dia vai para a PRIMEIRA do dia seguinte; passando da primeira, volta para a ÚLTIMA do dia anterior (1 diário, 1 horas, 2 diário, 2 horas...) */
+        if (modoPe() && ((d > 0 && pagCel === 'p2') || (d < 0 && pagCel === 'p1'))) {
+          var destino = d > 0 ? 'p1' : 'p2', p0 = pagCel;
+          return { acao: function () { var h0 = folhaEl().innerHTML; base.acao(); if (folhaEl().innerHTML !== h0) paginaCel(destino); }, inv: function () { base.inv(); paginaCel(p0); } };
+        }
+        return base;
       }
       var livre = function (ev) { return ev.pointerType === 'touch' && vale() && !(ev.target.closest && ev.target.closest('.abas,.cad-fundo,[style*="overflow-x"],.leitor-barra,.troca')) && !(ev.target.closest && ev.target.closest('canvas') && !ev.target.closest('.lp')); };
       cad.addEventListener('pointerdown', function (ev) { if (st) return; if (!livre(ev)) { id = -1; return; } id = ev.pointerId; x0 = ev.clientX; y0 = ev.clientY; }, true);
