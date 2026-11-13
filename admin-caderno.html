@@ -83,7 +83,7 @@
     .cad .abas.dir .aba.colorida span{padding:2px 7px}
     .cad .abas.esq .aba.aberta{margin-right:-8px}.cad .abas.dir .aba.aberta{margin-left:-8px}
     .cad .abas .aba.aberta{z-index:2}
-    .cad .abas.dir .aba.peq{flex:.55}
+    .cad .abas.dir .aba.peq{flex:.85;min-height:30px} /* as abinhas do fim (avisos, msg, configurações, hoje) com mais espaço */
     .cad .abas.dir .aba.peq span{writing-mode:horizontal-tb;transform:none}
     .cad .abas.dir .vao{flex:.4}
     .cad .ano{position:absolute;left:20px;width:56px;text-align:center;color:var(--capa-fio,#e6d3a0);font-size:13px;background:none;border:0;padding:0;z-index:2}
@@ -370,7 +370,7 @@
     var CAPAS = [['A03E25', 'Terracota'], ['B5852F', 'Ocre'], ['1F5FA3', 'Azul egípcio claro'], ['16233F', 'Azul-noite'], ['6B4A2B', 'Marrom'], ['4A7C59', 'Verde'], ['1A1410', 'Preto de tinta'], ['papiro', 'Papiro']];
     /* marcadores da direita: o que já é daqui abre nesta folha; o resto ainda abre a tela que já existe */
     var EXTRAS = { config: 'admin-site.html?app=daily', avisos: 'admin-avisos.html?app=daily', mensagens: 'admin-mensagens.html' };
-    var ABAS = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['todo', 'To do'], ['diario', 'Diário'], ['horas', 'Horas'],
+    var ABAS = [['todo', 'To do'], ['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano'], ['lista', 'Lista'], ['diario', 'Diário'], ['horas', 'Horas'],
       ['projetos', 'Projetos'], ['compras', 'Compras'], ['estudos', 'Estudos'], ['producao', 'Produção'], ['financeiro', 'Financeiro'], ['leitor', 'Leitor']];
     var ROT = { dia: ['diário', 'horários'], semana: ['dom a qua', 'qui a sáb'], mes: ['mês', 'lista'], ano: ['jan a jun', 'jul a dez'], lista: ['dias 1 a 15', 'dia 16 ao fim'], diario: ['primeiras', 'seguintes'], todo: ['atrasados e hoje', 'amanhã'], horas: ['dia', 'noite'], producao: ['esquerda', 'direita'], projetos: ['próximos', 'projetos'], compras: ['na lista', 'no carrinho'], estudos: ['próximas', 'estudos'], financeiro: ['mês', 'gráficos'], leitor: ['abertos', 'pasta'] };
     var visao = 'dia', cacheAno = {}, projSel = null, estSel = null, estAula = null, prodSerie = null, prodVideo = null, prodCorte = null, urlForcada = null, projVer = null, leitorCam = [{ id: 'root', nome: 'Meu Drive' }], leitorLivro = null;
@@ -501,11 +501,11 @@
       });
       dir.appendChild(el('div', { class: 'vao' }));
             [['avisos', 'avisos'], ['mensagens', 'msg'], ['config', '\u2699\uFE0E']].forEach(function (x) { /* \uFE0E = a engrenagem de TRAÇO (letra), nunca o emoji colorido do aparelho */
-        var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1], style: x[0] === 'config' ? 'font-size:2em;line-height:.5;display:inline-block' : '' })]);
+        var b = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': x[0], title: x[0] === 'config' ? 'Configurações' : x[0] === 'avisos' ? 'Avisos' : 'Mensagens dos alunos', 'aria-label': x[0] }, [el('span', { text: x[1], style: x[0] === 'config' ? 'font-size:1.5em;line-height:1;display:inline-block' : '' })]);
         b.addEventListener('click', function () { irPara(x[0]); }); dir.appendChild(b);
       });
       contarAvisos();
-      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ dir.appendChild(hj);
+      var hj = el('button', { type: 'button', class: 'aba peq botao-fixo', 'data-v': 'hoje' }, [el('span', { text: 'hoje' })]); hj.addEventListener('click', function () { ancora = isoDia(Date.now()); espTodo = 0; desenhar(); }); /* no To do cada folha é um dia (espTodo): voltar ao hoje é voltar à primeira folha */ dir.appendChild(hj);
       pintarAbas();
     }
     /* To do: a aba do mês leva ao mesmo dia daquele mês (cada página do To do é um dia; a folha mostra dois dias) */
