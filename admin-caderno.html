@@ -911,8 +911,8 @@
       var rolaE = el('div', { class: 'rola', style: 'overflow:hidden' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px;overflow:hidden' }), barra = el('div', { class: 'diario-barra' });
       diarioNav = null; diarioRefaz = null;
       cabVista(esq, 'Diário', function () { diarioVirar(-1); }, function () { diarioVirar(1); });
-      esq.appendChild(barra); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
-      Promise.all([valorSite('daily_diario_aba_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000), window.hellenicPonte.ordemAtual(), window.hellenicPonte.posicaoEm(hojeIso, (function (d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); })(new Date()), 'geral').catch(function () { return null; })]).then(function (res) {
+      esq.appendChild(barra); esq.appendChild(rolaE); dir.appendChild(rolaD); if (!(manter !== true && localStorage.getItem('fda_cad_diario_v1'))) carregando(rolaE);
+      var carga = Promise.all([valorSite('daily_diario_aba_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000), window.hellenicPonte.ordemAtual(), window.hellenicPonte.posicaoEm(hojeIso, (function (d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); })(new Date()), 'geral').catch(function () { return null; })]); var tratar = function (res) {
         if (eu !== pedido) return;
         var desc = res[0] !== 'asc', r = res[1];
         rolaE.textContent = '';
@@ -922,7 +922,7 @@
         var inverter = el('button', { type: 'button', class: 'diario-ordem', title: desc ? 'Mais novo primeiro (tocar para inverter)' : 'Mais antigo primeiro (tocar para inverter)', 'aria-label': 'Inverter a ordem' }), contador = el('span', { class: 'diario-cont' });
         inverter.innerHTML = '<svg width="24" height="24" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' + ORDEM_ICONES[desc ? 'desc' : 'asc'] + '</svg>';
         inverter.addEventListener('click', function () { diarioIdx = 0; gravarSite('daily_diario_aba_ordem', desc ? 'asc' : 'desc').then(function () { vistaDiario(); }); });
-        barra.appendChild(contador); var snapHoje = res[3];
+        barra.textContent = ''; barra.appendChild(contador); var snapHoje = res[3];
         if (!notas.length && !snapHoje) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma anotação ainda.' })); return; }
         /* as linhas, na ordem: título do dia e as anotações dele */
         var linhas = [];
@@ -983,7 +983,16 @@
         diarioNav = function (d) { var novo = diarioIdx + d; if (novo < 0 || novo >= spreads) return false; diarioIdx = novo; diarioVirou = true; mostrar(d > 0 ? 'frente' : 'tras'); return true; };
         diarioRefaz = function () { paginar(); mostrar(); };
         requestAnimationFrame(function () { if (eu !== pedido) return; paginar(); mostrar(); });
-      }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações.' })); } });
+      };
+      /* o que ele viu da última vez aparece NA HORA (guardado no aparelho, só cache de exibição); a leitura de verdade vem por trás e só redesenha se mudou */
+      var velhoD = null; if (manter !== true) { try { velhoD = JSON.parse(localStorage.getItem('fda_cad_diario_v1')); } catch (e) { velhoD = null; } }
+      if (velhoD && velhoD[1] && !velhoD[1].error) { try { tratar(velhoD); } catch (e) { velhoD = null; rolaE.textContent = ''; carregando(rolaE); } }
+      else velhoD = null;
+      carga.then(function (res) {
+        if (eu !== pedido) return;
+        if (res[1] && !res[1].error) { var sD = JSON.stringify(res); if (velhoD && sD === JSON.stringify(velhoD)) return; try { localStorage.setItem('fda_cad_diario_v1', sD); } catch (e) { /* sem armazenamento */ } }
+        tratar(res);
+      }, function () { if (eu === pedido && !velhoD) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações.' })); } });
     }
     function diarioVirar(d) { if (diarioNav) diarioNav(d); }
     window.addEventListener('resize', function () { if (visao === 'diario' && diarioRefaz) diarioRefaz(); });
@@ -1048,7 +1057,8 @@
       dados.concluidos = (dados.concluidos || []).concat([c]);
       valorSite('todo_concluidos').then(function (a) { return gravarSite('todo_concluidos', (a || []).filter(function (i) { return Date.now() - i.t < 365 * DIA; }).concat([c])); }).then(null, function () { });
     }
-    function desfazerFeito(c, cx) { /* marcou por engano: tocar no ✓ desmarca de verdade (volta para a lista) e sai do registro */
+    function limpaCacheTodo() { try { localStorage.removeItem('fda_cad_todo_v1'); } catch (e) { /* sem armazenamento */ } }
+    function desfazerFeito(c, cx) { limpaCacheTodo(); /* marcou por engano: tocar no ✓ desmarca de verdade (volta para a lista) e sai do registro */
       cx.disabled = true;
       var falhou = function () { cx.disabled = false; alert('Não foi possível desmarcar.'); };
       var p = c.passoId ? C.from('projeto_passos').update({ feito: false, feito_em: null }).eq('id', c.passoId)
@@ -1059,6 +1069,7 @@
         .then(function (g) { if (g && g.error) throw g.error; recarregarTodo(); }, falhou);
     }
     function marcarFeito(x, cx, dados, redesenhar) {
+      limpaCacheTodo();
       cx.textContent = '✓'; cx.disabled = true;
       var falhou = function () { cx.textContent = ''; cx.disabled = false; alert('Não foi possível salvar.'); };
       if (x.passoId) { C.from('projeto_passos').update({ feito: true, feito_em: new Date().toISOString() }).eq('id', x.passoId).then(function (g) { if (g.error) return falhou(); registrarConcluido(x, dados); dados.fora = dados.fora.filter(function (i) { return i !== x; }); redesenhar(); }, falhou); return; }
@@ -1114,7 +1125,7 @@
             var linha = barras.length
               ? el('div', { class: 'tarefa' }, [faixa, el('div', { style: 'flex:1;min-width:0' }, [el('div', { style: 'display:flex;gap:10px;align-items:flex-start' }, [corpoLinha].concat(iconePl ? [iconePl] : []))].concat(barras))])
               : el('div', { class: 'tarefa' }, [faixa, caixa, corpoLinha]);
-            if (x.tarefa) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (r) { if (r.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenharItens(); }); }); linha.appendChild(ap); }
+            if (x.tarefa) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar "' + x.titulo + '"?')) return; limpaCacheTodo(); C.from('todo_tarefas').delete().eq('id', x.tarefa.id).then(function (r) { if (r.error) { alert('Não foi possível apagar.'); return; } dados.tarefas = dados.tarefas.filter(function (t) { return t.id !== x.tarefa.id; }); desenharItens(); }); }); linha.appendChild(ap); }
             if (!barras.length && iconePl) linha.appendChild(iconePl);
             bl.appendChild(linha);
           });
@@ -1135,14 +1146,22 @@
       [[rolaE, function () { return kTodo === 0 ? hojeT : somaDias(hojeT, 2 * kTodo); }], [rolaD, function () { return kTodo === 0 ? somaDias(hojeT, 1) : somaDias(hojeT, 2 * kTodo + 1); }]].forEach(function (x) {
         x[0].addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('.tarefa,a,button,.cx,.nota-dia,input,textarea,select')) return; novaTarefa(x[1]()); });
       });
-      recarregarTodo = function () { vistaTodo(); };
+      recarregarTodo = function () { limpaCacheTodo(); vistaTodo(); };
+      /* o que ele viu da última vez aparece NA HORA (cache de exibição no aparelho); a leitura de verdade vem por trás e só redesenha se mudou */
+      var CHT = 'fda_cad_todo_v1', velhoT = null; if (kTodo === 0) { try { velhoT = JSON.parse(localStorage.getItem(CHT)); } catch (e) { velhoT = null; } }
+      function tratarT(r) {
+        if (eu !== pedido) return; todoDados = tdPronto().montarItens(r.slice(0, 7), de, ate, agora); todoDados.concluidos = (Array.isArray(r[8]) ? r[8] : []).filter(function (i) { return i.chave && !i.passoId && !i.tarefaId; }).concat(r[9] || []); desenharItens();
+      }
+      if (velhoT && Array.isArray(velhoT)) { try { rolaE.textContent = ''; tratarT(velhoT); } catch (e) { velhoT = null; rolaE.textContent = ''; carregando(rolaE); } } else velhoT = null;
       preparar().then(function () {
         var td = tdPronto();
         return Promise.all([eventosEntre(de, ate), valorSite('todo_feitos'), td.itensDaProducao(), Promise.all([td.itensDeProjetosEEstudos(), td.itensDeAulasEstudo(), td.itensDoCurso()]).then(function (x) { return x[0].concat(x[1], x[2]); }), td.itensDePassos(),
           C.from('todo_tarefas').select('*').eq('feito', false).then(function (r) { if (r.error) throw r.error; return r.data || []; }), td.codigosDosAtendimentos(), td.carregarAniversarios(), valorSite('todo_concluidos'), td.itensFeitos().then(null, function () { return []; })]);
       }).then(function (r) {
-        if (eu !== pedido) return; todoDados = tdPronto().montarItens(r.slice(0, 7), de, ate, agora); todoDados.concluidos = (Array.isArray(r[8]) ? r[8] : []).filter(function (i) { return i.chave && !i.passoId && !i.tarefaId; }).concat(r[9] || []); /* o registro antigo só vale para compromissos e avisos; o resto sai das datas de conclusão */ desenharItens();
-      }, function (er) { if (eu !== pedido) return; rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível carregar (' + (er.message || 'erro') + ').' })); });
+        if (eu !== pedido) return;
+        if (kTodo === 0) { var sT = JSON.stringify(r); if (velhoT && sT === JSON.stringify(velhoT)) return; try { localStorage.setItem(CHT, sT); } catch (e) { /* sem armazenamento */ } }
+        tratarT(r);
+      }, function (er) { if (eu !== pedido || velhoT) return; rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível carregar (' + (er.message || 'erro') + ').' })); });
     }
     var recarregarTodo = function () {};
 
