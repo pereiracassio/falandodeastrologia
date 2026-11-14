@@ -187,6 +187,7 @@
       .cad .abas.dir .aba span{writing-mode:horizontal-tb;transform:none}
       .cad .abas.dir .aba.aberta{margin:0 0 -6px}
       .cad .abas.dir .vao{display:none}
+      .cad .abas.dir .aba[data-v=hoje]{position:sticky;right:0;z-index:5} /* em pé (celular): o hoje fica preso no canto direito, a barra rola por baixo dele */
       .cad .dobra{display:none}
       .cad .pag,.cad .pag.dir{padding:calc(130px*var(--moldura-m) + 12px) calc(80px*var(--moldura-m) + 12px)}
       .cad.p1 .pag.dir,.cad.p2 .pag.esq{display:none}
@@ -925,9 +926,15 @@
         /* o que mudou desde a nota anterior do mesmo dia (em ordem de hora): a linha "mudou" vem antes da nota */
         var porDia = {}; (r.data || []).forEach(function (n) { (porDia[String(n.dia).slice(0, 10)] = porDia[String(n.dia).slice(0, 10)] || []).push(n); });
         Object.keys(porDia).forEach(function (d) { var l = porDia[d].slice().sort(function (a, b) { return String(a.hora || '99').localeCompare(String(b.hora || '99')); }); for (var i = 1; i < l.length; i++) { var m = H.mudancas(l[i - 1].posicao, l[i].posicao); if (m.length) l[i]._mud = m; } });
-        notas.forEach(function (n) { var d = String(n.dia).slice(0, 10); if (!linhas.length || linhas[linhas.length - 1].iso !== d) { linhas.push({ tipo: 'dia', iso: d }); if (retratoDia[d]) linhas.push({ tipo: 'tec', p: retratoDia[d].p, iso: d }); } if (n._mud) linhas.push({ tipo: 'mud', m: n._mud, iso: d }); linhas.push({ tipo: 'nota', n: n, iso: d }); });
-        /* hoje sempre existe: sem notas hoje, o dia aparece só com as técnicas de agora */
-        if (!notas.some(function (n) { return String(n.dia).slice(0, 10) === hojeIso; })) { linhas.push({ tipo: 'dia', iso: hojeIso }); if (snapHoje) linhas.push({ tipo: 'tec', p: snapHoje, iso: hojeIso }); }
+        /* os DIAS do mais novo ao mais antigo (hoje no alto), as notas de cada dia em ordem de hora; a folha mais nova é a ÚLTIMA do caderno e as antigas ficam para trás */
+        var diasLista = []; notas.forEach(function (n) { var d = String(n.dia).slice(0, 10); if (diasLista.indexOf(d) < 0) diasLista.push(d); });
+        if (diasLista.indexOf(hojeIso) < 0) diasLista.push(hojeIso); /* hoje sempre existe: sem notas hoje, aparece só com as técnicas de agora */
+        diasLista.sort().reverse();
+        diasLista.forEach(function (d) {
+          linhas.push({ tipo: 'dia', iso: d });
+          var rt = retratoDia[d] ? retratoDia[d].p : (d === hojeIso ? snapHoje : null); if (rt) linhas.push({ tipo: 'tec', p: rt, iso: d });
+          notas.filter(function (n) { return String(n.dia).slice(0, 10) === d; }).forEach(function (n) { if (n._mud) linhas.push({ tipo: 'mud', m: n._mud, iso: d }); linhas.push({ tipo: 'nota', n: n, iso: d }); });
+        });
         function criar(l) {
           if (l.tipo === 'dia') {
             var rot = SEMANA[diaSem(l.iso)] + ', ' + (+l.iso.slice(8)) + ' de ' + MESES[+l.iso.slice(5, 7) - 1] + (l.iso.slice(0, 4) !== hojeIso.slice(0, 4) ? ' de ' + l.iso.slice(0, 4) : '');
@@ -959,11 +966,12 @@
           spreads = Math.ceil(paginas.length / 2);
         }
         function mostrar(animar) {
-          if (diarioIdx === Infinity) diarioIdx = idxHoje >= 0 ? Math.floor(idxHoje / 2) : spreads - 1; /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa */
+          if (diarioIdx === Infinity) diarioIdx = spreads - 1 - (idxHoje >= 0 ? Math.floor(idxHoje / 2) : 0); /* a folha de hoje é a última do caderno */ /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa */
           diarioIdx = Math.max(0, Math.min(spreads - 1, diarioIdx));
           rolaE.textContent = ''; rolaD.textContent = '';
-          (paginas[diarioIdx * 2] || []).forEach(function (l) { rolaE.appendChild(criar(l)); });
-          (paginas[diarioIdx * 2 + 1] || []).forEach(function (l) { rolaD.appendChild(criar(l)); });
+          var lido = spreads - 1 - diarioIdx; /* as páginas foram montadas do mais novo ao mais antigo; o caderno vai do antigo ao novo */
+          (paginas[lido * 2] || []).forEach(function (l) { rolaE.appendChild(criar(l)); });
+          (paginas[lido * 2 + 1] || []).forEach(function (l) { rolaD.appendChild(criar(l)); });
           contador.textContent = (diarioIdx + 1) + ' / ' + spreads;
           if (animar) virar(animar);
         }
