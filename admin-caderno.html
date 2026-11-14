@@ -636,8 +636,8 @@
     function atualizarNotas() { if (visao === 'diario') { vistaDiario(true); return; } desenharNotas(pedido); desenharHoras(pedido, isoDia(Date.now())); } /* a lista de cima (sem hora) e a linha do tempo (com hora) */
     /* nota = a anotação que já existe (editar) ou nada (anotação nova). A hora vem preenchida com a de agora e pode ser trocada.
        NADA é salvo ao mexer na hora (o seletor do iPhone dispara "change" ao abrir): só no botão Salvar, ou ao fechar tocando fora. */
-    function abrirNota(id, nota) {
-      var H = window.hellenicPonte, dia = nota ? String(nota.dia).slice(0, 10) : ancora, p2 = function (n) { return String(n).padStart(2, '0'); }, agoraHm = p2(new Date().getHours()) + ':' + p2(new Date().getMinutes());
+    function abrirNota(id, nota, diaFixo) {
+      var H = window.hellenicPonte, dia = nota ? String(nota.dia).slice(0, 10) : (diaFixo || ancora), p2 = function (n) { return String(n).padStart(2, '0'); }, agoraHm = p2(new Date().getHours()) + ':' + p2(new Date().getMinutes());
       folhaPequena(function (caixa, fechar) {
         var tit = el('h2', { style: 'color:var(--ocre)' }, [H.iconeTecnica(id, 26), document.createTextNode('  ' + H.nomeTecnica(id))]); /* ocre, como o título da técnica no diário */
         var hora = el('input', { type: 'time', 'aria-label': 'Hora', style: 'min-height:36px;min-width:120px' }); hora.value = nota && nota.hora ? String(nota.hora).slice(0, 5) : agoraHm;
@@ -942,7 +942,7 @@
             b.addEventListener('click', function () { irAoDia(l.iso); }); return b;
           }
           if (l.tipo === 'mud') return el('div', { class: 'diario-mud' }, [H.mudancaEl(l.m)]);
-          if (l.tipo === 'tec') return el('div', { class: 'diario-tec' }, [H.posicaoEl(l.p)]);
+          if (l.tipo === 'tec') { var tb = el('div', { class: 'diario-tec', role: 'button', style: 'cursor:pointer' }, [H.posicaoEl(l.p)]); tb.addEventListener('click', function () { diarioVirou = true; abrirNota('geral', null, l.iso); }); return tb; } /* tocar nas técnicas do dia cria uma nota nesse dia, como na página do Dia */
           var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
           x.addEventListener('click', function () { abrirNota('geral', n); }); return x;
         }
