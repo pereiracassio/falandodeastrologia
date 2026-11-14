@@ -142,11 +142,11 @@
   /* anotações feitas antes de a posição ser guardada: calcula agora (a posição de um momento passado é sempre a mesma) e guarda de uma vez, para nunca mais recalcular */
   var posTentadas = {};
   function completarPosicoes(rows) {
-    var falta = (rows || []).filter(function (n) { return !n.posicao && n.id && !posTentadas[n.id]; }).slice(0, 150);
+    var falta = (rows || []).filter(function (n) { return (!n.posicao || n.posicao.k !== 'todas') && n.id && !posTentadas[n.id]; }).slice(0, 150);
     if (!falta.length) return Promise.resolve(false);
     falta.forEach(function (n) { posTentadas[n.id] = true; });
     return Promise.all(falta.map(function (n) {
-      return posicaoEm(String(n.dia).slice(0, 10), n.hora ? String(n.hora).slice(0, 5) : '12:00', n.tecnica).then(function (p) {
+      return posicaoEm(String(n.dia).slice(0, 10), n.hora ? String(n.hora).slice(0, 5) : '12:00', 'geral').then(function (p) {
         if (!p) return false;
         n.posicao = p;
         return C.from('diario_notas').update({ posicao: p }).eq('id', n.id).then(function () { return true; }, function () { return true; });
@@ -345,6 +345,6 @@
   }
 
   /* o miolo de uma nota na lista: a nota geral mostra o texto primeiro e, embaixo, o retrato de todas as técnicas; a antiga, a posição da técnica e o texto */
-  function corpoNota(n) { var t = el('div', { class: 'nt', text: n.texto }), p = posicaoEl(n.posicao); return (n.tecnica === 'geral' ? [t, p] : [p, t]).filter(Boolean); }
+  function corpoNota(n) { var t = el('div', { class: 'nt', text: n.texto }), p = posicaoEl(n.posicao); return [t, p].filter(Boolean); }
   window.hellenicPonte = { corpoNota: corpoNota, cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, completarPosicoes: completarPosicoes, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
 })();
