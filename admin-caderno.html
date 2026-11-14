@@ -344,7 +344,7 @@
   <script src="portal.js?v=184"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=31"></script>
+  <script src="hellenic-ponte.js?v=32"></script>
   <script src="caderno-leitor.js?v=12"></script>
   <script src="caderno-producao.js?v=11"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -640,27 +640,32 @@
       var H = window.hellenicPonte, dia = nota ? String(nota.dia).slice(0, 10) : (diaFixo || ancora), p2 = function (n) { return String(n).padStart(2, '0'); }, agoraHm = p2(new Date().getHours()) + ':' + p2(new Date().getMinutes());
       folhaPequena(function (caixa, fechar) {
         var tit = el('h2', { style: 'color:var(--ocre)' }, [H.iconeTecnica(id, 26), document.createTextNode('  ' + H.nomeTecnica(id))]); /* ocre, como o título da técnica no diário */
+        var dataIn = el('input', { type: 'date', 'aria-label': 'Dia' }); dataIn.value = dia; /* o dia da nota também se escolhe aqui */
         var hora = el('input', { type: 'time', 'aria-label': 'Hora', style: 'min-height:36px;min-width:120px' }); hora.value = nota && nota.hora ? String(nota.hora).slice(0, 5) : agoraHm;
         var campo = el('textarea', { 'aria-label': 'Anotação' }), msg = el('p', { class: 'portal-msg' }), posBox = el('div', { class: 'pos-previa' }), posAtual = nota && nota.posicao ? nota.posicao : null, contaPos = 0;
         function mostrarPos() { posBox.textContent = ''; var e = H.posicaoEl(posAtual); if (e) posBox.appendChild(e); }
         /* onde a técnica estava nesse dia e hora: só CALCULA e mostra (nada é salvo aqui); vai junto na hora de Salvar */
-        function calcularPos() { var k = ++contaPos; H.posicaoEm(dia, hora.value, id).then(function (p) { if (k === contaPos && p) { posAtual = p; mostrarPos(); } }, function () { /* sem o mapa */ }); }
+        function diaAtual() { return /^\d{4}-\d{2}-\d{2}$/.test(dataIn.value) ? dataIn.value : dia; }
+        function calcularPos() { var k = ++contaPos; H.posicaoEm(diaAtual(), hora.value, id).then(function (p) { if (k === contaPos && p) { posAtual = p; mostrarPos(); } }, function () { /* sem o mapa */ }); }
         campo.value = nota ? nota.texto : '';
         var textoInicial = campo.value, horaInicial = hora.value, salvando = false;
-        function mudou() { return campo.value !== textoInicial || hora.value !== horaInicial; }
+        function mudou() { return campo.value !== textoInicial || hora.value !== horaInicial || diaAtual() !== dia; }
         function guardar(depois) {
           if (salvando) return; salvando = true;
-          H.salvarNota(dia, id, campo.value, hora.value, nota ? nota.id : null, posAtual).then(function () { atualizarNotas(); if (depois) depois(); }, function (er) { salvando = false; P.mensagem(msg, 'Não guardou (' + P.traduzErro(er.message) + ').', 'erro'); });
+          var d2 = diaAtual();
+          function gravar(pos) { H.salvarNota(d2, id, campo.value, hora.value, nota ? nota.id : null, pos, nota ? d2 : null).then(function () { atualizarNotas(); if (depois) depois(); }, function (er) { salvando = false; P.mensagem(msg, 'Não guardou (' + P.traduzErro(er.message) + ').', 'erro'); }); }
+          if (d2 !== dia) H.posicaoEm(d2, hora.value, id).then(function (p) { gravar(p || posAtual); }, function () { gravar(posAtual); }); /* mudou o dia: as técnicas são as do dia escolhido */
+          else gravar(posAtual);
         }
         var ok = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' }), nao = el('button', { type: 'button', class: 'portal-apagar', text: 'Cancelar' });
         ok.addEventListener('click', function () { guardar(fechar); });
         nao.addEventListener('click', fechar);
         var linhaBt = el('div', { style: 'display:flex;gap:18px;align-items:center;margin-top:12px' }, [ok, nao]);
         if (nota) { var ap = P.botaoApagar('Apagar'); ap.addEventListener('click', function () { if (!confirm('Apagar esta anotação?')) return; H.apagarNota(nota.id).then(function () { atualizarNotas(); fechar(); }, function (er) { P.mensagem(msg, 'Não apagou (' + P.traduzErro(er.message) + ').', 'erro'); }); }); linhaBt.appendChild(ap); }
-        caixa.appendChild(tit); caixa.appendChild(posBox); caixa.appendChild(P.colunaData ? el('div', { style: 'margin-bottom:8px' }, [el('label', { text: 'Hora' }), hora]) : hora); caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(linhaBt);
+        caixa.appendChild(tit); caixa.appendChild(posBox); caixa.appendChild(P.colunaData ? el('div', { style: 'margin-bottom:8px' }, [P.colunaData(dataIn, 'Dia')]) : dataIn); caixa.appendChild(P.colunaData ? el('div', { style: 'margin-bottom:8px' }, [el('label', { text: 'Hora' }), hora]) : hora); caixa.appendChild(campo); caixa.appendChild(msg); caixa.appendChild(linhaBt);
         /* tocar fora fecha a folha (quem fecha é folhaPequena); se havia texto novo, guarda antes de ir embora */
         var fundo = caixa.parentNode; if (fundo) fundo.addEventListener('click', function (ev) { if (ev.target === fundo && mudou() && campo.value.trim() && !salvando) guardar(); });
-        mostrarPos(); calcularPos(); hora.addEventListener('change', calcularPos); /* só recalcula a posição; salvar é só no botão */
+        mostrarPos(); calcularPos(); hora.addEventListener('change', calcularPos); dataIn.addEventListener('change', calcularPos); /* só recalcula a posição; salvar é só no botão */
         setTimeout(function () { campo.focus({ preventScroll: true }); }, 50);
       });
     }

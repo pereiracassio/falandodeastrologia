@@ -106,10 +106,11 @@
     return C.from('diario_notas').select('*').eq('dia', iso).order('hora').order('criado_em').then(function (r) { if (r.error) throw r.error; return r.data || []; });
   }
   /* idNota vazio = anotação nova; texto vazio apaga a anotação que já existia (e não cria nada se era nova) */
-  function salvarNota(iso, tecnica, texto, hora, idNota, posicao) {
+  function salvarNota(iso, tecnica, texto, hora, idNota, posicao, novoDia) {
     var t = String(texto || '').trim();
     if (!t) return idNota ? C.from('diario_notas').delete().eq('id', idNota).then(function (r) { if (r.error) throw r.error; }) : Promise.resolve();
     var dados = { texto: t, hora: hora || null, atualizado_em: new Date().toISOString() };
+    if (novoDia) dados.dia = novoDia; /* editar uma nota pode mudar o dia dela */
     if (posicao) dados.posicao = posicao; /* onde a técnica estava no dia e na hora da anotação */
     if (idNota) return C.from('diario_notas').update(dados).eq('id', idNota).then(function (r) { if (r.error) throw r.error; });
     dados.dia = iso; dados.tecnica = tecnica;
