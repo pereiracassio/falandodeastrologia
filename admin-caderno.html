@@ -632,7 +632,7 @@
         H.completarPosicoes(rows).then(function (mudou) { if (mudou && eu === pedido) desenharNotas(eu); });
       }, function () { alvo.textContent = ''; });
     }
-    function atualizarNotas() { if (visao === 'diario') { vistaDiario(); return; } desenharNotas(pedido); desenharHoras(pedido, isoDia(Date.now())); } /* a lista de cima (sem hora) e a linha do tempo (com hora) */
+    function atualizarNotas() { if (visao === 'diario') { vistaDiario(true); return; } desenharNotas(pedido); desenharHoras(pedido, isoDia(Date.now())); } /* a lista de cima (sem hora) e a linha do tempo (com hora) */
     /* nota = a anotação que já existe (editar) ou nada (anotação nova). A hora vem preenchida com a de agora e pode ser trocada.
        NADA é salvo ao mexer na hora (o seletor do iPhone dispara "change" ao abrir): só no botão Salvar, ou ao fechar tocando fora. */
     function abrirNota(id, nota) {
@@ -896,10 +896,11 @@
     /* ABA DIÁRIO: todas as anotações de todas as técnicas, em ordem cronológica (padrão: a mais nova primeiro; o botão ao lado do título inverte e a escolha fica guardada).
        As duas páginas do caderno se dividem em dias: a primeira metade na esquerda, o resto na direita. */
     var ORDEM_ICONES = { asc: '<path d="M18 10 V50 M8 40 L18 50 L28 40 M38 16 H44 M38 28 H50 M38 40 H56"/>', desc: '<path d="M18 54 V14 M8 24 L18 14 L28 24 M38 48 H44 M38 36 H50 M38 24 H56"/>' }; /* os mesmos ícones de ordem do Astro Hellenic */
-    var diarioIdx = Infinity, diarioNav = null, diarioRefaz = null;
+    var diarioVirou = false, diarioIdx = Infinity, diarioNav = null, diarioRefaz = null;
     /* ABA DIÁRIO: todas as anotações, em ordem cronológica (padrão: a mais nova primeiro; o botão inverte e a escolha fica guardada).
        NÃO rola: as anotações enchem a página da esquerda, depois a da direita, e seguem para a página seguinte do caderno; vira-se com o dedo (ou as setas). */
-    function vistaDiario() {
+    function vistaDiario(manter) { /* manter === true: só redesenha (guardou uma nota, terminou um cálculo) e fica na folha em que estava; senão abre na folha de HOJE */
+      if (manter !== true) diarioVirou = false; if (!diarioVirou) diarioIdx = Infinity; /* só fica onde está se ele já folheou */
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now()), H = window.hellenicPonte;
       var rolaE = el('div', { class: 'rola', style: 'overflow:hidden' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px;overflow:hidden' }), barra = el('div', { class: 'diario-barra' });
       diarioNav = null; diarioRefaz = null;
@@ -910,7 +911,7 @@
         var desc = res[0] !== 'asc', r = res[1];
         rolaE.textContent = '';
         if (r.error) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações (' + P.traduzErro(r.error.message) + ').' })); return; }
-        window.hellenicPonte.completarPosicoes(r.data || []).then(function (mudou) { if (mudou && eu === pedido) vistaDiario(); });
+        window.hellenicPonte.completarPosicoes(r.data || []).then(function (mudou) { if (mudou && eu === pedido) vistaDiario(true); });
         var notas = (r.data || []).slice().reverse(); /* do mais antigo ao mais novo: abre na última página (hoje) e folheia-se PARA TRÁS para achar as antigas */
         var inverter = el('button', { type: 'button', class: 'diario-ordem', title: desc ? 'Mais novo primeiro (tocar para inverter)' : 'Mais antigo primeiro (tocar para inverter)', 'aria-label': 'Inverter a ordem' }), contador = el('span', { class: 'diario-cont' });
         inverter.innerHTML = '<svg width="24" height="24" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' + ORDEM_ICONES[desc ? 'desc' : 'asc'] + '</svg>';
@@ -950,8 +951,7 @@
           function nova() { paginas.push([]); uso = 0; cap = paginas.length % 2 === 1 ? capE : capD; }
           linhas.forEach(function (l, i) {
             var preciso = alt[i] + (l.tipo === 'mud' && linhas[i + 1] ? alt[i + 1] : 0) + (l.tipo === 'dia' && linhas[i + 1] ? alt[i + 1] + (linhas[i + 1].tipo === 'tec' && linhas[i + 2] ? alt[i + 2] : 0) : 0); /* o título do dia nunca fica sozinho no pé da página */
-            if (l.tipo === 'dia' && l.iso === hojeIso && (uso > 0 || paginas.length > 1)) { nova(); if (paginas.length % 2 === 0) nova(); } /* hoje começa sempre no alto da página da esquerda; as antigas ficam para trás */
-            else if (uso > 0 && uso + preciso > cap) nova();
+            if (uso > 0 && uso + preciso > cap) nova();
             if (l.tipo === 'nota' && uso === 0) { var tit = { tipo: 'dia', iso: l.iso }; var ia = linhas.findIndex(function (z) { return z.tipo === 'dia' && z.iso === l.iso; }); if (paginas[paginas.length - 1].length === 0 && ia >= 0 && ia < i) { paginas[paginas.length - 1].push(tit); uso += alt[ia]; } } /* o dia que continua na página seguinte repete o título */
             if (l.tipo === 'dia' && l.iso === hojeIso) idxHoje = paginas.length - 1;
             paginas[paginas.length - 1].push(l); uso += alt[i];
@@ -967,7 +967,7 @@
           contador.textContent = (diarioIdx + 1) + ' / ' + spreads;
           if (animar) virar(animar);
         }
-        diarioNav = function (d) { var novo = diarioIdx + d; if (novo < 0 || novo >= spreads) return false; diarioIdx = novo; mostrar(d > 0 ? 'frente' : 'tras'); return true; };
+        diarioNav = function (d) { var novo = diarioIdx + d; if (novo < 0 || novo >= spreads) return false; diarioIdx = novo; diarioVirou = true; mostrar(d > 0 ? 'frente' : 'tras'); return true; };
         diarioRefaz = function () { paginar(); mostrar(); };
         requestAnimationFrame(function () { if (eu !== pedido) return; paginar(); mostrar(); });
       }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações.' })); } });
