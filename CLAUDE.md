@@ -538,3 +538,6 @@ Todo `<input type="date">` vira sozinho (`dataCaderno`, `portal.js`): **vazio mo
 
 ## Trilha: a linha de botões do passo rola para o lado (12/11/2026)
 `.acoes-passo` em `admin-alunos.html` rola (nunca quebra nem corta); botões `flex:none`.
+
+## Páginas de texto: SEMPRE com respiro, nada colado (14/11/2026) — bronca dele, vale para TODA página e peça nova
+Ao escrever qualquer página (serviço, curso, blog, aviso), conferir na imagem, ANTES de entregar, que nada fica colado: **linha em branco entre um parágrafo e o seguinte** (`margin-bottom: 18px` no `<p>`, ou `p.texto`/`p.texto-intro` como nas outras páginas de serviço), **respiro entre título, subtítulo e o primeiro parágrafo** (`margin-bottom: 25px` no subtítulo da abertura), e **todo subtítulo de seção com `class="subtitulo-secao"`** (30px em cima, 12px embaixo; nunca `<h2>` puro). Foi o que faltou em `fundamentos.html` (curso): ele teve de reclamar duas vezes. Olhar o print inteiro, não só o trecho que mexi.
