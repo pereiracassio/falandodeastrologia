@@ -38,6 +38,7 @@ Regras do astrólogo: página 1 = título centralizado, sem rodapé; índice na 
 3. **Um `.docx` só por apostila, que cresce: cada capítulo aprovado é ACRESCENTADO nele** (não refazer o documento do zero, não gerar arquivo novo a cada capítulo). Mandar só o `.docx`.
 4. **O PDF só no FIM, uma vez, quando ele disser que a apostila está pronta.** Nunca gerar PDF a cada capítulo.
 5. Antes de começar uma apostila: ler esta seção e as preferências do projeto; não esperar ele ensinar de novo.
+6. **Nomes dos antigos NUNCA se traduzem, nem na apostila nem na conversa (14/11/2026, bronca dele).** É **Vettius Valens** (na conversa e no texto, "Valens"), **NUNCA "Valente"**: "Valente" é palavra comum e ninguém sabe quem é o autor. Vale para todos: Ptolomeu, Fírmico Materno, Doroteu, Hefestião de Tebas, Antíoco de Atenas, Paulo de Alexandria, Manílio. Ele não consegue prestar atenção em mais nada quando vê o nome errado. Antes de entregar qualquer `.docx`, procurar "Valente" no texto; depois de uma troca de nome, conferir as apostilas anteriores.
 
 ## Caderno de estudos do aluno em PDF (18/10/2026)
 
