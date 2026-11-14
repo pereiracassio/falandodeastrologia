@@ -91,10 +91,11 @@
 
   /* ícones das técnicas: os MESMOS da barra de cima do Astro Hellenic (index.html, botões das ferramentas), desenho em grade 64 */
   var ICONES_TEC = {"circumambulacao": {"sw": "3", "inner": "<path d=\"M 32 8 A 24 24 0 1 1 10 24\"/> <polyline points=\"18,16 10,24 6,14\"/> <circle cx=\"32\" cy=\"32\" r=\"3\" fill=\"currentColor\" stroke=\"none\"/>"}, "liberacao": {"sw": "4", "inner": "<rect x=\"14\" y=\"28\" width=\"36\" height=\"28\" rx=\"5\"/> <path d=\"M22,28 V18 A12,12 0 0 1 44,10\"/> <circle cx=\"32\" cy=\"40\" r=\"3\" fill=\"currentColor\" stroke=\"none\"/> <line x1=\"32\" y1=\"43\" x2=\"32\" y2=\"49\"/>"}, "decenios": {"sw": "3", "inner": "<path d=\"M14,6 H50 M14,58 H50\"/> <path d=\"M16,6 C16,24 48,24 48,6\"/> <path d=\"M16,58 C16,40 48,40 48,58\"/> <path d=\"M28,26 L36,26 L32,32 Z\" fill=\"currentColor\" stroke=\"none\"/>"}, "profeccao": {"sw": "3", "inner": "<circle cx=\"32\" cy=\"32\" r=\"26\"/> <line x1=\"32\" y1=\"6\" x2=\"32\" y2=\"58\"/> <line x1=\"6\" y1=\"32\" x2=\"58\" y2=\"32\"/> <line x1=\"14\" y1=\"14\" x2=\"50\" y2=\"50\"/> <line x1=\"50\" y1=\"14\" x2=\"14\" y2=\"50\"/> <path d=\"M32,32 L48,20\" stroke-width=\"3.5\"/> <polyline points=\"42,18 48,20 46,26\" stroke-width=\"3.5\"/>"}};
-  var NOME_TEC = { circumambulacao: 'Circumambulação', liberacao_fortune: 'Liberação da Fortuna', liberacao_spirit: 'Liberação do Espírito', liberacao_venus: 'Liberação de Eros', decenios: 'Decênios', profeccao: 'Profecção' };
+  var NOME_TEC = { circumambulacao: 'Circumambulação', liberacao_fortune: 'Liberação da Fortuna', liberacao_spirit: 'Liberação do Espírito', liberacao_venus: 'Liberação de Eros', geral: 'Nota', decenios: 'Decênios', profeccao: 'Profecção' };
   var LOTE_TEC = { liberacao_fortune: 'Fortuna', liberacao_spirit: 'Espírito', liberacao_venus: 'Eros' };
   /* o ícone da técnica (e, na Liberação, o do lote logo depois) */
   function iconeTecnica(id, tam) {
+    if (id === 'geral') return el('span', { class: 'oe-tec', text: '✎' }); /* nota sem técnica: leva o retrato de todas */
     var base = id.indexOf('liberacao') === 0 ? 'liberacao' : id, d = ICONES_TEC[base], e = el('span', { class: 'oe-tec', title: NOME_TEC[id] || '' });
     if (d) { var sv = el('span'); sv.innerHTML = '<svg width="' + (tam || 22) + '" height="' + (tam || 22) + '" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="' + d.sw + '" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px">' + d.inner + '</svg>'; e.appendChild(sv); }
     if (LOTE_TEC[id]) e.appendChild(el('span', { class: 'oe-ic', style: 'margin-left:4px', text: icone(LOTE_TEC[id]) }));
@@ -122,7 +123,11 @@
       if (!m) return null;
       return carregarScripts().then(function () {
         var a = iso.split('-'), h = String(hhmm || '12:00').split(':'), quando = new Date(+a[0], +a[1] - 1, +a[2], +h[0] || 0, +h[1] || 0);
-        return window.ondeEstouHoje(m.nasc, quando).then(function (r) { return extrairPosicao(r, tecId); });
+        return window.ondeEstouHoje(m.nasc, quando).then(function (r) {
+          if (tecId !== 'geral') return extrairPosicao(r, tecId);
+          /* nota sem técnica: o retrato de TODAS naquele dia e hora, na ordem que ele escolheu no diário */
+          return lerOrdem(false).then(function (ordem) { return { k: 'todas', t: ordemValida(ordem).map(function (id) { return [id, extrairPosicao(r, id)]; }).filter(function (x) { return x[1]; }) }; });
+        });
       });
     }, function () { return null; });
   }
@@ -150,8 +155,14 @@
   }
   function gpCor(id, naSeita) { var e = glifo(PLANETA[id]); e.style.color = naSeita ? '#A03E25' : '#1F5FA3'; return e; }
   /* a linha da posição: "N1 ♑ N2 ♒ N3 ♈ N4 ♉" (Liberação), "N1 ☽ N2 ♂ N3 ♄" (Decênios), "Ano ♒ Mês ♓ 60h ♈" (Profecção), "Termo ♓ ♃ Aspecto △ ♃" (Circumambulação) */
-  function posicaoEl(p) {
+  function posicaoEl(p, resumido) {
     if (!p || !p.k) return null;
+    if (p.k === 'todas') { /* retrato de todas as técnicas: uma linha por técnica; resumido (linha do tempo) não mostra */
+      if (resumido) return null;
+      var cx = el('div', { class: 'nota-pos-todas' });
+      (p.t || []).forEach(function (x) { var l = posicaoEl(x[1]); if (l) cx.appendChild(el('div', { class: 'np-t' }, [iconeTecnica(x[0], 15), l])); });
+      return cx;
+    }
     var w = el('span', { class: 'nota-pos' });
     function par(rot, filho) { w.appendChild(el('span', { class: 'np-r', text: rot })); w.appendChild(filho); }
     if (p.k === 'lib') (p.s || []).forEach(function (s, i) { var f = el('span'); f.appendChild(sig(s)); if (p.sl && p.sl[i]) f.appendChild(selo('salto', true, true)); if (p.pc && p.pc[i]) f.appendChild(selo('pico', false, true)); par('N' + (i + 1), f); });
@@ -333,5 +344,7 @@
     return cx;
   }
 
-  window.hellenicPonte = { cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, completarPosicoes: completarPosicoes, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
+  /* o miolo de uma nota na lista: a nota geral mostra o texto primeiro e, embaixo, o retrato de todas as técnicas; a antiga, a posição da técnica e o texto */
+  function corpoNota(n) { var t = el('div', { class: 'nt', text: n.texto }), p = posicaoEl(n.posicao); return (n.tecnica === 'geral' ? [t, p] : [p, t]).filter(Boolean); }
+  window.hellenicPonte = { corpoNota: corpoNota, cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, completarPosicoes: completarPosicoes, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
 })();

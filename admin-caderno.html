@@ -121,6 +121,7 @@
     .cad .diario-ordem{background:transparent;border:0;border-radius:0;padding:2px 4px;color:var(--terracota);cursor:pointer}
     .cad .nota-diario:last-child{border-bottom:0}.cad .nota-diario .oe-tec{min-width:56px}
     .cad .nota-diario .nt{-webkit-line-clamp:unset;display:block;white-space:pre-wrap}
+    .cad .nota-pos-todas{display:flex;flex-direction:column;gap:3px;margin:6px 0 0}.cad .np-t{display:flex;align-items:baseline;gap:8px}.cad .np-t .oe-tec{flex:none;min-width:48px;white-space:nowrap}
     .cad .nota-pos{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 7px;font-size:12px;line-height:1.2;margin:0 0 1px}.cad .nota-pos .np-r{color:var(--ocre);font-weight:700;margin-right:-5px}.cad .nota-pos .oe-ic{font-size:15px;vertical-align:-1px}.cad .nota-pos .oe-as svg{height:15px;width:auto}
     .cad .selo-lib{display:inline-block;white-space:nowrap;padding:0 6px;margin-left:8px;font-size:11px;font-weight:700;line-height:1.5;color:var(--azul-egipcio-escuro,#1034A6);border:1px solid var(--azul-egipcio-escuro,#1034A6);vertical-align:middle}.cad .selo-lib.salto{color:var(--terracota);border-color:var(--terracota)}.cad .selo-lib.pq{padding:0 3px;margin-left:3px;font-size:9px}
     .cad .nota-dia .nc{flex:1;min-width:0}.cad .pos-previa:not(:empty){margin:2px 0 10px}
@@ -340,7 +341,7 @@
   <script src="portal.js?v=184"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=25"></script>
+  <script src="hellenic-ponte.js?v=26"></script>
   <script src="caderno-leitor.js?v=12"></script>
   <script src="caderno-producao.js?v=11"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -601,7 +602,7 @@
           if (!n.hora) return;
           var t = doIso(ancora, String(n.hora).slice(0, 5)), k = 0;
           for (var j = 0; j < horas.length; j++) if (t >= horas[j].ini) k = j;
-          var b = el('a', { class: 'evl nota-linha', href: '#' }, [window.hellenicPonte.iconeTecnica(n.tecnica, 16), window.hellenicPonte.posicaoEl(n.posicao), el('span', { class: 'evt-titulo', text: n.texto }), el('small', { text: String(n.hora).slice(0, 5) })].filter(Boolean));
+          var b = el('a', { class: 'evl nota-linha', href: '#' }, [window.hellenicPonte.iconeTecnica(n.tecnica, 16), window.hellenicPonte.posicaoEl(n.posicao, true), el('span', { class: 'evt-titulo', text: n.texto }), el('small', { text: String(n.hora).slice(0, 5) })].filter(Boolean));
           b.addEventListener('click', function (ev) { ev.preventDefault(); abrirNota(n.tecnica, n); });
           (porHora[k] = porHora[k] || []).push(b);
         });
@@ -622,7 +623,7 @@
         if (eu !== pedido) return;
         alvo.textContent = '';
         rows.filter(function (n) { return !n.hora; }).forEach(function (n) {
-          var l = el('div', { class: 'nota-dia', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, [H.posicaoEl(n.posicao), el('div', { class: 'nt', text: n.texto })].filter(Boolean))]);
+          var l = el('div', { class: 'nota-dia', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
           l.addEventListener('click', function () { abrirNota(n.tecnica, n); });
           alvo.appendChild(l);
         });
@@ -665,7 +666,7 @@
       alvo.textContent = '';
       window.hellenicPonte.ondeEstou(ancora).then(function (r) {
         if (eu !== pedido) return;
-        window.hellenicPonte.desenhar(alvo, r, abrirNota);
+        window.hellenicPonte.desenhar(alvo, r, function () { abrirNota('geral'); }); /* tocar em qualquer técnica cria uma nota geral, sem técnica */
       }, function (er) {
         if (eu !== pedido) return;
         alvo.textContent = ''; alvo.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível calcular (' + er.message + ').' }));
@@ -923,7 +924,7 @@
             var b = el('button', { type: 'button', class: 'dsem-cab botao-fixo diario-dia' + (l.iso === hojeIso ? ' eh-hoje' : ''), text: rot });
             b.addEventListener('click', function () { irAoDia(l.iso); }); return b;
           }
-          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, [H.posicaoEl(n.posicao), el('div', { class: 'nt', text: n.texto })].filter(Boolean))]);
+          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [H.iconeTecnica(n.tecnica, 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
           x.addEventListener('click', function () { abrirNota(n.tecnica, n); }); return x;
         }
         var paginas = [], spreads = 0;
