@@ -926,10 +926,10 @@
         /* o que mudou desde a nota anterior do mesmo dia (em ordem de hora): a linha "mudou" vem antes da nota */
         var porDia = {}; (r.data || []).forEach(function (n) { (porDia[String(n.dia).slice(0, 10)] = porDia[String(n.dia).slice(0, 10)] || []).push(n); });
         Object.keys(porDia).forEach(function (d) { var l = porDia[d].slice().sort(function (a, b) { return String(a.hora || '99').localeCompare(String(b.hora || '99')); }); for (var i = 1; i < l.length; i++) { var m = H.mudancas(l[i - 1].posicao, l[i].posicao); if (m.length) l[i]._mud = m; } });
-        /* os DIAS do mais novo ao mais antigo (hoje no alto), as notas de cada dia em ordem de hora; a folha mais nova é a ÚLTIMA do caderno e as antigas ficam para trás */
+        /* caderno normal: do mais antigo ao mais novo, o que se escreveu por último fica no fim; hoje não começa no alto, vem depois do que já estava escrito */
         var diasLista = []; notas.forEach(function (n) { var d = String(n.dia).slice(0, 10); if (diasLista.indexOf(d) < 0) diasLista.push(d); });
         if (diasLista.indexOf(hojeIso) < 0) diasLista.push(hojeIso); /* hoje sempre existe: sem notas hoje, aparece só com as técnicas de agora */
-        diasLista.sort().reverse();
+        diasLista.sort();
         diasLista.forEach(function (d) {
           linhas.push({ tipo: 'dia', iso: d });
           var rt = retratoDia[d] ? retratoDia[d].p : (d === hojeIso ? snapHoje : null); if (rt) linhas.push({ tipo: 'tec', p: rt, iso: d });
@@ -960,18 +960,17 @@
             var preciso = alt[i] + (l.tipo === 'mud' && linhas[i + 1] ? alt[i + 1] : 0) + (l.tipo === 'dia' && linhas[i + 1] ? alt[i + 1] + (linhas[i + 1].tipo === 'tec' && linhas[i + 2] ? alt[i + 2] : 0) : 0); /* o título do dia nunca fica sozinho no pé da página */
             if (uso > 0 && uso + preciso > cap) nova();
             if (l.tipo === 'nota' && uso === 0) { var tit = { tipo: 'dia', iso: l.iso }; var ia = linhas.findIndex(function (z) { return z.tipo === 'dia' && z.iso === l.iso; }); if (paginas[paginas.length - 1].length === 0 && ia >= 0 && ia < i) { paginas[paginas.length - 1].push(tit); uso += alt[ia]; } } /* o dia que continua na página seguinte repete o título */
-            if (l.tipo === 'dia' && l.iso === hojeIso) idxHoje = paginas.length - 1;
+            if (l.iso === hojeIso) idxHoje = paginas.length - 1; /* a página onde a última linha de hoje cai */
             paginas[paginas.length - 1].push(l); uso += alt[i];
           });
           spreads = Math.ceil(paginas.length / 2);
         }
         function mostrar(animar) {
-          if (diarioIdx === Infinity) diarioIdx = spreads - 1 - (idxHoje >= 0 ? Math.floor(idxHoje / 2) : 0); /* a folha de hoje é a última do caderno */ /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa */
+          if (diarioIdx === Infinity) diarioIdx = idxHoje >= 0 ? Math.floor(idxHoje / 2) : spreads - 1; /* a folha onde o dia de hoje termina (a última escrita) */ /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa */
           diarioIdx = Math.max(0, Math.min(spreads - 1, diarioIdx));
           rolaE.textContent = ''; rolaD.textContent = '';
-          var lido = spreads - 1 - diarioIdx; /* as páginas foram montadas do mais novo ao mais antigo; o caderno vai do antigo ao novo */
-          (paginas[lido * 2] || []).forEach(function (l) { rolaE.appendChild(criar(l)); });
-          (paginas[lido * 2 + 1] || []).forEach(function (l) { rolaD.appendChild(criar(l)); });
+          (paginas[diarioIdx * 2] || []).forEach(function (l) { rolaE.appendChild(criar(l)); });
+          (paginas[diarioIdx * 2 + 1] || []).forEach(function (l) { rolaD.appendChild(criar(l)); });
           contador.textContent = (diarioIdx + 1) + ' / ' + spreads;
           if (animar) virar(animar);
         }
