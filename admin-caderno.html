@@ -960,13 +960,13 @@
             var preciso = alt[i] + (l.tipo === 'mud' && linhas[i + 1] ? alt[i + 1] : 0) + (l.tipo === 'dia' && linhas[i + 1] ? alt[i + 1] + (linhas[i + 1].tipo === 'tec' && linhas[i + 2] ? alt[i + 2] : 0) : 0); /* o título do dia nunca fica sozinho no pé da página */
             if (uso > 0 && uso + preciso > cap) nova();
             if (l.tipo === 'nota' && uso === 0) { var tit = { tipo: 'dia', iso: l.iso }; var ia = linhas.findIndex(function (z) { return z.tipo === 'dia' && z.iso === l.iso; }); if (paginas[paginas.length - 1].length === 0 && ia >= 0 && ia < i) { paginas[paginas.length - 1].push(tit); uso += alt[ia]; } } /* o dia que continua na página seguinte repete o título */
-            if (l.iso === hojeIso) idxHoje = paginas.length - 1; /* a página onde a última linha de hoje cai */
+            if (l.tipo === 'dia' && l.iso === hojeIso) idxHoje = paginas.length - 1; /* a página onde o dia de hoje COMEÇA */
             paginas[paginas.length - 1].push(l); uso += alt[i];
           });
           spreads = Math.ceil(paginas.length / 2);
         }
         function mostrar(animar) {
-          if (diarioIdx === Infinity) diarioIdx = idxHoje >= 0 ? Math.floor(idxHoje / 2) : spreads - 1; /* a folha onde o dia de hoje termina (a última escrita) */ /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa */
+          if (diarioIdx === Infinity) diarioIdx = idxHoje >= 0 ? Math.floor(idxHoje / 2) : spreads - 1; /* a folha onde o dia de hoje começa */ /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa */
           diarioIdx = Math.max(0, Math.min(spreads - 1, diarioIdx));
           rolaE.textContent = ''; rolaD.textContent = '';
           (paginas[diarioIdx * 2] || []).forEach(function (l) { rolaE.appendChild(criar(l)); });
