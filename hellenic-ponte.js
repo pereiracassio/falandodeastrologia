@@ -168,9 +168,10 @@
     }
     var w = el('span', { class: 'nota-pos' });
     function par(rot, filho) { w.appendChild(el('span', { class: 'np-r', text: rot })); w.appendChild(filho); }
-    if (p.k === 'lib') (p.s || []).forEach(function (s, i) { var f = el('span'); f.appendChild(sig(s)); if (p.sl && p.sl[i]) f.appendChild(selo('salto', true, true)); if (p.pc && p.pc[i]) f.appendChild(selo('pico', false, true)); par('N' + (i + 1), f); });
-    else if (p.k === 'dec') (p.p || []).forEach(function (id, i) { par('N' + (i + 1), gpCor(id, p.ns && p.ns[i])); });
-    else if (p.k === 'prof') { par('Ano', sig(p.s[0])); if (p.s[1] != null) par('Mês', sig(p.s[1])); if (p.s[2] != null) par('60h', sig(p.s[2])); }
+    var of = p.off || 0; /* off: a partir de qual nível/posição (o que mudou) */
+    if (p.k === 'lib') (p.s || []).forEach(function (s, i) { var f = el('span'); f.appendChild(sig(s)); if (p.sl && p.sl[i]) f.appendChild(selo('salto', true, true)); if (p.pc && p.pc[i]) f.appendChild(selo('pico', false, true)); par('N' + (i + 1 + of), f); });
+    else if (p.k === 'dec') (p.p || []).forEach(function (id, i) { par('N' + (i + 1 + of), gpCor(id, p.ns && p.ns[i])); });
+    else if (p.k === 'prof') (p.s || []).forEach(function (sg, i) { if (sg != null) par(['Ano', 'Mês', '60h'][i + of], sig(sg)); });
     else if (p.k === 'circ') {
       if (p.ts != null) { var t = el('span'); t.appendChild(sig(p.ts)); t.appendChild(document.createTextNode(' ')); t.appendChild(gpCor(p.tp, p.tn)); par('Termo', t); }
       if (p.at) { var a = el('span'); a.appendChild(aspectoIcone(p.at)); a.appendChild(document.createTextNode(' ')); a.appendChild(gpCor(p.ap, p.an)); par('Aspecto', a); }
@@ -347,7 +348,30 @@
     return cx;
   }
 
+
+  /* o que mudou de uma nota para a seguinte: por técnica, a partir do primeiro nível que mudou (Liberação, Decênios, Profecção) ou tudo (Circumambulação) */
+  function mudancas(a, b) {
+    var res = [];
+    if (!a || !b || a.k !== 'todas' || b.k !== 'todas') return res;
+    var antes = {}; (a.t || []).forEach(function (x) { antes[x[0]] = x[1]; });
+    (b.t || []).forEach(function (x) {
+      var id = x[0], n = x[1], o = antes[id]; if (!n || !o) return;
+      if (n.k === 'circ') { if (JSON.stringify(n) !== JSON.stringify(o)) res.push([id, n]); return; }
+      var campos = n.k === 'lib' ? ['s', 'sl', 'pc'] : n.k === 'dec' ? ['p', 'ns'] : ['s'], base = campos[0], tam = (n[base] || []).length, i0 = -1;
+      for (var i = 0; i < tam && i0 < 0; i++) if (campos.some(function (c) { return (n[c] || [])[i] !== (o[c] || [])[i]; })) i0 = i;
+      if (i0 < 0) return;
+      var parc = { k: n.k, off: i0 }; campos.forEach(function (c) { parc[c] = (n[c] || []).slice(i0); });
+      res.push([id, parc]);
+    });
+    return res;
+  }
+  /* a linha "mudou": ícone da técnica + os níveis novos (um bloco por técnica que mudou) */
+  function mudancaEl(lista) {
+    var cx = el('div', { class: 'nota-pos-todas nota-mudou' });
+    lista.forEach(function (x) { var l = posicaoEl(x[1]); if (l) cx.appendChild(el('div', { class: 'np-t' }, [iconeTecnica(x[0], 15), l])); });
+    return cx;
+  }
   /* o miolo de uma nota na lista: a nota geral mostra o texto primeiro e, embaixo, o retrato de todas as técnicas; a antiga, a posição da técnica e o texto */
   function corpoNota(n) { var t = el('div', { class: 'nt', text: n.texto }), p = posicaoEl(n.posicao); return [t]; }
-  window.hellenicPonte = { corpoNota: corpoNota, ordemAtual: function () { return lerOrdem(true); }, cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, completarPosicoes: completarPosicoes, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
+  window.hellenicPonte = { mudancas: mudancas, mudancaEl: mudancaEl, corpoNota: corpoNota, ordemAtual: function () { return lerOrdem(true); }, cartao: cartao, cartaoOrdem: cartaoOrdem, ondeEstou: ondeEstou, desenhar: desenhar, notasDoDia: notasDoDia, salvarNota: salvarNota, apagarNota: apagarNota, iconeTecnica: iconeTecnica, posicaoEm: posicaoEm, posicaoEl: posicaoEl, completarPosicoes: completarPosicoes, nomeTecnica: function (id) { return NOME_TEC[id] || id; } };
 })();
