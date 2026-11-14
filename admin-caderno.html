@@ -121,6 +121,7 @@
     .cad .diario-ordem{background:transparent;border:0;border-radius:0;padding:2px 4px;color:var(--terracota);cursor:pointer}
     .cad .nota-diario:last-child{border-bottom:0}.cad .nota-diario .oe-tec{min-width:56px}
     .cad .nota-diario .nt{-webkit-line-clamp:unset;display:block;white-space:pre-wrap}
+    .cad .nota-diario{border-bottom:0;margin:0 0 18px;padding:0}.cad .diario-tec{margin:2px 0 16px}.cad .diario-tec .nota-pos-todas{margin:0}.cad .np-n{flex:none;min-width:112px;font-size:12px}
     .cad .nota-pos-todas{display:flex;flex-direction:column;gap:3px;margin:6px 0 0}.cad .np-t{display:flex;align-items:baseline;gap:8px}.cad .np-t .oe-tec{flex:none;min-width:48px;white-space:nowrap}
     .cad .nota-pos{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 7px;font-size:12px;line-height:1.2;margin:0 0 1px}.cad .nota-pos .np-r{color:var(--ocre);font-weight:700;margin-right:-5px}.cad .nota-pos .oe-ic{font-size:15px;vertical-align:-1px}.cad .nota-pos .oe-as svg{height:15px;width:auto}
     .cad .selo-lib{display:inline-block;white-space:nowrap;padding:0 6px;margin-left:8px;font-size:11px;font-weight:700;line-height:1.5;color:var(--azul-egipcio-escuro,#1034A6);border:1px solid var(--azul-egipcio-escuro,#1034A6);vertical-align:middle}.cad .selo-lib.salto{color:var(--terracota);border-color:var(--terracota)}.cad .selo-lib.pq{padding:0 3px;margin-left:3px;font-size:9px}
@@ -341,7 +342,7 @@
   <script src="portal.js?v=184"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=27"></script>
+  <script src="hellenic-ponte.js?v=28"></script>
   <script src="caderno-leitor.js?v=12"></script>
   <script src="caderno-producao.js?v=11"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -623,7 +624,7 @@
         if (eu !== pedido) return;
         alvo.textContent = '';
         rows.filter(function (n) { return !n.hora; }).forEach(function (n) {
-          var l = el('div', { class: 'nota-dia', role: 'button' }, [H.iconeTecnica('geral', 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
+          var l = el('div', { class: 'nota-dia', role: 'button' }, [el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
           l.addEventListener('click', function () { abrirNota('geral', n); });
           alvo.appendChild(l);
         });
@@ -903,7 +904,7 @@
       diarioNav = null; diarioRefaz = null;
       cabVista(esq, 'Diário', function () { diarioVirar(-1); }, function () { diarioVirar(1); });
       esq.appendChild(barra); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
-      Promise.all([valorSite('daily_diario_aba_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000)]).then(function (res) {
+      Promise.all([valorSite('daily_diario_aba_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000), window.hellenicPonte.ordemAtual()]).then(function (res) {
         if (eu !== pedido) return;
         var desc = res[0] !== 'asc', r = res[1];
         rolaE.textContent = '';
@@ -917,14 +918,17 @@
         if (!notas.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma anotação ainda.' })); return; }
         /* as linhas, na ordem: título do dia e as anotações dele */
         var linhas = [];
-        notas.forEach(function (n) { var d = String(n.dia).slice(0, 10); if (!linhas.length || linhas[linhas.length - 1].iso !== d) linhas.push({ tipo: 'dia', iso: d }); linhas.push({ tipo: 'nota', n: n, iso: d }); });
+        /* cada dia: o título, as técnicas (uma por linha, na ordem dele; o retrato da primeira nota do dia) e depois as notas, uma linha em branco entre elas */
+        var retratoDia = {}; (r.data || []).forEach(function (n) { var d = String(n.dia).slice(0, 10), h = n.hora ? String(n.hora).slice(0, 5) : '99'; if (n.posicao && n.posicao.k === 'todas' && (!retratoDia[d] || h < retratoDia[d].h)) retratoDia[d] = { h: h, p: n.posicao }; });
+        notas.forEach(function (n) { var d = String(n.dia).slice(0, 10); if (!linhas.length || linhas[linhas.length - 1].iso !== d) { linhas.push({ tipo: 'dia', iso: d }); if (retratoDia[d]) linhas.push({ tipo: 'tec', p: retratoDia[d].p, iso: d }); } linhas.push({ tipo: 'nota', n: n, iso: d }); });
         function criar(l) {
           if (l.tipo === 'dia') {
             var rot = SEMANA[diaSem(l.iso)] + ', ' + (+l.iso.slice(8)) + ' de ' + MESES[+l.iso.slice(5, 7) - 1] + (l.iso.slice(0, 4) !== hojeIso.slice(0, 4) ? ' de ' + l.iso.slice(0, 4) : '');
             var b = el('button', { type: 'button', class: 'dsem-cab botao-fixo diario-dia' + (l.iso === hojeIso ? ' eh-hoje' : ''), text: rot });
             b.addEventListener('click', function () { irAoDia(l.iso); }); return b;
           }
-          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [H.iconeTecnica('geral', 22), el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
+          if (l.tipo === 'tec') return el('div', { class: 'diario-tec' }, [H.posicaoEl(l.p)]);
+          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
           x.addEventListener('click', function () { abrirNota('geral', n); }); return x;
         }
         var paginas = [], spreads = 0;
@@ -938,7 +942,7 @@
           paginas = [[]]; var uso = 0, cap = capE;
           function nova() { paginas.push([]); uso = 0; cap = paginas.length % 2 === 1 ? capE : capD; }
           linhas.forEach(function (l, i) {
-            var preciso = alt[i] + (l.tipo === 'dia' && linhas[i + 1] ? alt[i + 1] : 0); /* o título do dia nunca fica sozinho no pé da página */
+            var preciso = alt[i] + (l.tipo === 'dia' && linhas[i + 1] ? alt[i + 1] + (linhas[i + 1].tipo === 'tec' && linhas[i + 2] ? alt[i + 2] : 0) : 0); /* o título do dia nunca fica sozinho no pé da página */
             if (uso > 0 && uso + preciso > cap) nova();
             if (l.tipo === 'nota' && uso === 0) { var tit = { tipo: 'dia', iso: l.iso }; var ia = linhas.findIndex(function (z) { return z.tipo === 'dia' && z.iso === l.iso; }); if (paginas[paginas.length - 1].length === 0 && ia >= 0 && ia < i) { paginas[paginas.length - 1].push(tit); uso += alt[ia]; } } /* o dia que continua na página seguinte repete o título */
             paginas[paginas.length - 1].push(l); uso += alt[i];
