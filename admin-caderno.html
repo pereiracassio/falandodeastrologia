@@ -343,7 +343,7 @@
   <script src="portal.js?v=184"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="hora-planetaria.js?v=1"></script>
-  <script src="hellenic-ponte.js?v=30"></script>
+  <script src="hellenic-ponte.js?v=31"></script>
   <script src="caderno-leitor.js?v=12"></script>
   <script src="caderno-producao.js?v=11"></script>
   <script src="caderno-projetos.js?v=1"></script>
@@ -740,7 +740,7 @@
     function empurrar() { if (aplicando) return; hist = hist.slice(0, hpos + 1); var sn = snapshot(); if (hist.length && JSON.stringify(hist[hist.length - 1]) === JSON.stringify(sn)) return; hist.push(sn); hpos = hist.length - 1; if (hist.length > 80) { hist.shift(); hpos--; } atualizarVoltar(); gravarHash(); }
     var viradaAuto = function () { return false; }; /* definida mais abaixo: a virada de folha com o efeito (foto da folha de antes dobrando sobre a nova) */
     function virar(sentido) { if (viradaAuto(sentido)) return; var f = cad.querySelector('.folha'); if (!f) return; f.classList.remove('vf', 'vt'); void f.offsetWidth; f.classList.add(sentido === 'tras' ? 'vt' : 'vf'); setTimeout(function () { f.classList.remove('vf', 'vt'); }, 400); }
-    function aplicar(sn, sentido) { aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
+    function aplicar(sn, sentido) { if (sn.visao === 'diario' && visao !== 'diario') diarioIdx = Infinity; aplicando = true; visao = sn.visao; ancora = sn.ancora; projSel = sn.projSel; projVer = sn.projVer || null; estSel = sn.estSel; estVer = sn.estVer || null; estAula = sn.estAula; prodSerie = sn.prodSerie; prodVideo = sn.prodVideo; prodCorte = sn.prodCorte; leitorCam = sn.leitorCam || leitorCam; leitorLivro = sn.leitorLivro || null; urlForcada = sn.embed; mostrarVisao(); aplicando = false; virar(sentido); }
     function podeVoltar() { return hpos > 0 && !!hist[hpos - 1] && hist[hpos - 1].visao === visao; } /* o histórico é de dentro da aba: nunca volta para outra aba */
     function podeAvancar() { return hpos < hist.length - 1 && !!hist[hpos + 1] && hist[hpos + 1].visao === visao; }
     function atualizarVoltar() { var b = document.getElementById('voltarTab'); if (b) b.hidden = true; } /* no caderno volta-se com o DEDO (virar a página): o botão ← voltar do topinho não aparece em lugar nenhum */
@@ -758,7 +758,7 @@
     }
     function voltarPagina() { if (!podeVoltar()) return false; hpos--; aplicar(hist[hpos], 'tras'); if (cad.classList.contains('p2')) paginaCel('p1'); return true; }
     function avancarPagina() { if (!podeAvancar()) return false; hpos++; aplicar(hist[hpos], 'frente'); return true; }
-    function irPara(v) { if (v === 'financeiro') finEst = null; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
+    function irPara(v) { if (v === 'financeiro') finEst = null; if (v === 'diario') diarioIdx = Infinity; visao = v; empurrar(); mostrarVisao(); virar('frente'); }
     function entrarPagina(redesenhar) { empurrar(); redesenhar(); virar('frente'); } /* quem chama já mudou o estado (o item tocado) */
     function periodo(d) { /* virar a página sem histórico: dia, semana, mês... anterior ou seguinte (os mesmos botões ‹ › da folha) */
       var alvo = null;
@@ -896,7 +896,7 @@
     /* ABA DIÁRIO: todas as anotações de todas as técnicas, em ordem cronológica (padrão: a mais nova primeiro; o botão ao lado do título inverte e a escolha fica guardada).
        As duas páginas do caderno se dividem em dias: a primeira metade na esquerda, o resto na direita. */
     var ORDEM_ICONES = { asc: '<path d="M18 10 V50 M8 40 L18 50 L28 40 M38 16 H44 M38 28 H50 M38 40 H56"/>', desc: '<path d="M18 54 V14 M8 24 L18 14 L28 24 M38 48 H44 M38 36 H50 M38 24 H56"/>' }; /* os mesmos ícones de ordem do Astro Hellenic */
-    var diarioIdx = 0, diarioNav = null, diarioRefaz = null;
+    var diarioIdx = Infinity, diarioNav = null, diarioRefaz = null;
     /* ABA DIÁRIO: todas as anotações, em ordem cronológica (padrão: a mais nova primeiro; o botão inverte e a escolha fica guardada).
        NÃO rola: as anotações enchem a página da esquerda, depois a da direita, e seguem para a página seguinte do caderno; vira-se com o dedo (ou as setas). */
     function vistaDiario() {
@@ -911,11 +911,11 @@
         rolaE.textContent = '';
         if (r.error) { rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações (' + P.traduzErro(r.error.message) + ').' })); return; }
         window.hellenicPonte.completarPosicoes(r.data || []).then(function (mudou) { if (mudou && eu === pedido) vistaDiario(); });
-        var notas = (r.data || []).slice(); if (!desc) notas.reverse();
+        var notas = (r.data || []).slice().reverse(); /* do mais antigo ao mais novo: abre na última página (hoje) e folheia-se PARA TRÁS para achar as antigas */
         var inverter = el('button', { type: 'button', class: 'diario-ordem', title: desc ? 'Mais novo primeiro (tocar para inverter)' : 'Mais antigo primeiro (tocar para inverter)', 'aria-label': 'Inverter a ordem' }), contador = el('span', { class: 'diario-cont' });
         inverter.innerHTML = '<svg width="24" height="24" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' + ORDEM_ICONES[desc ? 'desc' : 'asc'] + '</svg>';
         inverter.addEventListener('click', function () { diarioIdx = 0; gravarSite('daily_diario_aba_ordem', desc ? 'asc' : 'desc').then(function () { vistaDiario(); }); });
-        barra.appendChild(contador); barra.appendChild(inverter);
+        barra.appendChild(contador);
         if (!notas.length) { rolaE.appendChild(el('p', { class: 'vazio', text: 'Nenhuma anotação ainda.' })); return; }
         /* as linhas, na ordem: título do dia e as anotações dele */
         var linhas = [];

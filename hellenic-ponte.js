@@ -163,7 +163,7 @@
       var ord = ordemSalva ? ordemValida(ordemSalva) : null, lista = (p.t || []).slice(); /* na ordem que ele escolheu agora, não na de quando a nota foi feita */
       if (ord) lista.sort(function (a, b) { return ord.indexOf(a[0]) - ord.indexOf(b[0]); });
       var CURTO = { circumambulacao: 'Circumambulação', liberacao_fortune: 'Liberação', liberacao_spirit: 'Liberação', liberacao_venus: 'Liberação', decenios: 'Decênios', profeccao: 'Profecção' };
-      lista.forEach(function (x) { var l = posicaoEl(x[1]); if (l) cx.appendChild(el('div', { class: 'np-t' }, [iconeTecnica(x[0], 15), el('span', { class: 'np-n rotulo-fixo', text: CURTO[x[0]] || '' }), l])); });
+      lista.forEach(function (x) { var l = posicaoEl(x[1]); if (l) cx.appendChild(el('div', { class: 'np-t' }, [iconeTecnica(x[0], 15), l])); });
       return cx;
     }
     var w = el('span', { class: 'nota-pos' });
