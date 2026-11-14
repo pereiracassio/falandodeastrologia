@@ -273,7 +273,13 @@ window.ProducaoCaderno = function (ctx) {
     function guardarEstado() { return; }
     function guardarEstadoAntigo() { P.estado.gravar({ aba: aba, serie: serieAberta, video: videoAberto, vt: videoAberto && abaVideoDe === videoAberto && abaVideo !== 'video' ? abaVideo : '', corte: videoAberto && abaVideoDe === videoAberto && abaVideo === 'corte' && corteAberto ? corteAberto : '', st: serieAberta && abaSerieDe === serieAberta && abaSerie === 'videos' ? 'videos' : '' }); }
 
+    /* o que ele viu da última vez aparece NA HORA (memória ou cache de exibição no aparelho); a leitura de verdade vem por trás e só redesenha se mudou */
+    function rapido() {
+      if (!series.length && !videos.length) { try { var g = JSON.parse(localStorage.getItem('fda_cad_g_prod')); if (g && Array.isArray(g.s) && Array.isArray(g.v) && Array.isArray(g.c)) { series = g.s; videos = g.v; cortes = g.c; } } catch (e) { /* sem guardado */ } }
+      return series.length > 0 || videos.length > 0;
+    }
     function carregar() {
+      var antes = JSON.stringify([series, videos, cortes]);
       return Promise.all([
         C.from('prod_series').select('*').order('criado_em'),
         C.from('prod_videos').select('*').order('numero').order('criado_em'),
@@ -284,8 +290,11 @@ window.ProducaoCaderno = function (ctx) {
       ]).then(function (r) {
         if (r[0].error || r[1].error || r[2].error) throw new Error('prod');
         series = r[0].data || []; videos = r[1].data || []; cortes = r[2].data || [];
+        try { localStorage.setItem('fda_cad_g_prod', JSON.stringify({ s: series, v: videos, c: cortes })); } catch (e) { /* sem armazenamento */ }
+        var mudou = JSON.stringify([series, videos, cortes]) !== antes;
         if (r[4] && r[4].data && typeof r[4].data.valor === 'string') TEXTO_FIXO = r[4].data.valor;
         try { var salvo = r[3] && r[3].data && r[3].data.valor ? JSON.parse(r[3].data.valor) : null; if (salvo && isFinite(salvo.lat) && isFinite(salvo.lon) && isFinite(salvo.fuso)) LOCAL_HORAS = { nome: String(salvo.nome || 'outro lugar'), lat: +salvo.lat, lon: +salvo.lon, fuso: +salvo.fuso }; } catch (e) { /* fica em Jacareí */ }
+        return mudou;
       });
     }
 
@@ -1210,7 +1219,7 @@ window.ProducaoCaderno = function (ctx) {
     }
 
     return {
-      carregar: carregar, tela: tela,
+      carregar: carregar, rapido: rapido, tela: tela,
       ir: function (a, s, v, c) { aba = a; serieAberta = s || null; videoAberto = v || null; if (v && c) { corteAberto = c; abaVideo = 'corte'; abaVideoDe = v; } else { abaVideo = 'video'; abaVideoDe = null; } },
       estado: function () { return { aba: aba, serie: serieAberta, video: videoAberto, corte: abaVideo === 'corte' ? corteAberto : null }; },
       pronto: function () { return !!series; }

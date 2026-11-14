@@ -9,13 +9,19 @@ window.ProjetosCaderno = function (ctx) {
 
     /* mexer num passo (subir, descer, marcar) redesenha a tela, mas ela NÃO pode pular: guarda onde estava e volta ao mesmo lugar */
     function carregar() {
+      /* o que ele viu da última vez aparece NA HORA (memória ou cache de exibição no aparelho); a leitura de verdade vem por trás e só redesenha se mudou */
+      if (!projetos.length) { try { var g = JSON.parse(localStorage.getItem('fda_cad_g_proj')); if (g && Array.isArray(g.p) && Array.isArray(g.s)) { projetos = g.p; passos = g.s; } } catch (e) { /* sem guardado */ } }
+      var pintou = false, antes = JSON.stringify([projetos, passos]);
+      if (projetos.length) { try { desenhar(); pintou = true; } catch (e) { pintou = false; } }
       return Promise.all([
         C.from('projetos').select('id,nome,ordem,prioridade,data_fim,criado_em,data_inicio,projeto_pai_id,ordem_no_pai').order('ordem').order('criado_em'),
         C.from('projeto_passos').select('id,projeto_id,titulo,nota,feito,feito_em,ordem,data').order('ordem').order('criado_em')
       ]).then(function (res) {
         if (res[0].error || res[1].error) throw new Error('proj');
         projetos = res[0].data; passos = res[1].data;
+        try { localStorage.setItem('fda_cad_g_proj', JSON.stringify({ p: projetos, s: passos })); } catch (e) { /* sem armazenamento */ }
         if (arrumarNumeros()) return;
+        if (pintou && JSON.stringify([projetos, passos]) === antes) return;
         desenhar();
       });
     }

@@ -346,13 +346,13 @@
   <script src="hora-planetaria.js?v=1"></script>
   <script src="hellenic-ponte.js?v=32"></script>
   <script src="caderno-leitor.js?v=12"></script>
-  <script src="caderno-producao.js?v=11"></script>
-  <script src="caderno-projetos.js?v=1"></script>
+  <script src="caderno-producao.js?v=12"></script>
+  <script src="caderno-projetos.js?v=2"></script>
   <script src="caderno-agenda.js?v=5"></script>
   <script src="leitor.js?v=10"></script>
   <script src="caderno.js?v=11"></script>
   <script src="caderno-estudos.js?v=3"></script>
-  <script src="caderno-estudos-tela.js?v=1"></script>
+  <script src="caderno-estudos-tela.js?v=2"></script>
   <script src="todo-dados.js?v=7"></script>
   <script src="carrinho.js?v=6"></script>
   <script src="caderno-financeiro.js?v=1"></script>
@@ -422,9 +422,31 @@
         });
     }
     var agMod = null;
-    function modAgenda() { if (!agMod) { agMod = window.AgendaCaderno({ P: P, C: C, app: el('div') }); agMod.aoAtualizar(function () { cacheAno = {}; desenhar(); }); } return agMod; }
+    function modAgenda() { if (!agMod) { agMod = window.AgendaCaderno({ P: P, C: C, app: el('div') }); agMod.aoAtualizar(function () { cacheAno = {}; limpaEvsG(); desenhar(); }); } return agMod; }
     function eventosEntre(de, ate) { /* a Agenda completa lê (com tudo o que a edição precisa); aqui só se acerta a cor */
       return modAgenda().eventosEntre(de, ate).then(function (l) { l.forEach(function (x) { x.cor = x.cor || x.calCor || '#B5852F'; }); return l; });
+    }
+    /* GUARDADO NO APARELHO (só cache de exibição): cada tela abre NA HORA com o que ele viu da última vez e a leitura de verdade vem por trás; se mudou, a tela se redesenha sozinha.
+       Compromissos: chave 'ev|...'. Sem rede nova se a leitura é de menos de 8 s. */
+    var GUARDA = 'fda_cad_g_ev|';
+    function lerG(k) { try { return JSON.parse(localStorage.getItem(GUARDA + k)); } catch (e) { return null; } }
+    function gravarG(k, d) {
+      var txt = JSON.stringify({ t: Date.now(), d: d });
+      try { localStorage.setItem(GUARDA + k, txt); } catch (e) { limpaEvsG(); try { localStorage.setItem(GUARDA + k, txt); } catch (e2) { /* sem armazenamento: só fica mais lento */ } }
+      try { var ks = []; for (var i = 0; i < localStorage.length; i++) { var n = localStorage.key(i); if (n && n.indexOf(GUARDA) === 0) ks.push(n); } if (ks.length > 14) { ks.map(function (n) { var v = null; try { v = JSON.parse(localStorage.getItem(n)); } catch (e) { /* lixo */ } return { n: n, t: v && v.t || 0 }; }).sort(function (a, b) { return a.t - b.t; }).slice(0, ks.length - 14).forEach(function (o) { localStorage.removeItem(o.n); }); } } catch (e) { /* sem armazenamento */ }
+    }
+    function limpaEvsG() { try { var ks = []; for (var i = 0; i < localStorage.length; i++) { var n = localStorage.key(i); if (n && n.indexOf(GUARDA) === 0) ks.push(n); } ks.forEach(function (n) { localStorage.removeItem(n); }); } catch (e) { /* sem armazenamento */ } }
+    function eventosRap(de, ate, eu) {
+      var k = de + '|' + ate, g = lerG(k), vel = null;
+      if (g && g.d && Array.isArray(g.d.l)) { vel = g.d.l; vel.falhas = g.d.f || []; }
+      if (vel && Date.now() - g.t < 8000) return Promise.resolve(vel); /* acabou de ler: não pede de novo */
+      var busca = eventosEntre(de, ate).then(function (evs) {
+        var pac = { l: evs.slice(), f: evs.falhas || [] };
+        if (!pac.f.length) gravarG(k, pac);
+        return { evs: evs, pac: pac };
+      });
+      if (vel) { busca.then(function (x) { if (eu !== pedido) return; if (JSON.stringify(x.pac) !== JSON.stringify(g.d)) desenhar(); }, function () { /* fica com o guardado */ }); return Promise.resolve(vel); }
+      return busca.then(function (x) { return x.evs; });
     }
     function eventosEntreAntigo(de, ate) { /* (antigo, sem uso) */
       return preparar().then(function () {
@@ -584,7 +606,7 @@
       var regente = REGENTE[diaSem(ancora)]; document.getElementById('icDia').textContent = icone(regente);
       if (ancora === hojeIso) { var ag = el('div', { class: 'agora', style: 'top:' + pct(agora) }, [el('i', { text: hhmm(agora) })]); linha.appendChild(ag); }
       var pNotas = window.hellenicPonte ? window.hellenicPonte.notasDoDia(ancora).then(function (n) { return n; }, function () { return []; }) : Promise.resolve([]);
-      Promise.all([eventosEntre(d0, d1), pNotas]).then(function (res) {
+      Promise.all([eventosRap(d0, d1, eu), pNotas]).then(function (res) {
         var evs = res[0], notasDoDia = res[1];
         if (eu !== pedido) return;
         if (window.hellenicPonte) window.hellenicPonte.completarPosicoes(notasDoDia).then(function (mudou) { if (mudou && eu === pedido) desenharHoras(eu, hojeIso); });
@@ -831,7 +853,7 @@
     function preparaOut() { var e = document.getElementById('outEsq'), d = document.getElementById('outDir'); e.textContent = ''; d.textContent = ''; return [e, d]; }
     function carregando(onde) { onde.appendChild(el('p', { class: 'vazio', text: 'Carregando...' })); }
     function lerEventos(de, ate, eu, pronto, esq) {
-      eventosEntre(de, ate).then(function (evs) { if (eu !== pedido) return; if (evs.falhas && evs.falhas.length && esq) esq.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui ler: ' + evs.falhas.join(', ') })); pronto(evs); },
+      eventosRap(de, ate, eu).then(function (evs) { if (eu !== pedido) return; if (evs.falhas && evs.falhas.length && esq) esq.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui ler: ' + evs.falhas.join(', ') })); pronto(evs); },
         function (er) { if (eu !== pedido) return; var m = er.message === 'permissao' ? 'O Google ainda não deixou ver a agenda: abra a Agenda e toque em "Permitir o Google Agenda".' : 'Não foi possível ler a agenda (' + er.message + ').'; if (esq) esq.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: m })); pronto([]); });
     }
     function irAoDia(iso) { ancora = iso; irPara('dia'); }
@@ -1315,8 +1337,10 @@
       var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!prodMod) prodMod = window.ProducaoCaderno(prodCtx);
       prodCtx.esq = rolaE; prodCtx.dir = rolaD;
-      prodMod.carregar().then(function () {
-        if (eu !== pedido) return; rolaE.textContent = '';
+      var rapP = prodMod.rapido(); /* abre NA HORA com o que ele viu da última vez; a leitura de verdade vem por trás */
+      if (rapP) { try { prodMod.ir(prodSerie || prodVideo ? 'series' : 'hoje', prodSerie, prodVideo, prodCorte); prodMod.tela(); } catch (e) { rapP = false; } }
+      prodMod.carregar().then(function (mudou) {
+        if (eu !== pedido) return; if (rapP && mudou === false) return; rolaE.textContent = '';
         prodMod.ir(prodSerie || prodVideo ? 'series' : 'hoje', prodSerie, prodVideo, prodCorte); prodMod.tela();
       }, function () { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não consegui abrir a Produção.' })); } });
     }
@@ -1388,7 +1412,9 @@
       var rolaE = el('div', { class: 'rola portal' }), rolaD = el('div', { class: 'rola portal', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); /* o espaço de cima rola junto: o conteúdo só corta na moldura */ carregando(rolaE);
       if (!estMod) estMod = window.EstudosCaderno(estCtx);
       estCtx.esq = rolaE; estCtx.dir = rolaD; estMod.ir(estSel, estVer, estAula);
-      estMod.carregar().then(function () { if (eu !== pedido) return; rolaE.textContent = ''; estMod.desenhar(); }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os estudos (' + ((er && er.message) || '') + ').' })); } });
+      var rapE = estMod.rapido(); /* abre NA HORA com o que ele viu da última vez; a leitura de verdade vem por trás */
+      if (rapE) { try { rolaE.textContent = ''; estMod.desenhar(); } catch (e) { rapE = false; } }
+      estMod.carregar().then(function (mudou) { if (eu !== pedido) return; if (rapE && mudou === false) return; rolaE.textContent = ''; estMod.desenhar(); }, function (er) { if (eu === pedido) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível carregar os estudos (' + ((er && er.message) || '') + ').' })); } });
     }
 
     /* ---------- Financeiro: o mês à esquerda, os gráficos à direita. Virar a página volta ao mês anterior; avançar, ao próximo ---------- */

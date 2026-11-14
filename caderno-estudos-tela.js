@@ -47,11 +47,19 @@ window.EstudosCaderno = function (ctx) {
     function filhosDe(id) { return estudos.filter(function (e) { return e.estudo_pai_id === id; }); }
     function arvoreDe(e) { var r = [e]; filhosDe(e.id).forEach(function (f) { r = r.concat(arvoreDe(f)); }); return r; }
     function raizDe(id) { var q = estudos.filter(function (x) { return x.id === id; })[0]; while (q && q.estudo_pai_id) { var pai = q.estudo_pai_id; q = estudos.filter(function (x) { return x.id === pai; })[0]; } return q; }
+    var mudouEstudos = true;
     function carregarEstudos() {
       return C.from('estudos').select('*').order('criado_em').then(function (r) {
         if (r.error) return r.error;
-        estudos = r.data || []; return null;
+        var novo = r.data || []; mudouEstudos = JSON.stringify(novo) !== JSON.stringify(estudos);
+        estudos = novo; try { localStorage.setItem('fda_cad_g_estudos', JSON.stringify(estudos)); } catch (e) { /* sem armazenamento */ }
+        return null;
       });
+    }
+    /* o que ele viu da última vez aparece NA HORA (memória ou cache de exibição no aparelho); a leitura de verdade vem por trás */
+    function rapidoEstudos() {
+      if (!estudos.length) { try { var g = JSON.parse(localStorage.getItem('fda_cad_g_estudos')); if (Array.isArray(g)) estudos = g; } catch (e) { /* sem guardado */ } }
+      return estudos.length > 0;
     }
     function novoEstudo() {
       var nome = (prompt('Nome do estudo') || '').trim();
@@ -237,13 +245,15 @@ window.EstudosCaderno = function (ctx) {
     }
 
     function mostrarEstudo(est, corpo, encerrado) {
-      corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' }));
       var arv = arvoreDe(est).map(function (x) { return x.id; });
-      return Promise.all([
+      var CHE = 'fda_cad_g_est|' + est.id, velhoE = null; try { velhoE = JSON.parse(localStorage.getItem(CHE)); } catch (e) { velhoE = null; }
+      if (!Array.isArray(velhoE)) { velhoE = null; corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Carregando...' })); }
+      var busca = Promise.all([
         C.from('estudo_aulas').select('id,estudo_id,data,materia,titulo').in('estudo_id', arv).order('data').order('criado_em'),
         C.from('estudo_questoes').select('id,aula_id,tipo,correta'),
         C.from('estudo_respostas').select('questao_id,opcao,texto')
-      ]).then(function (rs) {
+      ]);
+      var usarE = function (rs) {
         corpo.textContent = '';
         var erro = rs[0].error || rs[1].error || rs[2].error;
         if (erro) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro(erro.message) })); return; }
@@ -456,6 +466,14 @@ window.EstudosCaderno = function (ctx) {
         });
         if (est.estudo_pai_id && !encerrado) P.voltarNoFim(corpo, voltarPai);
         corpo.appendChild(el('div', { style: 'margin:56px 0 8px;display:flex;justify-content:center;gap:40px;flex-wrap:wrap' }, est.estudo_pai_id ? [apagar] : [enc, apagar]));
+      };
+      if (velhoE) { try { usarE(velhoE); } catch (e) { velhoE = null; corpo.textContent = ''; } }
+      return busca.then(function (rs) {
+        if (rs[0].error || rs[1].error || rs[2].error) { if (!velhoE) usarE(rs); return; }
+        var novo = rs.map(function (x) { return { data: x.data, error: null }; }), sN = JSON.stringify(novo);
+        if (velhoE && sN === JSON.stringify(velhoE)) return;
+        try { localStorage.setItem(CHE, sN); } catch (e) { /* sem armazenamento */ }
+        usarE(novo);
       });
     }
 
@@ -743,7 +761,7 @@ window.EstudosCaderno = function (ctx) {
     }
 
     return {
-      carregar: function () { return carregarEstudos().then(function (erro) { if (erro) throw erro; }); }, desenhar: desenhar,
+      carregar: function () { return carregarEstudos().then(function (erro) { if (erro) throw erro; return mudouEstudos; }); }, rapido: rapidoEstudos, desenhar: desenhar,
       ir: function (a, v, au) { aberto = a || null; verEncerrado = v || null; aulaAberta = au || null; },
       estado: function () { return { aberto: aberto, ver: verEncerrado, aula: aulaAberta }; }
     };
