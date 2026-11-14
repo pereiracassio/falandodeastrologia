@@ -84,12 +84,12 @@
       var areaModelos = el('div'), msgModelo = el('p', { class: 'portal-msg' });
       var modelos = [], modeloAtual = null;
 
-      /* MODELOS (ficam no Supabase, valem em qualquer aparelho): guardam subtítulo, segunda linha, tamanho do título, folha e rodapé.
-         O título (nome do estudo ou do módulo) muda a cada documento e por isso não entra no modelo. */
-      function dadosDoModelo() { return { subtitulo: subtitulo.value.trim() || null, segunda_linha: nome.value.trim() || null, tamanho: estado.tamanho, formato: estado.formato, powered: estado.powered }; }
+      /* MODELOS (ficam no Supabase, valem em qualquer aparelho): guardam TODOS os campos exatamente como estavam ao salvar
+         (título, subtítulo, segunda linha, tamanho, folha e rodapé). Campo que ele não quer fixo, salva vazio. */
+      function dadosDoModelo() { return { titulo: titulo.value.trim() || null, subtitulo: subtitulo.value.trim() || null, segunda_linha: nome.value.trim() || null, tamanho: estado.tamanho, formato: estado.formato, powered: estado.powered }; }
       function aplicarModelo(m) {
         modeloAtual = m;
-        subtitulo.value = m.subtitulo || ''; nome.value = m.segunda_linha || '';
+        titulo.value = m.titulo || ''; subtitulo.value = m.subtitulo || ''; nome.value = m.segunda_linha || '';
         estado.tamanho = m.tamanho || 'm'; estado.formato = m.formato || 'a4'; estado.powered = !!m.powered;
         desenharOpcoes(); desenharModelos(); atualizar();
       }
@@ -206,7 +206,6 @@
 
       var cartaoModelos = el('div', { class: 'portal-cartao' }, [
         el('h2', { text: 'Modelos' }),
-        el('p', { text: 'Escolha um modelo para preencher o subtítulo, a segunda linha, o tamanho e a folha. Depois é só digitar o título do documento.' }),
         areaModelos, msgModelo
       ]);
       app.appendChild(cartaoModelos);
