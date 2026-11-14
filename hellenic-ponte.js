@@ -76,6 +76,19 @@
     return carregados;
   }
 
+  /* O CÁLCULO (ondeEstouHoje, pesado) é guardado na memória da sessão: mesmo mapa e mesmo minuto = mesma resposta, então ir para outra aba/dia e voltar
+     não calcula de novo. Guarda a promessa (chamadas ao mesmo tempo dividem o mesmo cálculo); se falhar, sai do guardado. */
+  var memoCalculo = {};
+  function calcularEm(m, quando) {
+    var k = JSON.stringify(m.nasc) + '|' + Math.floor(quando.getTime() / 60000);
+    if (!memoCalculo[k]) {
+      memoCalculo[k] = window.ondeEstouHoje(m.nasc, quando);
+      memoCalculo[k].catch(function () { delete memoCalculo[k]; });
+      var ks = Object.keys(memoCalculo); if (ks.length > 120) delete memoCalculo[ks[0]];
+    }
+    return memoCalculo[k];
+  }
+
   /* ---------- a lista para um dia ('AAAA-MM-DD') ---------- */
   function ondeEstou(diaIso) {
     return Promise.all([ler(), lerOrdem(true)]).then(function (x) {
@@ -84,7 +97,7 @@
       return carregarScripts().then(function () {
         var hoje = new Date(), a = diaIso.split('-'), agora = new Date(+a[0], +a[1] - 1, +a[2], 12, 0);
         if (hoje.getFullYear() === agora.getFullYear() && hoje.getMonth() === agora.getMonth() && hoje.getDate() === agora.getDate()) agora = hoje;
-        return window.ondeEstouHoje(m.nasc, agora).then(function (r) { r.nome = m.nome; r.agora = agora; r.ordem = ordem; r.dia = diaIso; return r; });
+        return calcularEm(m, agora).then(function (raw) { var r = Object.assign({}, raw); r.nome = m.nome; r.agora = agora; r.ordem = ordem; r.dia = diaIso; return r; });
       });
     });
   }
@@ -124,7 +137,7 @@
       if (!m) return null;
       return carregarScripts().then(function () {
         var a = iso.split('-'), h = String(hhmm || '12:00').split(':'), quando = new Date(+a[0], +a[1] - 1, +a[2], +h[0] || 0, +h[1] || 0);
-        return window.ondeEstouHoje(m.nasc, quando).then(function (r) {
+        return calcularEm(m, quando).then(function (r) {
           if (tecId !== 'geral') return extrairPosicao(r, tecId);
           /* nota sem técnica: o retrato de TODAS naquele dia e hora, na ordem que ele escolheu no diário */
           return lerOrdem(false).then(function (ordem) { return { k: 'todas', t: ordemValida(ordem).map(function (id) { return [id, extrairPosicao(r, id)]; }).filter(function (x) { return x[1]; }) }; });
