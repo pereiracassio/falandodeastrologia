@@ -356,7 +356,12 @@
     var antes = {}; (a.t || []).forEach(function (x) { antes[x[0]] = x[1]; });
     (b.t || []).forEach(function (x) {
       var id = x[0], n = x[1], o = antes[id]; if (!n || !o) return;
-      if (n.k === 'circ') { if (JSON.stringify(n) !== JSON.stringify(o)) res.push([id, n]); return; }
+      if (n.k === 'circ') { /* termo e aspecto andam cada um no seu tempo: só aparece o que mudou */
+        var pc = { k: 'circ' }, mudou = false;
+        if (n.ts !== o.ts || n.tp !== o.tp) { pc.ts = n.ts; pc.tp = n.tp; pc.tn = n.tn; mudou = true; }
+        if (n.at !== o.at || n.ap !== o.ap) { pc.at = n.at; pc.ap = n.ap; pc.an = n.an; mudou = true; }
+        if (mudou) res.push([id, pc]); return;
+      }
       var campos = n.k === 'lib' ? ['s', 'sl', 'pc'] : n.k === 'dec' ? ['p', 'ns'] : ['s'], base = campos[0], tam = (n[base] || []).length, i0 = -1;
       for (var i = 0; i < tam && i0 < 0; i++) if (campos.some(function (c) { return (n[c] || [])[i] !== (o[c] || [])[i]; })) i0 = i;
       if (i0 < 0) return;
