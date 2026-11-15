@@ -284,7 +284,7 @@ window.AgendaCaderno = function (ctx) {
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
       var acoes = [];
-      if (dig) { var w = el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]); acoes.push(w); }
+      if (dig) { var w = el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]); w.addEventListener('click', function (ev) { if (/iPhone|iPod|Android/i.test(navigator.userAgent)) { ev.preventDefault(); location.href = 'whatsapp://send?phone=' + (dig.length <= 11 ? '55' + dig : dig) + '&text=' + encodeURIComponent(texto); } }); /* iPhone/Android: wa.me estragava os emojis; whatsapp:// abre o app direto */ acoes.push(w); }
       acoes.push(fechar);
       destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:var(--terracota)' }), el('p', { text: rotuloDia(isoDia(e.ini)) + ' · faz ' + p.idade + ' anos', style: 'margin:10px 0 0' }), el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes)]));
     }
