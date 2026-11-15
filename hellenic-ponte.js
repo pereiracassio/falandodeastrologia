@@ -168,7 +168,7 @@
     })).then(function (r) { return r.some(Boolean); });
   }
   function gpCor(id, naSeita) { var e = glifo(PLANETA[id]); e.style.color = naSeita ? '#A03E25' : '#1F5FA3'; return e; }
-  /* a linha da posição: "N1 ♑ N2 ♒ N3 ♈ N4 ♉" (Liberação), "N1 ☽ N2 ♂ N3 ♄" (Decênios), "Ano ♒ Mês ♓ 60h ♈" (Profecção), "Termo ♓ ♃ Aspecto △ ♃" (Circumambulação) */
+  /* a linha da posição: "N1 ♑ N2 ♒ N3 ♈ N4 ♉" (Liberação), "N1 ☽ N2 ♂ N3 ♄" (Decênios), "Ano ♒ Mês ♓ 60h ♈" (Profecção), "Aspecto △ ♃ Termo ♓ ♃" (Circumambulação: primeiro o aspecto, depois o termo) */
   function posicaoEl(p, resumido) {
     if (!p || !p.k) return null;
     if (p.k === 'todas') { /* retrato de todas as técnicas: uma linha por técnica; resumido (linha do tempo) não mostra */
@@ -187,8 +187,8 @@
     else if (p.k === 'dec') (p.p || []).forEach(function (id, i) { par('N' + (i + 1 + of), gpCor(id, p.ns && p.ns[i])); });
     else if (p.k === 'prof') (p.s || []).forEach(function (sg, i) { if (sg != null) par(['Ano', 'Mês', '60h'][i + of], sig(sg)); });
     else if (p.k === 'circ') {
-      if (p.ts != null) { var t = el('span'); t.appendChild(sig(p.ts)); t.appendChild(document.createTextNode(' ')); t.appendChild(gpCor(p.tp, p.tn)); par('Termo', t); }
       if (p.at) { var a = el('span'); a.appendChild(aspectoIcone(p.at)); a.appendChild(document.createTextNode(' ')); a.appendChild(gpCor(p.ap, p.an)); par('Aspecto', a); }
+      if (p.ts != null) { var t = el('span'); t.appendChild(sig(p.ts)); t.appendChild(document.createTextNode(' ')); t.appendChild(gpCor(p.tp, p.tn)); par('Termo', t); }
     }
     return w;
   }
