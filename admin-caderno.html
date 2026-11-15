@@ -120,7 +120,7 @@
     .cad .diario-barra{display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px}.cad .diario-cont{font-size:13px;color:var(--preto-tinta)}
     .cad .diario-ordem{background:transparent;border:0;border-radius:0;padding:2px 4px;color:var(--terracota);cursor:pointer}
     .cad .nota-diario:last-child{border-bottom:0}.cad .nota-diario .oe-tec{min-width:56px}
-    .cad .nota-diario .nt{-webkit-line-clamp:unset;display:block;white-space:pre-wrap}
+    .cad .nota-dia.nota-diario .nt{-webkit-line-clamp:unset;display:block;white-space:pre-wrap;overflow:visible;max-height:none}
     .cad .nota-diario{border-bottom:0;margin:0 0 18px;padding:0}.cad .diario-tec{margin:2px 0 16px}.cad .diario-tec .nota-pos-todas{margin:0}.cad .np-n{flex:none;min-width:112px;font-size:12px}
     .cad .diario-mud{margin:0 0 6px}.cad .diario-mud .nota-pos-todas{margin:0}
     .cad .nota-pos-todas{display:flex;flex-direction:column;gap:3px;margin:6px 0 0}.cad .np-t{display:flex;align-items:baseline;gap:8px}.cad .np-t .oe-tec{flex:none;min-width:48px;white-space:nowrap}
@@ -970,26 +970,46 @@
           }
           if (l.tipo === 'mud') return el('div', { class: 'diario-mud' }, [H.mudancaEl(l.m)]);
           if (l.tipo === 'tec') { var tb = el('div', { class: 'diario-tec', role: 'button', style: 'cursor:pointer' }, [H.posicaoEl(l.p)]); tb.addEventListener('click', function () { diarioVirou = true; abrirNota('geral', null, l.iso); }); return tb; } /* tocar nas técnicas do dia cria uma nota nesse dia, como na página do Dia */
-          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [el('div', { class: 'nh', text: n.hora ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]);
-          x.addEventListener('click', function () { abrirNota('geral', n); }); return x;
+          var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [el('div', { class: 'nh', text: n.hora && !l.cont ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]); /* continuação na página seguinte: sem hora */
+          x.addEventListener('click', function () { abrirNota('geral', l.orig || n); }); return x;
         }
         var paginas = [], spreads = 0, idxHoje = -1;
         function paginar() {
-          /* mede cada linha com a largura real da página e enche as páginas na ordem esquerda, direita, esquerda... */
+          /* mede cada linha com a largura real da página e enche as páginas na ordem esquerda, direita, esquerda...
+             como num caderno de verdade: o texto corre sem parar; o que não cabe continua na página seguinte (sem repetir o título do dia) e o dia seguinte começa logo depois, no mesmo espaço */
           var larg = rolaE.clientWidth || 300, capE = rolaE.clientHeight, capD = rolaD.clientHeight - 66 || capE; /* no celular só uma página aparece: a outra usa a mesma medida */
           if (!rolaD.clientHeight) capD = capE;
           var teste = el('div', { class: 'rola', style: 'position:absolute;visibility:hidden;left:-9999px;top:0;overflow:visible;width:' + larg + 'px' }); esq.appendChild(teste);
-          var alt = linhas.map(function (l) { var e = criar(l); teste.appendChild(e); var cs = getComputedStyle(e); return e.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0); });
-          teste.remove();
+          function medir(l) { var e = criar(l); teste.appendChild(e); var cs = getComputedStyle(e), h = e.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0); teste.removeChild(e); return h; }
+          var alt = linhas.map(medir), MIN = 70; /* MIN: o mínimo de texto (umas 3 linhas) que precisa caber no pé da página para começar uma nota ali */
+          function parte(j) { var z = linhas[j]; return z ? (z.tipo === 'nota' ? Math.min(alt[j], MIN) : alt[j]) : 0; }
           paginas = [[]]; var uso = 0, cap = capE;
           function nova() { paginas.push([]); uso = 0; cap = paginas.length % 2 === 1 ? capE : capD; }
+          function colocar(l, h) { paginas[paginas.length - 1].push(l); uso += h; }
+          function corte(l, livre) { /* a maior parte do texto que cabe em "livre" (cortando entre palavras) */
+            var t = l.n.texto || '', pos = [], k; for (k = 1; k < t.length; k++) if (/\s/.test(t.charAt(k))) pos.push(k);
+            function frag(txt, cont) { return { tipo: 'nota', iso: l.iso, orig: l.orig || l.n, cont: cont, n: Object.assign({}, l.n, { texto: txt }) }; }
+            var lo = 0, hi = pos.length - 1, ach = -1;
+            while (lo <= hi) { var m = (lo + hi) >> 1; if (medir(frag(t.slice(0, pos[m]).replace(/\s+$/, ''), l.cont)) <= livre) { ach = m; lo = m + 1; } else hi = m - 1; }
+            if (ach < 0) return null;
+            var resto = t.slice(pos[ach]).replace(/^\s+/, ''); if (!resto) return null;
+            return { a: frag(t.slice(0, pos[ach]).replace(/\s+$/, ''), l.cont), resto: frag(resto, true) };
+          }
           linhas.forEach(function (l, i) {
-            var preciso = alt[i] + (l.tipo === 'mud' && linhas[i + 1] ? alt[i + 1] : 0) + (l.tipo === 'dia' && linhas[i + 1] ? alt[i + 1] + (linhas[i + 1].tipo === 'tec' && linhas[i + 2] ? alt[i + 2] : 0) : 0); /* o título do dia nunca fica sozinho no pé da página */
-            if (uso > 0 && uso + preciso > cap) nova();
-            if (l.tipo === 'nota' && uso === 0) { var tit = { tipo: 'dia', iso: l.iso }; var ia = linhas.findIndex(function (z) { return z.tipo === 'dia' && z.iso === l.iso; }); if (paginas[paginas.length - 1].length === 0 && ia >= 0 && ia < i) { paginas[paginas.length - 1].push(tit); uso += alt[ia]; } } /* o dia que continua na página seguinte repete o título */
+            var atual = l, h = alt[i], preciso = h;
+            if (l.tipo === 'mud') preciso = h + parte(i + 1);
+            else if (l.tipo === 'dia') preciso = h + (linhas[i + 1] && linhas[i + 1].tipo === 'tec' ? alt[i + 1] + parte(i + 2) : parte(i + 1)); /* o título do dia nunca fica sozinho no pé da página */
+            if (l.tipo !== 'nota' && uso > 0 && uso + preciso > cap) nova();
             if (l.tipo === 'dia' && l.iso === hojeIso) idxHoje = paginas.length - 1; /* a página onde o dia de hoje COMEÇA */
-            paginas[paginas.length - 1].push(l); uso += alt[i];
+            for (var volta = 0; volta < 500; volta++) {
+              if (uso + h <= cap) { colocar(atual, h); return; }
+              if (atual.tipo === 'nota' && cap - uso >= MIN) { var c = corte(atual, cap - uso); if (c) { colocar(c.a, medir(c.a)); atual = c.resto; h = medir(atual); nova(); continue; } }
+              if (uso > 0) { nova(); continue; }
+              colocar(atual, h); return; /* página vazia e nada cabe (tela minúscula): põe assim mesmo */
+            }
+            colocar(atual, h);
           });
+          teste.remove();
           spreads = Math.ceil(paginas.length / 2);
         }
         function mostrar(animar) {
