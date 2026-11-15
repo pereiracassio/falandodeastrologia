@@ -161,7 +161,7 @@
 
     /* folha pequena (cor da capa, nova tarefa) */
     .cad-fundo{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px}
-    .cad-fundo .cx-folha{background:var(--papiro-fundo);padding:22px 24px;max-width:420px;width:100%;border:1.5px solid var(--azul-egipcio-escuro)}
+    .cad-fundo .cx-folha{background:var(--papiro-fundo);padding:22px 24px;max-width:420px;width:100%;border:1.5px solid var(--azul-egipcio-escuro);box-sizing:border-box;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
     .cad-fundo h2{margin:0 0 12px}
     .cad-cores{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 16px}
     .cad-cores button{width:44px;height:44px;border-radius:50%;border:2px solid transparent;padding:0}
