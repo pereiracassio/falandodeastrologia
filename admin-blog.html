@@ -291,12 +291,11 @@
             if (doVideo && id && !doVideo.ligado) { doVideo.ligado = true; return C.from('prod_videos').update({ blog_post_id: String(id) }).eq('id', doVideo.video.id); }
           }).then(function () {
             /* "No blog" acompanha a postagem: marcado quando ela está publicada, desmarcado se voltar a rascunho (só o vídeo ligado a ela) */
-            if (id) return C.from('prod_videos').update({ blog_ok: !!publicar }).eq('blog_post_id', String(id)).then(function (r) {
-              if (!publicar || (r && r.error)) return r;
-              /* "No blog" se marcou sozinho: a data da etapa passa a ser hoje (só se ainda não tinha data) */
-              var d = new Date(), hoje = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-              return C.from('prod_videos').update({ data_blog: hoje }).eq('blog_post_id', String(id)).is('data_blog', null);
-            });
+            if (!id) return;
+            if (!publicar) return C.from('prod_videos').update({ blog_ok: false }).eq('blog_post_id', String(id));
+            /* "No blog" se marcou sozinho: a data da etapa passa a ser hoje (só na hora em que passa de não feito para feito) */
+            var d = new Date(), hoje = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            return C.from('prod_videos').update({ blog_ok: true, data_blog: hoje }).eq('blog_post_id', String(id)).or('blog_ok.is.null,blog_ok.eq.false');
           }).then(function () {
             if (imagemAntiga && imagemAntiga !== imagemUrl) removerImagemLivre(imagemAntiga);
             listaAposGravar();

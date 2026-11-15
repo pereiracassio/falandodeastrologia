@@ -440,7 +440,7 @@
       var hoje = iso(new Date()), dc = Object.assign({}, campos.datas_etapas || c.datas_etapas), mudou = false;
       ETAPAS_CORTE.forEach(function (rd) {
         var k = rd[0];
-        if (campos[k] === true && !c[k] && !dc[k]) { dc[k] = hoje; mudou = true; dataDaEtapaNaTela('[data-corte="' + c.id + '"][data-campo="' + k + '"]', hoje); }
+        if (campos[k] === true && !c[k]) { dc[k] = hoje; mudou = true; dataDaEtapaNaTela('[data-corte="' + c.id + '"][data-campo="' + k + '"]', hoje); }
       });
       if (mudou) campos.datas_etapas = dc;
     }
@@ -517,8 +517,8 @@
       ANTES_DO_YOUTUBE.forEach(function (k) {
         if (campos[k] !== true || v[k] || k === campo) return;
         var COL2 = { gravado: 'data_gravar' };
-        if (COL2[k]) { if (!v[COL2[k]]) campos[COL2[k]] = hoje; }
-        else { var de2 = Object.assign({}, campos.datas_etapas || v.datas_etapas); if (!de2[k]) { de2[k] = hoje; campos.datas_etapas = de2; } }
+        if (COL2[k]) campos[COL2[k]] = hoje;
+        else { var de2 = Object.assign({}, campos.datas_etapas || v.datas_etapas); de2[k] = hoje; campos.datas_etapas = de2; }
         dataDaEtapaNaTela('[data-video="' + v.id + '"][data-etapa="' + k + '"]', hoje);
       });
       Object.keys(campos).forEach(function (k) { v[k] = campos[k]; });
