@@ -321,6 +321,15 @@ window.ProducaoCaderno = function (ctx) {
     }
     /* marcar SEO marca também Corte e Legenda; marcar YouTube Shorts marca também Corte, Legenda e SEO (desmarcar não mexe nos outros) */
     var ANTES_NO_CORTE = { seo_ok: ['legenda_ok'], shorts: ['legenda_ok', 'seo_ok'] };
+    /* etapa que se marcou SOZINHA (SEO ao preencher texto e tags, Legenda junto do SEO ou do Shorts): ganha a data de hoje, como se ele tivesse tocado nela */
+    function datarMarcadasCorte(c, campos) {
+      var hoje = iso(new Date()), dc = Object.assign({}, campos.datas_etapas || c.datas_etapas), mudou = false;
+      ETAPAS_CORTE.forEach(function (rd) {
+        var k = rd[0];
+        if (campos[k] === true && !c[k] && !dc[k]) { dc[k] = hoje; mudou = true; dataDaEtapaNaTela('[data-corte="' + c.id + '"][data-campo="' + k + '"]', hoje); }
+      });
+      if (mudou) campos.datas_etapas = dc;
+    }
     function pintarCorte(c) {
       [].forEach.call(document.querySelectorAll('[data-corte="' + c.id + '"][data-campo]'), function (b) {
         var on = !!c[b.getAttribute('data-campo')];
@@ -334,6 +343,7 @@ window.ProducaoCaderno = function (ctx) {
           var novo = !c[rd[0]], campos = {}; campos[rd[0]] = novo;
           if (novo) (ANTES_NO_CORTE[rd[0]] || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
           if (novo) { var hojeC = iso(new Date()), dc = Object.assign({}, c.datas_etapas); dc[rd[0]] = hojeC; campos.datas_etapas = dc; dataDaEtapaNaTela('[data-corte="' + c.id + '"][data-campo="' + rd[0] + '"]', hojeC); } /* feita: a data passa a ser hoje */
+          datarMarcadasCorte(c, campos);
           Object.keys(campos).forEach(function (k) { c[k] = campos[k]; });
           pintarCorte(c);
           gravar('prod_cortes', cortes, c, campos);
@@ -389,6 +399,14 @@ window.ProducaoCaderno = function (ctx) {
         if (COL[campo]) campos[COL[campo]] = hoje; else { var de = Object.assign({}, v.datas_etapas); de[campo] = hoje; campos.datas_etapas = de; }
         dataDaEtapaNaTela('[data-video="' + v.id + '"][data-etapa="' + campo + '"]', hoje);
       }
+      /* as etapas anteriores que se marcaram sozinhas (ao marcar Membros ou Público) também ganham a data de hoje, se ainda não tinham */
+      ANTES_DO_YOUTUBE.forEach(function (k) {
+        if (campos[k] !== true || v[k] || k === campo) return;
+        var COL2 = { gravado: 'data_gravar' };
+        if (COL2[k]) { if (!v[COL2[k]]) campos[COL2[k]] = hoje; }
+        else { var de2 = Object.assign({}, campos.datas_etapas || v.datas_etapas); if (!de2[k]) { de2[k] = hoje; campos.datas_etapas = de2; } }
+        dataDaEtapaNaTela('[data-video="' + v.id + '"][data-etapa="' + k + '"]', hoje);
+      });
       Object.keys(campos).forEach(function (k) { v[k] = campos[k]; });
       pintarEtapas(v);
       return gravar('prod_videos', videos, v, campos);
@@ -1165,6 +1183,7 @@ window.ProducaoCaderno = function (ctx) {
           if (c.seo_ok || falta.length) return;
           var campos = { texto: tx.value, tags: tg.value.trim() || null, seo_ok: true };
           (ANTES_NO_CORTE.seo_ok || []).forEach(function (k) { if (!c[k]) campos[k] = true; });
+          datarMarcadasCorte(c, campos);
           Object.keys(campos).forEach(function (k) { c[k] = campos[k]; });
           pintarCorte(c); gravar('prod_cortes', cortes, c, campos).then(function (r) { if (r && !r.error) avisoFlutuante('Marcado: SEO'); });
         }
