@@ -26,6 +26,12 @@ fundo próprio (nada de `rgba(255,250,232,...)`, branco, bege): quebra a experi�
 Todo estudo novo (Artefatos) sai como `.docx` A4 editável no Pages + PDF, no padrão de `estudo-pages/` (ler o `LEIA-ME.md` e usar `gerar.js`/`numeros.py`). **Todo capítulo começa em página nova** (regra dele, 03/11/2026; já está no `gerar.js`).
 Regras do astrólogo: página 1 = título centralizado, sem rodapé; índice na página 2; rodapé "Falando de Astrologia Helenística" + número do índice em diante; frase de abertura do capítulo em negrito e não gigante; nunca refazer/mandar arquivo novo sem ele pedir.
 
+## Apostilas do curso: não pressionar e conferir o que falta antes de dar por pronta (16/11/2026) — bronca dele, vale para TODA apostila
+
+- **Nunca dizer "já tem tudo, pode escrever" nem "está pronto", e nunca apressar ele.** Quando o Claude faz isso, ele acha que está completo, a apostila fecha incompleta e o curso é para quem começa do zero. Aconteceu na apostila 3 (Os planetas): fechou explicando a natureza dos planetas, mas sem explicar o que cada planeta significa.
+- **Antes de dar um capítulo ou uma apostila por completo, conferir o escopo do módulo (plano do curso) contra o que o aluno do zero precisa saber ao fim dele, e apontar o que falta.** O assunto da apostila é visto NELA, não "lá na frente, em outra".
+- **Trazer um ponto de cada vez**, explicado devagar e separado, nunca vários misturados ("eu não sou IA"). Só avançar para escrever quando ele pedir. Capítulo novo: mostrar na conversa, esperar o ok e só então pôr no .docx; capítulo já fechado não se mexe sem ler o contexto da fonte antes de propor.
+
 ## Caderno de estudos do aluno em PDF (18/10/2026)
 
 Botão "Baixar meu caderno" na aba Atividades da página do aluno (`caderno.js`, só aparece se há atividades). O PDF é montado no navegador com jsPDF: capa fixa no código (`capa.js`, opção `aluno` = nome do aluno em azul acima do logo; título "Caderno de Estudos", subtítulo "Acompanhamento Prático de Astrologia", "Mentoria em Astrologia Clássica") + todas as atividades em ordem de data (perguntas, respostas, correções), fundo branco, no visual do documento A4 dos estudos (`estudo-pages/`). A capa NÃO entra na contagem: página 1 = folha de rosto (só o título), página 2 = índice (só o título das atividades, com número de página; duas passadas pra os números saírem certos), atividades depois. Capa e folha de rosto sem rodapé. Fontes em `fonts/` (Cinzel e Carlito, subconjunto latino, licença OFL), baixadas só na hora de gerar. Papiro só na capa (ruim de imprimir nas outras páginas).
