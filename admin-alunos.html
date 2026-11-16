@@ -260,9 +260,9 @@
           P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data,link').order('ordem').order('criado_em'),
           P.client.from('itens').select('id,titulo,bloco,data').eq('aluno_id', aluno.id).in('bloco', ['materiais', 'caderno', 'gravacoes']).order('criado_em')
         ]).then(function (rs) {
-          raiz.textContent = '';
+          /* a tela NÃO é esvaziada aqui: ela só é trocada de uma vez em desenhar(), senão a página encolhe e pula */
           itensAluno = (rs[2] && rs[2].data) || [];
-          if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as trilhas.' })); return; }
+          if (rs[0].error || rs[1].error) { raiz.textContent = ''; raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar as trilhas.' })); return; }
           trilhas = rs[0].data; var ids = trilhas.map(function (t) { return t.id; });
           passos = rs[1].data.filter(function (x) { return ids.indexOf(x.trilha_id) >= 0; });
           /* passo com link dos fatos: se o cliente já enviou, marca feito sozinho */
@@ -317,12 +317,10 @@
       /* campo de data da trilha: grava sozinho, e só redesenha quando perde o foco (para não fechar o calendário) */
       function campoDataTrilha(rotuloTxt, t, coluna, comPadrao) {
         var inp = el('input', { type: 'date', style: 'width:auto' }); inp.value = coluna === 'data_inicio' ? inicioDe(t) : (t[coluna] || '');
-        var sujo = false;
         inp.addEventListener('change', function () {
           var campos = {}; campos[coluna] = inp.value || null;
-          P.client.from('aluno_trilhas').update(campos).eq('id', t.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { t[coluna] = inp.value || null; sujo = true; } });
+          P.client.from('aluno_trilhas').update(campos).eq('id', t.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { t[coluna] = inp.value || null; if (barrasDe[t.id]) barrasDe[t.id](); } });
         });
-        inp.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; carregar(); } }, 300); });
         return P.colunaData(inp, rotuloTxt);
       }
       function novaTrilha() {
@@ -368,11 +366,14 @@
         });
       }
       function linhaPasso(x, grupo, i, leitura) {
+        var linhaEl = null;
+        /* depois de salvar, só esta linha é refeita no mesmo lugar (a tela e a rolagem não mexem); a ordem e os grupos só se acertam quando a aba abre de novo */
+        function refazer() { var nova = linhaPasso(x, grupo, i, leitura); nova.style.borderTop = linhaEl.style.borderTop; linhaEl.replaceWith(nova); if (barrasDe[x.trilha_id]) barrasDe[x.trilha_id](); }
         var ehMaterial = x.tipo === 'material', ehAtividade = x.tipo === 'atividade' || x.tipo === 'gravacao';
         var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito', style: 'flex:none;margin-top:4px' });
         cb.checked = (ehMaterial || ehAtividade) ? minhaParte(x) : (!!x.feito || !!x.link); cb.disabled = !!leitura || ehMaterial || ehAtividade || !!x.link; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
-          x.feito = cb.checked; desenhar();
+          x.feito = cb.checked; x.feito_em = x.feito ? new Date().toISOString() : null; refazer();
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
         var texto = [el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (minhaParte(x) ? 'text-decoration:line-through;opacity:.6' : '') })];
@@ -383,9 +384,8 @@
         if (leitura) { if (x.data) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--azul-egipcio-escuro,#1034A6)', text: 'até ' + P.dataBR(x.data) })); }
         else { /* data de conclusão do passo: grava sozinha; o aluno também vê, e o passo entra no To Do da Agenda */
           var dataP = el('input', { type: 'date' }); dataP.value = x.data || '';
-          var dataSuja = false; /* salva ao escolher; a lista só se reordena quando o campo perde o foco (redesenhar antes fecha o calendário do iPad) */
-          dataP.addEventListener('change', function () { P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else { x.data = dataP.value || null; dataSuja = true; } }); });
-          dataP.addEventListener('blur', function () { setTimeout(function () { if (dataSuja) { dataSuja = false; carregar(); } }, 300); });
+          /* só grava (a tela não é redesenhada, senão o calendário fecha e tudo muda de lugar); o passo vai para o grupo da nova data na próxima vez que a aba abrir */
+          dataP.addEventListener('change', function () { P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else x.data = dataP.value || null; }); });
           texto.push(P.colunaData(dataP, 'Até quando (opcional)'));
         }
         if (!leitura) {
@@ -424,7 +424,7 @@
               ligarBt.disabled = true;
               var campos = { tipo: tipo, item_id: null, atividade_id: null, lido_em: null, feito: false, feito_em: null };
               if (sel.value !== '__prep') campos[campoId] = sel.value;
-              P.client.from('aluno_trilha_passos').update(campos).eq('id', x.id).then(function (r) { if (r.error) { ligarBt.disabled = false; alert('Não foi possível ligar.'); } else carregar(); });
+              P.client.from('aluno_trilha_passos').update(campos).eq('id', x.id).then(function (r) { if (r.error) { ligarBt.disabled = false; alert('Não foi possível ligar.'); } else { for (var k in campos) x[k] = campos[k]; refazer(); } });
             });
             ligarBt.style.display = 'none';
             sel.addEventListener('change', function () { ligarBt.style.display = sel.value ? '' : 'none'; });
@@ -442,7 +442,6 @@
               P.client.from('aluno_trilha_passos').update({ link: seguro }).eq('id', x.id).then(function (r) { if (r.error) P.mensagem(msgL, P.traduzErro(r.error.message), 'erro'); else { x.link = seguro; P.mensagem(msgL, 'Salvo.', 'ok'); } });
             }
             campo.addEventListener('change', function () { clearTimeout(tm); tm = setTimeout(gravar, 300); });
-            campo.addEventListener('blur', function () { setTimeout(function () { if (!!x.link !== !!(campo.value.trim())) return; carregar(); }, 800); }); /* ao sair do campo a lista se refaz: passo com link vai para Feitos */
             campo.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(gravar, 1500); });
             areaLigar.appendChild(el('div', { style: 'margin-top:8px' }, [campo, msgL]));
           }
@@ -450,19 +449,21 @@
           acoes.appendChild(mini(x.tipo === 'material' ? 'Trocar material' : 'Ligar a um material', function () { abrirLigacao('material'); }));
           acoes.appendChild(mini(x.tipo === 'atividade' ? 'Trocar atividade' : 'Ligar a uma atividade', function () { abrirLigacao('atividade'); }));
           acoes.appendChild(mini(x.tipo === 'gravacao' ? 'Trocar gravação' : 'Ligar a uma gravação', function () { abrirLigacao('gravacao'); }));
-          if (x.tipo !== 'comum' && x.tipo) acoes.appendChild(mini('Tirar a ligação', function () { P.client.from('aluno_trilha_passos').update({ tipo: 'comum', item_id: null, atividade_id: null, lido_em: null }).eq('id', x.id).then(carregar); }));
-          acoes.appendChild(mini('Editar', function () { var t = (prompt('Passo', x.titulo) || '').trim(); if (!t || t === x.titulo) return; P.client.from('aluno_trilha_passos').update({ titulo: t }).eq('id', x.id).then(carregar); }));
+          if (x.tipo !== 'comum' && x.tipo) acoes.appendChild(mini('Tirar a ligação', function () { P.client.from('aluno_trilha_passos').update({ tipo: 'comum', item_id: null, atividade_id: null, lido_em: null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível tirar a ligação.'); return; } x.tipo = 'comum'; x.item_id = null; x.atividade_id = null; x.lido_em = null; refazer(); }); }));
+          acoes.appendChild(mini('Editar', function () { var t = (prompt('Passo', x.titulo) || '').trim(); if (!t || t === x.titulo) return; P.client.from('aluno_trilha_passos').update({ titulo: t }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); return; } x.titulo = t; refazer(); }); }));
           var ap = P.botaoApagar('Apagar');
           ap.addEventListener('click', function () { if (confirm('Apagar o passo "' + x.titulo + '"?')) P.client.from('aluno_trilha_passos').delete().eq('id', x.id).then(carregar); });
           acoes.appendChild(ap); texto.push(acoes); texto.push(areaLigar);
         }
-        return el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb])); /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
+        linhaEl = el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb]));
+        return linhaEl; /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
       }
       function listaDePassos(alvo, lista, leitura, grande) {
         var caixa = el('div', { style: 'border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3)' + (grande ? ';border-top:2px solid var(--azul-egipcio-claro,#1F5FA3)' : '') });
         lista.forEach(function (x, i) { var l = linhaPasso(x, lista, i, leitura); if (grande && i === 0) l.style.borderTop = '0'; caixa.appendChild(l); });
         alvo.appendChild(caixa);
       }
+      var barrasDe = {}; /* por trilha: refaz só as barras do cabeçalho, sem mexer na tela */
       var trilhasAbertas = []; /* trilhas abertas (sanfona); fica aqui para não fechar quando a tela se refaz */
       function cartaoDaTrilha(t) {
         var m = meus(t), feitos = m.filter(minhaParte).sort(function (a, b) { var da = dataDe(a), db = dataDe(b); if (da && db) return da < db ? -1 : da > db ? 1 : (a.ordem || 0) - (b.ordem || 0); if (da) return -1; if (db) return 1; return (a.ordem || 0) - (b.ordem || 0); }), pend = m.filter(function (x) { return !minhaParte(x); }).sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
@@ -477,9 +478,18 @@
         var renomear = mini('Renomear', function () { var n = (prompt('Assunto da trilha', t.nome) || '').trim(); if (n && n !== t.nome) P.client.from('aluno_trilhas').update({ nome: n }).eq('id', t.id).then(carregar); });
         cabeca.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px' }, [el('h2', { text: t.nome, style: 'margin:0;color:var(--terracota,#A03E25);font-size:18px' }), sinalT]));
         c.appendChild(el('div', { style: 'margin-bottom:6px' }, [renomear]));
-        cabeca.appendChild(P.barraLinha(pct, null, m.filter(function (x) { return pontos(x) >= 1; }).length + '/' + m.length));
-        /* prazo opcional: com data final aparece a barra do tempo logo embaixo, no mesmo desenho */
-        if (t.data_fim) cabeca.appendChild(P.barraTempoDias(inicioDe(t), t.data_fim));
+        var barraEl = null, tempoEl = null;
+        function desenharBarras() {
+          var mm = meus(t), pp = mm.length ? Math.floor(mm.reduce(function (a, x) { return a + pontos(x); }, 0) * 100 / mm.length) : 0;
+          var nb = P.barraLinha(pp, null, mm.filter(function (x) { return pontos(x) >= 1; }).length + '/' + mm.length);
+          if (barraEl) cabeca.replaceChild(nb, barraEl); else cabeca.appendChild(nb);
+          barraEl = nb;
+          /* prazo opcional: com data final aparece a barra do tempo logo embaixo, no mesmo desenho */
+          var nt = t.data_fim ? P.barraTempoDias(inicioDe(t), t.data_fim) : null;
+          if (tempoEl && nt) cabeca.replaceChild(nt, tempoEl); else if (nt) cabeca.appendChild(nt); else if (tempoEl) cabeca.removeChild(tempoEl);
+          tempoEl = nt;
+        }
+        desenharBarras(); barrasDe[t.id] = desenharBarras;
         c.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio', true), campoDataTrilha('Data final prevista (opcional)', t, 'data_fim')]));
         /* igual ao To do: Atrasados, um bloco por DIA, Sem data e Feitos (as edições de cada passo continuam as mesmas) */
         var hojeT = new Date().toLocaleDateString('sv-SE'), amanhaT = (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString('sv-SE'); })();
