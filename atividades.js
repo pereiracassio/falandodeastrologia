@@ -331,6 +331,8 @@
     cartao.style.display = 'none'; /* sem atividade nem aparece */
     atividadesDoAluno(aluno.id, true).then(function (r) {
       var lista = (r.error || !r.data) ? [] : r.data;
+      /* o aluno só vê o que já foi enviado e já abriu (rascunho e data de início no futuro ficam escondidos; na prévia do administrador também, para ser igual ao que o aluno vê) */
+      lista = lista.filter(function (a) { return !a.rascunho && !(a.data_inicio && a.data_inicio > hojeISO()); });
       if (opcoes.aoCarregar) opcoes.aoCarregar(lista.length, lista.filter(function (a) { return !a.enviada_em; }).length);
       if (!lista.length) return;
       cartao.style.display = '';

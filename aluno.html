@@ -50,7 +50,7 @@
   <script src="leitor.js?v=10"></script>
   <script src="curso.js?v=9"></script>
   <script src="conversa.js?v=12"></script>
-  <script src="atividades.js?v=46"></script>
+  <script src="atividades.js?v=47"></script>
   <script src="caderno.js?v=11"></script>
   <script>
   (function () {
@@ -346,7 +346,7 @@
       Promise.all([
         P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
         P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data,link').order('ordem').order('criado_em'),
-        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,devolvida_em').eq('aluno_id', aluno.id)
+        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,devolvida_em,rascunho,data_inicio').eq('aluno_id', aluno.id)
       ]).then(function (rs) {
         raiz.textContent = '';
         if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a trilha agora.' })); return; }
@@ -357,7 +357,9 @@
         if (fatosPend.length) Promise.all(fatosPend.map(function (x) {
           return fatosEnviadosDoLink(x.link).then(function (ok) { return ok ? P.client.rpc('marcar_fatos_enviado', { p_passo: String(x.id) }).then(function (r) { return r.error ? false : true; }) : false; });
         })).then(function (rr) { if (rr.some(Boolean)) { abaAoVoltar = 'trilha'; desenharPaginaDoAluno(userAtual, aluno, previa); } });
-        var ativs = (rs[2] && rs[2].data) || [];
+        var hojeT = new Date().toLocaleDateString('sv-SE');
+        /* atividade em rascunho ou com início no futuro não aparece para o aluno (nem na prévia do administrador): o passo fica "em preparação" */
+        var ativs = ((rs[2] && rs[2].data) || []).filter(function (a) { return !a.rascunho && !(a.data_inicio && a.data_inicio > hojeT); });
         var meus = function (t) { return passos.filter(function (x) { return x.trilha_id === t.id; }); };
         var ativDe = function (x) { return x.atividade_id ? ativs.filter(function (a) { return a.id === x.atividade_id; })[0] : null; };
         var dataDe = function (x) { if (x.data) return String(x.data).slice(0, 10); var i = x.item_id ? (itens || []).filter(function (y) { return y.id === x.item_id; })[0] : null; return i && i.data ? String(i.data).slice(0, 10) : ''; };
