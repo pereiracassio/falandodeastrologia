@@ -1166,20 +1166,40 @@
       cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px;align-items:center;gap:18px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' }), copiarRoteiro]));
       cartao.appendChild(linkRoteiro);
       cartao.appendChild(campo('Texto que vai junto', texto, function () { return texto.value; }));
-      /* nos capítulos (depois da palavra "Capítulos"), uma linha "2:28 1" vira "02:28 Título do bloco 1" quando você sai do campo */
-      texto.addEventListener('blur', function () {
-        if (!usaBlocos) return;
-        var achou = false, mudou = false;
-        var linhas = texto.value.split('\n').map(function (l) {
-          if (!achou) { if (/^\s*Cap[ií]tulos\s*$/i.test(l)) achou = true; return l; }
-          var m = l.match(/^\s*(\d{1,2}(?::\d{2}){1,2})\s+(?:bloco\s*)?(\d+)\s*$/i);
-          if (!m) return l;
-          var tt = String(rb.titulos[parseInt(m[2], 10) - 1] || '').trim(); if (!tt) return l;
-          var p = m[1].split(':').map(function (x, k, a) { return (k === 0 && a.length === 3) ? x : (x.length < 2 ? '0' + x : x); });
-          mudou = true; return p.join(':') + ' ' + tt;
+      /* nos capítulos (depois da palavra "Capítulos"), uma linha "2:28 1" vira "02:28 Título do bloco 1" NA HORA, sem sair do campo.
+         Só espera quando o número poderia continuar (10 ou mais blocos: o "1" pode ser o começo de "12"); aí vale ao dar Enter ou ao sair do campo. */
+      var expandindoCapitulos = false;
+      function expandirCapitulos(emEdicao) {
+        if (!usaBlocos || expandindoCapitulos) return;
+        var pos = texto.selectionStart, achou = false, mudou = false, ini = 0, desloc = 0, novoPos = pos, linhaCursor = texto.value.slice(0, pos).split('\n').length - 1;
+        var linhas = texto.value.split('\n'), saida = [];
+        linhas.forEach(function (l, i) {
+          var fim = ini + l.length, nova = l;
+          if (!achou) { if (/^\s*Cap[ií]tulos\s*$/i.test(l)) achou = true; }
+          else {
+            var m = l.match(/^\s*(\d{1,2}(?::\d{2}){1,2})\s+(?:bloco\s*)?(\d+)\s*$/i);
+            if (m) {
+              var n = parseInt(m[2], 10), tt = String(rb.titulos[n - 1] || '').trim();
+              var podeContinuar = emEdicao && i === linhaCursor && rb.blocos.length >= n * 10;
+              if (tt && !podeContinuar) {
+                var p = m[1].split(':').map(function (x, k, a) { return (k === 0 && a.length === 3) ? x : (x.length < 2 ? '0' + x : x); });
+                nova = p.join(':') + ' ' + tt; mudou = true;
+              }
+            }
+          }
+          if (i < linhaCursor) desloc += nova.length - l.length;
+          else if (i === linhaCursor) novoPos = nova !== l ? ini + desloc + nova.length : pos + desloc; /* o cursor vai para o fim da linha que virou título */
+          saida.push(nova); ini = fim + 1;
         });
-        if (mudou) { texto.value = linhas.join('\n'); texto.dispatchEvent(new Event('input')); }
-      });
+        if (!mudou) return;
+        expandindoCapitulos = true;
+        texto.value = saida.join('\n');
+        try { texto.setSelectionRange(novoPos, novoPos); } catch (e) { /* sem cursor */ }
+        texto.dispatchEvent(new Event('input'));
+        expandindoCapitulos = false;
+      }
+      texto.addEventListener('input', function () { expandirCapitulos(true); });
+      texto.addEventListener('blur', function () { expandirCapitulos(false); });
       var botLinha = P.botaoApagar('Adicionar linha'); /* discreto: só põe a linha e Capítulos no fim do texto */
       botLinha.addEventListener('click', function () {
         if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
