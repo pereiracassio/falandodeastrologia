@@ -1584,7 +1584,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     if (ta.classList.contains('escrita-livre')) return ta;
     ta.classList.add('escrita-livre');
     function crescer() { var h = alturaDoTexto(ta); if (h && ta.style.height !== h + 'px') ta.style.height = h + 'px'; } /* o campo de verdade NUNCA é encolhido para medir: a página não encolhe e a tela não sai do lugar */
-    ta.addEventListener('input', crescer); ta.addEventListener('focus', crescer);
+    ta.addEventListener('input', crescer); /* só mede quando o texto muda (ou a largura): tocar no campo não mede nada */
     if (window.ResizeObserver) { var largura = 0; new ResizeObserver(function () { if (ta.clientWidth !== largura) { largura = ta.clientWidth; crescer(); } }).observe(ta); }
     setTimeout(crescer, 0); setTimeout(crescer, 300); setTimeout(crescer, 1200);
     return ta;
