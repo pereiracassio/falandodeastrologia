@@ -301,6 +301,11 @@
   </style>
 </head>
 <body>
+<div id="abertura" style="position:fixed;inset:0;z-index:999"></div>
+<script>(function () { /* primeiro desenho = a cor da sua capa (nada de tela escrita "Caderno" enquanto carrega) */
+  var c = 'A03E25'; try { var g = localStorage.getItem('fda_caderno_capa'); if (g && /^[a-z0-9-]+$/i.test(g)) c = g; } catch (e) {}
+  document.getElementById('abertura').style.background = c === 'papiro' ? 'var(--papiro-capa)' : /^[0-9a-f]{6}$/i.test(c) ? '#' + c : 'var(--' + c + ')';
+})();</script>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
   <div class="portal"><div class="portal-caixa">
     <h1 class="portal-titulo">Caderno</h1>
@@ -1576,9 +1581,10 @@
     }
 
     /* ---------- começo ---------- */
+    function tirarAbertura() { var ab = document.getElementById('abertura'); if (ab) ab.remove(); }
     function mostrar() {
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
-      cad.classList.add('on', pagCel);
+      cad.classList.add('on', pagCel); tirarAbertura();
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
       var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && (ABAS.some(function (y) { return y[0] === h[1]; }) || EXTRAS[h[1]])) { /* configurações, avisos e mensagens também voltam */
         visao = h[1]; /* a aba volta ao lugar onde estava, mas o DIA é sempre o de hoje ao abrir: o d= do endereço não vale (ele escolheu assim, 12/11/2026) */
@@ -1592,11 +1598,21 @@
     }
     function iniciar(user) {
       app.textContent = '';
-      C.rpc('sou_admin').then(function (r) {
-        if (r.error || r.data !== true) { app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return; }
+      /* o caderno abre NA HORA quando este aparelho já sabe que você é o administrador (só aparência; os dados continuam protegidos no banco). O acesso é conferido por trás. */
+      var aberto = false, jaAdmin = false; try { jaAdmin = localStorage.getItem('fda_admin') === '1'; } catch (e) { /* sem armazenamento */ }
+      var abrir = function () {
+        if (aberto) return; aberto = true;
         valorSite('daily_abas_ordem').then(function (v) { var n = ordemDeBlocos(v); if (v && JSON.stringify(n) !== JSON.stringify(ordemBlocos)) window.fdaOrdemAbas(n); }, function () { /* fica a ordem do aparelho */ });
         mostrar(); /* (o gesto de borda do navegador não é mais armado: o dedo vira a página por dentro do caderno, de qualquer lugar, e o histórico do navegador fica sem entradas falsas, que mostravam a tela de trás do iPhone) */
         valorSite('daily_visual').then(function (v) { P.guardarModoDaily(v); if (v === 'padrao' && !/[?&]caderno=1/.test(location.search)) location.replace('admin-agenda.html' + (/^#v=(horas|todo)/.test(location.hash) ? location.hash.replace(/&d=.*/, '') : '')); });
+      };
+      if (jaAdmin) abrir();
+      C.rpc('sou_admin').then(function (r) {
+        if (r.error || r.data !== true) {
+          if (aberto) { cad.classList.remove('on'); document.querySelector('.portal-titulo').style.display = ''; }
+          tirarAbertura(); app.appendChild(el('div', { class: 'portal-cartao' }, [el('p', { text: 'Este e-mail não tem acesso ao painel.' })])); return;
+        }
+        abrir();
       });
     }
     try { var guardada = localStorage.getItem('fda_caderno_capa'); if (capaValida(guardada)) capa = guardada; } catch (e) { /* sem armazenamento */ }
@@ -1782,7 +1798,7 @@
       folha.addEventListener('pointercancel', function () { ativo = false; });
       folha.addEventListener('pointerup', function (ev) { if (!ativo || ev.pointerId !== id) return; ativo = false; var t = ev, dx = t.clientX - x0, dy = t.clientY - y0; if (Date.now() - t0 > 1500 || Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.5) return; virarPeloDedo(dx > 0 ? -1 : 1); });
     })();
-    C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else P.montarLogin(app, iniciar); });
+    C.auth.getSession().then(function (r) { if (r.data && r.data.session) iniciar(r.data.session.user); else { tirarAbertura(); P.montarLogin(app, iniciar); } });
   })();
   </script>
 </body>
