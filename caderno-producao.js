@@ -861,6 +861,11 @@ window.ProducaoCaderno = function (ctx) {
       var titulo = el('input', { type: 'text', maxlength: '160' }); titulo.value = v.titulo || '';
       var capaTexto = el('input', { type: 'text', maxlength: '160', placeholder: 'O que está escrito na capa do vídeo' }); capaTexto.value = v.capa_texto || '';
       var numero = el('input', { type: 'number', min: '1' }); numero.value = v.numero || '';
+      /* Copiar fixo no fim da linha do título: o título é copiado para a edição do vídeo */
+      var cpTitulo = P.botaoApagar('Copiar'); cpTitulo.style.flex = 'none';
+      cpTitulo.addEventListener('click', function () { var t = titulo.value.trim(); if (!t) return; copiarTexto(t).then(function () { avisoFlutuante('Título copiado'); }, function () { avisoFlutuante('Não consegui copiar', true); }); });
+      titulo.style.flex = '1'; titulo.style.minWidth = '0';
+      var linhaTitulo = el('div', { style: 'display:flex;align-items:flex-end;gap:14px' }, [titulo, cpTitulo]);
       var temporada = el('input', { type: 'number', min: '1' }); temporada.value = v.temporada || 1;
       var data = { get value() { return v.data_postar || ''; } }; /* a data de membros e a de público agora são as da barra de etapas; aqui só leem o vídeo */
       var link = el('input', { type: 'url', placeholder: 'https://youtu.be/...' }); link.value = v.link_youtube || '';
@@ -871,7 +876,7 @@ window.ProducaoCaderno = function (ctx) {
       var cardsLista = el('div', {});
       var avisoCards = el('p', { class: 'prod-sub', text: '' });
       var estadoSalvo = el('span', { class: 'prod-sub', text: '' });
-      cartao.appendChild(fila([1, 1], [campo('Título', titulo, function () { return titulo.value.trim(); }), campo('Texto da capa', capaTexto, function () { return capaTexto.value.trim(); })]));
+      cartao.appendChild(fila([1, 1], [campo('Título', linhaTitulo), campo('Texto da capa', capaTexto, function () { return capaTexto.value.trim(); })]));
       /* T (temporada), N (número) e Link numa linha só, também no celular; o link vira o ícone depois de colado */
       numero.setAttribute('max', '99'); temporada.setAttribute('max', '99'); link.placeholder = 'Colar o link';
       cartao.appendChild(fila([0.45, 0.45, 2], [campo('T', temporada), campo('N', numero), campo('Link', link)], true));
