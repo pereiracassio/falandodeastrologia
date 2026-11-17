@@ -37,7 +37,7 @@
     .cad{position:fixed;inset:0;z-index:1000;background:var(--capa,#A03E25);--moldura-m:.22;display:none}
     .cad.on{display:block}
     .cad::before{content:"";position:absolute;inset:8px;border:1.5px dashed var(--capa-fio,#e6d3a0);pointer-events:none}
-    .cad .miolo{position:absolute;inset:8px 69px 8px 47px} /* a folha vai até o pontilhado (em cima e embaixo) e até as abas (dos lados) */
+    .cad .miolo{position:absolute;inset:8px calc(var(--ab-dir,66px) + 3px) 8px 47px} /* a folha vai até o pontilhado (em cima e embaixo) e até as abas (dos lados) */
     .cad .folha :where(*:not(canvas):not(.lp):not(.lp *)){touch-action:pan-y pinch-zoom} /* as listas que rolam não engolem o gesto de virar a página */
     .cad{touch-action:pan-y pinch-zoom}
     .cad .folha{touch-action:pan-y pinch-zoom;position:relative;height:100%;background:var(--papiro-fundo);display:flex}
@@ -63,7 +63,8 @@
 
     /* marcadores presos na capa */
     .cad .abas{position:absolute;top:56px;bottom:56px;width:44px;display:flex;flex-direction:column;gap:0;z-index:2}
-    .cad .abas.esq{left:3px;width:44px}.cad .abas.dir{right:3px;width:66px} /* as abas caem por cima do pontilhado e são mais estreitas */
+    .cad .abas.esq{left:3px;width:44px}.cad .abas.dir{right:3px;width:max-content} /* a coluna tem a largura da palavra mais comprida (na fonte de verdade do aparelho) e a folha acompanha: --ab-dir é medida por ajustarAbasDir */
+    .cad .abas.dir .aba{padding:0 8px;box-sizing:border-box} /* as abas caem por cima do pontilhado e são mais estreitas */
     /* aba de caderno de verdade: o desenho (e o recorte) fica no ::before e a sombra no botão, senão o recorte cortaria a sombra. Contorno discreto + sombrinha: cada aba fica por cima da anterior (janeiro embaixo, dezembro em cima) e joga uma sombra para cima nela */
     .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;position:relative;background:none;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important;filter:drop-shadow(0 0 .6px rgba(26,20,16,.6)) drop-shadow(0 -2px 2px rgba(26,20,16,.32))}
     .cad .aba::before{content:'';position:absolute;inset:0;background:var(--papiro-fundo-simples);z-index:-1} /* atrás do texto (o filtro da aba já cria o contexto: sem isto o texto escrito direto no botão sumia) */
@@ -255,7 +256,7 @@
     @keyframes entraEsq{from{transform:translateX(-46px);opacity:0}to{transform:none;opacity:1}}
     @keyframes entraFade{from{opacity:.35}to{opacity:1}}
     .cad-aviso{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:1200;background:var(--papiro-fundo-simples);border:1.5px solid var(--terracota);color:var(--terracota);padding:10px 18px;max-width:86vw;text-align:center}
-    .cad .leitor-barra{display:none;position:absolute;left:47px;right:69px;bottom:calc(130px*var(--moldura-m) + 4px);z-index:4;justify-content:center;align-items:center;gap:2px;flex-wrap:nowrap}
+    .cad .leitor-barra{display:none;position:absolute;left:47px;right:calc(var(--ab-dir,66px) + 3px);bottom:calc(130px*var(--moldura-m) + 4px);z-index:4;justify-content:center;align-items:center;gap:2px;flex-wrap:nowrap}
     .cad.v-livro .leitor-barra{display:flex}
     .cad .lp,.cad .lp *{touch-action:pan-y!important}
     .cad.leitor-zoom .lp,.cad.leitor-zoom .lp *{touch-action:pan-x pan-y!important}
@@ -521,7 +522,14 @@
       };
       Array.prototype.forEach.call(document.querySelectorAll('#meses .aba[data-mes]'), function (b) { poe(b, 'm' + b.getAttribute('data-mes')); });
       Array.prototype.forEach.call(document.querySelectorAll('#abasDir .aba[data-v]'), function (b) { poe(b, 'v:' + b.getAttribute('data-v')); });
+      ajustarAbasDir();
     }
+    function ajustarAbasDir() { /* mede a coluna da direita com a fonte que o aparelho REALMENTE usa; sem isto o papelzinho de uma palavra comprida passava por cima da folha */
+      var d = document.getElementById('abasDir'); if (!d || getComputedStyle(d).flexDirection !== 'column') return;
+      var w = Math.ceil(d.getBoundingClientRect().width); if (w > 0) cad.style.setProperty('--ab-dir', w + 'px');
+    }
+    window.addEventListener('resize', ajustarAbasDir);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(ajustarAbasDir);
     window.fdaPintarAbas = pintarAbas; /* a janela de Configurações (dentro do caderno) chama isto ao escolher */
     window.addEventListener('storage', function (ev) { if (ev.key === CHAVE_ABAS) pintarAbas(); });
     /* ORDEM DAS ABAS DO LADO (Configurações → Personalização): cada bloco anda inteiro; dentro dele as abas ficam fixas. Quem não tem categoria é um bloco de uma aba só. Guardada em site_config.daily_abas_ordem (vale em qualquer aparelho; cópia no aparelho para abrir já na ordem) */
@@ -1593,7 +1601,7 @@
     function tirarAbertura() { var ab = document.getElementById('abertura'); if (ab) ab.remove(); }
     function mostrar() {
       app.textContent = ''; document.querySelector('.portal-titulo').style.display = 'none';
-      cad.classList.add('on', pagCel); tirarAbertura();
+      cad.classList.add('on', pagCel); tirarAbertura(); ajustarAbasDir(); requestAnimationFrame(ajustarAbasDir);
       document.getElementById('t' + (pagCel === 'p1' ? 1 : 2)).classList.add('aberta');
       var h = /#v=(\w+)(?:&d=(\d{4}-\d{2}-\d{2}))?/.exec(location.hash); if (h && (ABAS.some(function (y) { return y[0] === h[1]; }) || EXTRAS[h[1]])) { /* configurações, avisos e mensagens também voltam */
         visao = h[1]; /* a aba volta ao lugar onde estava, mas o DIA é sempre o de hoje ao abrir: o d= do endereço não vale (ele escolheu assim, 12/11/2026) */
