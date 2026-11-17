@@ -301,10 +301,19 @@
   </style>
 </head>
 <body>
-<div id="abertura" style="position:fixed;inset:0;z-index:999"></div>
-<script>(function () { /* primeiro desenho = a cor da sua capa (nada de tela escrita "Caderno" enquanto carrega) */
+<style>
+  /* a capa FECHADA enquanto o caderno carrega: costura (pontilhado) em cima, à direita e embaixo; à esquerda é a dobra, sem costura; o logo no meio da metade de cima */
+  #abertura{position:fixed;inset:0;z-index:999}
+  #abertura::before{content:"";position:absolute;inset:8px 8px 8px 0;border:1.5px dashed var(--ab-fio);border-left:0;pointer-events:none}
+  #abertura .ab-logo{position:absolute;left:0;right:0;top:0;height:50%;display:flex;align-items:center;justify-content:center}
+  #abertura .ab-logo i{display:block;width:min(72vw,640px);aspect-ratio:1404/190;background:var(--ab-fio);-webkit-mask:url(img/logo-menu-daily-linha.svg) center/contain no-repeat;mask:url(img/logo-menu-daily-linha.svg) center/contain no-repeat}
+</style>
+<div id="abertura"><div class="ab-logo"><i></i></div></div>
+<script>(function () { /* primeiro desenho = a sua capa fechada (nada de tela escrita "Caderno" enquanto carrega) */
   var c = 'A03E25'; try { var g = localStorage.getItem('fda_caderno_capa'); if (g && /^[a-z0-9-]+$/i.test(g)) c = g; } catch (e) {}
-  document.getElementById('abertura').style.background = c === 'papiro' ? 'var(--papiro-capa)' : /^[0-9a-f]{6}$/i.test(c) ? '#' + c : 'var(--' + c + ')';
+  var ab = document.getElementById('abertura');
+  ab.style.background = c === 'papiro' ? 'var(--papiro-capa)' : /^[0-9a-f]{6}$/i.test(c) ? '#' + c : 'var(--' + c + ')';
+  ab.style.setProperty('--ab-fio', c === 'papiro' ? '#1034A6' : '#e6d3a0');
 })();</script>
 <div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
   <div class="portal"><div class="portal-caixa">
