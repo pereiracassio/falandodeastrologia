@@ -1015,7 +1015,11 @@ window.ProducaoCaderno = function (ctx) {
         var it = {};
         var ta = el('textarea', { rows: '6' }); ta.value = texto;
         var ti = el('input', { type: 'text', placeholder: 'Título do bloco (entra nos capítulos)' }); ti.value = tituloBloco || '';
-        var c = campo('', ta); c.firstChild.classList.add('rotulo-ocre'); c.insertBefore(ti, ta);
+        var c = campo('', ta); c.firstChild.classList.add('rotulo-ocre'); /* Copiar fixo no fim da linha do título do bloco: é o título que vai para a edição do vídeo */
+        var cpB = P.botaoApagar('Copiar'); cpB.style.flex = 'none';
+        cpB.addEventListener('click', function () { var tt = ti.value.trim(); if (!tt) return; copiarTexto(tt).then(function () { avisoFlutuante('Título copiado'); }, function () { avisoFlutuante('Não consegui copiar', true); }); });
+        ti.style.flex = '1'; ti.style.minWidth = '0';
+        c.insertBefore(el('div', { style: 'display:flex;align-items:flex-end;gap:14px' }, [ti, cpB]), ta);
         var tirar = P.botaoApagar('Apagar'); /* detalhe discreto, no fim do bloco */
         var acoes = el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [tirar]);
         it.raiz = el('div', {}, [c, acoes]); it.rot = c.firstChild; it.ta = ta; it.acoes = acoes;
