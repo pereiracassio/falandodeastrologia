@@ -392,7 +392,7 @@
         cb.checked = (ehMaterial || ehAtividade) ? minhaParte(x) : (!!x.feito || !!x.link); cb.disabled = !!leitura || ehMaterial || ehAtividade || !!x.link; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
           x.feito = cb.checked; x.feito_em = x.feito ? new Date().toISOString() : null;
-          var parte = minhaParte(x); tituloSp.style.textDecoration = parte ? 'line-through' : ''; tituloSp.style.opacity = parte ? '.6' : ''; if (barrasDe[x.trilha_id]) barrasDe[x.trilha_id]();
+          if (barrasDe[x.trilha_id]) barrasDe[x.trilha_id](); if (cartoes[x.trilha_id]) cartoes[x.trilha_id].organizar(); /* marcou: o passo vai para Feitos (desmarcou: volta), sem refazer nada */
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
         var tituloSp = el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (minhaParte(x) ? 'text-decoration:line-through;opacity:.6' : '') });
@@ -492,6 +492,7 @@
           acoes.appendChild(ap); texto.push(acoes); texto.push(areaLigar);
         }
         linhaEl = el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb]));
+        linhaEl.__pintar = function () { var parte = minhaParte(x); tituloSp.style.textDecoration = parte ? 'line-through' : ''; tituloSp.style.opacity = parte ? '.6' : ''; }; /* o risco do título acompanha o grupo (Feitos) */
         linhaEl.__refazer = refazer; linhaEl.__ajustaSetas = function () { if (linhaPassoSetas) linhaPassoSetas(); }; if (!leitura) linhasDe[x.id] = linhaEl;
         return linhaEl; /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
       }
@@ -551,7 +552,7 @@
           });
           corpo.appendChild(cx);
         });
-        linhasOrg.forEach(function (l) { if (l.__ajustaSetas) l.__ajustaSetas(); });
+        linhasOrg.forEach(function (l) { if (l.__pintar) l.__pintar(); if (l.__ajustaSetas) l.__ajustaSetas(); });
         }
         var campo = el('input', { type: 'text', placeholder: 'Novo passo', style: 'flex:1;min-width:0' });
         var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
