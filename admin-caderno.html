@@ -306,9 +306,10 @@
   #abertura{position:fixed;inset:0;z-index:999}
   #abertura::before{content:"";position:absolute;inset:8px 8px 8px 0;border:1.5px dashed var(--ab-fio);border-left:0;pointer-events:none}
   #abertura .ab-logo{position:absolute;left:0;right:0;top:0;height:50%;display:flex;align-items:center;justify-content:center}
-  #abertura .ab-logo img{display:block;width:min(78vw,760px);height:auto} /* o logo do Hellenic Daily em papiro com moldura (img/logo-completa-daily.svg), igual ao do Falando de Astrologia mas numa linha só */
+  #abertura .ab-placa{position:relative;--moldura-m:.4;background:var(--papiro-fundo);padding:calc(130px*var(--moldura-m) + 14px) calc(80px*var(--moldura-m) + 22px)} /* o papiro com a moldura de meandros do site (papiro.css), igual ao das páginas */
+  #abertura .ab-placa img{display:block;width:min(62vw,560px);height:auto}
 </style>
-<div id="abertura"><div class="ab-logo"><img src="img/logo-completa-daily.svg" alt="Hellenic Daily"></div></div>
+<div id="abertura"><div class="ab-logo"><div class="ab-placa papiro-moldura"><img src="img/logo-menu-daily-linha.svg" alt="Hellenic Daily"></div></div></div>
 <script>(function () { /* primeiro desenho = a sua capa fechada (nada de tela escrita "Caderno" enquanto carrega) */
   var c = 'A03E25'; try { var g = localStorage.getItem('fda_caderno_capa'); if (g && /^[a-z0-9-]+$/i.test(g)) c = g; } catch (e) {}
   var ab = document.getElementById('abertura');
