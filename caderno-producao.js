@@ -922,7 +922,8 @@ window.ProducaoCaderno = function (ctx) {
       cartao.appendChild(botaoCortes());
       /* vídeos novos: roteiro em blocos (gancho, bloco 1, 2..., conclusão). Vídeos com roteiro antigo escrito no campo único ficam como estão. */
       var usaBlocos = v.roteiro_blocos != null || !(v.roteiro && v.roteiro.trim());
-      var rb = v.roteiro_blocos ? { gancho: v.roteiro_blocos.gancho || '', blocos: (v.roteiro_blocos.blocos && v.roteiro_blocos.blocos.length ? v.roteiro_blocos.blocos : ['']).slice(), conclusao: v.roteiro_blocos.conclusao || '' } : { gancho: '', blocos: [''], conclusao: '' };
+      var rb = v.roteiro_blocos ? { gancho: v.roteiro_blocos.gancho || '', blocos: (v.roteiro_blocos.blocos && v.roteiro_blocos.blocos.length ? v.roteiro_blocos.blocos : ['']).slice(), conclusao: v.roteiro_blocos.conclusao || '', titulos: (v.roteiro_blocos.titulos || []).slice() } : { gancho: '', blocos: [''], conclusao: '', titulos: [] };
+      while (rb.titulos.length < rb.blocos.length) rb.titulos.push(''); /* título de cada bloco: é o que entra nos capítulos */
       function itensBlocos() {
         var l = [{ nome: 'Gancho', texto: rb.gancho }];
         rb.blocos.forEach(function (t, i) { l.push({ nome: 'Bloco ' + (i + 1), texto: t }); });
@@ -930,10 +931,11 @@ window.ProducaoCaderno = function (ctx) {
         return l;
       }
       var areaBlocos = el('div', {});
-      function caixaBloco(rotulo, valor, dica, aoMudar, extra) {
+      function caixaBloco(rotulo, valor, dica, aoMudar, extra, tit) {
         var t = el('textarea', { rows: '6', placeholder: dica }); t.value = valor;
         t.addEventListener('input', function () { aoMudar(t.value); agendarSalvar(); });
         var c = campo(rotulo, t); c.firstChild.classList.add('rotulo-ocre');
+        if (tit) { var ti = el('input', { type: 'text', placeholder: 'Título do bloco (entra nos capítulos)' }); ti.value = tit.valor || ''; ti.addEventListener('input', function () { tit.aoMudar(ti.value); agendarSalvar(); }); c.insertBefore(ti, t); }
         return el('div', {}, [c, extra]); /* cada bloco é editável e salva sozinho; quem copia é o botão Copiar do roteiro inteiro */
       }
       function desenharBlocos() {
@@ -945,12 +947,12 @@ window.ProducaoCaderno = function (ctx) {
             tirar = P.botaoApagar('Apagar'); /* detalhe discreto, no fim do bloco */
             tirar.addEventListener('click', function () {
               if (rb.blocos[i].trim() && !window.confirm('Apagar o bloco ' + (i + 1) + ' com o texto dele? Não dá para desfazer.')) return;
-              rb.blocos.splice(i, 1); desenharBlocos(); agendarSalvar();
+              rb.blocos.splice(i, 1); rb.titulos.splice(i, 1); desenharBlocos(); agendarSalvar();
             });
           }
-          areaBlocos.appendChild(caixaBloco('Bloco ' + (i + 1), txt, 'O que vai no bloco ' + (i + 1), function (x) { rb.blocos[i] = x; }, tirar ? el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [tirar]) : null));
+          areaBlocos.appendChild(caixaBloco('Bloco ' + (i + 1), txt, 'O que vai no bloco ' + (i + 1), function (x) { rb.blocos[i] = x; }, tirar ? el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [tirar]) : null, { valor: rb.titulos[i], aoMudar: function (x) { rb.titulos[i] = x; } }));
         });
-        areaBlocos.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botao('+ bloco', function () { rb.blocos.push(''); desenharBlocos(); agendarSalvar(); }, false)]));
+        areaBlocos.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botao('+ bloco', function () { rb.blocos.push(''); rb.titulos.push(''); desenharBlocos(); agendarSalvar(); }, false)]));
         areaBlocos.appendChild(caixaBloco('Conclusão', rb.conclusao, 'O que vai na conclusão', function (x) { rb.conclusao = x; }));
       }
       var linkRoteiro = el('div', { class: 'portal-acoes', style: 'margin:0 0 8px' }, [botao('Gravar com o roteiro (tela cheia)', function () {
@@ -972,6 +974,20 @@ window.ProducaoCaderno = function (ctx) {
       cartao.appendChild(el('div', { class: 'prod-chips', style: 'margin:0 0 10px;align-items:center;gap:18px' }, [chip('Terminei o roteiro', !!v.roteiro_ok, function () { marcarEtapa(v, 'roteiro_ok', !v.roteiro_ok); }, { 'data-video': v.id, 'data-etapa': 'roteiro_ok' }), copiarRoteiro]));
       cartao.appendChild(linkRoteiro);
       cartao.appendChild(campo('Texto que vai junto', texto, function () { return texto.value; }));
+      /* nos capítulos (depois da palavra "Capítulos"), uma linha "2:28 1" vira "02:28 Título do bloco 1" quando você sai do campo */
+      texto.addEventListener('blur', function () {
+        if (!usaBlocos) return;
+        var achou = false, mudou = false;
+        var linhas = texto.value.split('\n').map(function (l) {
+          if (!achou) { if (/^\s*Cap[ií]tulos\s*$/i.test(l)) achou = true; return l; }
+          var m = l.match(/^\s*(\d{1,2}(?::\d{2}){1,2})\s+(?:bloco\s*)?(\d+)\s*$/i);
+          if (!m) return l;
+          var tt = String(rb.titulos[parseInt(m[2], 10) - 1] || '').trim(); if (!tt) return l;
+          var p = m[1].split(':').map(function (x, k, a) { return (k === 0 && a.length === 3) ? x : (x.length < 2 ? '0' + x : x); });
+          mudou = true; return p.join(':') + ' ' + tt;
+        });
+        if (mudou) { texto.value = linhas.join('\n'); texto.dispatchEvent(new Event('input')); }
+      });
       var botLinha = P.botaoApagar('Adicionar linha'); /* discreto: só põe a linha e Capítulos no fim do texto */
       botLinha.addEventListener('click', function () {
         if (texto.value.indexOf(LINHA_DESCRICAO) >= 0) return;
