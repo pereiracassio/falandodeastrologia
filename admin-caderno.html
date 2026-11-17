@@ -37,7 +37,7 @@
     .cad{position:fixed;inset:0;z-index:1000;background:var(--capa,#A03E25);--moldura-m:.22;display:none}
     .cad.on{display:block}
     .cad::before{content:"";position:absolute;inset:8px;border:1.5px dashed var(--capa-fio,#e6d3a0);pointer-events:none}
-    .cad .miolo{position:absolute;inset:8px 73px 8px 47px} /* a folha vai até o pontilhado (em cima e embaixo) e até as abas (dos lados) */
+    .cad .miolo{position:absolute;inset:8px 69px 8px 47px} /* a folha vai até o pontilhado (em cima e embaixo) e até as abas (dos lados) */
     .cad .folha :where(*:not(canvas):not(.lp):not(.lp *)){touch-action:pan-y pinch-zoom} /* as listas que rolam não engolem o gesto de virar a página */
     .cad{touch-action:pan-y pinch-zoom}
     .cad .folha{touch-action:pan-y pinch-zoom;position:relative;height:100%;background:var(--papiro-fundo);display:flex}
@@ -63,7 +63,7 @@
 
     /* marcadores presos na capa */
     .cad .abas{position:absolute;top:56px;bottom:56px;width:44px;display:flex;flex-direction:column;gap:0;z-index:2}
-    .cad .abas.esq{left:3px;width:44px}.cad .abas.dir{right:3px;width:70px} /* as abas caem por cima do pontilhado e são mais estreitas */
+    .cad .abas.esq{left:3px;width:44px}.cad .abas.dir{right:3px;width:66px} /* as abas caem por cima do pontilhado e são mais estreitas */
     /* aba de caderno de verdade: o desenho (e o recorte) fica no ::before e a sombra no botão, senão o recorte cortaria a sombra. Contorno discreto + sombrinha: cada aba fica por cima da anterior (janeiro embaixo, dezembro em cima) e joga uma sombra para cima nela */
     .cad .aba{flex:1;min-height:0;border:0;border-radius:0;padding:0;position:relative;background:none;display:flex;align-items:center;justify-content:center;color:var(--azul-egipcio-escuro);font-size:14px;font-weight:700;text-decoration:none!important;filter:drop-shadow(0 0 .6px rgba(26,20,16,.6)) drop-shadow(0 -2px 2px rgba(26,20,16,.32))}
     .cad .aba::before{content:'';position:absolute;inset:0;background:var(--papiro-fundo-simples);z-index:-1} /* atrás do texto (o filtro da aba já cria o contexto: sem isto o texto escrito direto no botão sumia) */
@@ -80,7 +80,7 @@
     .cad .aba.colorida::before{background:var(--aba-cor)}
     .cad .aba.colorida span{background:var(--postit);padding:7px 2px}
     .cad .abas.dir .aba.colorida span{padding:2px 7px}
-    .cad .abas.esq .aba.aberta{margin-right:-8px}.cad .abas.dir .aba.aberta{margin-left:-8px}
+    .cad .abas.esq .aba.aberta{margin-right:-8px}
     .cad .abas .aba.aberta{z-index:2}
     .cad .abas.dir .vao{flex:.4}
     .cad .ano{position:absolute;left:3px;width:44px;text-align:center;color:var(--capa-fio,#e6d3a0);font-size:11px;white-space:nowrap;background:none;border:0;padding:0;z-index:2}
@@ -255,7 +255,7 @@
     @keyframes entraEsq{from{transform:translateX(-46px);opacity:0}to{transform:none;opacity:1}}
     @keyframes entraFade{from{opacity:.35}to{opacity:1}}
     .cad-aviso{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:1200;background:var(--papiro-fundo-simples);border:1.5px solid var(--terracota);color:var(--terracota);padding:10px 18px;max-width:86vw;text-align:center}
-    .cad .leitor-barra{display:none;position:absolute;left:47px;right:73px;bottom:calc(130px*var(--moldura-m) + 4px);z-index:4;justify-content:center;align-items:center;gap:2px;flex-wrap:nowrap}
+    .cad .leitor-barra{display:none;position:absolute;left:47px;right:69px;bottom:calc(130px*var(--moldura-m) + 4px);z-index:4;justify-content:center;align-items:center;gap:2px;flex-wrap:nowrap}
     .cad.v-livro .leitor-barra{display:flex}
     .cad .lp,.cad .lp *{touch-action:pan-y!important}
     .cad.leitor-zoom .lp,.cad.leitor-zoom .lp *{touch-action:pan-x pan-y!important}
