@@ -943,7 +943,8 @@ window.ProducaoCaderno = function (ctx) {
         if (tit) { var ti = el('input', { type: 'text', placeholder: 'Título do bloco (entra nos capítulos)' }); ti.value = tit.valor || ''; ti.addEventListener('input', function () { tit.aoMudar(ti.value); agendarSalvar(); }); c.insertBefore(ti, t); }
         return el('div', {}, [c, extra]); /* cada bloco é editável e salva sozinho; quem copia é o botão Copiar do roteiro inteiro */
       }
-      function desenharBlocos() {
+      function desenharBlocos() { P.mantemLugar(areaBlocos, desenharBlocosAgora); }
+      function desenharBlocosAgora() {
         areaBlocos.textContent = '';
         areaBlocos.appendChild(caixaBloco('Gancho', rb.gancho, 'O que vai no gancho: fisgue a pessoa', function (x) { rb.gancho = x; }));
         rb.blocos.forEach(function (txt, i) {
@@ -1020,7 +1021,8 @@ window.ProducaoCaderno = function (ctx) {
         var m = /^(\d{1,3})\s*[:.]\s*(\d{1,2})(?:\s*[:.]\s*(\d{1,2}))?\s*[-–—]?\s*(.*)$/.exec(l);
         return m ? { m: +m[1], s: +m[2], f: m[3] ? +m[3] : 0, titulo: m[4] } : null;
       }
-      function desenharCards() {
+      function desenharCards() { P.mantemLugar(cardsLista, desenharCardsAgora); }
+      function desenharCardsAgora() {
         limitarCards();
         cardsLista.textContent = '';
         cardsTxt.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).forEach(function (l, i) {

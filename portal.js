@@ -1599,7 +1599,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') setTimeout(renovarInscricao, 800); });
 
   window.portal = {
-    escritaLivre: escritaLivre, salvarSozinho: salvarSozinho, tokenGoogle: tokenDoDrive, escolherDoDrive: escolherDoDrive,
+    escritaLivre: escritaLivre, mantemLugar: mantemLugar, salvarSozinho: salvarSozinho, tokenGoogle: tokenDoDrive, escolherDoDrive: escolherDoDrive,
     cartaoAtendimento: cartaoAtendimento,
     proximoEncontro: proximoEncontro, textoEncontro: textoEncontro,
     paletaIcones: paletaIcones, iconesNosCampos: iconesNosCampos, semIcones: semIcones,
@@ -1640,6 +1640,24 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       });
     }).observe(app, { childList: true, subtree: true });
   })();
+  /* MANTER O LUGAR em redesenho de pedaço de tela (bronca dele: "+ bloco" jogava a tela para outro lugar). Vale para a página E para áreas que rolam por dentro (o caderno):
+     segura a altura do pedaço enquanto ele é refeito, devolve a rolagem de todo mundo que rola e repete logo depois, quando os campos de escrever terminam de crescer. */
+  function mantemLugar(alvos, fn) {
+    alvos = [].concat(alvos).filter(Boolean);
+    var salvos = [], vistos = [], wy = window.scrollY || 0, t0 = Date.now();
+    alvos.forEach(function (a) { for (var n = a; n && n !== document.body && n !== document.documentElement; n = n.parentElement) { if (vistos.indexOf(n) >= 0) continue; vistos.push(n); if (n.scrollHeight > n.clientHeight + 1) salvos.push({ n: n, y: n.scrollTop }); } });
+    var fixos = alvos.map(function (a) { var f = { a: a, antes: a.style.minHeight }; a.style.minHeight = a.offsetHeight + 'px'; return f; });
+    var r = fn();
+    var volta = function () {
+      salvos.forEach(function (s) { if (s.n.isConnected && Math.abs(s.n.scrollTop - s.y) > 1) s.n.scrollTop = s.y; });
+      if (Math.abs((window.scrollY || 0) - wy) > 1) window.scrollTo(0, wy);
+    };
+    volta();
+    requestAnimationFrame(function () { volta(); requestAnimationFrame(volta); });
+    setTimeout(function () { if (Date.now() - t0 < 600) volta(); }, 150);
+    setTimeout(function () { fixos.forEach(function (f) { f.a.style.minHeight = f.antes; }); }, 300);
+    return r;
+  }
   /* ACENTO SOLTO (07/11/2026): texto copiado de Pages/Notas ou ditado no iPad às vezes chega com o acento separado da letra (I + ´). A Architects Daughter não tem o acento solto,
      então o Safari o desenha com outra fonte (um rabisco em cima da letra). Aqui, para o site todo: juntar letra e acento (NFC) ao digitar/colar/sair do campo
      e em todo texto que aparece na tela (inclusive o que já estava salvo assim). */
