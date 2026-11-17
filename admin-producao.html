@@ -501,8 +501,7 @@
       if (vazio(v.tags)) falta.push('tags');
       /* capítulos de verdade (só existem depois da edição): Início, pelo menos um capítulo no meio (que dê corte) e Conclusão. Só o "00:00 Início" não basta. */
       var cap = capitulosDoTexto(t);
-      if (!cap.meio) falta.push('capítulos (pelo menos um no meio)');
-      if (!cap.conclusao) falta.push('capítulo Conclusão');
+      if (!cap.meio || !cap.conclusao) falta.push('capítulos');
       return falta;
     }
     function capitulosDoTexto(texto) {
