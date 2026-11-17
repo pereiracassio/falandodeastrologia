@@ -1666,6 +1666,13 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       if (ini != null) { try { var pos = v.slice(0, ini).normalize('NFC').length; el.setSelectionRange(pos, pos); } catch (e) {} }
     }
     ['input', 'change', 'focusout'].forEach(function (ev) { document.addEventListener(ev, function (e) { campo(e.target); }, true); });
+    /* COLAR: o acento é juntado ANTES de entrar no campo (o texto é inserido já certo, no cursor); assim o campo não precisa ser reescrito depois, que era o que movia o cursor e a tela */
+    document.addEventListener('paste', function (e) {
+      var t = e.target; if (!t || !/^(INPUT|TEXTAREA)$/.test(t.tagName) || !e.clipboardData) return;
+      var v = e.clipboardData.getData('text/plain'); if (!v || !SOLTO.test(v)) return;
+      var n = v.normalize('NFC'); if (n === v) return;
+      e.preventDefault(); document.execCommand('insertText', false, n);
+    }, true);
     function texto(raiz) {
       if (!raiz) return;
       if (raiz.nodeType === 3) { var v = raiz.nodeValue; if (v && SOLTO.test(v)) { var n = v.normalize('NFC'); if (n !== v) raiz.nodeValue = n; } return; }
