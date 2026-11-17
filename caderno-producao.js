@@ -1097,32 +1097,46 @@ window.ProducaoCaderno = function (ctx) {
         texto.value = texto.value.replace(/\s+$/, '') + fimDescricao(); texto.dispatchEvent(new Event('input'));
       });
       cartao.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 14px' }, [botLinha]));
-      /* um "copiar" para cada capítulo do texto (depois da palavra "Capítulos"): copia o título dele, para colar na edição sem rodar o roteiro para cima.
-         A lista é atualizada NO LUGAR enquanto você escreve: muda só o texto das linhas que mudaram, acrescenta ou tira só as do fim. */
-      var capLista = el('div', { style: 'margin:0 0 14px' }), linhasCap = [];
-      function desenharCapitulos() {
+      /* "copiar" em cada linha de capítulo, NA PRÓPRIA LINHA do texto (no fim dela, sem linha nem lista): botões soltos por cima do campo.
+         Só mudam de lugar e de texto quando o texto muda; nada é refeito e o campo não é tocado. */
+      var capBotoes = [], capCamada = el('div', { style: 'position:absolute;left:0;top:0;right:0;height:0;pointer-events:none' }), capEspelho = null;
+      function capLinhas() {
         var achou = false, itens = [];
-        String(texto.value || '').split('\n').forEach(function (ln) {
+        String(texto.value || '').split('\n').forEach(function (ln, i) {
           if (/^\s*cap[ií]tulos\s*$/i.test(ln)) { achou = true; return; }
           var m = achou && ln.match(/^\s*((?:\d{1,2}:)?\d{1,2}:\d{2})\s+(.+?)\s*$/);
-          if (m) itens.push({ tempo: m[1], titulo: m[2] });
+          if (m) itens.push({ linha: i, titulo: m[2] });
         });
+        return itens;
+      }
+      function desenharCapitulos() {
+        var pai = texto.parentNode; if (!pai || !texto.getBoundingClientRect().width) return;
+        if (!capCamada.parentNode) { if (window.getComputedStyle(pai).position === 'static') pai.style.position = 'relative'; pai.appendChild(capCamada); }
+        var itens = capLinhas();
+        if (!capEspelho) { capEspelho = document.createElement('div'); capEspelho.setAttribute('aria-hidden', 'true'); capEspelho.style.cssText = 'position:fixed;left:-99999px;top:0;visibility:hidden;pointer-events:none;white-space:pre-wrap;overflow:hidden'; document.body.appendChild(capEspelho); }
+        var c = window.getComputedStyle(texto), m = capEspelho.style;
+        ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'wordSpacing', 'tabSize', 'overflowWrap', 'wordBreak', 'boxSizing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderStyle'].forEach(function (k) { m[k] = c[k]; });
+        m.width = texto.getBoundingClientRect().width + 'px';
+        var linhas = String(texto.value || '').split('\n'), spans = [];
+        capEspelho.textContent = '';
+        linhas.forEach(function (ln, i) { var s = document.createElement('span'); s.textContent = ln + (i < linhas.length - 1 ? '\n' : ''); capEspelho.appendChild(s); spans.push(s); });
+        var alturaLinha = parseFloat(c.lineHeight) || 24;
         itens.forEach(function (it, i) {
-          var r = linhasCap[i];
-          if (!r) {
-            r = { titulo: '' };
-            r.tempoEl = el('span', { class: 'prod-data', style: 'flex:none;min-width:64px' }); r.tituloEl = el('span', { style: 'flex:1;min-width:0;overflow-wrap:anywhere' });
-            var cp = P.botaoApagar('Copiar'); cp.style.flex = 'none';
-            cp.addEventListener('click', function () { if (!r.titulo) return; copiarTexto(r.titulo).then(function () { avisoFlutuante('Título copiado'); }, function () { avisoFlutuante('Não consegui copiar', true); }); });
-            r.linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:baseline;gap:14px' }, [r.tempoEl, r.tituloEl, cp]);
-            linhasCap.push(r); capLista.appendChild(r.linha);
+          var b = capBotoes[i];
+          if (!b) {
+            b = P.botaoApagar('Copiar'); b.style.cssText += ';position:absolute;right:6px;pointer-events:auto;z-index:2';
+            b.addEventListener('click', function (e) { e.preventDefault(); if (!b.__titulo) return; copiarTexto(b.__titulo).then(function () { avisoFlutuante('Título copiado'); }, function () { avisoFlutuante('Não consegui copiar', true); }); });
+            capBotoes.push(b); capCamada.appendChild(b);
           }
-          r.titulo = it.titulo; r.tempoEl.textContent = it.tempo; r.tituloEl.textContent = it.titulo;
+          b.__titulo = it.titulo;
+          b.style.top = (texto.offsetTop + spans[it.linha].offsetTop + (alturaLinha - (b.offsetHeight || 28)) / 2) + 'px';
+          b.style.left = ''; b.style.right = (pai.clientWidth - texto.offsetLeft - texto.offsetWidth + 6) + 'px';
         });
-        while (linhasCap.length > itens.length) linhasCap.pop().linha.remove();
+        while (capBotoes.length > itens.length) capBotoes.pop().remove();
       }
       texto.addEventListener('input', desenharCapitulos);
-      cartao.appendChild(capLista); desenharCapitulos();
+      if (window.ResizeObserver) new ResizeObserver(desenharCapitulos).observe(texto);
+      setTimeout(desenharCapitulos, 0); setTimeout(desenharCapitulos, 400);
       cartao.appendChild(campo('Tags', tags, function () { return tags.value.trim(); }));
       var cCards = campo('Cards', cardsTxt); cCards.firstChild.classList.add('rotulo-ocre');
       cCards.firstChild.appendChild(el('span', { text: ' (um por linha, no máximo 5)', style: 'font-family:var(--fonte-mao);font-size:12px;opacity:.7;color:var(--preto-tinta,#16233F);text-transform:none;letter-spacing:0' }));
