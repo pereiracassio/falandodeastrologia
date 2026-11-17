@@ -499,7 +499,20 @@
       if (!temRoteiro) falta.push('roteiro');
       if (!corpo) falta.push('texto que vai junto');
       if (vazio(v.tags)) falta.push('tags');
+      /* capítulos de verdade (só existem depois da edição): Início, pelo menos um capítulo no meio (que dê corte) e Conclusão. Só o "00:00 Início" não basta. */
+      var cap = capitulosDoTexto(t);
+      if (!cap.meio) falta.push('capítulos (pelo menos um no meio)');
+      if (!cap.conclusao) falta.push('capítulo Conclusão');
       return falta;
+    }
+    function capitulosDoTexto(texto) {
+      var achou = false, r = { inicio: false, meio: 0, conclusao: false };
+      String(texto || '').split('\n').forEach(function (ln) {
+        if (/^\s*cap[ií]tulos\s*$/i.test(ln)) { achou = true; return; }
+        var m = achou && ln.match(/^\s*(?:\d{1,2}:)?\d{1,2}:\d{2}\s+(.+?)\s*$/); if (!m) return;
+        if (/^in[ií]cio$/i.test(m[1])) r.inicio = true; else if (/^conclus[aã]o$/i.test(m[1])) r.conclusao = true; else r.meio++;
+      });
+      return r;
     }
     /* repinta todos os botões de etapa deste vídeo que estiverem na tela (o do roteiro lá embaixo e os de cima) */
     function pintarEtapas(v) {
