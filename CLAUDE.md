@@ -39,6 +39,7 @@ Regras do astrólogo: página 1 = título centralizado, sem rodapé; índice na 
 4. **O PDF só no FIM, uma vez, quando ele disser que a apostila está pronta.** Nunca gerar PDF a cada capítulo.
 5. Antes de começar uma apostila: ler esta seção e as preferências do projeto; não esperar ele ensinar de novo.
 6. **Nomes dos antigos NUNCA se traduzem, nem na apostila nem na conversa (14/11/2026, bronca dele).** É **Vettius Valens** (na conversa e no texto, "Valens"), **NUNCA "Valente"**: "Valente" é palavra comum e ninguém sabe quem é o autor. Vale para todos: Ptolomeu, Fírmico Materno, Doroteu, Hefestião de Tebas, Antíoco de Atenas, Paulo de Alexandria, Manílio. Ele não consegue prestar atenção em mais nada quando vê o nome errado. Antes de entregar qualquer `.docx`, procurar "Valente" no texto; depois de uma troca de nome, conferir as apostilas anteriores.
+7. **SÓ ESCREVER O TEXTO DO CAPÍTULO QUANDO ELE DISSER que a pesquisa está boa o suficiente (18/11/2026, bronca dele, a segunda vez que pede isto).** Pesquisar é com ele conduzindo: eu trago o que as fontes dizem, um tema por vez, e **paro**. **Nunca** terminar com "quer que eu escreva o texto?", "posso escrever?", "pode escrever?" nem oferecer o capítulo: é pressão e ele odeia. Quem decide quando a pesquisa acabou e quando o texto começa é ele, com as palavras dele.
 
 ## Caderno de estudos do aluno em PDF (18/10/2026)
 
