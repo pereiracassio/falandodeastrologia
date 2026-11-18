@@ -543,11 +543,34 @@
     }
     var ordemBlocos = (function () { try { return ordemDeBlocos(localStorage.getItem('fda_caderno_abas_ordem')); } catch (e) { return ORDEM_PADRAO.slice(); } })();
     window.fdaOrdemAbas = function (o) { ordemBlocos = ordemDeBlocos(o); try { localStorage.setItem('fda_caderno_abas_ordem', JSON.stringify(ordemBlocos)); } catch (e) { /* sem armazenamento */ } montarMarcadores(); };
+    /* abas de mês e setas de ano valem em toda aba que tem data (dia, semana, mês, ano, lista, diário, to do, horas, financeiro) */
+    var VISOES_COM_DATA = ['dia', 'semana', 'mes', 'ano', 'lista', 'diario', 'todo', 'horas', 'financeiro'], diarioRef = null;
+    function comData() { return VISOES_COM_DATA.indexOf(visao) >= 0; }
+    function refAnoMes() { /* o mês e o ano que a aba aberta está mostrando agora */
+      if (visao === 'financeiro' && finMes) return { ano: finMes.ano, mes: finMes.mes + 1 };
+      if (visao === 'todo') { var t = somaDias(isoDia(Date.now()), 2 * (espTodo || 0)).split('-'); return { ano: +t[0], mes: +t[1] }; }
+      if (visao === 'diario' && diarioRef) return diarioRef;
+      var a = ancora.split('-'); return { ano: +a[0], mes: +a[1] };
+    }
+    function pintarAnoMes() {
+      var ok = comData(), r = ok ? refAnoMes() : null;
+      document.getElementById('anoMenos').textContent = ok ? '▲ ' + (r.ano - 1) : ''; document.getElementById('anoMais').textContent = ok ? (r.ano + 1) + ' ▼' : '';
+      Array.prototype.forEach.call(document.querySelectorAll('#meses .aba'), function (b) { b.classList.toggle('aberta', ok && +b.getAttribute('data-mes') === r.mes); });
+    }
+    function mudarAno(d) {
+      if (!comData()) return; var r = refAnoMes();
+      if (visao === 'financeiro') { finMes = { ano: finMes.ano + d, mes: finMes.mes }; vistaFinanceiro(); virar(d < 0 ? 'tras' : 'frente'); return; }
+      if (visao === 'diario') { diarioIrA(r.ano + d, r.mes); return; }
+      if (visao === 'todo') { var h = isoDia(Date.now()), cur = somaDias(h, 2 * (espTodo || 0)), alvo = mudaMes(cur, 12 * d); espTodo = Math.floor(Math.round((doIso(alvo) - doIso(h)) / DIA) / 2); desenhar(); return; }
+      ancora = mudaMes(ancora, 12 * d); desenhar();
+    }
+    function diarioIrA(ano, mes) { if (diarioIr) diarioIr(ano, mes); else { diarioRef = { ano: ano, mes: mes }; } }
+    var diarioIr = null;
     function montarMarcadores() {
       var meses = document.getElementById('meses'); meses.textContent = '';
       MES3.forEach(function (m, i) {
         var b = el('button', { type: 'button', class: 'aba botao-fixo', 'data-mes': String(i + 1) }, [el('span', { text: m })]);
-        b.addEventListener('click', function () { if (visao === 'todo') { irParaMesTodo(i + 1); return; } var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; if (visao === 'ano') visao = 'mes'; if (visao === 'dia') ancora = a[0] + '-' + p2(i + 1) + '-' + p2(Math.min(+a[2], new Date(Date.UTC(+a[0], i + 1, 0)).getUTCDate())); irPara(visao); }); meses.appendChild(b);
+        b.addEventListener('click', function () { if (!comData()) return; if (visao === 'todo') { irParaMesTodo(i + 1); return; } if (visao === 'financeiro') { finMes = { ano: finMes.ano, mes: i }; vistaFinanceiro(); virar('frente'); return; } if (visao === 'diario') { diarioIrA(refAnoMes().ano, i + 1); return; } var a = ancora.split('-'); ancora = a[0] + '-' + p2(i + 1) + '-01'; if (visao === 'ano') visao = 'mes'; if (visao === 'dia') ancora = a[0] + '-' + p2(i + 1) + '-' + p2(Math.min(+a[2], new Date(Date.UTC(+a[0], i + 1, 0)).getUTCDate())); irPara(visao); }); meses.appendChild(b);
       });
       var dir = document.getElementById('abasDir'); dir.textContent = '';
       var botoes = {};
@@ -840,10 +863,12 @@
       pedido++;
       if (leitorAtual && !(visao === 'leitor' && leitorLivro)) { leitorAtual.fechar(); leitorAtual = null; }
       cad.classList.toggle('v-livro', visao === 'leitor' && !!leitorLivro && !embutida);
-      if (embutida) { var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1&r=' + Date.now() + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { var jaTinha = !!f.getAttribute('data-url'); f.setAttribute('data-url', alvo); try { if (jaTinha && f.contentWindow) f.contentWindow.location.replace(url); else f.src = url; } catch (e) { f.src = url; } } return; }
+      if (embutida) { pintarAnoMes(); var f = document.getElementById('embed'), alvo = urlForcada || x[2], forcou = !!urlForcada, partes = alvo.split('#'), url = partes[0] + (partes[0].indexOf('?') >= 0 ? '&' : '?') + 'caderno=1&r=' + Date.now() + (partes[1] ? '#' + partes[1] : ''); urlForcada = null; if (forcou || f.getAttribute('data-url') !== alvo) { var jaTinha = !!f.getAttribute('data-url'); f.setAttribute('data-url', alvo); try { if (jaTinha && f.contentWindow) f.contentWindow.location.replace(url); else f.src = url; } catch (e) { f.src = url; } } return; }
       if (visao !== 'todo') espTodo = 0;
       if (visao === 'dia') { desenharDia(); return; }
+      if (visao !== 'diario') diarioRef = null; pintarAnoMes();
       ({ semana: vistaSemana, mes: vistaMes, ano: vistaAno, lista: vistaLista, diario: vistaDiario, todo: vistaTodo, horas: vistaHoras, producao: vistaProducao, projetos: vistaProjetos, compras: vistaCompras, estudos: vistaEstudos, financeiro: vistaFinanceiro, leitor: vistaLeitor })[visao]();
+      pintarAnoMes();
     }
     function isoDe(dt) { return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate()); }
     function porDia(evs, primeiro, n) { /* { 'AAAA-MM-DD': [compromissos] }: dia todo primeiro, depois por horário */
@@ -953,7 +978,7 @@
       if (manter !== true) diarioVirou = false; if (!diarioVirou) diarioIdx = Infinity; /* só fica onde está se ele já folheou */
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now()), H = window.hellenicPonte;
       var rolaE = el('div', { class: 'rola', style: 'overflow:hidden' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px;overflow:hidden' }), barra = el('div', { class: 'diario-barra' });
-      diarioNav = null; diarioRefaz = null;
+      diarioNav = null; diarioRefaz = null; diarioIr = null;
       cabVista(esq, 'Diário', function () { diarioVirar(-1); }, function () { diarioVirar(1); });
       esq.appendChild(barra); esq.appendChild(rolaE); dir.appendChild(rolaD); if (!(manter !== true && localStorage.getItem('fda_cad_diario_v1'))) carregando(rolaE);
       var carga = Promise.all([valorSite('daily_diario_aba_ordem'), C.from('diario_notas').select('*').order('dia', { ascending: false }).order('hora', { ascending: false }).limit(3000), window.hellenicPonte.ordemAtual(), window.hellenicPonte.posicaoEm(hojeIso, (function (d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); })(new Date()), 'geral').catch(function () { return null; })]); var tratar = function (res) {
@@ -1042,10 +1067,18 @@
           (paginas[diarioIdx * 2] || []).forEach(function (l) { rolaE.appendChild(criar(l)); });
           (paginas[diarioIdx * 2 + 1] || []).forEach(function (l) { rolaD.appendChild(criar(l)); });
           contador.textContent = (diarioIdx + 1) + ' / ' + spreads;
+          var primeiraIso = null; for (var pi = diarioIdx * 2; pi < diarioIdx * 2 + 2 && !primeiraIso; pi++) (paginas[pi] || []).forEach(function (l) { if (!primeiraIso && l.iso) primeiraIso = l.iso; });
+          if (primeiraIso) diarioRef = { ano: +primeiraIso.slice(0, 4), mes: +primeiraIso.slice(5, 7) }; pintarAnoMes();
           if (animar) virar(animar);
         }
         diarioNav = function (d) { var novo = diarioIdx + d; if (novo < 0 || novo >= spreads) return false; diarioIdx = novo; diarioVirou = true; mostrar(d > 0 ? 'frente' : 'tras'); return true; };
         diarioRefaz = function () { paginar(); mostrar(); };
+        diarioIr = function (ano, mes) { /* a primeira folha que tem anotação do mês pedido; sem nenhuma, a mais perto dele */
+          var alvo = ano * 12 + mes, melhor = -1, dist = Infinity;
+          paginas.forEach(function (pg, i) { pg.forEach(function (l) { if (!l.iso) return; var d = Math.abs(+l.iso.slice(0, 4) * 12 + +l.iso.slice(5, 7) - alvo); if (d < dist) { dist = d; melhor = i; } }); });
+          diarioRef = { ano: ano, mes: mes }; if (melhor < 0) { pintarAnoMes(); return; }
+          var novo = Math.floor(melhor / 2), sentido = novo < diarioIdx ? 'tras' : 'frente'; diarioIdx = novo; diarioVirou = true; mostrar(sentido); if (modoPe()) paginaCel(melhor % 2 === 1 ? 'p2' : 'p1');
+        };
         requestAnimationFrame(function () { if (eu !== pedido) return; paginar(); mostrar(); });
       };
       /* o que ele viu da última vez aparece NA HORA (guardado no aparelho, só cache de exibição); a leitura de verdade vem por trás e só redesenha se mudou */
@@ -1466,6 +1499,7 @@
     function vistaFinanceiro() {
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], F = finPronto();
       if (!finMes) { var h = new Date(); finMes = { ano: h.getFullYear(), mes: h.getMonth() }; }
+      pintarAnoMes();
       esq.appendChild(el('img', { class: 'logo-topo', src: 'img/logo-menu-daily-linha.svg?v=2', alt: 'Hellenic Daily', width: '1100', height: '190' }));
       var rolaE = el('div', { class: 'rola' }), rolaD = el('div', { class: 'rola', style: 'padding-top:66px' }); esq.appendChild(rolaE); dir.appendChild(rolaD); carregando(rolaE);
       var ini = finMes.ano + '-' + p2(finMes.mes + 1) + '-01', fim = (finMes.mes === 11 ? finMes.ano + 1 : finMes.ano) + '-' + p2(finMes.mes === 11 ? 1 : finMes.mes + 2) + '-01';
@@ -1646,8 +1680,8 @@
     document.getElementById('mesProx').addEventListener('click', function () { ancora = mudaMes(ancora, 1); desenhar(); });
     document.getElementById('diaAnt').addEventListener('click', function () { ancora = somaDias(ancora, -1); desenhar(); });
     document.getElementById('diaProx').addEventListener('click', function () { ancora = somaDias(ancora, 1); desenhar(); });
-    document.getElementById('anoMenos').addEventListener('click', function () { ancora = mudaMes(ancora, -12); desenhar(); });
-    document.getElementById('anoMais').addEventListener('click', function () { ancora = mudaMes(ancora, 12); desenhar(); });
+    document.getElementById('anoMenos').addEventListener('click', function () { mudarAno(-1); });
+    document.getElementById('anoMais').addEventListener('click', function () { mudarAno(1); });
     function paginaCel(p) { pagCel = p; cad.classList.remove('p1', 'p2'); cad.classList.add(p); document.getElementById('t1').classList.toggle('aberta', p === 'p1'); document.getElementById('t2').classList.toggle('aberta', p === 'p2'); }
     window.addEventListener('resize', function () { if (leitorAtual && leitorAtual.aoRedimensionar) leitorAtual.aoRedimensionar(); });
     document.getElementById('voltarTab').addEventListener('click', function () { voltarPagina(); });
