@@ -99,7 +99,7 @@
     }
     function botaoOpcao(texto, marcada, aoClicar) {
       var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
-      b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:var(--preto-tinta);font:inherit;font-size:16px;cursor:pointer;border-radius:0;margin:0 0 8px;' +
+      b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:var(--preto-tinta);font:inherit;font-size:16px;cursor:pointer;border-radius:0;margin:0 0 8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;' +
         (marcada ? 'border:3px solid var(--azul-egipcio-claro);padding:10px 12px' : 'border:1px solid var(--azul-egipcio-claro);padding:12px');
       if (aoClicar) b.addEventListener('click', aoClicar); else b.style.cursor = 'default';
       return b;
