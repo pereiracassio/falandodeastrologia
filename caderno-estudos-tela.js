@@ -621,8 +621,14 @@ window.EstudosCaderno = function (ctx) {
       };
       cv.addEventListener('pointerover', function (e) { if (e.pointerType === 'pen') temCaneta = true; });
       cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+      /* a caneta nunca seleciona texto: enquanto o quadro está na tela, qualquer seleção que o iPad tente começar por causa da caneta
+         (a letra A da primeira alternativa, por exemplo, quando um traço escapa do quadro) é barrada e a que já tinha começado é desfeita */
+      var ultimaCaneta = 0, marcaCaneta = function (e) { if (e.pointerType === 'pen') ultimaCaneta = Date.now(); };
+      var barraSelecao = function (e) { if (!cv.isConnected) { document.removeEventListener('selectstart', barraSelecao, true); document.removeEventListener('pointerdown', marcaCaneta, true); document.removeEventListener('pointermove', marcaCaneta, true); return; } if (desenhando || canetaNaTela || Date.now() - ultimaCaneta < 2500) { e.preventDefault(); } };
+      document.addEventListener('selectstart', barraSelecao, true); document.addEventListener('pointerdown', marcaCaneta, true); document.addEventListener('pointermove', marcaCaneta, true);
+      ['touchstart', 'touchmove'].forEach(function (nome) { cv.addEventListener(nome, function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false }); });
       cv.addEventListener('pointerdown', function (e) {
-        e.preventDefault();
+        e.preventDefault(); try { var sel = window.getSelection(); if (sel && sel.rangeCount) sel.removeAllRanges(); } catch (x) { /* sem seleção */ }
         if (ignorar(e)) return;
         if (e.pointerType === 'pen') canetaNaTela = true;
         try { cv.setPointerCapture(e.pointerId); } catch (x) { /* sem captura */ }
