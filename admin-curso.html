@@ -602,10 +602,13 @@
       });
     }
 
-    /* ---------- aula ao vivo editada NO LUGAR, em 2 linhas: nome (com as setas) e dia/hora; salva sozinha ---------- */
+    /* ---------- aula ao vivo editada NO LUGAR, em 2 linhas (nome com as setas; dia, hora, Meet e gravação na linha de baixo, que rola para o lado); salva sozinha ---------- */
+    function origemVideo(txt) { return /youtu/i.test(txt) ? 'youtube' : 'drive'; }
     function formAoVivo(a, numero, setas) {
       var tit = el('input', { type: 'text', value: a.titulo || '', style: 'flex:1;min-width:0', 'aria-label': 'Nome da aula ao vivo' });
-      var dataV = el('input', { type: 'date', style: 'width:auto', 'aria-label': 'Dia' }), horaV = el('input', { type: 'time', style: 'width:auto;min-height:36px;min-width:120px', 'aria-label': 'Começa às' }), fimV = null;
+      var dataV = el('input', { type: 'date', style: 'width:auto;flex:none', 'aria-label': 'Dia' }), horaV = el('input', { type: 'time', style: 'width:auto;flex:none;min-height:36px;min-width:120px', 'aria-label': 'Começa às' });
+      var meet = el('input', { type: 'text', value: a.link_meet || '', placeholder: 'Link do Meet', autocomplete: 'off', style: 'flex:none;width:170px', 'aria-label': 'Link do Meet' });
+      var cod = el('input', { type: 'text', value: a.video_codigo || '', placeholder: 'Link da gravação', autocomplete: 'off', style: 'flex:none;width:170px', 'aria-label': 'Link da gravação' });
       if (a.data_hora) { var dh = new Date(a.data_hora).toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }); dataV.value = dh.slice(0, 10); horaV.value = dh.slice(11, 16); }
       var fim = '';
       eventoDaAula(a.id).then(function (ev) { if (ev && ev.end && ev.end.dateTime) fim = new Date(ev.end.dateTime).toLocaleTimeString('sv-SE', { timeZone: 'America/Sao_Paulo' }).slice(0, 5); }, function () { });
@@ -614,16 +617,17 @@
       salvar.addEventListener('click', function () {
         var nome = tit.value.trim(); if (!nome) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
         var quando = dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null;
-        C.from('curso_aulas').update({ titulo: nome, data_hora: quando }).eq('id', a.id).then(function (x) {
+        var campos = { titulo: nome, video_origem: origemVideo(cod.value), video_codigo: cod.value.trim() || null, video_teste: false, data_hora: quando, link_meet: meet.value.trim() || null };
+        C.from('curso_aulas').update(campos).eq('id', a.id).then(function (x) {
           if (x.error) { msgErro(msg, x.error); return; }
-          a.titulo = nome; a.data_hora = quando; P.mensagem(msg, '', 'ok');
-          sincronizarAula(a.id, nome === 'Aula ao vivo' ? 'Aula ao vivo' : nome, dataV.value, horaV.value, fim && fim > horaV.value ? fim : (horaV.value ? somaMin(horaV.value, 60) : ''), a.link_meet || '').then(function (lk) {
-            if (lk && lk !== (a.link_meet || '')) { a.link_meet = lk; C.from('curso_aulas').update({ link_meet: lk }).eq('id', a.id).then(function () { }); }
+          a.titulo = nome; a.data_hora = quando; a.video_codigo = campos.video_codigo; a.link_meet = campos.link_meet; P.mensagem(msg, '', 'ok');
+          sincronizarAula(a.id, nome === 'Aula ao vivo' ? 'Aula ao vivo' : nome, dataV.value, horaV.value, fim && fim > horaV.value ? fim : (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
+            if (lk && lk !== meet.value.trim()) { meet.value = lk; a.link_meet = lk; C.from('curso_aulas').update({ link_meet: lk }).eq('id', a.id).then(function () { }); }
           }, function (e) { P.mensagem(msg, 'Salvo, mas não consegui colocar na agenda do Google (' + ((e && e.message) || 'erro') + ').', 'erro'); });
         });
       });
       var linha1 = el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('span', { class: 'rotulo-fixo', text: numero + '.', style: 'flex:none' }), tit].concat(setas || []));
-      var linha2 = el('div', { style: 'display:flex;align-items:center;gap:14px;margin:0 0 0 22px' }, [dataV, horaV]);
+      var linha2 = el('div', { style: 'display:flex;align-items:center;gap:14px;margin:0 0 0 22px;overflow-x:auto;-webkit-overflow-scrolling:touch' }, [dataV, horaV, meet, cod]);
       var raiz = el('div', { style: 'margin:0 0 14px' }, [linha1, linha2, msg, el('div', { style: 'display:none' }, [salvar])]);
       P.salvarSozinho(salvar, raiz);
       return raiz;
