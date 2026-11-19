@@ -24,7 +24,7 @@
   function telaDaAula(app, aula, voltar) {
     app.textContent = '';
     app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
-    app.appendChild(el('h2', { class: 'curso-titulo', text: aula.tipo === 'ao_vivo' ? 'Aula ao vivo' : aula.titulo }));
+    app.appendChild(el('h2', { class: 'curso-titulo', text: aula.titulo || 'Aula ao vivo' }));
     if (aula.tipo === 'ao_vivo') {
       if (aula.data_hora) app.appendChild(el('p', { text: 'Ao vivo · ' + new Date(aula.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }));
       if (aula.link_meet) app.appendChild(el('p', {}, [el('a', { href: aula.link_meet, target: '_blank', rel: 'noopener', class: 'portal-btn portal-btn-meet', text: 'Entrar na aula' })]));
@@ -32,7 +32,7 @@
     var url = enderecoDoVideo(aula.video_origem, aula.video_codigo);
     if (url) {
       var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;background:#000;margin:0 0 14px' });
-      var f = el('iframe', { src: url, title: aula.tipo === 'ao_vivo' ? 'Aula ao vivo' : aula.titulo, allow: 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture', allowfullscreen: '' });
+      var f = el('iframe', { src: url, title: aula.titulo, allow: 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture', allowfullscreen: '' });
       f.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;border:0';
       caixa.appendChild(f); app.appendChild(caixa);
     }
@@ -58,9 +58,13 @@
         if (aberto) {
           if (mo.apostila_nome) bloco.appendChild(el('p', { style: 'margin:0 0 8px', text: 'Apostila: ' + mo.apostila_nome }));
           var contaTipo = { gravada: 0, ao_vivo: 0 };
+          var tipoAnterior = null;
           aulas.filter(function (a) { return a.modulo_id === mo.id; }).forEach(function (a) {
+            var tipoAtual = a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada';
+            var troca = tipoAnterior && tipoAnterior !== tipoAtual;
+            tipoAnterior = tipoAtual;
             var num = ++contaTipo[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada'];
-            var l = el('a', { href: '#', style: 'display:block;margin:0 0 6px;color:var(--azul-egipcio-escuro,#1034A6);text-decoration:none', text: num + '. ' + (a.tipo === 'ao_vivo' ? 'Aula ao vivo' : a.titulo) });
+            var l = el('a', { href: '#', style: 'display:block;margin:' + (troca ? '22px' : '0') + ' 0 6px;color:var(--azul-egipcio-escuro,#1034A6);text-decoration:none', text: num + '. ' + (a.titulo || 'Aula ao vivo') });
             l.addEventListener('click', function (ev) { ev.preventDefault(); telaDaAula(app, a, voltarParaAba); });
             bloco.appendChild(l);
             if (a.tipo === 'ao_vivo' && a.data_hora) bloco.appendChild(el('p', { class: 'prod-sub', style: 'margin:-2px 0 8px', text: 'ao vivo · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }));

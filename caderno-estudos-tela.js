@@ -30,7 +30,7 @@ window.EstudosCaderno = function (ctx) {
     }
     function botaoOpcao(texto, marcada, aoClicar) {
       var b = el('button', { type: 'button', text: texto, 'aria-pressed': marcada ? 'true' : 'false' });
-      b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:var(--preto-tinta);font:inherit;font-size:16px;cursor:pointer;border-radius:0;margin:0 0 8px;' +
+      b.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;color:var(--preto-tinta);font:inherit;font-size:16px;cursor:pointer;border-radius:0;margin:0 0 8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;' +
         (marcada ? 'border:3px solid var(--azul-egipcio-claro);padding:10px 12px' : 'border:1px solid var(--azul-egipcio-claro);padding:12px');
       if (aoClicar) b.addEventListener('click', aoClicar); else b.style.cursor = 'default';
       return b;
@@ -621,8 +621,14 @@ window.EstudosCaderno = function (ctx) {
       };
       cv.addEventListener('pointerover', function (e) { if (e.pointerType === 'pen') temCaneta = true; });
       cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+      /* a caneta nunca seleciona texto: enquanto o quadro está na tela, qualquer seleção que o iPad tente começar por causa da caneta
+         (a letra A da primeira alternativa, por exemplo, quando um traço escapa do quadro) é barrada e a que já tinha começado é desfeita */
+      var ultimaCaneta = 0, marcaCaneta = function (e) { if (e.pointerType === 'pen') ultimaCaneta = Date.now(); };
+      var barraSelecao = function (e) { if (!cv.isConnected) { document.removeEventListener('selectstart', barraSelecao, true); document.removeEventListener('pointerdown', marcaCaneta, true); document.removeEventListener('pointermove', marcaCaneta, true); return; } if (desenhando || canetaNaTela || Date.now() - ultimaCaneta < 2500) { e.preventDefault(); } };
+      document.addEventListener('selectstart', barraSelecao, true); document.addEventListener('pointerdown', marcaCaneta, true); document.addEventListener('pointermove', marcaCaneta, true);
+      ['touchstart', 'touchmove'].forEach(function (nome) { cv.addEventListener(nome, function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false }); });
       cv.addEventListener('pointerdown', function (e) {
-        e.preventDefault();
+        e.preventDefault(); try { var sel = window.getSelection(); if (sel && sel.rangeCount) sel.removeAllRanges(); } catch (x) { /* sem seleção */ }
         if (ignorar(e)) return;
         if (e.pointerType === 'pen') canetaNaTela = true;
         try { cv.setPointerCapture(e.pointerId); } catch (x) { /* sem captura */ }

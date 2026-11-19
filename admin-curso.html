@@ -61,7 +61,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=189"></script>
-  <script src="curso.js?v=9"></script>
+  <script src="curso.js?v=11"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -359,7 +359,7 @@
         var vazioM = el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }), listaM = el('div'); caixaM.appendChild(vazioM); caixaM.appendChild(listaM);
         var ord = [];
         var sincM = listaViva(listaM, function (m, i) {
-          var qtd = aulasDoModulo(D, m.id).length;
+          var qtd = aulasDoModulo(D, m.id).filter(function (x) { return x.tipo !== 'ao_vivo'; }).length;
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
             el('span', { class: 'prod-titulo', style: 'display:block', text: (m.ordem === 0 ? '' : 'Módulo ' + m.ordem + ' · ') + m.titulo }),
             el('span', { class: 'prod-sub', style: 'display:block', text: qtd + (qtd === 1 ? ' aula' : ' aulas') + (m.apostila_nome ? ' · apostila' : '') })
@@ -372,7 +372,7 @@
           return linha;
         }, function (m, i) {
           var k = contModulo(D, m);
-          return [m.ordem, m.titulo, aulasDoModulo(D, m.id).length, m.apostila_nome || '', construindo() ? k.f + '/' + k.t : '', i, ord.length, i > 0 ? ord[i - 1].ordem : ''].join('|');
+          return [m.ordem, m.titulo, aulasDoModulo(D, m.id).filter(function (x) { return x.tipo !== 'ao_vivo'; }).length, m.apostila_nome || '', construindo() ? k.f + '/' + k.t : '', i, ord.length, i > 0 ? ord[i - 1].ordem : ''].join('|');
         });
         sincs.push(function () { ord = ordenados(); vazioM.style.display = ord.length ? 'none' : ''; sincM(ord); });
         var msgM = el('p', { class: 'portal-msg' });
@@ -390,6 +390,27 @@
         sincs.push(function () { introBt.style.display = D.mods.some(function (x) { return x.ordem === 0; }) ? 'none' : ''; });
         caixaM.appendChild(msgM); caixaM.appendChild(el('div', { class: 'portal-acoes' }, acoesM));
         corpo.appendChild(caixaM);
+        /* aulas ao vivo: todas juntas, fora dos módulos, cada uma editada na própria linha (nome, módulo, dia, hora, Meet, gravação) */
+        var caixaV = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aulas ao vivo' })]);
+        var vazioV = el('p', { class: 'prod-vazio', text: 'Nenhuma aula ao vivo ainda.' }), listaV = el('div'), msgV = el('p', { class: 'portal-msg' });
+        caixaV.appendChild(vazioV); caixaV.appendChild(listaV);
+        var idsV = D.aulas.filter(function (a) { return a.tipo === 'ao_vivo'; }).sort(function (x, y) { return (x.data_hora || '9') < (y.data_hora || '9') ? -1 : 1; }).map(function (a) { return a.id; }); /* a ordem fica fixa enquanto edita: mudar a data não faz a linha pular */
+        var sincV = listaViva(listaV, function (a, i) { return formAoVivo(a, i + 1, ordenados()); }, function (a, i) { return String(i); });
+        sincs.push(function () {
+          var vivas = D.aulas.filter(function (a) { return a.tipo === 'ao_vivo'; });
+          idsV = idsV.filter(function (x) { return vivas.some(function (a) { return a.id === x; }); });
+          vivas.forEach(function (a) { if (idsV.indexOf(a.id) < 0) idsV.push(a.id); });
+          var lista = idsV.map(function (x) { return vivas.filter(function (a) { return a.id === x; })[0]; });
+          vazioV.style.display = lista.length ? 'none' : ''; sincV(lista);
+        });
+        var novaV = el('button', { type: 'button', class: 'portal-btn', text: '+ Ao vivo' });
+        novaV.addEventListener('click', function () {
+          var o = ordenados(); if (!o.length) { P.mensagem(msgV, 'Crie um módulo primeiro.', 'erro'); return; }
+          var mo = o[0], ult = D.aulas.filter(function (x) { return x.modulo_id === mo.id; }).reduce(function (n, x) { return Math.max(n, x.ordem); }, 0);
+          C.from('curso_aulas').insert({ modulo_id: mo.id, ordem: ult + 1, titulo: 'Aula ao vivo', tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) { msgErro(msgV, r.error); return; } D.aulas.push(r.data); aoMudar(); });
+        });
+        caixaV.appendChild(msgV); caixaV.appendChild(el('div', { class: 'portal-acoes' }, [novaV]));
+        corpo.appendChild(caixaV);
         /* módulo com apostila e sem nenhuma aula: monta as aulas pelo índice da apostila (uma vez por módulo, um de cada vez) */
         window.__puxados = window.__puxados || {};
         var faltam = D.mods.filter(function (m) { return m.ordem !== 0 && !aulasDoModulo(D, m.id).some(function (x) { return x.tipo !== 'ao_vivo'; }) && !window.__puxados[m.id]; });
@@ -602,9 +623,9 @@
       });
     }
 
-    /* ---------- aula ao vivo editada NO LUGAR, em 2 linhas (nome com as setas; dia, hora, Meet e gravação na linha de baixo, que rola para o lado); salva sozinha ---------- */
+    /* ---------- aula ao vivo editada NO LUGAR, em 2 linhas (nome e módulo; dia, hora, Meet e gravação na linha de baixo, que rola para o lado); salva sozinha ---------- */
     function origemVideo(txt) { return /youtu/i.test(txt) ? 'youtube' : 'drive'; }
-    function formAoVivo(a, numero, setas) {
+    function formAoVivo(a, numero, modulos) {
       var tit = el('input', { type: 'text', value: a.titulo || '', style: 'flex:1;min-width:0', 'aria-label': 'Nome da aula ao vivo' });
       var dataV = el('input', { type: 'date', style: 'width:auto;flex:none', 'aria-label': 'Dia' }), horaV = el('input', { type: 'time', style: 'width:auto;flex:none;min-height:36px;min-width:120px', 'aria-label': 'Começa às' });
       var meet = el('input', { type: 'text', value: a.link_meet || '', placeholder: 'Link do Meet', autocomplete: 'off', style: 'flex:none;width:170px', 'aria-label': 'Link do Meet' });
@@ -626,7 +647,10 @@
           }, function (e) { P.mensagem(msg, 'Salvo, mas não consegui colocar na agenda do Google (' + ((e && e.message) || 'erro') + ').', 'erro'); });
         });
       });
-      var linha1 = el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('span', { class: 'rotulo-fixo', text: numero + '.', style: 'flex:none' }), tit].concat(setas || []));
+      var selMod = el('select', { style: 'flex:none;width:auto;max-width:44%', 'aria-label': 'Módulo' });
+      modulos.forEach(function (x) { var o = el('option', { value: x.id, text: x.ordem === 0 ? 'Introdução' : 'Módulo ' + x.ordem }); if (x.id === a.modulo_id) o.selected = true; selMod.appendChild(o); });
+      selMod.addEventListener('change', function () { var antes = a.modulo_id; C.from('curso_aulas').update({ modulo_id: selMod.value }).eq('id', a.id).then(function (x) { if (x.error) { selMod.value = antes; msgErro(msg, x.error); } else a.modulo_id = selMod.value; }); });
+      var linha1 = el('div', { style: 'display:flex;align-items:center;gap:8px' }, [el('span', { class: 'rotulo-fixo', text: numero + '.', style: 'flex:none' }), tit, selMod]);
       var linha2 = el('div', { style: 'display:flex;align-items:center;gap:14px;margin:0 0 0 22px;overflow-x:auto;-webkit-overflow-scrolling:touch' }, [dataV, horaV, meet, cod]);
       var raiz = el('div', { style: 'margin:22px 0 14px' }, [linha1, linha2, msg, el('div', { style: 'display:none' }, [salvar])]);
       P.salvarSozinho(salvar, raiz);
@@ -647,7 +671,7 @@
         var m = D.mods.filter(function (x) { return x.id === id; })[0];
         if (!m) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Módulo não encontrado.' })); return; }
         var curso = D.curso, construindo = curso.construindo !== false;
-        var aulas = function () { return aulasDoModulo(D, id).sort(function (x, y) { return x.ordem - y.ordem; }); };
+        var aulas = function () { return aulasDoModulo(D, id).filter(function (x) { return x.tipo !== 'ao_vivo'; }).sort(function (x, y) { return x.ordem - y.ordem; }); };
         /* as aulas de uma apostila podem ser criadas por trás: lê de novo só as aulas deste módulo e mistura na tela */
         function atualizarAulas() {
           return C.from('curso_aulas').select('*').eq('modulo_id', id).order('ordem').then(function (ra) {
@@ -718,17 +742,10 @@
         var sincAulas = listaViva(listaA, function (a, i) {
           var tituloEl = el('span', { class: 'prod-titulo', style: 'display:block' }), subEl = el('span', { class: 'prod-sub', style: 'display:block' });
           var pintar = function () {
-            tituloEl.textContent = nums[a.id] + '. ' + (a.tipo === 'ao_vivo' ? (a.titulo || 'Aula ao vivo') : a.titulo);
-            subEl.textContent = (a.tipo === 'ao_vivo' ? 'ao vivo' + (a.data_hora ? ' · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + ' · ' : '') + (!a.video_codigo ? 'sem vídeo' : 'vídeo');
+            tituloEl.textContent = nums[a.id] + '. ' + a.titulo;
+            subEl.textContent = !a.video_codigo ? 'sem vídeo' : 'vídeo';
           };
           pintar();
-          if (a.tipo === 'ao_vivo') {
-            /* aula ao vivo: os campos ficam sempre à vista, na própria linha (nada abre nem fecha) */
-            var setasAV = [];
-            if (i > 0) { var sobeV = texto('↑'); sobeV.addEventListener('click', function () { var o = aulas(), j = o.indexOf(a); if (j > 0) trocar('curso_aulas', a, o[j - 1], aoMudar); }); setasAV.push(sobeV); }
-            if (i < ordA.length - 1) { var desceV = texto('↓'); desceV.addEventListener('click', function () { var o = aulas(), j = o.indexOf(a); if (j >= 0 && j < o.length - 1) trocar('curso_aulas', a, o[j + 1], aoMudar); }); setasAV.push(desceV); }
-            return formAoVivo(a, nums[a.id], setasAV);
-          }
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [tituloEl, subEl]);
           abrir.addEventListener('click', function () { abrirAula(a.id); });
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
@@ -739,8 +756,8 @@
           return bloco;
         }, function (a, i) { var fixo = [a.tipo, nums[a.id], i, ordA.length]; /* o que se edita na própria linha não refaz a linha */ return (a.tipo === 'ao_vivo' ? fixo : fixo.concat([a.titulo, a.data_hora || '', a.video_codigo ? 1 : 0])).join('|'); });
         sincs.push(function () {
-          ordA = aulas(); nums = {}; var cont = { gravada: 0, ao_vivo: 0 };
-          ordA.forEach(function (a) { nums[a.id] = ++cont[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada']; });
+          ordA = aulas(); nums = {};
+          ordA.forEach(function (a, k) { nums[a.id] = k + 1; });
           vazioA.style.display = ordA.length ? 'none' : ''; sincAulas(ordA);
         });
         var msgN = el('p', { class: 'portal-msg' });
@@ -750,14 +767,7 @@
           var ordem = aulas().length ? aulas()[aulas().length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
-        var aoVivo = el('button', { type: 'button', class: 'portal-btn', text: '+ Ao vivo' });
-        aoVivo.addEventListener('click', function () {
-          var ordem = aulas().length ? aulas()[aulas().length - 1].ordem + 1 : 1;
-          C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: 'Aula ao vivo', tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) { msgErro(msgN, r.error); return; } D.aulas.push(r.data); aoMudar(); });
-        });
-        var acoesN = intro ? [aoVivo] : [nova]; /* aula ao vivo só na Introdução; dentro dos módulos ficam só as gravadas */
-        caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
-        corpo.appendChild(caixaA);
+        if (!intro) { caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, [nova])); corpo.appendChild(caixaA); }
         if (apId && !intro && !aulas().some(function (x) { return x.tipo !== 'ao_vivo'; }) && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas()).then(function (n) { if (n > 0) atualizarAulas(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
 
         if (construindo && !intro) {
@@ -785,7 +795,7 @@
       C.from('curso_aulas').select('*, curso_modulos(curso_id, cursos(construindo, etapas))').eq('id', id).maybeSingle().then(function (r) {
         corpo.textContent = '';
         if (r.error || !r.data) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: r.error ? P.traduzErro(r.error.message) : 'Aula não encontrada.' })); return; }
-        var a = r.data, voltar = function () { abrirModulo(a.modulo_id); };
+        var a = r.data, voltar = function () { if (a.tipo === 'ao_vivo' && a.curso_modulos) abrirCurso(a.curso_modulos.curso_id); else abrirModulo(a.modulo_id); };
         var curso = a.curso_modulos && a.curso_modulos.cursos ? a.curso_modulos.cursos : { construindo: false };
         corpo.parentNode.insertBefore(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]), corpo);
         P.voltarNoFim(app, voltar);
@@ -801,8 +811,12 @@
         }
         var fimV = el('input', { type: 'time', style: 'width:auto;min-height:36px;min-width:120px' });
         if (aoVivoA) eventoDaAula(a.id).then(function (ev) { if (ev && ev.end && ev.end.dateTime) fimV.value = new Date(ev.end.dateTime).toLocaleTimeString('sv-SE', { timeZone: 'America/Sao_Paulo' }).slice(0, 5); }, function () { });
+        var selMod = el('select', {});
+        if (aoVivoA && a.curso_modulos) C.from('curso_modulos').select('id,ordem,titulo').eq('curso_id', a.curso_modulos.curso_id).order('ordem').then(function (rm) {
+          (rm.data || []).forEach(function (x) { var o = el('option', { value: x.id, text: (x.ordem === 0 ? '' : 'Módulo ' + x.ordem + ' · ') + x.titulo }); if (x.id === a.modulo_id) o.selected = true; selMod.appendChild(o); });
+        });
         var meet = el('input', { type: 'text', value: a.link_meet || '', placeholder: '', autocomplete: 'off' });
-        var vivoBloco = el('div', {}, [].concat([P.linhaDatas([P.colunaData(dataV, 'Dia'), el('div', {}, [el('label', { text: 'Começa às' }), horaV]), el('div', {}, [el('label', { text: 'Termina às' }), fimV])])], campo('Link do Meet', meet)));
+        var vivoBloco = el('div', {}, [].concat(campo('Nome', tit), campo('Módulo', selMod), [P.linhaDatas([P.colunaData(dataV, 'Dia'), el('div', {}, [el('label', { text: 'Começa às' }), horaV]), el('div', {}, [el('label', { text: 'Termina às' }), fimV])])], campo('Link do Meet', meet)));
         var prev = el('div', { style: 'margin:0 0 12px' });
         function previa() {
           prev.textContent = '';
@@ -818,19 +832,19 @@
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
-          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: false, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
+          C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: false, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null, modulo_id: selMod.value || a.modulo_id }).eq('id', id)
             .then(function (x) {
               if (x.error) { msgErro(msg, x.error); return; }
               a.video_codigo = cod.value.trim() || null; atualizaUpload(); /* com vídeo, o Upload se marca sozinho (e ganha a data de hoje) */
               if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
-              sincronizarAula(id, aoVivoA ? 'Aula ao vivo' : tit.value.trim(), dataV.value, horaV.value, fimV.value || (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
+              sincronizarAula(id, tit.value.trim(), dataV.value, horaV.value, fimV.value || (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
                 if (lk && lk !== meet.value.trim()) { meet.value = lk; C.from('curso_aulas').update({ link_meet: lk }).eq('id', id).then(function () { }); }
                 P.mensagem(msg, dataV.value && horaV.value ? 'Salvo e na sua agenda do Google.' : 'Salvo.', 'ok');
               }, function (e) { P.mensagem(msg, 'Salvo, mas não consegui colocar na agenda do Google (' + ((e && e.message) || 'erro') + ').', 'erro'); });
             });
         });
         var h2Num = el('h2', { text: aoVivoA ? 'Aula ao vivo' : 'Aula' });
-        C.from('curso_aulas').select('id,ordem,tipo').eq('modulo_id', a.modulo_id).then(function (rn) { var n = (rn.data || []).filter(function (x) { return (x.tipo === 'ao_vivo') === aoVivoA && x.ordem <= a.ordem; }).length; if (n) h2Num.textContent = (aoVivoA ? 'Aula ao vivo ' : 'Aula ') + n; });
+        if (!aoVivoA) C.from('curso_aulas').select('id,ordem,tipo').eq('modulo_id', a.modulo_id).then(function (rn) { var n = (rn.data || []).filter(function (x) { return x.tipo !== 'ao_vivo' && x.ordem <= a.ordem; }).length; if (n) h2Num.textContent = 'Aula ' + n; });
         var partes = [].concat([h2Num]);
         /* as datas das etapas têm UM dono só: a barra de etapas (grava na hora). Os campos "Data: ..." de baixo são espelho dela. */
         var camposEt = [];
