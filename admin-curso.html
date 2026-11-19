@@ -628,7 +628,7 @@
       });
       var linha1 = el('div', { style: 'display:flex;align-items:center;gap:6px' }, [el('span', { class: 'rotulo-fixo', text: numero + '.', style: 'flex:none' }), tit].concat(setas || []));
       var linha2 = el('div', { style: 'display:flex;align-items:center;gap:14px;margin:0 0 0 22px;overflow-x:auto;-webkit-overflow-scrolling:touch' }, [dataV, horaV, meet, cod]);
-      var raiz = el('div', { style: 'margin:0 0 14px' }, [linha1, linha2, msg, el('div', { style: 'display:none' }, [salvar])]);
+      var raiz = el('div', { style: 'margin:22px 0 14px' }, [linha1, linha2, msg, el('div', { style: 'display:none' }, [salvar])]);
       P.salvarSozinho(salvar, raiz);
       return raiz;
     }
