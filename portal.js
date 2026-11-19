@@ -1577,12 +1577,12 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     if (!espelhoTexto) { espelhoTexto = document.createElement('textarea'); espelhoTexto.setAttribute('aria-hidden', 'true'); espelhoTexto.tabIndex = -1; espelhoTexto.style.cssText = 'position:fixed;left:-99999px;top:0;visibility:hidden;pointer-events:none;height:auto;min-height:0;overflow:hidden;resize:none'; document.body.appendChild(espelhoTexto); }
     var c = window.getComputedStyle(ta), m = espelhoTexto.style;
     ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'wordSpacing', 'textTransform', 'textIndent', 'tabSize', 'whiteSpace', 'overflowWrap', 'wordBreak', 'boxSizing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderStyle'].forEach(function (k) { m[k] = c[k]; });
-    m.width = r.width + 'px'; espelhoTexto.rows = ta.rows || 2; espelhoTexto.value = ta.value;
+    m.width = r.width + 'px'; espelhoTexto.rows = 1; espelhoTexto.value = ta.value;
     return espelhoTexto.scrollHeight + 2;
   }
   function escritaLivre(ta) {
     if (ta.classList.contains('escrita-livre')) return ta;
-    ta.classList.add('escrita-livre');
+    ta.classList.add('escrita-livre'); ta.rows = 1; /* o campo nasce de UMA linha e cresce só com o texto (o rows de 3 ou 5 deixava um vazio enorme) */
     function crescer() { var h = alturaDoTexto(ta); if (h && ta.style.height !== h + 'px') ta.style.height = h + 'px'; } /* o campo de verdade NUNCA é encolhido para medir: a página não encolhe e a tela não sai do lugar */
     ta.addEventListener('input', crescer); /* só mede quando o texto muda (ou a largura): tocar no campo não mede nada */
     if (window.ResizeObserver) { var largura = 0; new ResizeObserver(function () { if (ta.clientWidth !== largura) { largura = ta.clientWidth; crescer(); } }).observe(ta); }
