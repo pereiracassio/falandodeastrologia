@@ -339,7 +339,6 @@
         sincs.push(function () { tirar.style.display = curso.data_fim ? '' : 'none'; });
         var linhaDatasC = P.linhaDatas([P.colunaData(ini, 'Início'), P.colunaData(fim, 'Data final (opcional)', tirar)]); cab.appendChild(linhaDatasC); soConstruindo.push(linhaDatasC);
 
-        var gIdeia = grupo('Ideia'); cab.appendChild(gIdeia); soConstruindo.push(gIdeia);
         var ideia = el('textarea', { rows: '6', id: 'pcIdeia', 'aria-label': 'Ideia do curso' }), msgIdeia = el('p', { class: 'portal-msg' }), espera = null;
         ideia.value = curso.ideia || '';
         var gravaIdeia = function () {
@@ -350,7 +349,8 @@
         };
         ideia.addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(gravaIdeia, 1200); });
         ideia.addEventListener('blur', function () { clearTimeout(espera); if (ideia.value !== (curso.ideia || '')) gravaIdeia(); });
-        cab.appendChild(ideia); cab.appendChild(msgIdeia); soConstruindo.push(ideia, msgIdeia);
+        var sanIdeia = P.sanfona([], 'ideia', 'Ideia', [ideia, msgIdeia]); /* fechada: só abre quando ele quiser ver */
+        cab.appendChild(sanIdeia); soConstruindo.push(sanIdeia);
         var gPlan = grupo('Planejamento'), plan = blocoPassos(D, aoMudar, 'ideia', null);
         cab.appendChild(gPlan); cab.appendChild(plan.no); soConstruindo.push(gPlan, plan.no); sincs.push(plan.sinc);
 
