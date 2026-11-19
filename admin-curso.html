@@ -755,7 +755,7 @@
           var ordem = aulas().length ? aulas()[aulas().length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: 'Aula ao vivo', tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) { msgErro(msgN, r.error); return; } D.aulas.push(r.data); aoMudar(); });
         });
-        var acoesN = intro ? [aoVivo] : [nova, aoVivo];
+        var acoesN = intro ? [aoVivo] : [nova]; /* aula ao vivo só na Introdução; dentro dos módulos ficam só as gravadas */
         caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
         corpo.appendChild(caixaA);
         if (apId && !intro && !aulas().some(function (x) { return x.tipo !== 'ao_vivo'; }) && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas()).then(function (n) { if (n > 0) atualizarAulas(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
