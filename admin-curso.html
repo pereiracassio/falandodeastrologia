@@ -139,21 +139,58 @@
     }
 
     /* ---------- peças de passos e etapas ---------- */
-    function linhaPasso(p, aoEditar, recarregar) {
+    /* Nada nesta tela redesenha a tela: cada ação mexe só no que mudou. Lista viva = acrescenta só a linha nova, tira só a que saiu,
+       troca só a que mudou e põe na ordem só o que está fora dela. */
+    function listaViva(cont, fazer, assina) {
+      var linhas = {};
+      return function (itens) {
+        var ids = {}; itens.forEach(function (x) { ids[x.id] = 1; });
+        Object.keys(linhas).forEach(function (k) { if (!ids[k]) { linhas[k].no.remove(); delete linhas[k]; } });
+        itens.forEach(function (x, i) {
+          var sig = assina(x, i), l = linhas[x.id];
+          if (!l) l = linhas[x.id] = { no: fazer(x, i), sig: sig };
+          else if (l.sig !== sig) { var novo = fazer(x, i); l.no.replaceWith(novo); l.no = novo; l.sig = sig; }
+          if (cont.children[i] !== l.no) cont.insertBefore(l.no, cont.children[i] || null);
+        });
+      };
+    }
+    /* barra de progresso que só é refeita quando o número muda */
+    function barraViva(fornece) {
+      var no = el('div'), ult = null;
+      return { no: no, sinc: function () { var k = fornece(), sg = k ? k.f + '/' + k.t : ''; if (sg === ult) return; ult = sg; no.textContent = ''; if (k) no.appendChild(barra(k)); } };
+    }
+    function tempoVivo(curso) {
+      var no = el('div'), ult = null;
+      return { no: no, sinc: function () { var sg = curso.data_fim ? curso.data_inicio + '|' + curso.data_fim : ''; if (sg === ult) return; ult = sg; no.textContent = ''; if (curso.data_fim) { var t = P.barraTempoDias(curso.data_inicio, curso.data_fim); if (t) no.appendChild(t); } } };
+    }
+    /* troca a ordem de dois itens na hora (na tela e no banco); se o banco recusar, volta como estava */
+    function trocar(tabela, a, b, aoMudar) {
+      var oa = a.ordem, ob = b.ordem; a.ordem = ob; b.ordem = oa; aoMudar();
+      Promise.all([C.from(tabela).update({ ordem: ob }).eq('id', a.id), C.from(tabela).update({ ordem: oa }).eq('id', b.id)]).then(function (rs) {
+        var r = rs[0].error ? rs[0] : rs[1];
+        if (r.error) { a.ordem = oa; b.ordem = ob; aoMudar(); falhou(r); }
+      });
+    }
+    function linhaPasso(D, p, aoEditar, aoMudar) {
       var cb = el('input', { type: 'checkbox', 'aria-label': 'Marcar como feito' }); cb.checked = !!p.feito;
       cb.addEventListener('change', function () {
-        C.from('curso_passos').update({ feito: cb.checked, feito_em: cb.checked ? new Date().toISOString() : null }).eq('id', p.id).then(function (r) { if (!falhou(r, recarregar)) recarregar(); });
+        var antes = { feito: p.feito, feito_em: p.feito_em };
+        p.feito = cb.checked; p.feito_em = cb.checked ? new Date().toISOString() : null; aoMudar();
+        C.from('curso_passos').update({ feito: p.feito, feito_em: p.feito_em }).eq('id', p.id).then(function (r) { if (r.error) { p.feito = antes.feito; p.feito_em = antes.feito_em; aoMudar(); falhou(r); } });
       });
       var textos = [el('span', { class: 'proj-titulo', text: p.titulo })];
       if (p.data_prevista) textos.push(el('span', { class: 'portal-item-data', text: p.data_prevista.split('-').reverse().join('/') }));
       if (p.nota) textos.push(el('span', { class: 'portal-item-data', style: 'color:var(--preto-tinta,#16233F);opacity:.75', text: p.nota }));
       var acoes = el('div', { class: 'proj-acoes' }, [minilink('Editar', function () { aoEditar(p); })]);
       var ap = P.botaoApagar('Apagar');
-      ap.addEventListener('click', function () { if (!confirm('Apagar o passo "' + p.titulo + '"?')) return; C.from('curso_passos').delete().eq('id', p.id).then(function (r) { if (!falhou(r, recarregar)) recarregar(); }); });
+      ap.addEventListener('click', function () {
+        if (!confirm('Apagar o passo "' + p.titulo + '"?')) return;
+        C.from('curso_passos').delete().eq('id', p.id).then(function (r) { if (falhou(r)) return; var i = D.passos.indexOf(p); if (i >= 0) D.passos.splice(i, 1); aoMudar(); });
+      });
       acoes.appendChild(ap); textos.push(acoes);
       return el('div', { class: 'proj-passo' + (p.feito ? ' feito' : '') }, [cb, el('div', { style: 'flex:1;min-width:0' }, textos)]);
     }
-    function formPasso(D, recarregar, area, fase, mid, item) {
+    function formPasso(D, aoMudar, area, fase, mid, item) {
       area.textContent = '';
       var msg = el('p', { class: 'portal-msg' }), titulo = el('input', { type: 'text', id: 'pcTitulo', required: '' }), nota = el('textarea', { rows: '2', placeholder: 'Anotação (opcional)' });
       var dataP = el('input', { type: 'date' }); if (item) { titulo.value = item.titulo; nota.value = item.nota || ''; dataP.value = item.data_prevista || ''; }
@@ -164,31 +201,42 @@
         ev.preventDefault();
         var t = titulo.value.trim(); if (!t) { P.mensagem(msg, 'Escreva o passo.', 'erro'); return; }
         salvar.disabled = true;
+        var campos = { titulo: t, nota: nota.value.trim() || null, data_prevista: dataP.value || null };
         var ordem = D.passos.reduce(function (m, p) { return Math.max(m, p.ordem || 0); }, 0) + 1;
-        var pedido = item ? C.from('curso_passos').update({ titulo: t, nota: nota.value.trim() || null, data_prevista: dataP.value || null }).eq('id', item.id) : C.from('curso_passos').insert({ curso_id: D.curso.id, modulo_id: mid || null, fase: mid ? 'modulo' : fase, titulo: t, nota: nota.value.trim() || null, data_prevista: dataP.value || null, ordem: ordem });
-        pedido.then(function (r) { if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); } else recarregar(); });
+        var pedido = item ? C.from('curso_passos').update(campos).eq('id', item.id) : C.from('curso_passos').insert(Object.assign({ curso_id: D.curso.id, modulo_id: mid || null, fase: mid ? 'modulo' : fase, ordem: ordem }, campos)).select().single();
+        pedido.then(function (r) {
+          if (r.error) { salvar.disabled = false; P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+          if (item) Object.assign(item, campos); else if (r.data) D.passos.push(r.data);
+          area.textContent = ''; aoMudar();
+        });
       });
       area.appendChild(f); titulo.focus({ preventScroll: true });
     }
     function passosDe(D, fase, mid) { return D.passos.filter(function (p) { return mid ? p.modulo_id === mid : (!p.modulo_id && p.fase === fase); }).sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); }); }
-    function blocoPassos(D, recarregar, fase, mid) {
+    var ASSINA_PASSO = function (p) { return [p.titulo, p.nota, p.data_prevista].join('|'); };
+    function blocoPassos(D, aoMudar, fase, mid) {
       var caixa = el('div'), lista = el('div', { style: 'border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }), area = el('div', { class: 'barra-ocre' });
-      var itens = passosDe(D, fase, mid).filter(function (p) { return !p.feito; });
-      itens.forEach(function (p) { lista.appendChild(linhaPasso(p, function (x) { formPasso(D, recarregar, area, fase, mid, x); }, recarregar)); });
-      if (itens.length) caixa.appendChild(lista);
-      caixa.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:8px' }, [minilink('+ Adicionar passo', function () { if (!area.firstChild) formPasso(D, recarregar, area, fase, mid, null); })]));
+      var sinc0 = listaViva(lista, function (p) { return linhaPasso(D, p, function (x) { formPasso(D, aoMudar, area, fase, mid, x); }, aoMudar); }, ASSINA_PASSO);
+      caixa.appendChild(lista);
+      caixa.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:8px' }, [minilink('+ Adicionar passo', function () { if (!area.firstChild) formPasso(D, aoMudar, area, fase, mid, null); })]));
       caixa.appendChild(area);
-      return caixa;
+      return { no: caixa, sinc: function () { var itens = passosDe(D, fase, mid).filter(function (p) { return !p.feito; }); sinc0(itens); lista.style.display = itens.length ? '' : 'none'; } };
     }
-    function listaFeitos(D, recarregar, mid) {
-      var itens = D.passos.filter(function (p) { return p.feito && (mid ? p.modulo_id === mid : !p.modulo_id); }).sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); });
-      var caixa = el('div'), area = el('div', { class: 'barra-ocre' });
-      if (!itens.length) return caixa;
-      caixa.appendChild(grupo('Feitos'));
-      var lista = el('div', { style: 'border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' });
-      itens.forEach(function (p) { lista.appendChild(linhaPasso(p, function (x) { formPasso(D, recarregar, area, x.fase, mid, x); }, recarregar)); });
-      caixa.appendChild(lista); caixa.appendChild(area);
-      return caixa;
+    function listaFeitos(D, aoMudar, mid) {
+      var caixa = el('div'), area = el('div', { class: 'barra-ocre' }), lista = el('div', { style: 'border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' });
+      var sinc0 = listaViva(lista, function (p) { return linhaPasso(D, p, function (x) { formPasso(D, aoMudar, area, x.fase, mid, x); }, aoMudar); }, ASSINA_PASSO);
+      caixa.appendChild(grupo('Feitos')); caixa.appendChild(lista); caixa.appendChild(area);
+      return { no: caixa, sinc: function () {
+        var itens = D.passos.filter(function (p) { return p.feito && (mid ? p.modulo_id === mid : !p.modulo_id); }).sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); });
+        sinc0(itens); caixa.style.display = itens.length ? '' : 'none';
+      } };
+    }
+    /* mistura os dados novos do banco nos que já estão na tela, sem trocar os objetos */
+    function fundir(alvo, novos) {
+      var porId = {}, tem = {}; novos.forEach(function (n) { porId[n.id] = n; });
+      for (var i = alvo.length - 1; i >= 0; i--) if (!porId[alvo[i].id]) alvo.splice(i, 1);
+      alvo.forEach(function (x) { tem[x.id] = 1; Object.assign(x, porId[x.id]); });
+      novos.forEach(function (n) { if (!tem[n.id]) alvo.push(n); });
     }
     /* barra de etapas da aula (como na Produção); o Upload se marca sozinho quando a aula tem vídeo */
     function etapasDaAula(a, curso, aoMudar, aoTocarUpload) {
@@ -250,94 +298,101 @@
     }
 
     /* ---------- um curso: construção, módulos e matrículas ---------- */
-    function trocar(tabela, a, b) {
-      return Promise.all([C.from(tabela).update({ ordem: b.ordem }).eq('id', a.id), C.from(tabela).update({ ordem: a.ordem }).eq('id', b.id)]);
-    }
     function abrirCurso(id) {
       limpar(); P.estado.gravar({ curso: id });
       app.appendChild(topo(nomeAdmin));
       voltarAcima(lista);
-      var recarregar = function () { abrirCurso(id); };
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
       Promise.all([dadosCurso(id), C.from('curso_matriculas').select('id,email,nome,modulo_liberado').eq('curso_id', id).order('criado_em')]).then(function (rs) {
         corpo.textContent = '';
         if (rs[1].error) throw rs[1].error;
-        var D = rs[0], curso = D.curso, mods = D.mods, mats = rs[1].data || [], construindo = curso.construindo !== false;
+        var D = rs[0], curso = D.curso, mats = rs[1].data || [];
+        /* a tela é montada UMA vez; cada ação muda os dados e chama aoMudar, que só atualiza o que mudou */
+        var sincs = [], aoMudar = function () { sincs.forEach(function (fn) { fn(); }); };
+        var construindo = function () { return curso.construindo !== false; };
+        var soConstruindo = [], soPublicado = [];
+        function ordenados() { return D.mods.slice().sort(function (x, y) { return x.ordem - y.ordem; }); }
+        function atualizarDados() {
+          return dadosCurso(id).then(function (N) { fundir(D.mods, N.mods); fundir(D.aulas, N.aulas); fundir(D.passos, N.passos); Object.assign(curso, N.curso); aoMudar(); });
+        }
+
         var tit = el('input', { type: 'text', value: curso.titulo });
         var msgT = el('p', { class: 'portal-msg', style: 'margin:0' });
         var salvarT = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar nome' });
         salvarT.addEventListener('click', function () {
           if (!tit.value.trim()) return;
-          C.from('cursos').update({ titulo: tit.value.trim() }).eq('id', id).then(function (r) { if (r.error) msgErro(msgT, r.error); else P.mensagem(msgT, 'Salvo.', 'ok'); });
+          C.from('cursos').update({ titulo: tit.value.trim() }).eq('id', id).then(function (r) { if (r.error) msgErro(msgT, r.error); else { curso.titulo = tit.value.trim(); P.mensagem(msgT, 'Salvo.', 'ok'); } });
         });
         var cab = el('div', { class: 'portal-cartao', style: 'padding-bottom:0!important;margin-bottom:0!important' }, [].concat(campo('Nome do curso', tit), [msgT, el('div', { class: 'portal-acoes', style: 'display:none' }, [salvarT])]));
-        if (construindo) {
-          cab.insertBefore(el('div', {}, [selo()]), cab.firstChild);
-          cab.appendChild(barra(contCurso(D)));
-          if (curso.data_fim) { var tt = P.barraTempoDias(curso.data_inicio, curso.data_fim); if (tt) cab.appendChild(tt); }
-        }
+        var seloNo = el('div', {}, [selo()]); cab.insertBefore(seloNo, cab.firstChild); soConstruindo.push(seloNo);
+        var barraC = barraViva(function () { return contCurso(D); }), tempoC = tempoVivo(curso);
+        cab.appendChild(barraC.no); cab.appendChild(tempoC.no); soConstruindo.push(barraC.no, tempoC.no); sincs.push(barraC.sinc, tempoC.sinc);
         corpo.appendChild(cab); P.salvarSozinho(salvarT); /* o botão fica escondido (salva sozinho) */
 
         /* ----- só enquanto está em construção: datas, ideia e planejamento ----- */
-        if (construindo) {
-          var ini = el('input', { type: 'date', style: 'width:auto' }), fim = el('input', { type: 'date', style: 'width:auto' }), sujo = false;
-          ini.value = curso.data_inicio || ''; fim.value = curso.data_fim || '';
-          var grava = function (campoD, v) { var o = {}; o[campoD] = v || null; C.from('cursos').update(o).eq('id', id).then(function (r) { if (!falhou(r)) { curso[campoD] = v || null; sujo = true; } }); };
-          ini.addEventListener('change', function () { if (ini.value) grava('data_inicio', ini.value); }); fim.addEventListener('change', function () { grava('data_fim', fim.value); });
-          [ini, fim].forEach(function (x) { x.addEventListener('blur', function () { setTimeout(function () { if (sujo) { sujo = false; recarregar(); } }, 300); }); });
-          var tirar = null; if (curso.data_fim) { tirar = P.botaoApagar('Tirar a data'); tirar.addEventListener('click', function () { C.from('cursos').update({ data_fim: null }).eq('id', id).then(recarregar); }); }
-          cab.appendChild(P.linhaDatas([P.colunaData(ini, 'Início'), P.colunaData(fim, 'Data final (opcional)', tirar)]));
+        var ini = el('input', { type: 'date', style: 'width:auto' }), fim = el('input', { type: 'date', style: 'width:auto' });
+        ini.value = curso.data_inicio || ''; fim.value = curso.data_fim || '';
+        var grava = function (campoD, v) { var o = {}; o[campoD] = v || null; C.from('cursos').update(o).eq('id', id).then(function (r) { if (!falhou(r)) { curso[campoD] = v || null; aoMudar(); } }); };
+        ini.addEventListener('change', function () { if (ini.value) grava('data_inicio', ini.value); }); fim.addEventListener('change', function () { grava('data_fim', fim.value); });
+        var tirar = P.botaoApagar('Tirar a data');
+        tirar.addEventListener('click', function () { C.from('cursos').update({ data_fim: null }).eq('id', id).then(function (r) { if (falhou(r)) return; curso.data_fim = null; fim.value = ''; aoMudar(); }); });
+        sincs.push(function () { tirar.style.display = curso.data_fim ? '' : 'none'; });
+        var linhaDatasC = P.linhaDatas([P.colunaData(ini, 'Início'), P.colunaData(fim, 'Data final (opcional)', tirar)]); cab.appendChild(linhaDatasC); soConstruindo.push(linhaDatasC);
 
-          cab.appendChild(grupo('Ideia'));
-          var ideia = el('textarea', { rows: '6', id: 'pcIdeia', 'aria-label': 'Ideia do curso' }), msgIdeia = el('p', { class: 'portal-msg' }), espera = null;
-          ideia.value = curso.ideia || '';
-          var gravaIdeia = function () {
-            C.from('cursos').update({ ideia: ideia.value }).eq('id', id).then(function (r) {
-              if (r.error) P.mensagem(msgIdeia, 'Não foi possível salvar a ideia (' + P.traduzErro(r.error.message) + ').', 'erro');
-              else { curso.ideia = ideia.value; P.mensagem(msgIdeia, 'Salvo.', 'ok'); }
-            });
-          };
-          ideia.addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(gravaIdeia, 1200); });
-          ideia.addEventListener('blur', function () { clearTimeout(espera); if (ideia.value !== (curso.ideia || '')) gravaIdeia(); });
-          cab.appendChild(ideia); cab.appendChild(msgIdeia);
-          cab.appendChild(grupo('Planejamento')); cab.appendChild(blocoPassos(D, recarregar, 'ideia', null));
-        }
+        var gIdeia = grupo('Ideia'); cab.appendChild(gIdeia); soConstruindo.push(gIdeia);
+        var ideia = el('textarea', { rows: '6', id: 'pcIdeia', 'aria-label': 'Ideia do curso' }), msgIdeia = el('p', { class: 'portal-msg' }), espera = null;
+        ideia.value = curso.ideia || '';
+        var gravaIdeia = function () {
+          C.from('cursos').update({ ideia: ideia.value }).eq('id', id).then(function (r) {
+            if (r.error) P.mensagem(msgIdeia, 'Não foi possível salvar a ideia (' + P.traduzErro(r.error.message) + ').', 'erro');
+            else { curso.ideia = ideia.value; P.mensagem(msgIdeia, 'Salvo.', 'ok'); }
+          });
+        };
+        ideia.addEventListener('input', function () { clearTimeout(espera); espera = setTimeout(gravaIdeia, 1200); });
+        ideia.addEventListener('blur', function () { clearTimeout(espera); if (ideia.value !== (curso.ideia || '')) gravaIdeia(); });
+        cab.appendChild(ideia); cab.appendChild(msgIdeia); soConstruindo.push(ideia, msgIdeia);
+        var gPlan = grupo('Planejamento'), plan = blocoPassos(D, aoMudar, 'ideia', null);
+        cab.appendChild(gPlan); cab.appendChild(plan.no); soConstruindo.push(gPlan, plan.no); sincs.push(plan.sinc);
 
-        var caixaM = el('div', { class: 'portal-cartao', style: construindo ? '' : 'border-top:0!important;padding-top:12px!important' }, [el('h2', { text: 'Módulos' })]);
-        if (!mods.length) caixaM.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }));
-        mods.forEach(function (m, i) {
+        var caixaM = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Módulos' })]);
+        sincs.push(function () { caixaM.style.cssText = construindo() ? '' : 'border-top:0!important;padding-top:12px!important'; });
+        var vazioM = el('p', { class: 'prod-vazio', text: 'Nenhum módulo ainda.' }), listaM = el('div'); caixaM.appendChild(vazioM); caixaM.appendChild(listaM);
+        var ord = [];
+        var sincM = listaViva(listaM, function (m, i) {
           var qtd = aulasDoModulo(D, m.id).length;
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
             el('span', { class: 'prod-titulo', style: 'display:block', text: (m.ordem === 0 ? '' : 'Módulo ' + m.ordem + ' · ') + m.titulo }),
             el('span', { class: 'prod-sub', style: 'display:block', text: qtd + (qtd === 1 ? ' aula' : ' aulas') + (m.apostila_nome ? ' · apostila' : '') })
           ]);
-          if (construindo && m.ordem !== 0) abrir.appendChild(barra(contModulo(D, m)));
+          if (construindo() && m.ordem !== 0) abrir.appendChild(barra(contModulo(D, m)));
           abrir.addEventListener('click', function () { abrirModulo(m.id); });
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
-          if (i > 0 && mods[i - 1].ordem !== 0 && m.ordem !== 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_modulos', m, mods[i - 1]).then(recarregar); }); linha.appendChild(sobe); }
-          if (i < mods.length - 1 && m.ordem !== 0) { var desce = texto('↓'); desce.addEventListener('click', function () { trocar('curso_modulos', m, mods[i + 1]).then(recarregar); }); linha.appendChild(desce); }
-          caixaM.appendChild(linha);
+          if (i > 0 && ord[i - 1].ordem !== 0 && m.ordem !== 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { var o = ordenados(), j = o.indexOf(m); if (j > 0) trocar('curso_modulos', m, o[j - 1], aoMudar); }); linha.appendChild(sobe); }
+          if (i < ord.length - 1 && m.ordem !== 0) { var desce = texto('↓'); desce.addEventListener('click', function () { var o = ordenados(), j = o.indexOf(m); if (j >= 0 && j < o.length - 1) trocar('curso_modulos', m, o[j + 1], aoMudar); }); linha.appendChild(desce); }
+          return linha;
+        }, function (m, i) {
+          var k = contModulo(D, m);
+          return [m.ordem, m.titulo, aulasDoModulo(D, m.id).length, m.apostila_nome || '', construindo() ? k.f + '/' + k.t : '', i, ord.length, i > 0 ? ord[i - 1].ordem : ''].join('|');
         });
+        sincs.push(function () { ord = ordenados(); vazioM.style.display = ord.length ? 'none' : ''; sincM(ord); });
         var msgM = el('p', { class: 'portal-msg' });
         var novoM = el('button', { type: 'button', class: 'portal-btn', text: '+ Módulo' });
         novoM.addEventListener('click', function () {
           var t = (window.prompt('Nome do módulo') || '').trim(); if (!t) return;
-          var ordem = mods.length ? Math.max(1, mods[mods.length - 1].ordem + 1) : 1;
+          var o = ordenados(), ordem = o.length ? Math.max(1, o[o.length - 1].ordem + 1) : 1;
           C.from('curso_modulos').insert({ curso_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgM, r.error); else abrirModulo(r.data.id); });
         });
-        var acoesM = [novoM];
-        if (!mods.some(function (x) { return x.ordem === 0; })) {
-          var intro = el('button', { type: 'button', class: 'portal-btn', text: '+ Introdução' });
-          intro.addEventListener('click', function () {
-            C.from('curso_modulos').insert({ curso_id: id, ordem: 0, titulo: 'Introdução' }).select().single().then(function (r) { if (r.error) msgErro(msgM, r.error); else abrirModulo(r.data.id); });
-          });
-          acoesM.push(intro);
-        }
+        var acoesM = [novoM], introBt = el('button', { type: 'button', class: 'portal-btn', text: '+ Introdução' });
+        introBt.addEventListener('click', function () {
+          C.from('curso_modulos').insert({ curso_id: id, ordem: 0, titulo: 'Introdução' }).select().single().then(function (r) { if (r.error) msgErro(msgM, r.error); else abrirModulo(r.data.id); });
+        });
+        acoesM.push(introBt);
+        sincs.push(function () { introBt.style.display = D.mods.some(function (x) { return x.ordem === 0; }) ? 'none' : ''; });
         caixaM.appendChild(msgM); caixaM.appendChild(el('div', { class: 'portal-acoes' }, acoesM));
         corpo.appendChild(caixaM);
         /* módulo com apostila e sem nenhuma aula: monta as aulas pelo índice da apostila (uma vez por módulo, um de cada vez) */
         window.__puxados = window.__puxados || {};
-        var faltam = mods.filter(function (m) { return m.ordem !== 0 && !aulasDoModulo(D, m.id).some(function (x) { return x.tipo !== 'ao_vivo'; }) && !window.__puxados[m.id]; });
+        var faltam = D.mods.filter(function (m) { return m.ordem !== 0 && !aulasDoModulo(D, m.id).some(function (x) { return x.tipo !== 'ao_vivo'; }) && !window.__puxados[m.id]; });
         if (faltam.length) {
           var criou = 0, erroM = '', achou = true;
           P.mensagem(msgM, 'Montando as aulas pelas apostilas...', 'ok');
@@ -353,7 +408,7 @@
               return Promise.race([ligar.then(function (idPdf) { return idPdf ? puxarCapitulos(m.id, idPdf, aulasDoModulo(D, m.id).sort(function (x, y) { return x.ordem - y.ordem; })) : 0; }), tempo]);
             }).then(function (n) { if (n > 0) criou += n; else if (n === -1) achou = false; }, function (e) { erroM = (e && e.message) || 'erro'; });
           }, Promise.resolve()).then(function () {
-            if (criou) recarregar();
+            if (criou) { P.mensagem(msgM, '', 'ok'); atualizarDados(); }
             else if (erroM) P.mensagem(msgM, 'Não consegui ler a apostila (' + erroM + ').', 'erro');
             else if (!achou) P.mensagem(msgM, 'Não achei o índice de uma das apostilas.', 'erro');
             else P.mensagem(msgM, '', 'ok');
@@ -361,57 +416,65 @@
         }
 
         /* ----- só enquanto está em construção: depois de pronto, etapas das aulas, feitos e Publicar ----- */
-        if (construindo) {
-          var cx = el('div', { class: 'portal-cartao' });
-          cx.appendChild(grupo('Depois de pronto')); cx.appendChild(blocoPassos(D, recarregar, 'final', null));
-          cx.appendChild(grupo('Etapas de cada aula'));
-          var ativas = etapasDe(curso), fila = el('div', { style: 'display:flex;flex-wrap:wrap;gap:16px' });
-          ETAPAS.forEach(function (e) {
-            var ck = el('input', { type: 'checkbox', class: 'caixinha', id: 'pcEt' + e[0] }); ck.checked = ativas.indexOf(e[0]) >= 0;
-            ck.addEventListener('change', function () {
-              var nova = ETAPAS.map(function (x) { return x[0]; }).filter(function (k) { return k === e[0] ? ck.checked : ativas.indexOf(k) >= 0; });
-              if (!nova.length) { ck.checked = true; return; }
-              C.from('cursos').update({ etapas: nova }).eq('id', id).then(function (r) { if (!falhou(r)) recarregar(); });
-            });
-            fila.appendChild(el('label', { for: 'pcEt' + e[0], style: 'display:flex;align-items:center;gap:8px;cursor:pointer' }, [ck, el('span', { text: e[1] })]));
+        var cx = el('div', { class: 'portal-cartao' }); soConstruindo.push(cx);
+        var fim2 = blocoPassos(D, aoMudar, 'final', null);
+        cx.appendChild(grupo('Depois de pronto')); cx.appendChild(fim2.no); sincs.push(fim2.sinc);
+        cx.appendChild(grupo('Etapas de cada aula'));
+        var fila = el('div', { style: 'display:flex;flex-wrap:wrap;gap:16px' });
+        ETAPAS.forEach(function (e) {
+          var ck = el('input', { type: 'checkbox', class: 'caixinha', id: 'pcEt' + e[0] }); ck.checked = etapasDe(curso).indexOf(e[0]) >= 0;
+          ck.addEventListener('change', function () {
+            var ativas = etapasDe(curso);
+            var nova = ETAPAS.map(function (x) { return x[0]; }).filter(function (k) { return k === e[0] ? ck.checked : ativas.indexOf(k) >= 0; });
+            if (!nova.length) { ck.checked = true; return; }
+            C.from('cursos').update({ etapas: nova }).eq('id', id).then(function (r) { if (r.error) { ck.checked = !ck.checked; falhou(r); } else { curso.etapas = nova; aoMudar(); } });
           });
-          cx.appendChild(fila);
-          cx.appendChild(listaFeitos(D, recarregar, null));
-          var publicar = el('button', { type: 'button', class: 'portal-btn', text: 'Publicar curso' });
-          publicar.addEventListener('click', function () {
-            if (!window.confirm('Publicar "' + curso.titulo + '"? A parte de construção some (os dados ficam guardados).')) return;
-            C.from('cursos').update({ construindo: false }).eq('id', id).then(function (r) { if (!falhou(r)) recarregar(); });
-          });
-          cx.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [publicar]));
-          corpo.appendChild(cx);
-        }
+          fila.appendChild(el('label', { for: 'pcEt' + e[0], style: 'display:flex;align-items:center;gap:8px;cursor:pointer' }, [ck, el('span', { text: e[1] })]));
+        });
+        cx.appendChild(fila);
+        var feitosC = listaFeitos(D, aoMudar, null); cx.appendChild(feitosC.no); sincs.push(feitosC.sinc);
+        var publicar = el('button', { type: 'button', class: 'portal-btn', text: 'Publicar curso' });
+        publicar.addEventListener('click', function () {
+          if (!window.confirm('Publicar "' + curso.titulo + '"? A parte de construção some (os dados ficam guardados).')) return;
+          C.from('cursos').update({ construindo: false }).eq('id', id).then(function (r) { if (!falhou(r)) { curso.construindo = false; aoMudar(); } });
+        });
+        cx.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:18px' }, [publicar]));
+        corpo.appendChild(cx);
 
         var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Alunos do curso' })]);
-        if (!mats.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhum aluno ainda.' }));
+        var vazioA = el('p', { class: 'prod-vazio', text: 'Nenhum aluno ainda.' }), listaA = el('div'); caixaA.appendChild(vazioA); caixaA.appendChild(listaA);
         var msgA = el('p', { class: 'portal-msg' });
-        mats.forEach(function (a) {
+        var maxOrdem = function () { return D.mods.reduce(function (n, x) { return Math.max(n, x.ordem); }, 0); };
+        var sincAl = listaViva(listaA, function (a) {
           var nome = el('div', { style: 'flex:1;min-width:0' }, [
             el('span', { class: 'prod-titulo', style: 'display:block', text: a.nome || a.email }),
             el('span', { class: 'prod-sub', style: 'display:block', text: (a.nome ? a.email + ' · ' : '') + 'módulo ' + a.modulo_liberado + ' liberado' })
           ]);
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px' }, [nome]);
-          function mudar(n) { C.from('curso_matriculas').update({ modulo_liberado: n }).eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else recarregar(); }); }
+          function mudar(n) {
+            var antes = a.modulo_liberado; a.modulo_liberado = n; aoMudar();
+            C.from('curso_matriculas').update({ modulo_liberado: n }).eq('id', a.id).then(function (r) { if (r.error) { a.modulo_liberado = antes; aoMudar(); msgErro(msgA, r.error); } });
+          }
           if (a.modulo_liberado > 1) { var menos = texto('Trancar o último'); menos.addEventListener('click', function () { mudar(a.modulo_liberado - 1); }); linha.appendChild(menos); }
-          if (a.modulo_liberado < (mods.length ? mods[mods.length - 1].ordem : 0)) { var mais = texto('Liberar o próximo'); mais.addEventListener('click', function () { mudar(a.modulo_liberado + 1); }); linha.appendChild(mais); }
+          if (a.modulo_liberado < maxOrdem()) { var mais = texto('Liberar o próximo'); mais.addEventListener('click', function () { mudar(a.modulo_liberado + 1); }); linha.appendChild(mais); }
           var tirarA = P.botaoApagar('Tirar');
           tirarA.addEventListener('click', function () {
             if (!window.confirm('Tirar ' + (a.nome || a.email) + ' do curso? Não dá para desfazer.')) return;
-            C.from('curso_matriculas').delete().eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else recarregar(); });
+            C.from('curso_matriculas').delete().eq('id', a.id).then(function (r) { if (r.error) msgErro(msgA, r.error); else { var i = mats.indexOf(a); if (i >= 0) mats.splice(i, 1); aoMudar(); } });
           });
           linha.appendChild(tirarA);
-          caixaA.appendChild(linha);
-        });
+          return linha;
+        }, function (a) { return [a.nome || '', a.email, a.modulo_liberado, maxOrdem()].join('|'); });
+        sincs.push(function () { vazioA.style.display = mats.length ? 'none' : ''; sincAl(mats); });
         var email = el('input', { type: 'email', placeholder: 'E-mail do aluno', autocomplete: 'off' });
         var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' });
         add.addEventListener('click', function () {
           var e = email.value.trim().toLowerCase(); if (!e) return;
           C.from('alunos').select('nome').eq('email', e).maybeSingle().then(function (ra) {
-            C.from('curso_matriculas').insert({ curso_id: id, email: e, nome: ra.data ? ra.data.nome : null, modulo_liberado: 1 }).then(function (r) { if (r.error) msgErro(msgA, r.error); else recarregar(); });
+            C.from('curso_matriculas').insert({ curso_id: id, email: e, nome: ra.data ? ra.data.nome : null, modulo_liberado: 1 }).select('id,email,nome,modulo_liberado').single().then(function (r) {
+              if (r.error) { msgErro(msgA, r.error); return; }
+              mats.push(r.data); email.value = ''; aoMudar();
+            });
           });
         });
         caixaA.appendChild(msgA);
@@ -419,18 +482,20 @@
         caixaA.appendChild(el('div', { class: 'portal-acoes' }, [add]));
         corpo.appendChild(caixaA);
 
-        if (!construindo) {
-          var reabrir = minilink('Reabrir construção', function () {
-            C.from('cursos').update({ construindo: true }).eq('id', id).then(function (r) { if (!falhou(r)) recarregar(); });
-          });
-          corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [reabrir]));
-        }
+        var reabrir = minilink('Reabrir construção', function () {
+          C.from('cursos').update({ construindo: true }).eq('id', id).then(function (r) { if (!falhou(r)) { curso.construindo = true; aoMudar(); } });
+        });
+        var reabrirCx = el('div', { class: 'portal-acoes', style: 'margin-top:14px' }, [reabrir]); soPublicado.push(reabrirCx);
+        corpo.appendChild(reabrirCx);
         var apagar = P.botaoApagar('Apagar este curso');
         apagar.addEventListener('click', function () {
           if (!window.confirm('Apagar o curso "' + curso.titulo + '" com todos os módulos e aulas? Não dá para desfazer.')) return;
           C.from('cursos').delete().eq('id', id).then(function (r) { if (r.error) msgErro(msgM, r.error); else lista(); });
         });
         P.apagarNoFim(app, apagar);
+        /* mostra/esconde o que é só da construção (a primeira função da lista, para o resto já achar tudo no lugar) */
+        sincs.unshift(function () { var c = construindo(); soConstruindo.forEach(function (n) { n.style.display = c ? '' : 'none'; }); soPublicado.forEach(function (n) { n.style.display = c ? 'none' : ''; }); });
+        aoMudar();
       }).then(null, function (e) { corpo.textContent = ''; corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro((e && e.message) || '') })); });
     }
 
@@ -542,7 +607,7 @@
       limpar(); P.estado.gravar({ modulo: id });
       app.appendChild(topo(nomeAdmin));
       var corpo = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]); app.appendChild(corpo);
-      var recarregar = function () { abrirModulo(id); };
+      var sincs = [], aoMudar = function () { sincs.forEach(function (fn) { fn(); }); };
       C.from('curso_modulos').select('curso_id').eq('id', id).maybeSingle().then(function (rm) {
         if (rm.error || !rm.data) throw rm.error || { message: 'Módulo não encontrado.' };
         return dadosCurso(rm.data.curso_id);
@@ -551,7 +616,17 @@
         var m = D.mods.filter(function (x) { return x.id === id; })[0];
         if (!m) { corpo.appendChild(el('p', { class: 'portal-msg erro', text: 'Módulo não encontrado.' })); return; }
         var curso = D.curso, construindo = curso.construindo !== false;
-        var aulas = aulasDoModulo(D, id).sort(function (x, y) { return x.ordem - y.ordem; });
+        var aulas = function () { return aulasDoModulo(D, id).sort(function (x, y) { return x.ordem - y.ordem; }); };
+        /* as aulas de uma apostila podem ser criadas por trás: lê de novo só as aulas deste módulo e mistura na tela */
+        function atualizarAulas() {
+          return C.from('curso_aulas').select('*').eq('modulo_id', id).order('ordem').then(function (ra) {
+            if (ra.error) { msgErro(msgN, ra.error); return; }
+            var antigos = {}, outras = D.aulas.filter(function (x) { return x.modulo_id !== id; }); D.aulas.forEach(function (x) { antigos[x.id] = x; });
+            D.aulas.length = 0; outras.forEach(function (x) { D.aulas.push(x); });
+            (ra.data || []).forEach(function (n) { D.aulas.push(antigos[n.id] ? Object.assign(antigos[n.id], n) : n); });
+            aoMudar();
+          });
+        }
         var voltar = function () { abrirCurso(m.curso_id); };
         var vt = el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]); corpo.parentNode.insertBefore(vt, corpo);
         P.voltarNoFim(app, voltar);
@@ -570,28 +645,31 @@
                 if (f.parents && f.parents[0]) C.from('drive_pastas').upsert({ chave: 'base_curso', pasta_id: f.parents[0] }, { onConflict: 'chave' }).then(function () { }); /* a próxima busca já abre nessa pasta */
                 dApostila.value = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); /* o dia em que a apostila ficou pronta */
                 apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click();
+                m.apostila_drive_id = apId; m.apostila_nome = apNome; m.apostila_ok = true; m.data_apostila = dApostila.value || m.data_apostila; aoMudar();
                 P.mensagem(msgAp, 'Lendo o índice...', 'ok');
-                puxarCapitulos(id, fid, aulas).then(function (n) { if (n === -1) P.mensagem(msgAp, 'Não achei o índice dessa apostila.', 'erro'); else setTimeout(recarregar, 400); }, function (e) { P.mensagem(msgAp, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); });
+                puxarCapitulos(id, fid, aulas()).then(function (n) { if (n === -1) P.mensagem(msgAp, 'Não achei o índice dessa apostila.', 'erro'); else atualizarAulas(); }, function (e) { P.mensagem(msgAp, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); });
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false, 'base_curso');
         });
-        var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apOk = false; apTxt.textContent = 'Nenhuma'; salvar.click(); setTimeout(recarregar, 600); });
+        var tirarAp = P.botaoApagar('Tirar'); tirarAp.addEventListener('click', function () { apId = null; apNome = null; apOk = false; apTxt.textContent = 'Nenhuma'; salvar.click(); m.apostila_drive_id = null; m.apostila_nome = null; m.apostila_ok = false; aoMudar(); });
         var msg = el('p', { class: 'portal-msg' });
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome do módulo.', 'erro'); return; }
           C.from('curso_modulos').update({ titulo: tit.value.trim(), apostila_drive_id: apId || null, apostila_nome: apNome || null, apostila_ok: apOk, data_apostila: dApostila.value || null }).eq('id', id).then(function (r) { if (r.error) msgErro(msg, r.error); else P.mensagem(msg, 'Salvo.', 'ok'); });
         });
-        var intro = m.ordem === 0, barraMod = null;
+        var intro = m.ordem === 0;
         var cartao = el('div', { class: 'portal-cartao' }, [].concat(
           [el('h2', { text: intro ? 'Introdução' : 'Módulo ' + m.ordem })], campo('Nome', tit),
           intro ? [msgAp, msg, el('div', { style: 'display:none' }, [salvar])] : [el('label', { text: 'Apostila (PDF)' }), el('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px' }, [apTxt, escolher, tirarAp]), msgAp, msg, el('div', { style: 'display:none' }, [salvar])]));
         if (construindo && !intro) {
-          barraMod = barra(contModulo(D, m)); cartao.insertBefore(barraMod, cartao.children[1]);
+          var barraMod = barraViva(function () { return contModulo(D, m); }); sincs.push(barraMod.sinc); cartao.insertBefore(barraMod.no, cartao.children[1]);
           var cb = el('input', { type: 'checkbox', 'aria-label': 'Apostila pronta' }); cb.checked = apOk;
-          cb.addEventListener('change', function () { apOk = cb.checked; salvar.click(); setTimeout(recarregar, 600); });
+          cb.addEventListener('change', function () { apOk = cb.checked; m.apostila_ok = apOk; salvar.click(); aoMudar(); });
           cartao.insertBefore(P.colunaData(dApostila, 'Data: apostila pronta'), cartao.children[2]);
-          cartao.insertBefore(el('div', { class: 'proj-passo' + (apOk ? ' feito' : ''), style: 'border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [cb, el('div', { style: 'flex:1' }, [el('span', { class: 'proj-titulo', text: 'Apostila pronta' })])]), msgAp);
+          var rowAp = el('div', { class: 'proj-passo' + (apOk ? ' feito' : ''), style: 'border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [cb, el('div', { style: 'flex:1' }, [el('span', { class: 'proj-titulo', text: 'Apostila pronta' })])]);
+          sincs.push(function () { cb.checked = !!m.apostila_ok; rowAp.classList.toggle('feito', !!m.apostila_ok); });
+          cartao.insertBefore(rowAp, msgAp);
         }
         corpo.appendChild(cartao); P.salvarSozinho(salvar);
         /* apostila já escolhida antes, sem data: usa o dia em que ela foi para o Drive */
@@ -604,43 +682,47 @@
         }
 
         var caixaA = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Aulas' })]);
-        if (!aulas.length) caixaA.appendChild(el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }));
-        var contaTipo = { gravada: 0, ao_vivo: 0 };
-        aulas.forEach(function (a, i) {
-          var num = ++contaTipo[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada'];
+        var vazioA = el('p', { class: 'prod-vazio', text: 'Nenhuma aula ainda.' }), listaA = el('div'); caixaA.appendChild(vazioA); caixaA.appendChild(listaA);
+        var ordA = [], nums = {};
+        var sincAulas = listaViva(listaA, function (a, i) {
           var abrir = el('div', { style: 'flex:1;min-width:0;cursor:pointer' }, [
-            el('span', { class: 'prod-titulo', style: 'display:block', text: num + '. ' + (a.tipo === 'ao_vivo' ? 'Aula ao vivo' : a.titulo) }),
+            el('span', { class: 'prod-titulo', style: 'display:block', text: nums[a.id] + '. ' + (a.tipo === 'ao_vivo' ? 'Aula ao vivo' : a.titulo) }),
             el('span', { class: 'prod-sub', style: 'display:block', text: (a.tipo === 'ao_vivo' ? 'ao vivo' + (a.data_hora ? ' · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + ' · ' : '') + (!a.video_codigo ? 'sem vídeo' : 'vídeo') })
           ]);
           abrir.addEventListener('click', function () { abrirAula(a.id); });
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
-          if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i - 1]).then(recarregar); }); linha.appendChild(sobe); }
-          if (i < aulas.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { trocar('curso_aulas', a, aulas[i + 1]).then(recarregar); }); linha.appendChild(desce); }
+          if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { var o = aulas(), j = o.indexOf(a); if (j > 0) trocar('curso_aulas', a, o[j - 1], aoMudar); }); linha.appendChild(sobe); }
+          if (i < ordA.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { var o = aulas(), j = o.indexOf(a); if (j >= 0 && j < o.length - 1) trocar('curso_aulas', a, o[j + 1], aoMudar); }); linha.appendChild(desce); }
           var bloco = el('div', { style: 'margin:0 0 10px' }, [linha]);
-          if (construindo && a.tipo !== 'ao_vivo') { var seg = etapasDaAula(a, curso, function () { if (barraMod) { var nb = barra(contModulo(D, m)); barraMod.replaceWith(nb); barraMod = nb; } }, function () { abrirAula(a.id); }); seg.style.marginTop = '-4px'; bloco.appendChild(seg); }
-          caixaA.appendChild(bloco);
+          if (construindo && a.tipo !== 'ao_vivo') { var seg = etapasDaAula(a, curso, aoMudar, function () { abrirAula(a.id); }); seg.style.marginTop = '-4px'; bloco.appendChild(seg); }
+          return bloco;
+        }, function (a, i) { return [a.titulo, a.tipo, a.data_hora || '', a.video_codigo ? 1 : 0, nums[a.id], i, ordA.length].join('|'); });
+        sincs.push(function () {
+          ordA = aulas(); nums = {}; var cont = { gravada: 0, ao_vivo: 0 };
+          ordA.forEach(function (a) { nums[a.id] = ++cont[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada']; });
+          vazioA.style.display = ordA.length ? 'none' : ''; sincAulas(ordA);
         });
         var msgN = el('p', { class: 'portal-msg' });
         var nova = el('button', { type: 'button', class: 'portal-btn', text: '+ Aula' });
         nova.addEventListener('click', function () {
           var t = (window.prompt('Nome da aula') || '').trim(); if (!t) return;
-          var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
+          var ordem = aulas().length ? aulas()[aulas().length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
         var aoVivo = el('button', { type: 'button', class: 'portal-btn', text: '+ Ao vivo' });
         aoVivo.addEventListener('click', function () {
-          var ordem = aulas.length ? aulas[aulas.length - 1].ordem + 1 : 1;
+          var ordem = aulas().length ? aulas()[aulas().length - 1].ordem + 1 : 1;
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: 'Aula ao vivo', tipo: 'ao_vivo' }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
         var acoesN = intro ? [aoVivo] : [nova, aoVivo];
         caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, acoesN));
         corpo.appendChild(caixaA);
-        if (apId && !intro && !aulas.some(function (x) { return x.tipo !== 'ao_vivo'; }) && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas).then(function (n) { if (n > 0) recarregar(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
+        if (apId && !intro && !aulas().some(function (x) { return x.tipo !== 'ao_vivo'; }) && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas()).then(function (n) { if (n > 0) atualizarAulas(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
 
         if (construindo && !intro) {
           var cx = el('div', { class: 'portal-cartao' });
-          cx.appendChild(grupo('Outros passos')); cx.appendChild(blocoPassos(D, recarregar, 'modulo', id));
-          cx.appendChild(listaFeitos(D, recarregar, id));
+          var pm = blocoPassos(D, aoMudar, 'modulo', id), fm = listaFeitos(D, aoMudar, id);
+          cx.appendChild(grupo('Outros passos')); cx.appendChild(pm.no); cx.appendChild(fm.no); sincs.push(pm.sinc, fm.sinc);
           corpo.appendChild(cx);
         }
 
@@ -650,6 +732,7 @@
           C.from('curso_modulos').delete().eq('id', id).then(function (r) { if (r.error) msgErro(msgN, r.error); else voltar(); });
         });
         P.apagarNoFim(app, apagar);
+        aoMudar();
       }).then(null, function (e) { corpo.textContent = ''; corpo.appendChild(el('p', { class: 'portal-msg erro', text: P.traduzErro((e && e.message) || '') })); });
     }
 
@@ -690,12 +773,14 @@
         }
         cod.addEventListener('change', previa); previa();
         var msg = el('p', { class: 'portal-msg' });
+        var atualizaUpload = function () { };
         var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
         salvar.addEventListener('click', function () {
           if (!tit.value.trim()) { P.mensagem(msg, 'Escreva o nome da aula.', 'erro'); return; }
           C.from('curso_aulas').update({ titulo: tit.value.trim(), video_origem: origemDe(cod.value), video_codigo: cod.value.trim() || null, video_teste: false, data_hora: aoVivoA && dataV.value && horaV.value ? new Date(dataV.value + 'T' + horaV.value + ':00-03:00').toISOString() : null, link_meet: aoVivoA ? (meet.value.trim() || null) : null }).eq('id', id)
             .then(function (x) {
               if (x.error) { msgErro(msg, x.error); return; }
+              a.video_codigo = cod.value.trim() || null; atualizaUpload(); /* com vídeo, o Upload se marca sozinho (e ganha a data de hoje) */
               if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
               sincronizarAula(id, aoVivoA ? 'Aula ao vivo' : tit.value.trim(), dataV.value, horaV.value, fimV.value || (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
                 if (lk && lk !== meet.value.trim()) { meet.value = lk; C.from('curso_aulas').update({ link_meet: lk }).eq('id', id).then(function () { }); }
@@ -712,6 +797,12 @@
           var barraEt = etapasDaAula(a, curso, null, null); partes.push(barraEt);
           var chavesEt = ETAPAS.map(function (e) { return e[0]; }).filter(function (k) { return etapasDe(curso).indexOf(k) >= 0; });
           var daBarra = barraEt.querySelectorAll('.prod-data-cel input');
+          atualizaUpload = function () {
+            var i = chavesEt.indexOf('upload'); if (i < 0) return;
+            var chip = barraEt.querySelectorAll('.prod-chip')[i], feita = !!a.video_codigo, era = chip.classList.contains('on');
+            chip.classList.toggle('on', feita); chip.setAttribute('aria-pressed', feita ? 'true' : 'false');
+            if (feita && !era && daBarra[i]) { daBarra[i].value = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); daBarra[i].dispatchEvent(new Event('change', { bubbles: true })); }
+          };
           chavesEt.forEach(function (k, i) {
             if (k === 'upload' || !daBarra[i]) return;
             var di = el('input', { type: 'date', style: 'width:auto' }); di.value = (a.datas_etapas || {})[k] || '';
