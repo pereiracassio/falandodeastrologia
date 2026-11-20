@@ -650,11 +650,100 @@
       return raiz;
     }
 
+    /* colinha das aulas (só o administrador vê): um encontro por data, com itens para riscar durante a aula. aluno_roteiro.itens = [{t:'texto', feito:true|false}] */
+    function painelRoteiro(aluno) {
+      var lista = el('div'), areaForm = el('div', { class: 'barra-ocre' });
+      var novo = el('button', { type: 'button', class: 'portal-btn', text: 'Novo encontro' });
+      var raiz = el('div', {}, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
+      var encontros = [];
+      function hoje() { return new Date().toLocaleDateString('sv-SE'); }
+      function abrirForm(item) {
+        if (areaForm.firstChild && !item) return;
+        areaForm.textContent = '';
+        var msg = el('p', { class: 'portal-msg' });
+        var data = el('input', { type: 'date', id: 'roData' });
+        var itens = el('textarea', { id: 'roItens', rows: '5' });
+        data.value = item ? String(item.data).slice(0, 10) : hoje();
+        if (item) itens.value = (item.itens || []).map(function (x) { return x.t; }).join('\n');
+        var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Salvar' });
+        var cancelar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Cancelar' });
+        cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
+        var form = el('form', { class: 'portal-cartao' }, [
+          el('label', { for: 'roData', text: 'Encontro de' }), data,
+          el('label', { for: 'roItens', text: 'O que fazer (um item por linha)' }), itens, msg,
+          el('div', { class: 'portal-acoes' }, [salvar, cancelar])
+        ]);
+        form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var antigos = item ? (item.itens || []) : [];
+          var novos = itens.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean).map(function (t) {
+            var igual = antigos.filter(function (o) { return o.t === t; })[0]; /* item que já existia mantém o risco */
+            return { t: t, feito: igual ? !!igual.feito : false };
+          });
+          if (!data.value) { P.mensagem(msg, 'Escolha a data.', 'erro'); return; }
+          if (!novos.length) { P.mensagem(msg, 'Escreva pelo menos um item.', 'erro'); return; }
+          salvar.disabled = true;
+          var campos = { data: data.value, itens: novos };
+          var pedido = item ? P.client.from('aluno_roteiro').update(campos).eq('id', item.id) : P.client.from('aluno_roteiro').insert(Object.assign({ aluno_id: aluno.id }, campos));
+          pedido.then(function (r) {
+            salvar.disabled = false;
+            if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message), 'erro'); return; }
+            areaForm.textContent = ''; carregar();
+          });
+        });
+        areaForm.appendChild(form);
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      novo.addEventListener('click', function () { abrirForm(null); });
+      /* um encontro: o risco muda só a caixinha e o texto daquele item, sem redesenhar a lista */
+      function cartaoEncontro(i) {
+        var editar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Editar' });
+        editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
+        editar.addEventListener('click', function () { abrirForm(i); });
+        var apagar = P.botaoApagar('Apagar');
+        var caixa = el('div', { class: 'portal-item' });
+        apagar.addEventListener('click', function () {
+          if (!confirm('Apagar este encontro?')) return;
+          P.client.from('aluno_roteiro').delete().eq('id', i.id).then(function (d) { if (d.error) alert('Não foi possível apagar.'); else { encontros = encontros.filter(function (e) { return e.id !== i.id; }); caixa.remove(); } });
+        });
+        var linhas = el('div');
+        (i.itens || []).forEach(function (it, n) {
+          var cb = el('input', { type: 'checkbox', class: 'caixinha', 'aria-label': 'Marcar como feito', style: 'flex:none;margin-top:4px' });
+          var texto = el('span', { style: 'color:#000;font-size:15px;white-space:pre-wrap', text: it.t });
+          var marcar = function () { texto.style.textDecoration = it.feito ? 'line-through' : 'none'; texto.style.opacity = it.feito ? '.55' : '1'; };
+          cb.checked = !!it.feito; marcar();
+          cb.addEventListener('change', function () {
+            it.feito = cb.checked; marcar();
+            P.client.from('aluno_roteiro').update({ itens: i.itens }).eq('id', i.id).then(function (r) { if (r.error) { it.feito = !cb.checked; cb.checked = !!it.feito; marcar(); alert('Não foi possível salvar o risco.'); } });
+          });
+          linhas.appendChild(el('label', { style: 'display:flex;gap:10px;align-items:flex-start;margin:6px 0;cursor:pointer' }, [cb, texto]));
+        });
+        caixa.appendChild(el('div', { class: 'portal-item-linha' }, [el('div', { style: 'flex:1' }, [el('span', { class: 'portal-item-titulo', style: 'color:var(--ocre,#B5852F)', text: P.dataBR(String(i.data).slice(0, 10)) }), linhas]), el('div', { class: 'portal-acoes' }, [editar, apagar])]));
+        return caixa;
+      }
+      function carregar() {
+        lista.textContent = '';
+        P.client.from('aluno_roteiro').select('id,data,itens').eq('aluno_id', aluno.id).order('data', { ascending: true }).then(function (r) {
+          if (r.error) { lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
+          encontros = r.data;
+          if (!encontros.length) { lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum encontro ainda.' })); return; }
+          var h = hoje(), proximos = encontros.filter(function (e) { return String(e.data).slice(0, 10) >= h; }), anteriores = encontros.filter(function (e) { return String(e.data).slice(0, 10) < h; }).reverse();
+          proximos.forEach(function (e) { lista.appendChild(cartaoEncontro(e)); });
+          if (anteriores.length) {
+            if (proximos.length) lista.appendChild(el('p', { class: 'rotulo-fixo', style: 'margin:18px 0 6px', text: 'Anteriores' }));
+            anteriores.forEach(function (e) { lista.appendChild(cartaoEncontro(e)); });
+          }
+        });
+      }
+      carregar();
+      return raiz;
+    }
+
     /* primeira aba: o que está sendo feito com o aluno (onde parou e o que vem agora); o registro mais novo fica no topo */
     function painelAcompanhamento(aluno) {
       var lista = el('div'), areaForm = el('div', { class: 'barra-ocre' });
       var novo = el('button', { type: 'button', class: 'portal-btn', text: 'Novo registro' });
-      var cartao = el('div', { class: 'portal-cartao' }, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
+      var cartao = el('div', { class: 'portal-cartao' }, [el('span', { class: 'portal-item-titulo', text: 'Roteiro dos encontros' }), painelRoteiro(aluno), el('hr', { style: 'margin:22px 0;border:0;border-top:1px solid #1F5FA3' }), el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
       function abrirForm(item) {
         if (areaForm.firstChild && !item) return;
         areaForm.textContent = '';
