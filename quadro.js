@@ -78,7 +78,7 @@
     var status = el('div', { text: 'Abrindo...' }); status.style.cssText = 'position:absolute;left:0;right:0;top:8px;text-align:center;color:var(--preto-tinta,#16233F);font-size:15px;padding:0 20px;pointer-events:none;z-index:3';
     /* a marca fica DENTRO do papiro, centralizada em cima (o topo do aparelho, acima das ferramentas, o sistema embaça): é fundo, os riscos passam por cima e o toque atravessa */
     var logo = el('img', { src: '/img/logo-menu.svg?v=3', alt: 'Falando de Astrologia Helenística' });
-    logo.style.cssText = 'position:absolute;left:50%;top:10px;transform:translateX(-50%);height:64px;width:auto;display:block;pointer-events:none;-webkit-user-drag:none';
+    logo.style.cssText = 'position:absolute;right:12px;top:8px;height:44px;width:auto;display:block;pointer-events:none;-webkit-user-drag:none';
     [logo, folha, cvMarca, cvTinta, cvLaser, status].forEach(function (x) { area.appendChild(x); }); tela.appendChild(area); /* as lonas cobrem a tela toda, não só a medida */
 
     var barraBaixo = barra(false), contexto = el('span'); contexto.style.cssText = 'display:inline-flex;align-items:center;gap:0 4px;flex:none';
