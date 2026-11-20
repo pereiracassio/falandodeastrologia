@@ -117,19 +117,20 @@
         }
         function montar(t) {
           var itens = [], y = 0.05;
-          if (t.titulo) { quebrar(t.titulo, 36).forEach(function (l) { itens.push(texto(l, 0.05, y, 0.065, '#A03E25')); y += 0.09; }); y += 0.04; }
+          if (t.titulo) { quebrar(t.titulo, 30).forEach(function (l) { itens.push(texto(l, 0.05, y, 0.075, '#A03E25')); y += 0.1; }); y += 0.04; }
           (t.linhas || []).forEach(function (l) {
             if (!String(l).trim()) { y += 0.04; return; }
-            quebrar(l, 46).forEach(function (q) { itens.push(texto(q, 0.05, y, 0.05, '#1A1410')); y += 0.08; });
+            quebrar(l, 40).forEach(function (q) { itens.push(texto(q, 0.05, y, 0.06, '#1A1410')); y += 0.095; });
           });
           var tb = t.tabela;
           if (tb && tb.colunas) {
             var lg = tb.larguras || tb.colunas.map(function () { return 0.9 / tb.colunas.length; }), xs = [], ac = 0.05;
             lg.forEach(function (w) { xs.push(ac); ac += w; });
+            var n = (tb.linhas || []).length, passo = Math.min(0.08, (0.96 - y - 0.02) / (n + 1.4)), tam = Math.min(0.046, passo * 0.64); /* a tabela sempre cabe na folha */
             y += 0.02;
-            tb.colunas.forEach(function (c, i) { itens.push(texto(c, xs[i], y, 0.042, '#1034A6')); });
-            y += 0.075;
-            (tb.linhas || []).forEach(function (r) { r.forEach(function (c, i) { itens.push(texto(String(c), xs[i], y, 0.042, '#1A1410')); }); y += 0.065; });
+            tb.colunas.forEach(function (c, i) { itens.push(texto(c, xs[i], y, tam, '#1034A6')); });
+            y += passo * 1.4;
+            (tb.linhas || []).forEach(function (r) { r.forEach(function (c, i) { itens.push(texto(String(c), xs[i], y, tam, '#1A1410')); }); y += passo; });
           }
           return { itens: itens, tracos: [] };
         }
