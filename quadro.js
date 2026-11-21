@@ -210,7 +210,7 @@
         n.appendChild(im);
       } else {
         n = el('div', { text: it.texto || '' });
-        n.style.cssText = 'white-space:pre;line-height:1.3;padding:2px 6px;min-width:12px;min-height:1em;outline:0';
+        n.style.cssText = 'font-family:var(--fonte-mao);white-space:pre;line-height:1.3;padding:2px 6px;min-width:12px;min-height:1em;outline:0'; /* a fonte à mão do site (o quadro fica fora das páginas de papiro, então não herdava) */
       }
       n.setAttribute('data-item', it.id);
       n.style.position = 'absolute'; n.style.boxSizing = 'border-box'; n.style.touchAction = 'none';
@@ -541,7 +541,7 @@
     (Array.isArray(d.itens) ? d.itens : []).forEach(function (it) {
       var n;
       if (it.tipo === 'img') { n = el('img', { src: it.url, alt: '', loading: 'lazy' }); n.style.width = it.w * 100 + '%'; n.style.height = it.h * 100 + '%'; }
-      else { n = el('div', { text: it.texto || '' }); n.style.cssText = 'white-space:pre;line-height:1.3;color:' + it.cor; textos.push([n, it.tam]); }
+      else { n = el('div', { text: it.texto || '' }); n.style.cssText = 'font-family:var(--fonte-mao);white-space:pre;line-height:1.3;color:' + it.cor; textos.push([n, it.tam]); }
       n.style.position = 'absolute'; n.style.left = it.x * 100 + '%'; n.style.top = it.y * 100 + '%'; n.style.pointerEvents = 'none';
       folha.appendChild(n);
     });
