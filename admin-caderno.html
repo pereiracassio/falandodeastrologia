@@ -1018,14 +1018,16 @@
           if (l.tipo === 'mud') return el('div', { class: 'diario-mud' }, [H.mudancaEl(l.m)]);
           if (l.tipo === 'tec') { var tb = el('div', { class: 'diario-tec', role: 'button', style: 'cursor:pointer' }, [H.posicaoEl(l.p)]); tb.addEventListener('click', function () { diarioVirou = true; abrirNota('geral', null, l.iso); }); return tb; } /* tocar nas técnicas do dia cria uma nota nesse dia, como na página do Dia */
           var n = l.n, x = el('div', { class: 'nota-dia nota-diario', role: 'button' }, [el('div', { class: 'nh', text: n.hora && !l.cont ? String(n.hora).slice(0, 5) : '' }), el('div', { class: 'nc' }, H.corpoNota(n))]); /* continuação na página seguinte: sem hora */
-          x.addEventListener('click', function () { abrirNota('geral', l.orig || n); }); return x;
+          x.addEventListener('click', function () { diarioVirou = true; abrirNota('geral', l.orig || n); }); return x;
         }
         var paginas = [], spreads = 0, idxHoje = -1;
         function paginar() {
           /* mede cada linha com a largura real da página e enche as páginas na ordem esquerda, direita, esquerda...
              como num caderno de verdade: o texto corre sem parar; o que não cabe continua na página seguinte (sem repetir o título do dia) e o dia seguinte começa logo depois, no mesmo espaço */
-          var larg = rolaE.clientWidth || 300, capE = rolaE.clientHeight, capD = rolaD.clientHeight - 66 || capE; /* no celular só uma página aparece: a outra usa a mesma medida */
-          if (!rolaD.clientHeight) capD = capE;
+          /* no celular só uma página aparece e a outra mede 0: as duas usam a medida da que está à vista */
+          var hE = rolaE.clientHeight, hD = rolaD.clientHeight, larg = rolaE.clientWidth || rolaD.clientWidth || 300, capE, capD;
+          if (hE && hD) { capE = hE; capD = hD - 66; } else if (hE) { capE = hE; capD = hE - 66; } else { capD = hD - 66; capE = capD; }
+          if (capE < 120) { capE = capD = Math.max(capE, 120); } /* tela ainda sem medida: nunca uma folha de uma linha só */
           var teste = el('div', { class: 'rola', style: 'position:absolute;visibility:hidden;left:-9999px;top:0;overflow:visible;width:' + larg + 'px' }); esq.appendChild(teste);
           function medir(l) { var e = criar(l); teste.appendChild(e); var cs = getComputedStyle(e), h = e.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0); teste.removeChild(e); return h; }
           var alt = linhas.map(medir), MIN = 70; /* MIN: o mínimo de texto (umas 3 linhas) que precisa caber no pé da página para começar uma nota ali */
@@ -1060,19 +1062,21 @@
           spreads = Math.ceil(paginas.length / 2);
         }
         function mostrar(animar) {
-          if (diarioIdx === Infinity) diarioIdx = idxHoje >= 0 ? Math.floor(idxHoje / 2) : spreads - 1; /* a folha onde o dia de hoje começa */
-            if (modoPe()) paginaCel(idxHoje >= 0 && idxHoje % 2 === 1 ? 'p2' : 'p1'); /* uma página por vez: se hoje começa na da direita, abre nela */ /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa */
+          if (diarioIdx === Infinity) { /* abrir ou tocar em "hoje" = a folha em que o dia de hoje começa; só aí a página do celular é escolhida (folhear e guardar uma nota NUNCA a trocam) */
+            diarioIdx = idxHoje >= 0 ? Math.floor(idxHoje / 2) : spreads - 1;
+            if (modoPe()) paginaCel(idxHoje >= 0 && idxHoje % 2 === 1 ? 'p2' : 'p1');
+          }
           diarioIdx = Math.max(0, Math.min(spreads - 1, diarioIdx));
           rolaE.textContent = ''; rolaD.textContent = '';
           (paginas[diarioIdx * 2] || []).forEach(function (l) { rolaE.appendChild(criar(l)); });
           (paginas[diarioIdx * 2 + 1] || []).forEach(function (l) { rolaD.appendChild(criar(l)); });
           contador.textContent = (diarioIdx + 1) + ' / ' + spreads;
           var primeiraIso = null; for (var pi = diarioIdx * 2; pi < diarioIdx * 2 + 2 && !primeiraIso; pi++) (paginas[pi] || []).forEach(function (l) { if (!primeiraIso && l.iso) primeiraIso = l.iso; });
-          if (primeiraIso) diarioRef = { ano: +primeiraIso.slice(0, 4), mes: +primeiraIso.slice(5, 7) }; pintarAnoMes();
+          if (primeiraIso) diarioRef = { ano: +primeiraIso.slice(0, 4), mes: +primeiraIso.slice(5, 7), iso: primeiraIso }; pintarAnoMes();
           if (animar) virar(animar);
         }
         diarioNav = function (d) { var novo = diarioIdx + d; if (novo < 0 || novo >= spreads) return false; diarioIdx = novo; diarioVirou = true; mostrar(d > 0 ? 'frente' : 'tras'); return true; };
-        diarioRefaz = function () { paginar(); mostrar(); };
+        diarioRefaz = function () { var iso = diarioRef && diarioRef.iso; paginar(); if (iso) { for (var q = 0; q < paginas.length; q++) if ((paginas[q] || []).some(function (l) { return l.iso === iso; })) { diarioIdx = Math.floor(q / 2); break; } } mostrar(); };
         diarioIr = function (ano, mes) { /* a primeira folha que tem anotação do mês pedido; sem nenhuma, a mais perto dele */
           var alvo = ano * 12 + mes, melhor = -1, dist = Infinity;
           paginas.forEach(function (pg, i) { pg.forEach(function (l) { if (!l.iso) return; var d = Math.abs(+l.iso.slice(0, 4) * 12 + +l.iso.slice(5, 7) - alvo); if (d < dist) { dist = d; melhor = i; } }); });
@@ -1092,7 +1096,11 @@
       }, function () { if (eu === pedido && !velhoD) { rolaE.textContent = ''; rolaE.appendChild(el('p', { class: 'falha', style: 'margin-left:0', text: 'Não foi possível ler as anotações.' })); } });
     }
     function diarioVirar(d) { if (diarioNav) diarioNav(d); }
-    window.addEventListener('resize', function () { if (visao === 'diario' && diarioRefaz) diarioRefaz(); });
+    window.addEventListener('resize', function () { /* o teclado ao escrever uma nota encolhe a tela: não refazer as folhas nessa hora (era isso que embaralhava os dias) */
+      if (visao !== 'diario' || !diarioRefaz) return;
+      var ae = document.activeElement; if (document.querySelector('.cad-fundo') || (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) return;
+      diarioRefaz();
+    });
     function vistaLista() { /* a Lista é do MÊS: esquerda dias 1 a 15, direita dia 16 até o fim do mês; ‹ › troca de mês */
       var eu = pedido, o = preparaOut(), esq = o[0], dir = o[1], hojeIso = isoDia(Date.now());
       var ano = +ancora.slice(0, 4), mes = +ancora.slice(5, 7), mi = ancora.slice(0, 8) + '01', N = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
