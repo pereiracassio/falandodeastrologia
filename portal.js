@@ -986,7 +986,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   var NOMES_ICONES = ["Sol", "Lua", "Mercúrio", "Vênus", "Marte", "Júpiter", "Saturno", "Fortuna", "Espírito", "Necessidade", "Eros", "Coragem", "Vitória", "Nêmesis", "Áries", "Touro", "Gêmeos", "Câncer", "Leão", "Virgem", "Libra", "Escorpião", "Sagitário", "Capricórnio", "Aquário", "Peixes", "Lunação pré-natal", "Nodo Norte", "Nodo Sul", "Ascendente", "Descendente", "Meio do Céu", "Fundo do Céu"];
   function semIcones(t) { return String(t == null ? '' : t).replace(/[\uE000-\uE020]/g, function (c) { return NOMES_ICONES[c.charCodeAt(0) - 0xE000] + ' '; }); }
   function paletaIcones(campo) {
-    if (!campo || campo.getAttribute('data-icones')) return;
+    if (!campo || campo.getAttribute('data-icones') || campo.getAttribute('aria-hidden') === 'true') return; /* campo auxiliar escondido (medida do texto, cópia) não é campo de escrever */
     campo.setAttribute('data-icones', '1');
     var abre = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Ícones' });
     var fileira = el('div', { class: 'portal-acoes', style: 'gap:4px;margin:0 0 8px;display:none' });
@@ -1222,7 +1222,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   function copiarParaAreaDeTransferencia(txt) {
     if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(txt);
     return new Promise(function (ok, erro) {
-      var t = el('textarea', { style: 'position:fixed;top:0;left:0;opacity:0' }); t.value = txt; document.body.appendChild(t); t.focus(); t.select();
+      var t = el('textarea', { 'aria-hidden': 'true', style: 'position:fixed;top:0;left:0;opacity:0' }); t.value = txt; document.body.appendChild(t); t.focus(); t.select();
       try { document.execCommand('copy') ? ok() : erro(); } catch (e) { erro(e); } document.body.removeChild(t);
     });
   }
