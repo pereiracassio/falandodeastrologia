@@ -1401,6 +1401,45 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       return client.rpc('remover_aparelho', { p_endpoint: endpoint }).then(function () {}, function () {}).then(function () { return sub.unsubscribe(); });
     });
   }
+  /* Cada app instalado (Hellenic Daily, Falando de Astrologia) tem de estar cadastrado com o PRÓPRIO nome no banco, senão recebe os avisos do outro:
+     aparelhos cadastrados antes de existir a separação ficaram todos como "falando" e o Daily recebia tudo em dobro. Ao abrir o app, recadastra com o nome certo (só em telas que só pertencem a um app). */
+  function acertarAppDoAparelho() {
+    try {
+      if (!appInstalado() || !suportaAvisos() || Notification.permission !== 'granted') return;
+      if (window.top !== window.self) return;
+      if (/\/admin-(site|avisos)\.html$/.test(location.pathname) || !/\/(admin-[a-z]+|capa|aluno|cliente)\.html$/.test(location.pathname)) return;
+      var app = appDaPagina();
+      navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+        if (!sub) return;
+        var j = sub.toJSON(), marca = app + '|' + j.endpoint.slice(-24), ontem = Date.now() - 12 * 3600 * 1000, g = '';
+        try { g = localStorage.getItem('fda_aparelho_app') || ''; } catch (e) { /* sem armazenamento */ }
+        if (g.split('@')[0] === marca && parseInt(g.split('@')[1], 10) > ontem) return;
+        return client.auth.getSession().then(function (r) {
+          if (!(r.data && r.data.session)) return;
+          return client.rpc('registrar_aparelho', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_aparelho: navigator.userAgent.slice(0, 160), p_app: app }).then(function (x) {
+            if (!x.error) { try { localStorage.setItem('fda_aparelho_app', marca + '@' + Date.now()); } catch (e) { /* sem armazenamento */ } }
+          });
+        });
+      }).then(function () {}, function () {});
+    } catch (e) { /* sem suporte */ }
+  }
+  /* notificação que ainda está na tela mas o aviso já foi lido (em outro aparelho, por exemplo): fecha ao abrir o app, sem depender do "fechar" chegar */
+  function fecharNotificacoesLidas() {
+    try {
+      if (!suportaAvisos() || Notification.permission !== 'granted') return;
+      navigator.serviceWorker.getRegistration('/sw.js').then(function (reg) { return reg ? reg.getNotifications() : []; }).then(function (lista) {
+        var ids = (lista || []).map(function (n) { return n.data && n.data.id; }).filter(Boolean);
+        if (!ids.length) return;
+        return client.from('avisos_recebidos').select('id,lido').in('id', ids).then(function (r) {
+          if (r.error || !r.data) return;
+          var lidos = {}; r.data.forEach(function (a) { if (a.lido) lidos[a.id] = 1; });
+          lista.forEach(function (n) { if (n.data && lidos[n.data.id]) n.close(); });
+        });
+      }).then(function () {}, function () {});
+    } catch (e) { /* sem suporte */ }
+  }
+  acertarAppDoAparelho(); fecharNotificacoesLidas();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') fecharNotificacoesLidas(); });
   /* conta ao servidor que algo aconteceu (evento: 'enviada', 'nova' ou 'corrigida'); se falhar, ninguém precisa saber: o resto continua funcionando */
   function avisar(evento, atividadeId) {
     if (!atividadeId) return Promise.resolve();
