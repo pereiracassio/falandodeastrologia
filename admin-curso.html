@@ -27,6 +27,10 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="tipografia.css?v=38">
   <style>
+    /* uma aula da outra: espaço e a linha fininha de sempre (a das listas do site) entre elas, nada colado */
+    .aula-bloco{padding:0 0 18px}
+    .aula-bloco+.aula-bloco{padding-top:18px;border-top:1px solid color-mix(in srgb,var(--azul-egipcio-claro,#1F5FA3) 70%,transparent)}
+    .aula-bloco .prod-linha{margin:0 0 10px!important}
     .proj-passo{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3)}
     .proj-passo:last-child{border-bottom:0}
     .proj-passo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid var(--azul-egipcio-claro,#1F5FA3);background:transparent;border-radius:0;padding:0;cursor:pointer;position:relative}
@@ -872,8 +876,8 @@
           var linha = el('div', { class: 'prod-linha', style: 'display:flex;align-items:center;gap:6px;margin:0 0 10px' }, [abrir]);
           if (i > 0) { var sobe = texto('↑'); sobe.addEventListener('click', function () { var o = aulas(), j = o.indexOf(a); if (j > 0) trocar('curso_aulas', a, o[j - 1], aoMudar); }); linha.appendChild(sobe); }
           if (i < ordA.length - 1) { var desce = texto('↓'); desce.addEventListener('click', function () { var o = aulas(), j = o.indexOf(a); if (j >= 0 && j < o.length - 1) trocar('curso_aulas', a, o[j + 1], aoMudar); }); linha.appendChild(desce); }
-          var bloco = el('div', { style: 'margin:0 0 10px' }, [linha]);
-          if (construindo) { var seg = etapasDaAula(a, curso, aoMudar, function () { abrirAula(a.id); }); seg.style.marginTop = '-4px'; bloco.appendChild(seg); }
+          var bloco = el('div', { class: 'aula-bloco' }, [linha]);
+          if (construindo) { var seg = etapasDaAula(a, curso, aoMudar, function () { abrirAula(a.id); }); bloco.appendChild(seg); }
           return bloco;
         }, function (a, i) { var fixo = [a.tipo, nums[a.id], i, ordA.length]; /* o que se edita na própria linha não refaz a linha */ return (a.tipo === 'ao_vivo' ? fixo : fixo.concat([a.titulo, a.data_hora || '', a.video_codigo ? 1 : 0])).join('|'); });
         sincs.push(function () {
