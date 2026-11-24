@@ -27,7 +27,16 @@ async function ehDele(jwt, id) {
     doSupabase(jwt, '/rest/v1/itens?select=id&limit=1&link=like.' + encodeURIComponent('*' + id + '*')),
     doSupabase(jwt, '/rest/v1/entregas?select=id&limit=1&pdf_link=like.' + encodeURIComponent('*' + id + '*'))
   ]);
-  return a.length > 0 || b.length > 0;
+  if (a.length > 0 || b.length > 0) return true;
+  return ehApostilaLiberada(jwt, id);
+}
+/* apostila de um módulo do curso: só de quem está matriculado e já tem o módulo liberado */
+async function ehApostilaLiberada(jwt, id) {
+  const [mods, mats] = await Promise.all([
+    doSupabase(jwt, '/rest/v1/curso_modulos?select=curso_id,ordem&limit=5&apostila_drive_id=eq.' + encodeURIComponent(id)),
+    doSupabase(jwt, '/rest/v1/curso_matriculas?select=curso_id,modulo_liberado&limit=5')
+  ]);
+  return mods.some((m) => mats.some((t) => t.curso_id === m.curso_id && m.ordem <= t.modulo_liberado));
 }
 const ehPdfCache = new Map();
 async function ehPdf(token, id) {

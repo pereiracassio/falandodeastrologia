@@ -60,7 +60,7 @@
     var caixa = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
     Promise.all([
       C.from('cursos').select('id,titulo').eq('id', m.curso_id).maybeSingle(),
-      C.from('curso_modulos').select('id,ordem,titulo,apostila_nome').eq('curso_id', m.curso_id).order('ordem'),
+      C.from('curso_modulos').select('id,ordem,titulo,apostila_nome,apostila_drive_id').eq('curso_id', m.curso_id).order('ordem'),
       C.from('curso_aulas').select('id,modulo_id,ordem,titulo,video_origem,video_codigo,video_teste,tipo,data_hora,link_meet').order('ordem')
     ]).then(function (rs) {
       caixa.textContent = '';
@@ -69,23 +69,43 @@
       caixa.appendChild(el('h2', { text: rs[0].data.titulo }));
       modulos.forEach(function (mo) {
         var aberto = mo.ordem <= m.modulo_liberado;
-        var tit = el('p', { class: 'proj-titulo', style: 'margin:0 0 6px;font-weight:700;color:' + (aberto ? FdaTema.cor('terracota') : 'var(--preto-tinta,#16233F);opacity:.55'), text: (aberto ? '' : '🔒 ') + (mo.ordem === 0 ? '' : 'Módulo ' + mo.ordem + ' · ') + mo.titulo });
-        var bloco = el('div', { style: 'margin:0 0 18px;padding:0 0 12px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' }, [tit]);
-        if (aberto) {
-          if (mo.apostila_nome) bloco.appendChild(el('p', { style: 'margin:0 0 8px', text: 'Apostila: ' + mo.apostila_nome }));
+        var romano = mo.ordem === 0 ? '' : (window.capaAula && window.capaAula.romano(mo.ordem));
+        var bloco = el('div', { style: 'margin:0 0 26px;padding:0 0 22px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
+        var grade = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px' });
+        function cartaoCapa(opcoes, aoTocar, legenda, trancado) {
+          var c = el('div', { style: 'position:relative;min-width:0' });
+          var capa = window.capaAula(opcoes);
+          c.appendChild(capa);
+          if (trancado) {
+            capa.style.opacity = '.45';
+            c.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="#1A1410" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)"><rect x="14" y="28" width="36" height="26" rx="2"/><path d="M22 28V20a10 10 0 0 1 20 0v8"/></svg>');
+          } else if (aoTocar) {
+            capa.style.cursor = 'pointer';
+            c.setAttribute('role', 'button'); c.setAttribute('tabindex', '0');
+            c.addEventListener('click', aoTocar);
+            c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); aoTocar(); } });
+          }
+          if (legenda) c.appendChild(el('p', { class: 'prod-sub', style: 'margin:6px 0 0', text: legenda }));
+          return c;
+        }
+        if (!window.capaAula) return;
+        if (!aberto) {
+          grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: '' }, null, '', true));
+        } else {
+          if (mo.apostila_drive_id) {
+            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: 'apostila' }, function () {
+              window.Leitor.abrirDoServidor({ nome: mo.apostila_nome || ('Apostila ' + mo.titulo), id: mo.apostila_drive_id, voltar: function () {} });
+            }));
+          }
           var contaTipo = { gravada: 0, ao_vivo: 0 };
-          var tipoAnterior = null;
           aulas.filter(function (a) { return a.modulo_id === mo.id; }).forEach(function (a) {
-            var tipoAtual = a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada';
-            var troca = tipoAnterior && tipoAnterior !== tipoAtual;
-            tipoAnterior = tipoAtual;
             var num = ++contaTipo[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada'];
-            var l = el('a', { href: '#', style: 'display:block;margin:' + (troca ? '22px' : '0') + ' 0 6px;color:var(--azul-egipcio-escuro,#1034A6);text-decoration:none', text: num + '. ' + (a.titulo || 'Aula ao vivo') });
-            l.addEventListener('click', function (ev) { ev.preventDefault(); telaDaAula(app, a, voltarParaAba, { romano: mo.ordem === 0 ? '' : window.capaAula && window.capaAula.romano(mo.ordem), nomeModulo: mo.titulo, num: num }); });
-            bloco.appendChild(l);
-            if (a.tipo === 'ao_vivo' && a.data_hora) bloco.appendChild(el('p', { class: 'prod-sub', style: 'margin:-2px 0 8px', text: 'ao vivo · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }));
+            var ctx = { romano: romano, nomeModulo: mo.titulo, num: num };
+            var legenda = a.tipo === 'ao_vivo' && a.data_hora ? 'ao vivo · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, numero: num, titulo: a.titulo || 'aula ao vivo' }, function () { telaDaAula(app, a, voltarParaAba, ctx); }, legenda));
           });
         }
+        bloco.appendChild(grade);
         caixa.appendChild(bloco);
       });
     });
