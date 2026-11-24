@@ -62,7 +62,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=192"></script>
   <script src="capa-aula.js?v=1"></script>
-  <script src="curso.js?v=15"></script>
+  <script src="curso.js?v=16"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -601,6 +601,32 @@
         });
     }
 
+    /* capa da apostila = a primeira página do PDF, guardada como imagem (curso-apostila-<id>.jpg no bucket "site"); o aluno vê essa imagem sem baixar o PDF */
+    function garantirCapaApostila(driveId, forcar) {
+      var caminho = 'curso-apostila-' + driveId + '.jpg';
+      var url = C.storage.from('site').getPublicUrl(caminho).data.publicUrl;
+      var existe = forcar ? Promise.resolve(false) : fetch(url, { method: 'HEAD', cache: 'no-store' }).then(function (r) { return r.ok; }, function () { return false; });
+      return existe.then(function (ja) {
+        if (ja || !window.pdfjsLib) return;
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        return P.tokenGoogle().then(function (token) {
+          return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(driveId) + '?alt=media&supportsAllDrives=true', { headers: { Authorization: 'Bearer ' + token } });
+        }).then(function (r) { if (!r.ok) throw new Error('drive'); return r.arrayBuffer(); })
+          .then(function (dados) { return pdfjsLib.getDocument({ data: dados }).promise; })
+          .then(function (pdf) { return pdf.getPage(1); })
+          .then(function (pg) {
+            var v0 = pg.getViewport({ scale: 1 }), esc = 640 / v0.width, v = pg.getViewport({ scale: esc });
+            var cv = document.createElement('canvas'); cv.width = Math.round(v.width); cv.height = Math.round(v.height);
+            return pg.render({ canvasContext: cv.getContext('2d'), viewport: v }).promise.then(function () {
+              return new Promise(function (res) { cv.toBlob(res, 'image/jpeg', 0.82); });
+            });
+          })
+          .then(function (blob) {
+            return C.storage.from('site').remove([caminho]).then(function () { return C.storage.from('site').upload(caminho, blob, { contentType: 'image/jpeg', upsert: false }); });
+          }).then(function (r) { if (r && r.error) throw r.error; });
+      });
+    }
+
     /* módulo sem apostila ligada: procura no Drive o PDF "Módulo N - ..." e liga (o mais recente, se houver mais de um) */
     function acharApostila(ordem) {
       return P.tokenGoogle().then(function (token) {
@@ -703,6 +729,7 @@
                 apId = fid; apNome = String(f.name).replace(/\.pdf$/i, ''); apOk = true; apTxt.textContent = apNome; salvar.click();
                 m.apostila_drive_id = apId; m.apostila_nome = apNome; m.apostila_ok = true; m.data_apostila = dApostila.value || m.data_apostila; aoMudar();
                 P.mensagem(msgAp, 'Lendo o índice...', 'ok');
+                garantirCapaApostila(fid, true).catch(function () { });
                 puxarCapitulos(id, fid, aulas()).then(function (n) { if (n === -1) P.mensagem(msgAp, 'Não achei o índice dessa apostila.', 'erro'); else atualizarAulas(); }, function (e) { P.mensagem(msgAp, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); });
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false, 'base_curso');
@@ -769,6 +796,7 @@
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
         if (!intro) { caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, [nova])); corpo.appendChild(caixaA); }
+        if (apId && !intro) garantirCapaApostila(apId, false).catch(function () { });
         if (apId && !intro && !aulas().some(function (x) { return x.tipo !== 'ao_vivo'; }) && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas()).then(function (n) { if (n > 0) atualizarAulas(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
 
         if (construindo && !intro) {

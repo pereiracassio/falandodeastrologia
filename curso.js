@@ -56,6 +56,31 @@
     window.scrollTo(0, 0);
   }
 
+  var API_PDF = 'https://falandodeastrologia.vercel.app/api/pdf';
+  /* a apostila é uma folha de sulfite (A4 em pé) com a própria capa do PDF; abre no leitor e tem um "baixar" discreto */
+  function folhaApostila(mo) {
+    var nome = mo.apostila_nome || ('Apostila ' + mo.titulo);
+    var url = C.storage.from('site').getPublicUrl('curso-apostila-' + mo.apostila_drive_id + '.jpg').data.publicUrl;
+    var abrir = function () { window.Leitor.abrirDoServidor({ nome: nome, id: mo.apostila_drive_id, voltar: function () {} }); };
+    var folha = el('div', { role: 'button', tabindex: '0', 'aria-label': 'Abrir ' + nome, style: 'aspect-ratio:210/297;background:#fff;border:1px solid #2B1D12;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center' });
+    var img = el('img', { src: url, alt: nome, style: 'width:100%;height:100%;object-fit:cover;display:block' });
+    img.addEventListener('error', function () { folha.textContent = ''; folha.appendChild(el('span', { class: 'proj-titulo', style: 'padding:14px;color:#1A1410', text: nome })); });
+    folha.appendChild(img);
+    folha.addEventListener('click', abrir);
+    folha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+    var baixar = P.botaoApagar('Baixar');
+    baixar.addEventListener('click', function () {
+      baixar.disabled = true;
+      C.auth.getSession().then(function (r) {
+        var sessao = r.data && r.data.session; if (!sessao) throw new Error('sem login');
+        return fetch(API_PDF + '?id=' + encodeURIComponent(mo.apostila_drive_id), { headers: { Authorization: 'Bearer ' + sessao.access_token } });
+      }).then(function (r) { if (!r.ok) throw new Error('servidor'); return r.blob(); }).then(function (b) {
+        var a = el('a', { href: URL.createObjectURL(b), download: nome + '.pdf' }); document.body.appendChild(a); a.click(); a.remove();
+      }).catch(function () { alert('Não consegui baixar agora.'); }).then(function () { baixar.disabled = false; });
+    });
+    return el('div', { style: 'width:190px;flex:none' }, [folha, el('div', { style: 'text-align:center;margin-top:6px' }, [baixar])]);
+  }
+
   function cartao(m, app, voltarParaAba) {
     var caixa = el('div', {}, [el('p', { class: 'portal-vazio', text: 'Carregando...' })]);
     Promise.all([
@@ -67,11 +92,13 @@
       if (rs[0].error || rs[1].error || rs[2].error || !rs[0].data) { caixa.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar o curso agora.' })); return; }
       var modulos = rs[1].data || [], aulas = rs[2].data || [];
       caixa.appendChild(el('h2', { text: rs[0].data.titulo }));
+      var contaTipo = { gravada: 0, ao_vivo: 0 }; /* a numeração corre pelo curso inteiro, não recomeça a cada módulo */
       modulos.forEach(function (mo) {
         var aberto = mo.ordem <= m.modulo_liberado;
         var romano = mo.ordem === 0 ? '' : (window.capaAula && window.capaAula.romano(mo.ordem));
         var bloco = el('div', { style: 'margin:0 0 26px;padding:0 0 22px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
-        var grade = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px' });
+        var linha = el('div', { style: 'display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start' });
+        var grade = el('div', { style: 'flex:1 1 280px;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px' });
         function cartaoCapa(opcoes, aoTocar, legenda, trancado) {
           var c = el('div', { style: 'position:relative;min-width:0' });
           var capa = window.capaAula(opcoes);
@@ -92,20 +119,18 @@
         if (!aberto) {
           grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: '' }, null, '', true));
         } else {
-          if (mo.apostila_drive_id) {
-            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: 'apostila' }, function () {
-              window.Leitor.abrirDoServidor({ nome: mo.apostila_nome || ('Apostila ' + mo.titulo), id: mo.apostila_drive_id, voltar: function () {} });
-            }));
-          }
-          var contaTipo = { gravada: 0, ao_vivo: 0 };
+          if (mo.apostila_drive_id) linha.appendChild(folhaApostila(mo));
           aulas.filter(function (a) { return a.modulo_id === mo.id; }).forEach(function (a) {
-            var num = ++contaTipo[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada'];
+            var vivo = a.tipo === 'ao_vivo';
+            var n = ++contaTipo[vivo ? 'ao_vivo' : 'gravada'];
+            var num = vivo ? 'aula ao vivo ' + n : n;
             var ctx = { romano: romano, nomeModulo: mo.titulo, num: num };
             var legenda = a.tipo === 'ao_vivo' && a.data_hora ? 'ao vivo · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
             grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, numero: num, titulo: a.titulo || 'aula ao vivo' }, function () { telaDaAula(app, a, voltarParaAba, ctx); }, legenda));
           });
         }
-        bloco.appendChild(grade);
+        linha.appendChild(grade);
+        bloco.appendChild(linha);
         caixa.appendChild(bloco);
       });
     });
