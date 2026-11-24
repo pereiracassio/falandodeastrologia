@@ -5,7 +5,7 @@
 const fs = require('fs'), path = require('path');
 const EXCECOES = {
   'tipografia.css': 'a regra em si',
-  'capa.js': 'imagem da capa desenhada em canvas', 'capa.html': 'idem',
+  'capa.js': 'imagem da capa desenhada em canvas', 'capa.html': 'idem', 'certificado.js': 'certificado desenhado em canvas e PDF',
   'caderno.js': 'PDF do caderno (jsPDF)', 'caderno-estudos.js': 'PDF do caderno de estudos (jsPDF)',
   'admin-financeiro.html': 'PDF e gráficos SVG do Financeiro',
   'portal.js': 'janelas (alert/confirm/prompt) e sanfona, componentes com CSS próprio',
