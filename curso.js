@@ -200,7 +200,7 @@
           var pergs = perguntasTodas.filter(function (q) { return q.modulo_id === mo.id; }).sort(function (a, b) { return a.ordem - b.ordem; });
           if (pergs.length) {
             var tent = tentativasTodas.filter(function (t) { return t.modulo_id === mo.id; });
-            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: 'avaliação' }, function () { telaAvaliacao(app, mo, pergs, tent, voltarParaAba, romano); }, legendaAvaliacao(tent[0])));
+            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: 'avaliação', formato: 'quase' }, function () { telaAvaliacao(app, mo, pergs, tent, voltarParaAba, romano); }, legendaAvaliacao(tent[0])));
           }
         }
         linha.appendChild(grade);
