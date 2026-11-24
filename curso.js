@@ -31,6 +31,9 @@
     if (url) {
       var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;background:#000;margin:0 0 14px' });
       var tocar = function () {
+        if (ctx && ctx.marcar) ctx.marcar(aula.id).then(function (erro) {
+          if (erro) app.insertBefore(el('p', { class: 'portal-msg erro', text: 'Não consegui registrar que você viu esta aula. Se a avaliação não abrir, avise o Cássio.' }), caixa.nextSibling);
+        });
         caixa.textContent = '';
         var f = el('iframe', { src: url, title: aula.titulo, allow: 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture', allowfullscreen: '' });
         f.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;border:0';
@@ -53,6 +56,23 @@
       app.appendChild(soCapa);
     }
     P.voltarNoFim(app, voltar);
+    window.scrollTo(0, 0);
+  }
+
+  /* avaliação ainda fechada: mostra as aulas que o aluno não viu, nas próprias capinhas */
+  function telaFaltam(app, mo, faltam, voltar, romano) {
+    app.textContent = '';
+    app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
+    app.appendChild(el('h2', { class: 'curso-titulo', text: 'Avaliação · ' + (romano ? 'módulo ' + romano + ' · ' : '') + mo.titulo }));
+    app.appendChild(el('p', { text: faltam.length === 1 ? 'Antes da avaliação, você ainda precisa assistir esta aula:' : 'Antes da avaliação, você ainda precisa assistir estas aulas:' }));
+    var grade = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;margin:14px 0' });
+    faltam.forEach(function (x) {
+      var c = el('div', { role: 'button', tabindex: '0', style: 'cursor:pointer;min-width:0' }, [window.capaAula({ romano: x.ctx.romano, nomeModulo: x.ctx.nomeModulo, numero: x.ctx.num, titulo: x.a.titulo })]);
+      c.addEventListener('click', function () { telaDaAula(app, x.a, voltar, x.ctx); });
+      grade.appendChild(c);
+    });
+    app.appendChild(grade);
+    app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [P.botaoVoltar(voltar)]));
     window.scrollTo(0, 0);
   }
 
@@ -152,16 +172,26 @@
       C.from('curso_modulos').select('id,ordem,titulo,apostila_nome,apostila_drive_id').eq('curso_id', m.curso_id).order('ordem'),
       C.from('curso_aulas').select('id,modulo_id,ordem,titulo,video_origem,video_codigo,video_teste,tipo,data_hora,link_meet').order('ordem'),
       C.from('curso_av_perguntas').select('id,modulo_id,ordem,enunciado,opcoes').order('ordem'),
-      C.from('curso_av_tentativas').select('modulo_id,nota,acertos,total,aprovado,respostas,resultado,criado_em').order('criado_em', { ascending: false })
+      C.from('curso_av_tentativas').select('modulo_id,nota,acertos,total,aprovado,respostas,resultado,criado_em').order('criado_em', { ascending: false }),
+      C.from('curso_aulas_vistas').select('aula_id')
     ]).then(function (rs) {
       caixa.textContent = '';
       if (rs[0].error || rs[1].error || rs[2].error || !rs[0].data) { caixa.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar o curso agora.' })); return; }
       var modulos = rs[1].data || [], aulas = rs[2].data || [];
       var perguntasTodas = rs[3].error ? [] : (rs[3].data || []), tentativasTodas = rs[4].error ? [] : (rs[4].data || []);
+      /* aulas já vistas (marcadas quando o aluno toca em "assistir aula"); se a tabela não existe/falha, a avaliação não fica travada */
+      var vistasOk = !rs[5].error, vistas = {}; (rs[5].data || []).forEach(function (x) { vistas[x.aula_id] = true; });
+      function marcarVista(aulaId) {
+        if (!vistasOk || vistas[aulaId]) return Promise.resolve(null);
+        return C.auth.getSession().then(function (r) {
+          var u = r.data && r.data.session && r.data.session.user; if (!u) throw new Error('sem login');
+          return C.from('curso_aulas_vistas').upsert({ aula_id: aulaId, email: String(u.email || '').toLowerCase() }, { onConflict: 'aula_id,email', ignoreDuplicates: true });
+        }).then(function (r) { if (r && r.error) throw r.error; vistas[aulaId] = true; return null; }, function (e) { return e || new Error('falhou'); });
+      }
       caixa.appendChild(el('h2', { text: rs[0].data.titulo }));
       var vivoNoCurso = 0; /* aula ao vivo: numeração do curso inteiro; aula gravada: recomeça a cada módulo */
       modulos.forEach(function (mo) {
-        var gravadasNoModulo = 0;
+        var gravadasNoModulo = 0, gravadasDoModulo = [];
         var aberto = mo.ordem <= m.modulo_liberado;
         var romano = mo.ordem === 0 ? '' : (window.capaAula && window.capaAula.romano(mo.ordem));
         var bloco = el('div', { style: 'margin:0 0 26px;padding:0 0 22px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
@@ -191,7 +221,8 @@
           aulas.filter(function (a) { return a.modulo_id === mo.id; }).forEach(function (a) {
             var vivo = a.tipo === 'ao_vivo';
             var num = vivo ? 'aula ao vivo ' + (++vivoNoCurso) : ++gravadasNoModulo;
-            var ctx = { romano: romano, nomeModulo: mo.titulo, num: num };
+            var ctx = { romano: romano, nomeModulo: mo.titulo, num: num, marcar: marcarVista };
+            if (!vivo && a.video_codigo) gravadasDoModulo.push({ a: a, ctx: ctx });
             var legenda = a.tipo === 'ao_vivo' && a.data_hora ? 'ao vivo · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
             grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, numero: num, titulo: a.titulo || 'aula ao vivo' }, function () { telaDaAula(app, a, voltarParaAba, ctx); }, legenda));
           });
@@ -200,7 +231,9 @@
           var pergs = perguntasTodas.filter(function (q) { return q.modulo_id === mo.id; }).sort(function (a, b) { return a.ordem - b.ordem; });
           if (pergs.length) {
             var tent = tentativasTodas.filter(function (t) { return t.modulo_id === mo.id; });
-            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: 'avaliação', formato: 'quase' }, function () { telaAvaliacao(app, mo, pergs, tent, voltarParaAba, romano); }, legendaAvaliacao(tent[0])));
+            var faltam = vistasOk && !tent.length ? gravadasDoModulo.filter(function (x) { return !vistas[x.a.id]; }) : [];
+            var abrirAv = faltam.length ? function () { telaFaltam(app, mo, faltam, voltarParaAba, romano); } : function () { telaAvaliacao(app, mo, pergs, tent, voltarParaAba, romano); };
+            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: 'avaliação', formato: 'quase' }, abrirAv, faltam.length ? 'falta ver ' + faltam.length + (faltam.length === 1 ? ' aula' : ' aulas') : legendaAvaliacao(tent[0])));
           }
         }
         linha.appendChild(grade);
