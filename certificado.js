@@ -11,6 +11,10 @@
   function carregarImagem(src) {
     return new Promise(function (ok) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = function () { ok(null); }; i.src = src; });
   }
+  var RUBRICA = 'https://wqkgsotfwkzjwaowenrb.supabase.co/storage/v1/object/public/site/rubrica.png'; /* a rubrica do Cássio, desenhada em Configurações */
+  function carregarRubrica(url) { /* sem rubrica (ou sem permissão de leitura da imagem), o certificado sai sem ela */
+    return new Promise(function (ok) { var i = new Image(); i.crossOrigin = 'anonymous'; i.onload = function () { ok(i); }; i.onerror = function () { ok(null); }; i.src = url; });
+  }
   function carregarScript(url, pronto) {
     if (pronto()) return Promise.resolve();
     return new Promise(function (ok, erro) {
@@ -21,7 +25,7 @@
   }
   function desenhar(op) {
     var fontes = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 40px Cinzel'), document.fonts.load('400 20px Cinzel')]) : null;
-    return Promise.all([fontes, carregarImagem('img/papiro-folha.jpg'), carregarImagem('img/logo-falando.svg'), carregarImagem('img/logo-fundamentos.svg')]).then(function (r) {
+    return Promise.all([fontes, carregarImagem('img/papiro-folha.jpg'), carregarImagem('img/logo-falando.svg'), carregarImagem('img/logo-fundamentos.svg'), carregarRubrica(op.rubrica || RUBRICA)]).then(function (r) {
       var cv = document.createElement('canvas'); cv.width = W * ESC; cv.height = H * ESC;
       var c = cv.getContext('2d'); c.scale(ESC, ESC);
       c.fillStyle = '#dcc590'; c.fillRect(0, 0, W, H);
@@ -55,10 +59,15 @@
       linha('concluiu com aproveitamento o curso', 386, 22, '#16233F', 400, 1);
       ajustada(op.curso, 442, 38, '#A03E25', W - 300);
       linha('em ' + dataExtenso(op.data), 494, 22, '#16233F', 400, 1);
-      linha('código de verificação  ' + op.codigo, 566, 18, '#16233F', 700, 1);
-      linha('falandodeastrologia.com.br/certificado.html', 590, 15, '#16233F', 400, 1);
+      linha('código de verificação  ' + op.codigo, 548, 18, '#16233F', 700, 1);
+      linha('falandodeastrologia.com.br/certificado.html', 572, 15, '#16233F', 400, 1);
       c.strokeStyle = '#16233F'; c.lineWidth = 1; c.beginPath(); c.moveTo(W / 2 - 140, 650); c.lineTo(W / 2 + 140, 650); c.stroke();
       linha('Cássio Pereira', 674, 20, '#16233F', 700, 1);
+      if (r[4]) { /* rubrica sobre a linha da assinatura */
+        var rw = Math.min(280, r[4].naturalWidth * (62 / r[4].naturalHeight)), rh = rw * (r[4].naturalHeight / r[4].naturalWidth);
+        if (rh > 62) { rh = 62; rw = rh * (r[4].naturalWidth / r[4].naturalHeight); }
+        c.drawImage(r[4], W / 2 - rw / 2, 648 - rh, rw, rh);
+      }
       if ('letterSpacing' in c) c.letterSpacing = '0px';
       if (r[2]) { var k = 0.33; c.drawImage(r[2], 55, 690 - 112 * 1 - 0, 912 * k, 400 * k); }
       if (r[3]) { var k2 = 0.19; c.drawImage(r[3], W - 80 - 1555 * k2 + 12, 672 - 296 * k2 * 0.78, 1555 * k2, 296 * k2); }
