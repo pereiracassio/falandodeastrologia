@@ -1113,5 +1113,5 @@
   }
 
   P.iconesNosCampos(document.body); /* ícones astrológicos em todos os campos de texto das atividades */
-  window.atividades = { blocosDoTexto: blocosDoTexto, semMarcas: semMarcas, dadosDoCaderno: dadosDoCaderno, urlAssinada: urlAssinada, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, destacar: destacarAtividade, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
+  window.atividades = { botaoOpcao: botaoOpcao, formularioPergunta: formularioPergunta, blocosDoTexto: blocosDoTexto, semMarcas: semMarcas, dadosDoCaderno: dadosDoCaderno, urlAssinada: urlAssinada, situacoes: SITUACOES, cartaoDoAluno: cartaoDoAluno, destacar: destacarAtividade, telaDaAtividadeAluno: telaDaAtividadeAluno, painelAdmin: painelAdmin };
 })();

@@ -56,6 +56,70 @@
     window.scrollTo(0, 0);
   }
 
+  /* ---------- avaliação do módulo: perguntas de marcar (mesmo desenho das atividades da mentoria); nota = acertos de 10; 7 ou mais libera o próximo módulo; refazer só depois de 24 horas ---------- */
+  function notaTxt(n) { return String(n).replace('.', ','); }
+  function horasParaRefazer(t) { return Math.ceil((new Date(t.criado_em).getTime() + 864e5 - Date.now()) / 36e5); }
+  function legendaAvaliacao(ult) {
+    if (!ult) return 'nota 7 ou mais libera o próximo módulo';
+    if (ult.aprovado) return 'nota ' + notaTxt(ult.nota) + ' · aprovado';
+    var h = horasParaRefazer(ult);
+    return 'nota ' + notaTxt(ult.nota) + (h > 0 ? ' · você pode refazer em ' + h + (h === 1 ? ' hora' : ' horas') : ' · você pode refazer agora');
+  }
+  function telaAvaliacao(app, mo, perguntas, tentativas, voltar, romano) {
+    var botaoOpcao = window.atividades.botaoOpcao;
+    app.textContent = '';
+    app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
+    app.appendChild(el('h2', { class: 'curso-titulo', text: 'Avaliação · ' + (romano ? 'módulo ' + romano + ' · ' : '') + mo.titulo }));
+    var corpo = el('div'); app.appendChild(corpo);
+    app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [P.botaoVoltar(voltar)]));
+    window.scrollTo(0, 0);
+
+    function resultado(t) {
+      corpo.textContent = '';
+      corpo.appendChild(el('p', { class: 'portal-item-titulo', style: 'font-size:28px;margin:0 0 4px', text: 'Nota ' + notaTxt(t.nota) }));
+      corpo.appendChild(el('p', { style: 'margin:0 0 14px', text: 'Você acertou ' + t.acertos + ' de ' + t.total + '.' }));
+      var espera = !t.aprovado && horasParaRefazer(t) > 0;
+      corpo.appendChild(el('p', { class: 'portal-msg ' + (t.aprovado ? 'ok' : 'erro'), text: t.aprovado ? 'Aprovado. O próximo módulo foi liberado.' : 'A nota mínima é 7. ' + (espera ? 'Você pode refazer em ' + horasParaRefazer(t) + (horasParaRefazer(t) === 1 ? ' hora.' : ' horas.') : 'Você já pode refazer.') }));
+      perguntas.forEach(function (p, i) {
+        var certa = t.resultado && t.resultado[p.id] === true, k = t.respostas ? t.respostas[p.id] : null;
+        corpo.appendChild(el('p', { class: 'portal-item-titulo', style: 'margin:16px 0 8px', text: (i + 1) + '. ' + p.enunciado }));
+        if (k != null && p.opcoes[k] != null) corpo.appendChild(botaoOpcao(String.fromCharCode(65 + Number(k)) + ') ' + p.opcoes[k] + (certa ? '  ✓' : '  ✗'), true, null));
+        else corpo.appendChild(el('p', { class: 'portal-vazio', text: 'Sem resposta.' }));
+      });
+      if (!t.aprovado && !espera) {
+        var refazer = el('button', { type: 'button', class: 'portal-btn', text: 'Refazer' });
+        refazer.addEventListener('click', formulario);
+        corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:16px' }, [refazer]));
+      }
+    }
+    function formulario() {
+      corpo.textContent = '';
+      var resp = {}, enviar = el('button', { type: 'button', class: 'portal-btn', text: 'Enviar avaliação' }), msg = el('p', { class: 'portal-msg' });
+      function pronto() { enviar.disabled = !perguntas.every(function (p) { return resp[p.id] != null; }); }
+      perguntas.forEach(function (p, i) {
+        corpo.appendChild(el('p', { class: 'portal-item-titulo', style: 'margin:16px 0 8px', text: (i + 1) + '. ' + p.enunciado }));
+        var caixa = el('div'); corpo.appendChild(caixa);
+        (function desenhar() {
+          caixa.textContent = '';
+          p.opcoes.forEach(function (op, k) { caixa.appendChild(botaoOpcao(String.fromCharCode(65 + k) + ') ' + op, resp[p.id] === k, function () { resp[p.id] = k; desenhar(); pronto(); })); });
+        })();
+      });
+      corpo.appendChild(msg); corpo.appendChild(el('div', { class: 'portal-acoes', style: 'margin-top:16px' }, [enviar])); pronto();
+      enviar.addEventListener('click', function () {
+        enviar.disabled = true;
+        C.rpc('enviar_avaliacao', { p_modulo: mo.id, p_respostas: resp }).then(function (r) {
+          if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message || ''), 'erro'); pronto(); return; }
+          var d = r.data || {};
+          if (d.ok === false) { P.mensagem(msg, d.motivo === 'aprovado' ? 'Você já foi aprovado neste módulo.' : 'Você poderá refazer mais tarde.', 'erro'); return; }
+          var t = { nota: d.nota, acertos: d.acertos, total: d.total, aprovado: d.aprovado, resultado: d.resultado, respostas: resp, criado_em: new Date().toISOString() };
+          tentativas.unshift(t); resultado(t); window.scrollTo(0, 0);
+        });
+      });
+    }
+    var ult = tentativas[0];
+    if (ult && (ult.aprovado || horasParaRefazer(ult) > 0)) resultado(ult); else formulario();
+  }
+
   var API_PDF = 'https://falandodeastrologia.vercel.app/api/pdf';
   /* a apostila é uma folha de sulfite (A4 em pé) com a própria capa do PDF; abre no leitor e tem um "baixar" discreto */
   function folhaApostila(mo) {
@@ -86,14 +150,18 @@
     Promise.all([
       C.from('cursos').select('id,titulo').eq('id', m.curso_id).maybeSingle(),
       C.from('curso_modulos').select('id,ordem,titulo,apostila_nome,apostila_drive_id').eq('curso_id', m.curso_id).order('ordem'),
-      C.from('curso_aulas').select('id,modulo_id,ordem,titulo,video_origem,video_codigo,video_teste,tipo,data_hora,link_meet').order('ordem')
+      C.from('curso_aulas').select('id,modulo_id,ordem,titulo,video_origem,video_codigo,video_teste,tipo,data_hora,link_meet').order('ordem'),
+      C.from('curso_av_perguntas').select('id,modulo_id,ordem,enunciado,opcoes').order('ordem'),
+      C.from('curso_av_tentativas').select('modulo_id,nota,acertos,total,aprovado,respostas,resultado,criado_em').order('criado_em', { ascending: false })
     ]).then(function (rs) {
       caixa.textContent = '';
       if (rs[0].error || rs[1].error || rs[2].error || !rs[0].data) { caixa.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar o curso agora.' })); return; }
       var modulos = rs[1].data || [], aulas = rs[2].data || [];
+      var perguntasTodas = rs[3].error ? [] : (rs[3].data || []), tentativasTodas = rs[4].error ? [] : (rs[4].data || []);
       caixa.appendChild(el('h2', { text: rs[0].data.titulo }));
-      var contaTipo = { gravada: 0, ao_vivo: 0 }; /* a numeração corre pelo curso inteiro, não recomeça a cada módulo */
+      var vivoNoCurso = 0; /* aula ao vivo: numeração do curso inteiro; aula gravada: recomeça a cada módulo */
       modulos.forEach(function (mo) {
+        var gravadasNoModulo = 0;
         var aberto = mo.ordem <= m.modulo_liberado;
         var romano = mo.ordem === 0 ? '' : (window.capaAula && window.capaAula.romano(mo.ordem));
         var bloco = el('div', { style: 'margin:0 0 26px;padding:0 0 22px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
@@ -122,12 +190,18 @@
           if (mo.apostila_drive_id) linha.appendChild(folhaApostila(mo));
           aulas.filter(function (a) { return a.modulo_id === mo.id; }).forEach(function (a) {
             var vivo = a.tipo === 'ao_vivo';
-            var n = ++contaTipo[vivo ? 'ao_vivo' : 'gravada'];
-            var num = vivo ? 'aula ao vivo ' + n : n;
+            var num = vivo ? 'aula ao vivo ' + (++vivoNoCurso) : ++gravadasNoModulo;
             var ctx = { romano: romano, nomeModulo: mo.titulo, num: num };
             var legenda = a.tipo === 'ao_vivo' && a.data_hora ? 'ao vivo · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
             grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, numero: num, titulo: a.titulo || 'aula ao vivo' }, function () { telaDaAula(app, a, voltarParaAba, ctx); }, legenda));
           });
+        }
+        if (aberto && window.atividades && window.atividades.botaoOpcao) {
+          var pergs = perguntasTodas.filter(function (q) { return q.modulo_id === mo.id; }).sort(function (a, b) { return a.ordem - b.ordem; });
+          if (pergs.length) {
+            var tent = tentativasTodas.filter(function (t) { return t.modulo_id === mo.id; });
+            grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: 'avaliação' }, function () { telaAvaliacao(app, mo, pergs, tent, voltarParaAba, romano); }, legendaAvaliacao(tent[0])));
+          }
         }
         linha.appendChild(grade);
         bloco.appendChild(linha);

@@ -61,8 +61,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=192"></script>
+  <script src="atividades.js?v=48"></script>
   <script src="capa-aula.js?v=1"></script>
-  <script src="curso.js?v=16"></script>
+  <script src="curso.js?v=17"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -627,6 +628,97 @@
       });
     }
 
+    /* ---------- avaliação do módulo: perguntas de marcar (mesmo formulário das atividades da mentoria); o gabarito é só do administrador ---------- */
+    function cartaoAvaliacao(moduloId) {
+      var AT = window.atividades;
+      var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avaliação do módulo' })]);
+      var lista = el('div'), msg = el('p', { class: 'portal-msg' });
+      var vazio = el('p', { class: 'prod-vazio', text: 'Nenhuma pergunta ainda.' });
+      var ordemMax = 0;
+      function renumerar() { [].forEach.call(lista.children, function (no, i) { no.querySelector('.av-num').textContent = (i + 1) + '. '; }); vazio.style.display = lista.children.length ? 'none' : ''; }
+      function linha(p, certa) {
+        var no = el('div', { style: 'margin:0 0 10px' });
+        var num = el('span', { class: 'av-num' }), tit = el('span', { class: 'portal-item-titulo', text: p.enunciado });
+        var cab = el('div', { role: 'button', tabindex: '0', style: 'cursor:pointer;padding:8px 0' }, [num, tit]);
+        var corpo = el('div', { class: 'barra-ocre', style: 'display:none;margin-top:8px' });
+        var f = AT.formularioPergunta({ tipoFixo: true, tipo: 'multipla', enunciado: p.enunciado, opcoes: p.opcoes, certa: certa });
+        var salvar = el('button', { type: 'button', class: 'portal-btn', text: 'Salvar' });
+        var apagar = P.botaoApagar('Apagar');
+        var m = el('p', { class: 'portal-msg' });
+        corpo.appendChild(f.caixa); corpo.appendChild(m); corpo.appendChild(el('div', { class: 'portal-acoes' }, [salvar, apagar]));
+        cab.addEventListener('click', function () { corpo.style.display = corpo.style.display === 'none' ? '' : 'none'; });
+        salvar.addEventListener('click', function () {
+          var v = f.ler(); if (v.erro) { P.mensagem(m, v.erro, 'erro'); return; }
+          if (v.certa == null) { P.mensagem(m, 'Marque a alternativa certa.', 'erro'); return; }
+          C.from('curso_av_perguntas').update({ enunciado: v.enunciado, opcoes: v.opcoes }).eq('id', p.id).then(function (r) {
+            if (r.error) { msgErro(m, r.error); return; }
+            return C.from('curso_av_gabarito').upsert({ pergunta_id: p.id, correta: v.certa }, { onConflict: 'pergunta_id' }).then(function (g) {
+              if (g.error) msgErro(m, g.error); else { tit.textContent = v.enunciado; P.mensagem(m, 'Salvo.', 'ok'); }
+            });
+          });
+        });
+        apagar.addEventListener('click', function () {
+          if (!window.confirm('Apagar esta pergunta? Não dá para desfazer.')) return;
+          C.from('curso_av_perguntas').delete().eq('id', p.id).then(function (r) { if (r.error) msgErro(m, r.error); else { no.remove(); renumerar(); } });
+        });
+        no.appendChild(cab); no.appendChild(corpo); return no;
+      }
+      function inserir(itens) { /* itens: [{ enunciado, opcoes[], certa }] */
+        var linhas = itens.map(function (x, i) { return { modulo_id: moduloId, ordem: ordemMax + i + 1, enunciado: x.enunciado, opcoes: x.opcoes }; });
+        return C.from('curso_av_perguntas').insert(linhas).select('id,ordem,enunciado,opcoes').then(function (r) {
+          if (r.error) throw r.error;
+          var gab = r.data.map(function (p) { return { pergunta_id: p.id, correta: itens[linhas.findIndex(function (l) { return l.ordem === p.ordem; })].certa }; });
+          return C.from('curso_av_gabarito').insert(gab).then(function (g) {
+            if (g.error) throw g.error;
+            r.data.sort(function (a, b) { return a.ordem - b.ordem; }).forEach(function (p) { ordemMax = Math.max(ordemMax, p.ordem); lista.appendChild(linha(p, gab.filter(function (x) { return x.pergunta_id === p.id; })[0].correta)); });
+            renumerar();
+          });
+        });
+      }
+      cartao.appendChild(vazio); cartao.appendChild(lista); cartao.appendChild(msg);
+      var areaNova = el('div', { class: 'barra-ocre', style: 'margin-top:8px' });
+      var nova = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: '+ Pergunta' });
+      var importar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Importar perguntas' });
+      var arq = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
+      nova.addEventListener('click', function () {
+        areaNova.textContent = '';
+        var f = AT.formularioPergunta({ tipoFixo: true, tipo: 'multipla' });
+        var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar' }), m = el('p', { class: 'portal-msg' });
+        add.addEventListener('click', function () {
+          var v = f.ler(); if (v.erro) { P.mensagem(m, v.erro, 'erro'); return; }
+          if (v.certa == null) { P.mensagem(m, 'Marque a alternativa certa.', 'erro'); return; }
+          inserir([{ enunciado: v.enunciado, opcoes: v.opcoes, certa: v.certa }]).then(function () { areaNova.textContent = ''; }, function (e) { msgErro(m, e); });
+        });
+        areaNova.appendChild(f.caixa); areaNova.appendChild(m); areaNova.appendChild(el('div', { class: 'portal-acoes' }, [add]));
+      });
+      importar.addEventListener('click', function () { arq.click(); });
+      arq.addEventListener('change', function () {
+        var fl = arq.files && arq.files[0]; if (!fl) return;
+        fl.text().then(function (t) {
+          var j = JSON.parse(t), itens = (j.perguntas || []).map(function (q) {
+            var op = (q.opcoes || []).map(function (x) { return String(x).trim(); }).filter(Boolean), c = Number(q.correta);
+            if (!String(q.enunciado || '').trim() || op.length < 2 || !(c >= 0 && c < op.length)) throw new Error('Cada pergunta precisa de enunciado, 2 alternativas ou mais e a "correta" (0 = A).');
+            return { enunciado: String(q.enunciado).trim(), opcoes: op, certa: c };
+          });
+          if (!itens.length) throw new Error('Não achei perguntas no arquivo.');
+          return inserir(itens).then(function () { P.mensagem(msg, itens.length + ' pergunta(s) importada(s).', 'ok'); });
+        }).then(null, function (e) { P.mensagem(msg, 'Não consegui importar: ' + P.traduzErro((e && e.message) || ''), 'erro'); }).then(function () { arq.value = ''; });
+      });
+      cartao.appendChild(areaNova); cartao.appendChild(arq);
+      cartao.appendChild(el('div', { class: 'portal-acoes' }, [nova, importar]));
+      C.from('curso_av_perguntas').select('id,ordem,enunciado,opcoes').eq('modulo_id', moduloId).order('ordem').then(function (r) {
+        if (r.error) { msgErro(msg, r.error); return; }
+        var ps = r.data || [];
+        if (!ps.length) { renumerar(); return; }
+        return C.from('curso_av_gabarito').select('pergunta_id,correta').in('pergunta_id', ps.map(function (p) { return p.id; })).then(function (g) {
+          var cert = {}; (g.data || []).forEach(function (x) { cert[x.pergunta_id] = x.correta; });
+          ps.forEach(function (p) { ordemMax = Math.max(ordemMax, p.ordem); lista.appendChild(linha(p, cert[p.id])); });
+          renumerar();
+        });
+      });
+      return cartao;
+    }
+
     /* módulo sem apostila ligada: procura no Drive o PDF "Módulo N - ..." e liga (o mais recente, se houver mais de um) */
     function acharApostila(ordem) {
       return P.tokenGoogle().then(function (token) {
@@ -796,6 +888,7 @@
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
         if (!intro) { caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, [nova])); corpo.appendChild(caixaA); }
+        if (!intro) corpo.appendChild(cartaoAvaliacao(id));
         if (apId && !intro) garantirCapaApostila(apId, false).catch(function () { });
         if (apId && !intro && !aulas().some(function (x) { return x.tipo !== 'ao_vivo'; }) && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas()).then(function (n) { if (n > 0) atualizarAulas(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
 
