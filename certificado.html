@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.png?v=3">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e6d3a0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Conferir certificado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="temas.css?v=7">
+  <link rel="stylesheet" href="papiro.css?v=5">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="stylesheet" href="page.css?v=93">
+  <link rel="stylesheet" href="portal.css?v=42">
+  <link rel="stylesheet" href="tipografia.css?v=38">
+</head>
+<body>
+<div class="pagina pagina-servico pagina-papiro"><div class="folha-pagina">
+  <div class="cab-papiro">
+    <a href="/index.html" class="cab-logo"><img src="/img/logo-menu.svg?v=3" alt="Falando de Astrologia Helenística" width="752" height="238"></a>
+    <nav class="cab-nav"><a href="/blog.html">Blog</a><a href="/aluno.html">Alunos</a><a href="/sobre.html">Cássio</a><a href="/index.html#servicos">Serviços</a></nav>
+    <hr class="cab-linha">
+  </div>
+  <div class="portal"><div class="portal-caixa">
+    <h1 class="portal-titulo">Conferir certificado</h1>
+    <form id="form" style="margin:0 0 18px">
+      <label for="codigo">Código do certificado</label>
+      <input id="codigo" type="text" autocomplete="off" autocapitalize="characters" placeholder="FDA-XXXX-XXXX" maxlength="20">
+      <div class="portal-acoes"><button type="submit" class="portal-btn">Conferir</button></div>
+    </form>
+    <div id="resultado"></div>
+  </div></div>
+</div></div>
+<script src="certificado.js?v=1"></script>
+<script>
+(function () {
+  var URL_API = 'https://wqkgsotfwkzjwaowenrb.supabase.co/rest/v1/rpc/verificar_certificado';
+  var CHAVE = 'sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt';
+  var campo = document.getElementById('codigo'), saida = document.getElementById('resultado');
+  function linha(rotulo, valor) {
+    var p = document.createElement('p'); p.style.margin = '0 0 10px';
+    var r = document.createElement('span'); r.className = 'rotulo-fixo'; r.textContent = rotulo; r.style.display = 'block';
+    var v = document.createElement('span'); v.textContent = valor;
+    p.appendChild(r); p.appendChild(v); return p;
+  }
+  function mostrar(msg, ok, d) {
+    saida.textContent = '';
+    var t = document.createElement('h2'); t.textContent = msg; t.style.color = ok ? '#A03E25' : '#16233F'; saida.appendChild(t);
+    if (ok && d) {
+      saida.appendChild(linha('Nome', d.nome)); saida.appendChild(linha('Curso', d.curso));
+      saida.appendChild(linha('Concluído em', window.certificado.dataExtenso(d.concluido_em))); saida.appendChild(linha('Código', d.codigo));
+    }
+  }
+  function conferir(codigo) {
+    codigo = String(codigo || '').trim().toUpperCase();
+    if (!codigo) return;
+    mostrar('Conferindo...', false);
+    fetch(URL_API, { method: 'POST', headers: { apikey: CHAVE, Authorization: 'Bearer ' + CHAVE, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_codigo: codigo }) })
+      .then(function (r) { if (!r.ok) throw new Error('falhou'); return r.json(); })
+      .then(function (d) { d && d.valido ? mostrar('Certificado válido', true, d) : mostrar('Não encontrei nenhum certificado com esse código.', false); })
+      .catch(function () { mostrar('Não consegui conferir agora. Tente de novo em instantes.', false); });
+  }
+  document.getElementById('form').addEventListener('submit', function (ev) { ev.preventDefault(); conferir(campo.value); });
+  var c = new URLSearchParams(location.search).get('c');
+  if (c) { campo.value = c; conferir(c); }
+})();
+</script>
+</body>
+</html>
