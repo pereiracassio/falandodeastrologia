@@ -19,7 +19,7 @@
       .then(function (r) { return r.error ? null : r.data; }, function () { return null; });
   }
 
-  function telaDaAula(app, aula, voltar) {
+  function telaDaAula(app, aula, voltar, ctx) {
     app.textContent = '';
     app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
     app.appendChild(el('h2', { class: 'curso-titulo', text: aula.titulo || 'Aula ao vivo' }));
@@ -30,9 +30,22 @@
     var url = enderecoDoVideo(aula.video_origem, aula.video_codigo);
     if (url) {
       var caixa = el('div', { style: 'position:relative;width:100%;aspect-ratio:16/9;background:#000;margin:0 0 14px' });
-      var f = el('iframe', { src: url, title: aula.titulo, allow: 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture', allowfullscreen: '' });
-      f.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;border:0';
-      caixa.appendChild(f); app.appendChild(caixa);
+      var tocar = function () {
+        caixa.textContent = '';
+        var f = el('iframe', { src: url, title: aula.titulo, allow: 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture', allowfullscreen: '' });
+        f.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;border:0';
+        caixa.appendChild(f);
+        if (botao.parentNode) botao.parentNode.removeChild(botao);
+      };
+      var botao = el('button', { type: 'button', class: 'portal-btn', style: 'margin:0 0 14px', text: 'assistir aula' });
+      if (ctx && window.capaAula) {
+        var capa = window.capaAula({ romano: ctx.romano, nomeModulo: ctx.nomeModulo, numero: ctx.num, titulo: aula.titulo });
+        capa.style.cursor = 'pointer';
+        caixa.style.background = 'none';
+        caixa.appendChild(capa);
+        capa.addEventListener('click', tocar); botao.addEventListener('click', tocar);
+        app.appendChild(caixa); app.appendChild(botao);
+      } else { tocar(); app.appendChild(caixa); }
     }
     P.voltarNoFim(app, voltar);
     window.scrollTo(0, 0);
@@ -63,7 +76,7 @@
             tipoAnterior = tipoAtual;
             var num = ++contaTipo[a.tipo === 'ao_vivo' ? 'ao_vivo' : 'gravada'];
             var l = el('a', { href: '#', style: 'display:block;margin:' + (troca ? '22px' : '0') + ' 0 6px;color:var(--azul-egipcio-escuro,#1034A6);text-decoration:none', text: num + '. ' + (a.titulo || 'Aula ao vivo') });
-            l.addEventListener('click', function (ev) { ev.preventDefault(); telaDaAula(app, a, voltarParaAba); });
+            l.addEventListener('click', function (ev) { ev.preventDefault(); telaDaAula(app, a, voltarParaAba, { romano: mo.ordem === 0 ? '' : window.capaAula && window.capaAula.romano(mo.ordem), nomeModulo: mo.titulo, num: num }); });
             bloco.appendChild(l);
             if (a.tipo === 'ao_vivo' && a.data_hora) bloco.appendChild(el('p', { class: 'prod-sub', style: 'margin:-2px 0 8px', text: 'ao vivo · ' + new Date(a.data_hora).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }));
           });
