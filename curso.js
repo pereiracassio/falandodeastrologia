@@ -46,6 +46,11 @@
         capa.addEventListener('click', tocar); botao.addEventListener('click', tocar);
         app.appendChild(caixa); app.appendChild(botao);
       } else { tocar(); app.appendChild(caixa); }
+    } else if (ctx && window.capaAula) {
+      /* aula ao vivo ainda sem gravação: só a capa, no mesmo lugar do vídeo */
+      var soCapa = window.capaAula({ romano: ctx.romano, nomeModulo: ctx.nomeModulo, numero: ctx.num, titulo: aula.titulo });
+      soCapa.style.margin = '0 0 14px';
+      app.appendChild(soCapa);
     }
     P.voltarNoFim(app, voltar);
     window.scrollTo(0, 0);
