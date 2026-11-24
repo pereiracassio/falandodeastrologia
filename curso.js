@@ -77,7 +77,7 @@
   }
 
   /* ---------- certificado: o aluno aprovado em todos os módulos com avaliação emite uma vez (nome confirmado por ele) e baixa o PDF; o código vale numa página pública ---------- */
-  function telaCertificado(app, cursoTitulo, matricula, cert, voltar) {
+  function telaCertificado(app, cursoTitulo, matricula, cert, voltar, espera) {
     app.textContent = '';
     app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
     app.appendChild(el('h2', { class: 'curso-titulo', text: 'Certificado' }));
@@ -101,6 +101,7 @@
       corpo.appendChild(el('p', { style: 'margin-top:14px' }, [el('a', { href: 'certificado.html?c=' + encodeURIComponent(d.codigo), target: '_blank', rel: 'noopener', text: 'Página de conferência do certificado' })]));
     }
     if (cert) { pronto({ nome: cert.nome, curso: cursoTitulo, concluido_em: cert.concluido_em, codigo: cert.codigo }); return; }
+    if (espera) { corpo.appendChild(el('p', { text: espera })); return; }
     var nome = el('input', { type: 'text', maxlength: '120', placeholder: 'Seu nome completo' }); nome.value = matricula.nome || '';
     var msg = el('p', { class: 'portal-msg' }), emitir = el('button', { type: 'button', class: 'portal-btn', text: 'Emitir certificado' });
     corpo.appendChild(el('label', { text: 'Nome que vai no certificado' })); corpo.appendChild(nome);
@@ -113,7 +114,7 @@
         emitir.disabled = false;
         if (r.error) { P.mensagem(msg, P.traduzErro(r.error.message || ''), 'erro'); return; }
         var d = r.data || {};
-        if (!d.ok) { P.mensagem(msg, d.motivo === 'faltam_modulos' ? 'Ainda faltam avaliações para você ser aprovado em todos os módulos.' : 'Escreva o seu nome completo.', 'erro'); return; }
+        if (!d.ok) { P.mensagem(msg, d.motivo === 'faltam_modulos' ? 'Ainda faltam avaliações para você ser aprovado em todos os módulos.' : d.motivo === 'aguarde_ao_vivo' ? 'O certificado fica disponível depois da última aula ao vivo do curso.' : 'Escreva o seu nome completo.', 'erro'); return; }
         pronto(d);
       });
     });
@@ -289,12 +290,21 @@
       var comAv = modulos.filter(function (mo) { return perguntasTodas.some(function (q) { return q.modulo_id === mo.id; }); });
       var concluiu = comAv.length > 0 && modulos.every(function (mo) { return mo.ordem <= m.modulo_liberado; }) &&
         comAv.every(function (mo) { return tentativasTodas.some(function (t) { return t.modulo_id === mo.id && t.aprovado; }); });
+      /* o certificado só sai depois da última aula ao vivo (aula ao vivo sem data conta como ainda não aconteceu) */
+      var vivos = aulas.filter(function (a) { return a.tipo === 'ao_vivo'; });
+      var vivoSemData = vivos.some(function (a) { return !a.data_hora; });
+      var ultimaVivo = vivos.filter(function (a) { return a.data_hora; }).map(function (a) { return new Date(a.data_hora).getTime(); }).sort(function (x, y) { return x - y; }).pop();
+      var cursoEncerrado = !vivoSemData && (ultimaVivo == null || ultimaVivo <= Date.now());
+      var textoEspera = null;
+      if (!cursoEncerrado) {
+        textoEspera = 'O certificado fica disponível depois da última aula ao vivo do curso' + (!vivoSemData && ultimaVivo ? ', em ' + new Date(ultimaVivo).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '') + '.';
+      }
       if (!rs[6].error && window.certificado && window.capaAula && (certExistente || concluiu)) {
-        var abrirCert = function () { telaCertificado(app, rs[0].data.titulo, m, certExistente, voltarParaAba); };
+        var abrirCert = function () { telaCertificado(app, rs[0].data.titulo, m, certExistente, voltarParaAba, certExistente ? null : textoEspera); };
         var gc = el('div', { style: 'max-width:420px' });
         var capaC = window.capaAula({ nomeModulo: rs[0].data.titulo, titulo: 'certificado' });
         capaC.style.cursor = 'pointer'; gc.appendChild(capaC);
-        gc.appendChild(el('p', { class: 'prod-sub', style: 'margin:6px 0 0', text: certExistente ? 'código ' + certExistente.codigo : 'você concluiu o curso' }));
+        gc.appendChild(el('p', { class: 'prod-sub', style: 'margin:6px 0 0', text: certExistente ? 'código ' + certExistente.codigo : (textoEspera ? textoEspera.replace('O certificado fica', 'fica') : 'você concluiu o curso') }));
         gc.setAttribute('role', 'button'); gc.setAttribute('tabindex', '0'); gc.addEventListener('click', abrirCert);
         gc.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrirCert(); } });
         caixa.appendChild(gc);
