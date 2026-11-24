@@ -5,15 +5,13 @@
 
   function idDoVideo(origem, codigo) {
     var c = String(codigo || '').trim();
-    var m = origem === 'drive' ? /\/d\/([A-Za-z0-9_-]+)/.exec(c) || /[?&]id=([A-Za-z0-9_-]+)/.exec(c)
-      : /(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{6,})/.exec(c);
+    var m = /\/d\/([A-Za-z0-9_-]+)/.exec(c) || /[?&]id=([A-Za-z0-9_-]+)/.exec(c);
     return m ? m[1] : c;
   }
   function enderecoDoVideo(origem, codigo) {
     var id = idDoVideo(origem, codigo);
     if (!id) return '';
-    return origem === 'drive' ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview'
-      : 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?rel=0&modestbranding=1';
+    return 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview';
   }
 
   function buscar(email) {

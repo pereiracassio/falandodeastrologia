@@ -61,7 +61,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="portal.js?v=192"></script>
-  <script src="curso.js?v=11"></script>
+  <script src="curso.js?v=12"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -624,7 +624,7 @@
     }
 
     /* ---------- aula ao vivo editada NO LUGAR, em 2 linhas (nome e módulo; dia, hora, Meet e gravação na linha de baixo, que rola para o lado); salva sozinha ---------- */
-    function origemVideo(txt) { return /youtu/i.test(txt) ? 'youtube' : 'drive'; }
+    function origemVideo(txt) { return 'drive'; }
     function formAoVivo(a, numero, modulos) {
       var tit = el('input', { type: 'text', value: a.titulo || '', style: 'flex:1;min-width:0', 'aria-label': 'Nome da aula ao vivo' });
       var dataV = el('input', { type: 'date', style: 'width:auto;flex:none', 'aria-label': 'Dia' }), horaV = el('input', { type: 'time', style: 'width:auto;flex:none;min-height:36px;min-width:120px', 'aria-label': 'Começa às' });
@@ -800,8 +800,8 @@
         corpo.parentNode.insertBefore(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]), corpo);
         P.voltarNoFim(app, voltar);
         var tit = el('input', { type: 'text', value: a.titulo });
-        /* sem escolha de onde está: é o Google Drive, salvo vídeo antigo que já era um link do YouTube */
-        var origemDe = function (txt) { return /youtu/i.test(txt) ? 'youtube' : 'drive'; };
+        /* o vídeo do curso está sempre no Google Drive */
+        var origemDe = function (txt) { return 'drive'; };
         var cod = el('input', { type: 'text', value: a.video_codigo || '', placeholder: '', autocomplete: 'off' });
         var aoVivoA = a.tipo === 'ao_vivo';
         var dataV = el('input', { type: 'date', style: 'width:auto' }), horaV = el('input', { type: 'time', style: 'width:auto;min-height:36px;min-width:120px' });

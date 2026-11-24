@@ -247,7 +247,7 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 5. **Hospedagem do vídeo:** só quando as primeiras aulas forem gravadas.
 
 **Vídeo (decisões e pesquisa):**
-- **YouTube "não listado" está descartado** (qualquer um repassa o link para quem não pagou). **Drive não serve em escala** (limite de acessos simultâneos/bloqueio por excesso; hoje só funciona nas gravações da mentoria porque são poucos alunos).
+- **YouTube NÃO existe no curso, em nenhuma forma** (decisão dele, 24/11/2026: não é alternativa, o curso é pago e não pode tocar onde qualquer um assiste de graça; nunca mencionar YouTube como opção do curso). **Drive não serve em escala** (limite de acessos simultâneos/bloqueio por excesso; hoje só funciona nas gravações da mentoria porque são poucos alunos).
 - A proteção precisa ser: o vídeo **só toca dentro do site** (trava por domínio `falandodeastrologia.com.br`) e com **link assinado que expira** gerado pelo servidor para o aluno logado. Opções a conferir (preços e regras mudam): **Bunny Stream** e **Cloudflare Stream** (baratos, por uso, link assinado), **Panda Video** e **VdoCipher** (feitos para curso, anti-download, marca d'água com dados do aluno, mais caros), Vimeo (proteção mais fraca). Nenhuma impede gravar a tela; só dificultam e identificam quem vazou.
 - Até a escolha, a aula pode ter um vídeo de teste. O player entra por incorporação dentro da página do aluno.
 
@@ -256,7 +256,7 @@ O astrólogo está produzindo um curso (muito no começo, **nenhum vídeo gravad
 
 **Acesso do curso (NÃO é questão, está decidido):** a regra "o acesso só nasce pelo painel, ninguém cria conta sozinho" vale **só para a MENTORIA** (o aluno de mentoria é escolhido por ele). **O curso é outra coisa, aberto a quem comprar:** quem paga ganha o acesso automaticamente (pagamento confirmado → servidor cria o acesso, reaproveitando `api/criar-acesso.js`). Nunca tratar a regra da mentoria como obstáculo do curso.
 
-**ETAPA 1 FEITA no código (27/10/2026, não publicada até ele rodar o SQL):** `docs/curso.sql` (tabelas `cursos`, `curso_modulos`, `curso_aulas`, `curso_matriculas`; o aluno matriculado só lê as aulas dos módulos com `ordem <= modulo_liberado`), painel `admin-curso.html` (aba **Curso** antes do Leitor: curso → módulos/aulas com ↑↓, apostila escolhida no Drive, vídeo YouTube ou Drive, marca "vídeo de teste", alunos do curso com "Liberar o próximo"/"Trancar o último" na mão) e aba **Curso** em `aluno.html` (`curso.js`; aparece só para matriculado; módulos acima do liberado com cadeado; módulos já liberados continuam abertos). **A apostila só aparece como nome: abrir no leitor depende da rota do servidor (ainda não feita).** Matrícula por enquanto é manual (e-mail do aluno).
+**ETAPA 1 FEITA no código (27/10/2026, não publicada até ele rodar o SQL):** `docs/curso.sql` (tabelas `cursos`, `curso_modulos`, `curso_aulas`, `curso_matriculas`; o aluno matriculado só lê as aulas dos módulos com `ordem <= modulo_liberado`), painel `admin-curso.html` (aba **Curso** antes do Leitor: curso → módulos/aulas com ↑↓, apostila escolhida no Drive, vídeo do Drive, marca "vídeo de teste", alunos do curso com "Liberar o próximo"/"Trancar o último" na mão) e aba **Curso** em `aluno.html` (`curso.js`; aparece só para matriculado; módulos acima do liberado com cadeado; módulos já liberados continuam abertos). **A apostila só aparece como nome: abrir no leitor depende da rota do servidor (ainda não feita).** Matrícula por enquanto é manual (e-mail do aluno).
 
 **Ordem combinada (uma coisa por vez):**
 1. Estrutura: curso, módulos, aulas (texto, apostila, vídeo de teste), módulos com cadeado, por aluno. Painel do administrador para montar.
@@ -451,9 +451,9 @@ Botão secundário que é só a palavra leva **sublinhado** (senão "tem que adi
 - Não repetir SQL que ele já disse que rodou (nem se der erro: dizer só o que está errado, ex.: projeto do Supabase errado; o do Astro Hellenic NÃO é o do Falando de Astrologia).
 
 ## Curso AO VIVO além do gravado: planejamento (06/11/2026), turma em março/2027 — nada construído ainda
-O astrólogo quer abrir uma turma em **março** com aulas semanais ao vivo pelo Google Meet, e o site passa a ter dois tipos de curso: **Gravado** (como está hoje) e **Ao vivo**. (Live no YouTube é outro assunto, sem relação com o curso: não misturar. Aula da turma paga NUNCA no YouTube, nem não listada.)
+O astrólogo quer abrir uma turma em **março** com aulas semanais ao vivo pelo Google Meet, e o site passa a ter dois tipos de curso: **Gravado** (como está hoje) e **Ao vivo**.
 - **Tipo escolhido ao criar o curso** (Gravado ou Ao vivo).
-- **No ao vivo, cada aula tem data, hora e link do Meet.** O aluno vê **"Próxima aula"** e o botão **"Entrar na aula"** (nunca "encontro"; Meet em ocre, `.portal-btn-meet`). Depois da aula ele cola a gravação (YouTube/Drive, como já existe) na mesma linha, para quem faltou.
+- **No ao vivo, cada aula tem data, hora e link do Meet.** O aluno vê **"Próxima aula"** e o botão **"Entrar na aula"** (nunca "encontro"; Meet em ocre, `.portal-btn-meet`). Depois da aula ele cola a gravação (Drive, como já existe) na mesma linha, para quem faltou.
 - **Presença: marcada por ELE, na mão**, numa lista da turma com caixinha por aula (decisão dele, 06/11/2026). Presença pelo toque no botão foi descartada ("complicado": entra cedo demais etc.). O plano do Meet dele (Google One 2 TB, chamadas de até 24 h) NÃO tem relatório de presença (conferido por ele nas configurações da reunião). O painel mostra a % de presença de cada aluno.
 - Ainda em aberto: liberar aula por data ou na mão; aviso no celular antes da aula (fica para depois, como já combinado); como vira avaliação/nota no ao vivo.
 - Continua valendo: matrícula por e-mail, módulos, apostila, pagamento ainda a escolher. SQL sempre num bloco só, e só publicar com "pode publicar".
