@@ -123,17 +123,17 @@ window.AgendaCaderno = function (ctx) {
        vídeo pela data em que fica público (só de membros: a data dos membros, igual ao To do da Produção), cortes pela data de cada um (juntos por dia). O To do da Produção não foi mexido */
     function carregarProducao() {
       return Promise.all([
-        C.from('prod_videos').select('id,numero,titulo,data_postar,data_publico,acesso,hora_jupiter').then(function (r) { return r.data || []; }, function () { return []; }),
-        C.from('prod_cortes').select('id,titulo,data,video_id,hora_jupiter').not('data', 'is', null).then(function (r) { return r.data || []; }, function () { return []; })
+        C.from('prod_videos').select('id,numero,titulo,data_postar,data_publico,acesso,hora_jupiter,planeta_hora').then(function (r) { return r.data || []; }, function () { return []; }),
+        C.from('prod_cortes').select('id,titulo,data,video_id,hora_jupiter,planeta_hora').not('data', 'is', null).then(function (r) { return r.data || []; }, function () { return []; })
       ]).then(function (r) { producao = { videos: r[0], cortes: r[1] }; });
     }
     function producaoEntre(de, ate) {
       var saida = [];
       /* uma hora de Júpiter só por item: a que ele escolheu na Produção (hora_jupiter); sem escolha, vídeo = a mais perto das 16h, corte = a primeira */
-      function naHoraDeJupiter(idBase, titulo, iso, linhas, escolha, ehVideo) {
+      function naHoraDeJupiter(idBase, titulo, iso, linhas, escolha, ehVideo, item) {
         var d0 = doIso(iso), pa = iso.split('-');
         /* o dia planetário começa no nascer do sol: as horas de Júpiter do dia são as 24 horas que COMEÇAM no nascer desse dia (as da madrugada seguinte são deste dia, não do próximo) */
-        var hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === P.planetaHoras.pt; });
+        var hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === P.planetaDoItem(item).pt; });
         if (!hs.length) return;
         var h = escolha != null ? hs[Math.min(escolha, hs.length - 1)] : ehVideo ? hs.slice().sort(function (x, y) { return Math.abs(x.ini - (d0 + 16 * 3600000)) - Math.abs(y.ini - (d0 + 16 * 3600000)); })[0] : hs[0];
         if (h.fim <= de || h.ini >= ate) return;
@@ -142,11 +142,11 @@ window.AgendaCaderno = function (ctx) {
       }
       producao.videos.forEach(function (v) {
         var iso = (v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar; if (!iso) return;
-        naHoraDeJupiter('prod-v-' + v.id, 'Vídeo ' + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'Vídeo'), iso, [], v.hora_jupiter, true);
+        naHoraDeJupiter('prod-v-' + v.id, 'Vídeo ' + (v.numero ? v.numero + '. ' : '') + (v.titulo || 'Vídeo'), iso, [], v.hora_jupiter, true, v);
       });
       producao.cortes.forEach(function (c) {
         var v = producao.videos.filter(function (x) { return x.id === c.video_id; })[0];
-        naHoraDeJupiter('prod-c-' + c.id, c.titulo || 'Corte' + (v ? ' de ' + (v.numero ? v.numero + '. ' : '') + v.titulo : ''), c.data, [], c.hora_jupiter, false);
+        naHoraDeJupiter('prod-c-' + c.id, c.titulo || 'Corte' + (v ? ' de ' + (v.numero ? v.numero + '. ' : '') + v.titulo : ''), c.data, [], c.hora_jupiter, false, c);
       });
       return saida;
     }
@@ -651,13 +651,14 @@ window.AgendaCaderno = function (ctx) {
     var alternarFormTodo = null, TODO_DIAS_ATRAS = 14, TODO_DIAS_FRENTE = 60;
     function valorSite(chave) { return C.from('site_config').select('valor').eq('chave', chave).maybeSingle().then(function (r) { try { return r.data && r.data.valor ? JSON.parse(r.data.valor) : null; } catch (e) { return null; } }, function () { return null; }); }
     /* a hora de Júpiter do dia isoD mais perto de alvoMin (minutos desde a meia-noite); manha = só as que começam antes do meio-dia, se houver */
-    function horaJupiter(iso, alvoMin, manha, escolha) {
+    function horaJupiter(iso, alvoMin, manha, escolha, item) {
+      var plPt = P.planetaDoItem(item).pt;
       /* a hora que ele escolheu na Produção (hora_jupiter) vale sempre: é o índice entre as horas de Júpiter do dia planetário, igual à Agenda */
       if (escolha != null) {
-        var pa = iso.split('-'), hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === P.planetaHoras.pt; });
+        var pa = iso.split('-'), hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === plPt; });
         if (hs.length) return hs[Math.min(escolha, hs.length - 1)].ini;
       }
-      var js =segmentosDoDia(iso).filter(function (s) { return s.planeta === P.planetaHoras.pt; }).map(function (s) { return { ini: s.ini, mi: (s.ini - doIso(iso)) / 60000 }; });
+      var js =segmentosDoDia(iso).filter(function (s) { return s.planeta === plPt; }).map(function (s) { return { ini: s.ini, mi: (s.ini - doIso(iso)) / 60000 }; });
       if (manha) { var m = js.filter(function (j) { return j.mi < 720; }); if (m.length) js = m; }
       if (!js.length) return doIso(iso, p2(Math.floor(alvoMin / 60)) + ':' + p2(alvoMin % 60));
       js.sort(function (a, b) { return Math.abs(a.mi - alvoMin) - Math.abs(b.mi - alvoMin); });
@@ -675,7 +676,7 @@ window.AgendaCaderno = function (ctx) {
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }
     function itensDaProducao() {
-      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok,datas_etapas,hora_jupiter'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,hora_jupiter,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok,datas_etapas,hora_jupiter,planeta_hora'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,hora_jupiter,planeta_hora,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
         var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
         videos.forEach(function (v) {
@@ -693,12 +694,12 @@ window.AgendaCaderno = function (ctx) {
           }
           var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
           var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título');
-          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · ' + P.planetaHoras.pt, subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
+          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter, v), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · ' + P.planetaDoItem(v).pt, subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
         });
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
           var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
-          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · ' + P.planetaHoras.pt, subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data], capa: v.capa_url || '' });
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter, c), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · ' + P.planetaDoItem(c).pt, subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data], capa: v.capa_url || '' });
         });
         return saida;
       }, function () { return []; });

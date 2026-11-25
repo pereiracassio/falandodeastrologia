@@ -96,7 +96,7 @@
   </div></div>
 </div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="portal.js?v=193"></script>
+  <script src="portal.js?v=194"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -195,7 +195,8 @@
     }
     /* as horas de Júpiter do DIA PLANETÁRIO de isoD, como [início, fim] em minutos desde a meia-noite de isoD: o dia começa no nascer do sol e vai até o nascer do dia seguinte,
        então a madrugada seguinte (depois da meia-noite) é deste dia e o início passa de 1440 (hhmm mostra a hora certa) */
-    function horasDeJupiter(isoD) {
+    function horasDeJupiter(isoD, plEn) {
+      plEn = plEn || P.planetaHoras.en;
       var achadas = [], d = deIso(isoD), seg = deIso(somarDias(isoD, 1));
       var hoje_ = solEmMinutos(d.getFullYear(), d.getMonth() + 1, d.getDate()), amanha = solEmMinutos(seg.getFullYear(), seg.getMonth() + 1, seg.getDate());
       if (hoje_.nasce == null || hoje_.poe == null || amanha.nasce == null) return achadas;
@@ -203,7 +204,7 @@
       var durDia = (hoje_.poe - hoje_.nasce) / 12, durNoite = (amanha.nasce + 1440 - hoje_.poe) / 12;
       for (var i = 0; i < 24; i++) {
         var dia = i < 12, j = dia ? i : i - 12;
-        if (CALDAICA[(ini + i) % 7] !== P.planetaHoras.en) continue;
+        if (CALDAICA[(ini + i) % 7] !== plEn) continue;
         var a = dia ? hoje_.nasce + j * durDia : hoje_.poe + j * durNoite, b = a + (dia ? durDia : durNoite);
         achadas.push([Math.round(a), Math.round(b)]);
       }
@@ -219,43 +220,60 @@
       h.forEach(function (x) { caixa.appendChild(el('div', { text: hhmm(x[0]) + ' a ' + hhmm(x[1]) })); });
     }
     /* os horários de Júpiter do dia, um por linha, para ESCOLHER qual vale (a escolhida fica terracota com ✓; tocar de novo desfaz). Só a palavra, sem quadrado */
-    function jupiterEscolha(caixa, isoD, indice, avisoSemData, aoEscolher) {
-      /* a caixa é montada UMA vez e depois só atualizada no lugar: muda o texto do título e das horas, acrescenta ou tira só os botões que sobram */
+    function jupiterEscolha(caixa, isoD, indice, avisoSemData, aoEscolher, item, aoPlaneta) {
+      /* a caixa é montada UMA vez e depois só atualizada no lugar: muda o texto do título e das horas, acrescenta ou tira só os botões que sobram.
+         Cada vídeo/corte tem o SEU planeta (item.planeta_hora); sem escolha vale o padrão de Configurações. Só a palavra, sem quadrado */
       var st = caixa.__jup;
       if (!st) {
-        st = caixa.__jup = { tit: el('div', { style: 'font-weight:700' }), aviso: el('div'), sem: el('div'), bots: [] };
-        caixa.appendChild(st.aviso); caixa.appendChild(st.tit); caixa.appendChild(st.sem);
-      }
-      st.indice = indice; st.aoEscolher = aoEscolher;
-      var h = isoD ? horasDeJupiter(isoD) : [];
-      st.aviso.textContent = isoD ? '' : (avisoSemData || ''); st.aviso.style.display = st.aviso.textContent ? '' : 'none';
-      st.tit.style.display = isoD ? '' : 'none'; st.sem.style.display = isoD && !h.length ? '' : 'none';
-      if (isoD) {
-        var p = isoD.split('-');
-        st.tit.textContent = p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de ' + P.planetaHoras.pt;
-        st.sem.textContent = 'sem horário de ' + P.planetaHoras.pt + ' calculado nesse dia';
-      }
-      var marcar = function () {
-        st.bots.forEach(function (b, i) {
-          var on = st.indice === i;
-          b.textContent = hhmm(h[i][0]) + ' a ' + hhmm(h[i][1]) + (on ? '  ✓' : '');
-          b.style.color = on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro'); b.style.fontWeight = on ? '700' : '400';
+        st = caixa.__jup = { tit: el('div', { style: 'font-weight:700' }), aviso: el('div'), sem: el('div'), bots: [], plBots: [], pl: el('div', { style: 'display:flex;flex-wrap:wrap;gap:2px 18px;margin:0 0 6px' }) };
+        P.PLANETAS_HORAS.forEach(function (x) {
+          var b = el('button', { type: 'button', style: 'background:transparent;border:0;border-radius:0;padding:2px 0;margin:0;font:inherit;cursor:pointer;text-align:left', text: x[1] });
+          b.addEventListener('click', function () {
+            var novo = st.item.planeta_hora === x[0] ? null : x[0]; /* tocar no escolhido volta ao padrão */
+            st.indice = null; st.aoPlaneta(novo); st.render();
+          });
+          st.plBots.push([x[0], b]); st.pl.appendChild(b);
         });
-      };
-      h.forEach(function (x, i) {
-        if (st.bots[i]) return;
-        var b = el('button', { type: 'button', style: 'display:block;background:transparent;border:0;border-radius:0;padding:2px 0;margin:0;font:inherit;cursor:pointer;text-align:left' });
-        b.addEventListener('click', function () { var k = st.bots.indexOf(b); st.indice = st.indice === k ? null : k; st.aoEscolher(st.indice); marcar(); });
-        st.bots.push(b); caixa.appendChild(b);
-      });
-      while (st.bots.length > h.length) st.bots.pop().remove();
-      marcar();
+        caixa.appendChild(st.pl); caixa.appendChild(st.aviso); caixa.appendChild(st.tit); caixa.appendChild(st.sem);
+        st.render = function () {
+          var pl = P.planetaDoItem(st.item), h = st.iso ? horasDeJupiter(st.iso, pl.en) : [];
+          st.plBots.forEach(function (pb) {
+            var on = st.item.planeta_hora === pb[0];
+            pb[1].textContent = P.PLANETAS_HORAS.filter(function (x) { return x[0] === pb[0]; })[0][1] + (on ? '  ✓' : '');
+            pb[1].style.color = on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro'); pb[1].style.fontWeight = on ? '700' : '400';
+          });
+          st.aviso.textContent = st.iso ? '' : (st.avisoSemData || ''); st.aviso.style.display = st.aviso.textContent ? '' : 'none';
+          st.tit.style.display = st.iso ? '' : 'none'; st.sem.style.display = st.iso && !h.length ? '' : 'none';
+          if (st.iso) {
+            var p = st.iso.split('-');
+            st.tit.textContent = p[2] + '/' + p[1] + '/' + p[0].slice(2) + ', horários de ' + pl.pt;
+            st.sem.textContent = 'sem horário de ' + pl.pt + ' calculado nesse dia';
+          }
+          var marcar = function () {
+            st.bots.forEach(function (b, i) {
+              var on = st.indice === i;
+              b.textContent = hhmm(h[i][0]) + ' a ' + hhmm(h[i][1]) + (on ? '  ✓' : '');
+              b.style.color = on ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro'); b.style.fontWeight = on ? '700' : '400';
+            });
+          };
+          h.forEach(function (x, i) {
+            if (st.bots[i]) return;
+            var b = el('button', { type: 'button', style: 'display:block;background:transparent;border:0;border-radius:0;padding:2px 0;margin:0;font:inherit;cursor:pointer;text-align:left' });
+            b.addEventListener('click', function () { var k = st.bots.indexOf(b); st.indice = st.indice === k ? null : k; st.aoEscolher(st.indice); marcar(); });
+            st.bots.push(b); caixa.appendChild(b);
+          });
+          while (st.bots.length > h.length) st.bots.pop().remove();
+          marcar();
+        };
+      }
+      st.iso = isoD; st.indice = indice; st.aoEscolher = aoEscolher; st.item = item || {}; st.aoPlaneta = aoPlaneta || function () {}; st.avisoSemData = avisoSemData;
+      st.render();
     }
     function hhmm(min) { var m = ((min % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
-    function textoJupiter(isoD) {
+    function textoJupiter(isoD, item) {
       if (!isoD) return '';
-      var h = horasDeJupiter(isoD);
-      return h.length ? P.planetaHoras.pt + ' nesse dia: ' + h.map(function (x) { return hhmm(x[0]) + ' a ' + hhmm(x[1]); }).join(' · ') : '';
+      var pl = P.planetaDoItem(item), h = horasDeJupiter(isoD, pl.en);
+      return h.length ? pl.pt + ' nesse dia: ' + h.map(function (x) { return hhmm(x[0]) + ' a ' + hhmm(x[1]); }).join(' · ') : '';
     }
 
     /* ---------- datas (sempre texto aaaa-mm-dd, sem fuso) ---------- */
@@ -695,7 +713,7 @@
         el('div', {}, [
           el('span', { class: 'prod-titulo', text: c.titulo || 'Corte sem título' }),
           el('span', { class: 'prod-sub', text: (mostrarData ? comDia(c.data) + ' · ' : '') + (v ? nomeVideo(v) : '') }),
-          c.data ? el('span', { class: 'prod-jup', style: 'margin:2px 0 0', text: textoJupiter(c.data) }) : null,
+          c.data ? el('span', { class: 'prod-jup', style: 'margin:2px 0 0', text: textoJupiter(c.data, c) }) : null,
           barraTempo(c.criado_em, c.data, cortePostado(c))
         ]),
         chipsDoCorte(c)
@@ -1047,8 +1065,8 @@
       cartao.appendChild(fila([0.45, 0.45, 2], [campo('T', temporada), campo('N', numero), campo('Link', link)], true));
       /* horário de Júpiter é para o dia em que o vídeo fica PÚBLICO; vídeo só de membros (ou sem data pública) usa a data dos membros */
       function dataDeJupiter() { return (rotuloAcesso(v) === 'público' && dataPublico.value) || data.value; }
-      var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar) });
-      function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter()); pintarJupFim(); }
+      var jupV = el('span', { class: 'prod-jup', text: textoJupiter((rotuloAcesso(v) === 'público' && v.data_publico) || v.data_postar, v) });
+      function atualizarJupiter() { jupV.textContent = textoJupiter(dataDeJupiter(), v); pintarJupFim(); }
       function aoTrocarAcesso() { /* Público/Membros: troca SÓ o que depende disso (o passo Público da barra, o prazo, o horário); a tela não é refeita */
         ajustarPublico(v); atualizarJupiter();
         var novoT = barraTempo(v.criado_em, fimDoVideo(v), v.no_ar);
@@ -1290,7 +1308,7 @@
       desenharCards();
       /* no fim da tela, depois da minutagem: a data de publicação e os horários de Júpiter dela, em azul (para não precisar voltar ao topo) */
       var jupFim = el('div', { style: 'margin:14px 0 18px;color:var(--azul-egipcio-escuro,#1034A6);font-size:16px;line-height:1.5' });
-      function pintarJupFim() { jupiterEscolha(jupFim, dataDeJupiter(), v.hora_jupiter == null ? null : v.hora_jupiter, '', function (i) { gravar('prod_videos', videos, v, { hora_jupiter: i }); }); }
+      function pintarJupFim() { jupiterEscolha(jupFim, dataDeJupiter(), v.hora_jupiter == null ? null : v.hora_jupiter, '', function (i) { gravar('prod_videos', videos, v, { hora_jupiter: i }); }, v, function (pn) { gravar('prod_videos', videos, v, { planeta_hora: pn, hora_jupiter: null }); jupV.textContent = textoJupiter(dataDeJupiter(), v); }); }
       pintarJupFim();
       cartao.appendChild(jupFim);
       cartao.appendChild(estadoSalvo);
@@ -1463,10 +1481,11 @@
         tx.addEventListener('input', function () { agendarCorte(); verSeoCorte(); }); tg.addEventListener('input', function () { agendarCorte(); verSeoCorte(); });
         tx.addEventListener('change', verSeoCorte); tg.addEventListener('change', verSeoCorte);
         var jupC = el('div', { style: 'margin:6px 0 4px;color:var(--azul-egipcio-escuro,#1034A6);font-size:16px;line-height:1.5' });
-        var semDataJup = 'Escolha a data do corte para ver os horários de Júpiter.';
+        var semDataJup = 'Escolha a data do corte para ver os horários.';
         var escolhaC = function (i) { gravar('prod_cortes', cortes, c, { hora_jupiter: i }); };
-        jupiterEscolha(jupC, c.data, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC);
-        d.addEventListener('blur', function () { jupiterEscolha(jupC, d.value, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC); });
+        var planetaC = function (pn) { gravar('prod_cortes', cortes, c, { planeta_hora: pn, hora_jupiter: null }); };
+        jupiterEscolha(jupC, c.data, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC, c, planetaC);
+        d.addEventListener('blur', function () { jupiterEscolha(jupC, d.value, c.hora_jupiter == null ? null : c.hora_jupiter, semDataJup, escolhaC, c, planetaC); });
         /* link do vídeo deste corte no Google Fotos: mesmo campo de link padrão do site */
         var caixaFotosC = el('div', { style: 'margin:0 0 12px;display:flex;align-items:center;gap:14px' });
         var campoLC = el('input', { type: 'url', 'data-link-abre': '1', placeholder: 'Colar o link do vídeo deste corte no Google Fotos', style: 'margin:0' });

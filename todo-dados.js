@@ -40,13 +40,14 @@ window.TodoDados = function (ctx) {
       var d0 = doIso(iso), d1 = d0 + DIA;
       return HP.horasEntre(d0, d1, LAT, LON).map(function (h) { return { ini: Math.max(h.ini, d0), fim: Math.min(h.fim, d1), planeta: h.planeta, noite: h.noite }; }).filter(function (s) { return s.fim > s.ini; });
     }
-    function horaJupiter(iso, alvoMin, manha, escolha) {
+    function horaJupiter(iso, alvoMin, manha, escolha, item) {
+      var plPt = P.planetaDoItem(item).pt;
       /* a hora que ele escolheu na Produção (hora_jupiter) vale sempre: é o índice entre as horas de Júpiter do dia planetário, igual à Agenda */
       if (escolha != null) {
-        var pa = iso.split('-'), hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === P.planetaHoras.pt; });
+        var pa = iso.split('-'), hs = HP.horasDoDia(+pa[0], +pa[1], +pa[2], LAT, LON).filter(function (h) { return h.planeta === plPt; });
         if (hs.length) return hs[Math.min(escolha, hs.length - 1)].ini;
       }
-      var js =segmentosDoDia(iso).filter(function (s) { return s.planeta === P.planetaHoras.pt; }).map(function (s) { return { ini: s.ini, mi: (s.ini - doIso(iso)) / 60000 }; });
+      var js =segmentosDoDia(iso).filter(function (s) { return s.planeta === plPt; }).map(function (s) { return { ini: s.ini, mi: (s.ini - doIso(iso)) / 60000 }; });
       if (manha) { var m = js.filter(function (j) { return j.mi < 720; }); if (m.length) js = m; }
       if (!js.length) return doIso(iso, p2(Math.floor(alvoMin / 60)) + ':' + p2(alvoMin % 60));
       js.sort(function (a, b) { return Math.abs(a.mi - alvoMin) - Math.abs(b.mi - alvoMin); });
@@ -61,7 +62,7 @@ window.TodoDados = function (ctx) {
       return [seg, criado && fim ? P.barraTempoDias(String(criado).slice(0, 10), fim) : null].filter(Boolean);
     }
     function itensDaProducao() {
-      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok,datas_etapas,hora_jupiter'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,hora_jupiter,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
+      return Promise.all([C.from('prod_series').select('id,nome'), C.from('prod_videos').select('id,serie_id,numero,titulo,acesso,data_publico,data_postar,data_gravar,no_ar,data_cortes,data_blog,capa_url,criado_em,roteiro_ok,gravado,editado,edicao_fina,seo_ok,cortes_feitos,blog_ok,publico_ok,datas_etapas,hora_jupiter,planeta_hora'), C.from('prod_cortes').select('id,video_id,ordem,titulo,data,hora_jupiter,planeta_hora,shorts,instagram,tiktok,criado_em,corte_ok,legenda_ok,seo_ok')]).then(function (r) {
         var series = r[0].data || [], videos = r[1].data || [], cortes = r[2].data || [], saida = [];
         var link = function (v, corte) { return 'admin-producao.html#aba=series&serie=' + encodeURIComponent(v.serie_id || 'soltos') + '&video=' + encodeURIComponent(v.id) + (corte ? '&vt=corte&corte=' + encodeURIComponent(corte) : ''); };
         videos.forEach(function (v) {
@@ -79,12 +80,12 @@ window.TodoDados = function (ctx) {
           }
           var d = ((v.acesso === 'membros' ? '' : v.data_publico) || v.data_postar || ''); if (v.no_ar || !d) return;
           var nome = (v.numero ? v.numero + '. ' : '') + (v.titulo || 'sem título');
-          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · ' + P.planetaHoras.pt, subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
+          saida.push({ ord: v.numero || 0, quando: horaJupiter(d, 16 * 60, false, v.hora_jupiter, v), diaTodo: false, titulo: nome, sub: 'colocar no YouTube · ' + P.planetaDoItem(v).pt, subOcre: true, url: link(v), cor: FdaTema.cor('azul-egipcio-escuro'), capa: v.capa_url || '', bsp: ['v', v, v.criado_em, d] });
         });
         cortes.forEach(function (c) {
           var v = videos.filter(function (x) { return x.id === c.video_id; })[0]; if (!v || !c.data || (c.shorts && c.instagram && c.tiktok)) return;
           var falta = [c.shorts ? '' : 'Shorts', c.instagram ? '' : 'Instagram', c.tiktok ? '' : 'TikTok'].filter(Boolean).join(', ');
-          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · ' + P.planetaHoras.pt, subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data], capa: v.capa_url || '' });
+          saida.push({ quando: horaJupiter(c.data, 9 * 60, true, c.hora_jupiter, c), diaTodo: false, titulo: (c.titulo || 'Corte ' + c.ordem) + (v.numero ? ' · ' + v.numero : ''), sub: 'postar: ' + falta + ' · ' + P.planetaDoItem(c).pt, subOcre: true, url: link(v, c.id), cor: FdaTema.cor('azul-egipcio-escuro'), bsp: ['c', c, c.criado_em, c.data], capa: v.capa_url || '' });
         });
         return saida;
       }, function () { return []; });
