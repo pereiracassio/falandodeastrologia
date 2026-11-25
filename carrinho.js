@@ -6,12 +6,12 @@
 
   var CARRINHO_SERVICOS = {
     "mapa-natal":    { titulo: "Mapa Natal Clássico", centavos: 33500, agenda: true, fixo: "https://checkout.infinitepay.io/cassiopereira_/Lr5VzNU3g9" },
-    "sinastria":     { titulo: "Sinastria Clássica", centavos: 34800, agenda: true, fixo: "https://checkout.infinitepay.io/cassiopereira_/3juXjWqoYg" },
-    "previsoes":     { titulo: "Previsões Astrológicas", centavos: 33500, agenda: true, fixo: "https://checkout.infinitepay.io/cassiopereira_/cM91wDKb7t" },
-    "revolucao-solar": { titulo: "Revolução Solar Clássica e Profecção Anual", centavos: 33500, agenda: true, fixo: "https://checkout.infinitepay.io/cassiopereira_/6I2u5POpKN" },
+    "sinastria":     { titulo: "Sinastria Clássica", centavos: 37900, agenda: true },
+    "previsoes":     { titulo: "Previsões Astrológicas", centavos: 36700, agenda: true },
+    "revolucao-solar": { titulo: "Revolução Solar Clássica e Profecção Anual", centavos: 35500, agenda: true },
     // Retificação: não aparece no site, só entra no carrinho pelo link que o astrólogo manda
-    "retificacao-avulsa": { titulo: "Retificação de Mapa Avulsa", centavos: 33500, agenda: false, restrito: true },
-    "retificacao-combo":  { titulo: "Combo: Retificação + Mapa Natal Clássico", centavos: 59900, agenda: true, restrito: true },
+    "retificacao-avulsa": { titulo: "Retificação de Mapa Avulsa", centavos: 39100, agenda: false, restrito: true },
+    "retificacao-combo":  { titulo: "Combo: Retificação + Mapa Natal Clássico", centavos: 65500, agenda: true, restrito: true },
     // TESTE (24/10/2026): serviço de R$ 1,00 que não é nenhum serviço de verdade. Só pelo link ?add=servico-teste. REMOVER depois de testar.
     "servico-teste":      { titulo: "Serviço teste", centavos: 100, agenda: true, restrito: true }
   };
