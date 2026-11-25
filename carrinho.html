@@ -351,13 +351,22 @@
 
     // Se a criação do link falhar: com um serviço só e preço cheio, cai no link fixo de antes; senão mostra o erro
     var reserva = function () {
-      if (!cupomValeu && res.linhas.length === 1 && res.linhas[0].fixo && res.linhas[0].desconto === 0 && res.linhas[0].final === Carrinho.servicos[res.linhas[0].chave].centavos) {
-        Carrinho.marcarSaida(); window.location.href = res.linhas[0].fixo; return;
-      }
-      botao.classList.remove("ocupado");
-      botao.textContent = "Ir para o Pagamento";
-      erro.textContent = "Não foi possível abrir o pagamento agora. Tente de novo em instantes.";
-      erro.style.display = "block";
+      /* avisa o administrador (o gatilho do banco manda a notificação); espera o envio, no máximo 1,5 s, para a troca de página não cortá-lo */
+      var avisado = new Promise(function (ok) {
+        setTimeout(ok, 1500);
+        try {
+          window.portal.client.from("pagamento_falhas").insert({ order_nsu: pedido, nome: nome, whatsapp: whatsapp, email: email.toLowerCase(), servicos: titulos.slice(0, 500), motivo: String(motivoFalha || "sem resposta").slice(0, 300) }).then(ok, ok);
+        } catch (e) { ok(); }
+      });
+      avisado.then(function () {
+        if (!cupomValeu && res.linhas.length === 1 && res.linhas[0].fixo && res.linhas[0].desconto === 0 && res.linhas[0].final === Carrinho.servicos[res.linhas[0].chave].centavos) {
+          Carrinho.marcarSaida(); window.location.href = res.linhas[0].fixo; return;
+        }
+        botao.classList.remove("ocupado");
+        botao.textContent = "Ir para o Pagamento";
+        erro.textContent = "Não foi possível abrir o pagamento agora. Tente de novo em instantes.";
+        erro.style.display = "block";
+      });
     };
     // guarda quem está comprando (nome, e-mail, WhatsApp) ligado ao número do pedido; o servidor cadastra o cliente quando o InfinitePay confirmar o pagamento
     var guardado = new Promise(function (ok) {
@@ -369,11 +378,12 @@
     /* guarda neste aparelho os dados da volta do pagamento: se o InfinitePay devolver a pessoa SEM eles no endereço, o Seu espaço os acha aqui (cliente.html, parametrosDaVolta) */
     try { localStorage.setItem("fda_ultimo_pedido", JSON.stringify({ t: Date.now(), q: redirectUrl.slice(redirectUrl.indexOf("?") + 1) })); } catch (e) { /* sem armazenamento */ }
     guardado.then(function () { criarLink(0); });
+    var motivoFalha = "";
     function criarLink(tentativa) {
       var controle = new AbortController();
       var timer = setTimeout(function () { controle.abort(); }, 8000);
       /* o link falhou? tenta mais uma vez antes de cair no link fixo (o fixo não leva o serviço de volta para o Seu espaço) */
-      var falhou = function () { clearTimeout(timer); if (tentativa < 1) criarLink(tentativa + 1); else reserva(); };
+      var falhou = function (e) { clearTimeout(timer); motivoFalha = (e && e.name === "AbortError") ? "demorou mais de 8 s" : ((e && e.message) || motivoFalha); if (tentativa < 1) criarLink(tentativa + 1); else reserva(); };
 
       fetch(INFINITEPAY_API, {
         method: "POST",
@@ -390,7 +400,7 @@
       }).then(function (r) { return r.json(); }).then(function (j) {
         clearTimeout(timer);
         var url = acharEnderecoPagamento(j);
-        if (url) { Carrinho.marcarSaida(); window.location.href = url; } else { falhou(); }
+        if (url) { Carrinho.marcarSaida(); window.location.href = url; } else { falhou(new Error("o InfinitePay não devolveu o endereço do pagamento")); }
       }).catch(falhou);
     }
     });
