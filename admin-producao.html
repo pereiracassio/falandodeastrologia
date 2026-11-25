@@ -345,12 +345,15 @@
       var barra = el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3)' });
       var area = el('div', { style: 'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:5vh 7vw 40vh' });
       var corpo = el('div', { style: 'white-space:pre-wrap;line-height:1.5;font-family:var(--fonte-mao)' });
+      var cabBloco = el('div', { style: 'margin:0 0 4vh' }), cabNome = el('div', { style: 'font-family:var(--fonte-titulo);text-transform:lowercase;font-size:20px;opacity:.8' }), cabTit = el('div', { style: 'font-family:var(--fonte-titulo);text-transform:lowercase;font-weight:700;line-height:1.2' });
+      cabBloco.appendChild(cabNome); cabBloco.appendChild(cabTit);
       var nomeTxt = el('span', { text: '' });
-      area.appendChild(corpo);
+      area.appendChild(cabBloco); area.appendChild(corpo);
       function pintar() {
         tela.style.background = escuro ? '#0d1220' : 'var(--vazado,#F3E3B8)'; tela.style.color = escuro ? '#F3E3B8' : FdaTema.cor('preto-tinta');
         barra.style.background = escuro ? '#0d1220' : 'var(--vazado,#F3E3B8)';
         corpo.style.fontSize = tam + 'px';
+        var corCab = escuro ? '#E3B655' : FdaTema.cor('terracota'); cabNome.style.color = corCab; cabTit.style.color = corCab; cabTit.style.fontSize = Math.round(tam * 1.15) + 'px';
         play.textContent = rodando ? 'Pausar' : 'Rolar sozinho';
         velTxt.textContent = 'velocidade ' + vel;
         [].forEach.call(barra.querySelectorAll('button'), function (b) { b.style.cssText = 'background:transparent;border:1px solid var(--azul-egipcio-claro,#1F5FA3);border-radius:0;padding:10px 14px;font-size:15px;cursor:pointer;color:' + (escuro ? '#F3E3B8' : FdaTema.cor('azul-egipcio-escuro')) + ';font-family:var(--fonte-titulo);text-transform:lowercase'; });
@@ -359,6 +362,7 @@
       }
       function mostrar() {
         corpo.textContent = itens[idx].texto || (itens.length > 1 ? 'Este bloco está vazio.' : 'O roteiro está vazio.');
+        cabNome.textContent = itens[idx].nome ? itens[idx].nome + (itens.length > 1 ? ' (' + (idx + 1) + ' de ' + itens.length + ')' : '') : ''; cabTit.textContent = itens[idx].titulo || ''; cabBloco.style.display = (itens[idx].nome || itens[idx].titulo) ? '' : 'none';
         nomeTxt.textContent = itens.length > 1 ? itens[idx].nome + ' (' + (idx + 1) + ' de ' + itens.length + ')' : '';
         area.scrollTop = 0; acum = 0;
       }
@@ -1117,7 +1121,7 @@
       while (rb.titulos.length < rb.blocos.length) rb.titulos.push(''); /* título de cada bloco: é o que entra nos capítulos */
       function itensBlocos() {
         var l = [{ nome: 'Gancho', texto: rb.gancho }];
-        rb.blocos.forEach(function (t, i) { l.push({ nome: 'Bloco ' + (i + 1), texto: t }); });
+        rb.blocos.forEach(function (t, i) { l.push({ nome: 'Bloco ' + (i + 1), titulo: String(rb.titulos[i] || '').trim(), texto: t }); });
         l.push({ nome: 'Conclusão', texto: rb.conclusao });
         return l;
       }
