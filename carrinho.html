@@ -83,7 +83,7 @@
     <div class="price-title">Valor do Investimento</div>
     <div class="price-value" id="service-price">—</div>
     <div class="linha-desc" id="linha-desc" style="display:none"><span>Desconto por levar mais de um serviço</span><span id="valor-desc"></span></div>
-    <div class="linha-desc" id="linha-cupom" style="display:none"><span>Cupom de aniversário (10%)</span><span id="valor-cupom"></span></div>
+    <div class="linha-desc" id="linha-cupom" style="display:none"><span>Cupom de aniversário (15%)</span><span id="valor-cupom"></span></div>
   </div>
 
   <a class="mais" id="mais" href="index.html">+ Adicionar outro serviço (R$ 11,00 de desconto a partir do segundo)</a>
@@ -153,8 +153,8 @@
   var TEXTO_AGENDA_VARIOS = '<strong>Agendamento:</strong> Cada serviço tem o seu próprio atendimento. Ao enviar o formulário, você será redirecionado para a agenda onde escolherá o melhor dia e horário.';
   var TEXTO_SEM_AGENDA = '<strong>Retificação:</strong> Esta opção não tem agendamento. Depois de enviar o formulário, a retificação é feita por mensagem, sem chamada.';
 
-  // Cupom de aniversário: 10% no total do carrinho, só no mês do aniversário de quem já é cliente (a conferência é feita no Supabase pelo e-mail)
-  var CUPOM_CODIGO = "ANIVERSARIO", CUPOM_PERCENTUAL = 10, cupomAtivo = false;
+  // Cupom de aniversário: 15% no total do carrinho, só no mês do aniversário de quem já é cliente (a conferência é feita no Supabase pelo e-mail)
+  var CUPOM_CODIGO = "ANIVERSARIO", CUPOM_PERCENTUAL = 15, cupomAtivo = false;
   function cupomConfere(email) {
     return window.portal.client.rpc("cupom_aniversario", { p_email: email }).then(function (r) { return !r.error && r.data === true; }, function () { return false; });
   }
@@ -191,7 +191,7 @@
       lista.appendChild(caixa);
     });
 
-    // cupom de aniversário: 10% sobre o total já com o desconto por mais de um serviço
+    // cupom de aniversário: 15% sobre o total já com o desconto por mais de um serviço
     var descCupom = cupomAtivo ? Math.round(res.total * CUPOM_PERCENTUAL / 100) : 0;
     document.getElementById("linha-cupom").style.display = descCupom ? "" : "none";
     document.getElementById("valor-cupom").textContent = "− " + Carrinho.reais(descCupom);
@@ -302,7 +302,7 @@
     if (!/^[^\s@]+@gmail\.com$/i.test(email)) { avisoCupom("Preencha o seu e-mail (Gmail) acima para conferir o cupom.", true); return; }
     cupomConfere(email).then(function (ok) {
       cupomAtivo = ok;
-      avisoCupom(ok ? "Cupom aplicado: 10% de desconto." : "Esse cupom vale só no mês do seu aniversário, para quem já é cliente.", !ok);
+      avisoCupom(ok ? "Cupom aplicado: 15% de desconto." : "Esse cupom vale só no mês do seu aniversário, para quem já é cliente.", !ok);
       desenhar();
     });
   });
