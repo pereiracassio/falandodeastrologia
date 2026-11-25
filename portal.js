@@ -1053,9 +1053,8 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
           if (link) cartao.appendChild(el('a', { class: 'portal-btn portal-btn-meet portal-meet', href: link, target: '_blank', rel: 'noopener' }, [el('img', { src: 'img/rede-meet.svg', alt: '', width: '40', height: '40' }), el('span', { text: 'Entrar no atendimento' })]));
           else cartao.appendChild(el('p', { text: paraAdmin ? 'Esse compromisso não tem link do Meet.' : 'O link da videochamada chega pelo WhatsApp.' }));
           /* administrador: ícone do WhatsApp com o lembrete pronto (quem envia é ele, nada sai sozinho) */
-          var dig = String(contato && contato.whatsapp || '').replace(/\D/g, '');
+          var dig = numeroWhats(contato && contato.whatsapp);
           if (paraAdmin && dig) {
-            if (dig.length === 10 || dig.length === 11) dig = '55' + dig;
             var dataDe = function (d) { return d.toLocaleDateString('en-CA', { timeZone: a.fuso }); };
             var amanha = new Date(Date.now() + 86400000);
             var quandoTxt = dataDe(quando) === dataDe(new Date()) ? 'hoje' : dataDe(quando) === dataDe(amanha) ? 'amanhã' : 'no dia ' + quando.toLocaleDateString('pt-BR', { timeZone: a.fuso, day: '2-digit', month: '2-digit' });
@@ -1647,6 +1646,24 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   setTimeout(renovarInscricao, 2500);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') setTimeout(renovarInscricao, 800); });
 
+  /* Número para o wa.me, de QUALQUER país. Com "+" ou "00" vale como está (já traz o país). Sem isso, só é tratado como
+     brasileiro (põe 55) se tem cara de número do Brasil: DDD válido + 9 dígitos começando em 9 (celular) ou 8 dígitos (fixo).
+     Qualquer outra coisa (ex.: 33615389896 = celular da França sem o "+") fica como está, sem inventar país. */
+  function numeroWhats(bruto) {
+    var s = String(bruto || '').trim(), d = s.replace(/\D/g, '');
+    if (!d) return '';
+    if (s.charAt(0) === '+') return d;
+    if (d.indexOf('00') === 0) return d.slice(2);
+    var ddds = ',11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99,';
+    var br = function (x) {
+      if (ddds.indexOf(',' + x.slice(0, 2) + ',') < 0) return false;
+      if (x.length === 11) return x.charAt(2) === '9';
+      if (x.length === 10) return /[2-9]/.test(x.charAt(2));
+      return false;
+    };
+    if (d.charAt(0) === '0' && br(d.slice(1))) d = d.slice(1);
+    return br(d) ? '55' + d : d;
+  }
   window.portal = {
     escritaLivre: escritaLivre, salvarSozinho: salvarSozinho, tokenGoogle: tokenDoDrive, escolherDoDrive: escolherDoDrive,
     cartaoAtendimento: cartaoAtendimento,
@@ -1655,7 +1672,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     modoDaily: modoDaily, guardarModoDaily: guardarModoDaily, PLANETAS_HORAS: PLANETAS_HORAS, planetaHoras: planetaHoras, definirPlanetaHoras: definirPlanetaHoras, carregarPlanetaHoras: carregarPlanetaHoras, client: client, el: el, linkSeguro: linkSeguro, ordenarPorCodigo: ordenarPorCodigo, botaoDrive: botaoDrive, cartaoPastaDrive: cartaoPastaDrive, cartaoPastaBase: cartaoPastaBase, playerGravacao: playerGravacao, linkAplicacoes: linkAplicacoes, sanfona: sanfona, estado: estado, appDaPagina: appDaPagina, avisoDoApp: avisoDoApp, navAdmin: navAdmin, destacar: destacar, sinoAdmin: sinoAdmin, aniversariosHoje: aniversariosHoje, lembretesProducao: lembretesProducao, marcarAnivVisto: marcarAnivVisto, numeroNoIcone: numeroNoIcone, comSetas: comSetas, iconeLink: iconeLink, idArquivoDrive: idArquivoDrive, cartaoConexaoDrive: cartaoConexaoDrive, dataBR: dataBR,
     traduzErro: traduzErro, mensagem: mensagem, montarLogin: montarLogin, montarNovaSenha: montarNovaSenha,
     emRecuperacao: emRecuperacao, entrarComGoogle: entrarComGoogle, nomeDoGoogle: nomeDoGoogle,
-    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias, tempoNoPreenchimento: tempoNoPreenchimento
+    avisos: { avisar: avisar, cartao: cartaoAvisos, entrega: avisarEntrega, baixou: avisarBaixa, lista: listaAvisos, pagamento: avisarPagamento, comentario: avisarComentario, item: avisarItem, cartaoEnviar: cartaoEnviarAviso, manual: function (para, id, texto) { return chamarPush('manual', { para: para, id: id, texto: texto }); } }, botaoVoltar: botaoVoltar, voltarAoOrigem: voltarAoOrigem, voltarNoFim: voltarNoFim, combo: combo, servicosParaEscolher: servicosParaEscolher, numeroWhats: numeroWhats, botaoApagar: botaoApagar, colunaData: colunaData, barraComDatas: barraComDatas, linhaDatas: linhaDatas, apagarNoFim: apagarNoFim, barraLinha: barraLinha, barraTempoDias: barraTempoDias, tempoNoPreenchimento: tempoNoPreenchimento
   };
 
   /* A TELA NÃO PULA (regra dele): quase toda ação redesenha a área #app (esvazia e monta de novo) e o navegador joga a rolagem para o topo. Aqui, uma vez para o site todo:

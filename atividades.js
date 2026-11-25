@@ -89,9 +89,7 @@
   var SITE_ALUNO = 'https://falandodeastrologia.com.br/aluno.html';
   var WHATS_ADMIN = '5511970404508';
   function numeroWhats(n) {
-    var d = String(n || '').replace(/\D/g, '');
-    if (!d) return '';
-    return (d.length === 10 || d.length === 11) ? '55' + d : d; /* sem código do país: Brasil */
+    return window.portal.numeroWhats(n);
   }
   function botaoWhats(rotulo, numero, mensagem) {
     var n = numeroWhats(numero);

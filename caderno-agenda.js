@@ -279,12 +279,12 @@ window.AgendaCaderno = function (ctx) {
     function abrirEvento(e) { detalhe(abrirFolha(), e); }
     /* tocar num compromisso só MOSTRA; o lápis abre a edição. Cores: título terracota, horário azul, o resto preto */
     function detalheAniversario(destino, e) {
-      var p = e.aniversario, dig = String(p.whatsapp || '').replace(/\D/g, ''), primeiro = p.nome.split(/\s+/)[0];
+      var p = e.aniversario, dig = P.numeroWhats(p.whatsapp), primeiro = p.nome.split(/\s+/)[0];
       var texto = 'Oi, ' + primeiro + '! Feliz aniversário! Que o seu novo ciclo seja leve e cheio de coisas boas! 🎈🎂\nDe presente, você tem 10% de desconto em qualquer um dos meus serviços disponíveis no site (https://falandodeastrologia.com.br), por 30 dias. É só usar o cupom aniversário no carrinho. Aproveite para fazer a sua Revolução Solar. Um abraço 🫂';
       var fechar = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Fechar' });
       fechar.addEventListener('click', function () { destino.textContent = ''; });
       var acoes = [];
-      if (dig) { var w = el('a', { class: 'icone-whats', href: 'https://wa.me/' + (dig.length <= 11 ? '55' + dig : dig) + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]); acoes.push(w); }
+      if (dig) { var w = el('a', { class: 'icone-whats', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(texto), target: '_blank', rel: 'noopener', title: 'Mandar parabéns', 'aria-label': 'Mandar parabéns no WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]); acoes.push(w); }
       acoes.push(fechar);
       destino.appendChild(el('div', { class: 'portal-cartao' }, [el('h2', { text: e.titulo, style: 'margin:0;color:var(--terracota)' }), el('p', { text: rotuloDia(isoDia(e.ini)) + ' · faz ' + p.idade + ' anos', style: 'margin:10px 0 0' }), el('div', { class: 'portal-acoes', style: 'margin-top:12px;align-items:center' }, acoes)]));
     }
@@ -339,9 +339,8 @@ window.AgendaCaderno = function (ctx) {
             }, function () { sino.disabled = false; alert('Não foi possível enviar agora.'); });
           });
           linhaAcoes.insertBefore(sino, linhaAcoes.firstChild);
-          var dig = String(f.p.whatsapp || '').replace(/\D/g, '');
+          var dig = P.numeroWhats(f.p.whatsapp);
           if (dig) {
-            if (dig.length === 10 || dig.length === 11) dig = '55' + dig;
             var msg = 'Oi ' + primeiro + '. Tudo bem?\n\nPassando para lembrar da nossa consulta ' + quandoTxt + ', às ' + hora + '. Você consegue confirmar para mim?';
             var zap = el('a', { class: 'icone-whats', href: 'https://wa.me/' + dig + '?text=' + encodeURIComponent(msg), target: '_blank', rel: 'noopener', title: 'Lembrar pelo WhatsApp', 'aria-label': 'Lembrar pelo WhatsApp' }, [el('img', { src: 'img/rede-whatsapp.svg', alt: '', width: '44', height: '44' })]);
             linhaAcoes.insertBefore(zap, sino.nextSibling);
