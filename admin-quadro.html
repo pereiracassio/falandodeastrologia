@@ -99,7 +99,7 @@
         });
       });
     }
-    /* arquivo { "nome": "...", "telas": [ { "titulo": "...", "linhas": ["texto", "", "outro"], "tabela": { "colunas": ["A","B"], "larguras": [0.3,0.2], "linhas": [["x","y"]] } } ] }
+    /* arquivo { "nome": "...", "telas": [ { "titulo": "...", "icone": "☽ (opcional: símbolo grande à esquerda)", "linhas": ["texto", "", "outro"], "tabela": { "colunas": ["A","B"], "larguras": [0.3,0.2], "linhas": [["x","y"]] } } ] }
        Cada tela vira texto na folha (título terracota, linhas pretas, tabela com cabeçalho azul), tudo editável depois no Quadro. Medidas em fração da folha (3 por 2). */
     function importarApresentacao(f, msg) {
       f.text().then(function (txt) {
@@ -116,11 +116,12 @@
           saida.push(atual); return saida;
         }
         function montar(t) {
-          var itens = [], y = 0.05;
-          if (t.titulo) { quebrar(t.titulo, 30).forEach(function (l) { itens.push(texto(l, 0.05, y, 0.075, '#A03E25')); y += 0.1; }); y += 0.04; }
+          var itens = [], y = 0.05, ic = t.icone ? String(t.icone) + '\uFE0E' : '', x0 = ic ? 0.38 : 0.05, mt = ic ? 20 : 30, ml = ic ? 30 : 40, tl = ic ? 0.055 : 0.06;
+          if (ic) itens.push(texto(ic, 0.06, 0.2, 0.38, '#1F5FA3')); /* ícone grande à esquerda, informações à direita */
+          if (t.titulo) { quebrar(t.titulo, mt).forEach(function (l) { itens.push(texto(l, x0, y, 0.075, '#A03E25')); y += 0.1; }); y += 0.04; }
           (t.linhas || []).forEach(function (l) {
             if (!String(l).trim()) { y += 0.04; return; }
-            quebrar(l, 40).forEach(function (q) { itens.push(texto(q, 0.05, y, 0.06, '#1A1410')); y += 0.095; });
+            quebrar(l, ml).forEach(function (q) { itens.push(texto(q, x0, y, tl, '#1A1410')); y += 0.09; });
           });
           var tb = t.tabela;
           if (tb && tb.colunas) {
