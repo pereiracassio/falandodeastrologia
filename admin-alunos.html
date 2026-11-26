@@ -47,6 +47,7 @@
   <script src="portal.js?v=194"></script>
   <script src="conversa.js?v=12"></script>
   <script src="atividades.js?v=49"></script>
+  <script src="quadro.js?v=12"></script>
   <script>
   (function () {
     var P = window.portal, el = P.el, app = document.getElementById('app');
@@ -655,7 +656,9 @@
       var lista = el('div'), areaForm = el('div', { class: 'barra-ocre' });
       var novo = el('button', { type: 'button', class: 'portal-btn', text: 'Novo encontro' });
       var raiz = el('div', {}, [el('div', { class: 'portal-acoes', style: 'margin-bottom:14px' }, [novo]), areaForm, lista]);
-      var encontros = [];
+      var encontros = [], quadros = [{ id: 'principal', nome: 'Quadro' }];
+      /* as apresentações do Quadro (a lista fica na linha "::lista" da tabela quadros): cada encontro pode apontar para uma, e abre por cima desta tela, sem sair do aluno */
+      var quadrosProntos = P.client.from('quadros').select('dados').eq('id', '::lista').then(function (r) { var l = r.data && r.data[0] && r.data[0].dados && r.data[0].dados.lista; if (Array.isArray(l) && l.length) quadros = l; });
       function hoje() { return new Date().toLocaleDateString('sv-SE'); }
       function abrirForm(item) {
         if (areaForm.firstChild && !item) return;
@@ -663,6 +666,12 @@
         var msg = el('p', { class: 'portal-msg' });
         var data = el('input', { type: 'date', id: 'roData' });
         var itens = el('textarea', { id: 'roItens', rows: '5' });
+        var qSel = el('select', { id: 'roQuadro' });
+        quadrosProntos.then(function () {
+          qSel.appendChild(el('option', { value: '', text: 'Nenhum' }));
+          quadros.forEach(function (q) { qSel.appendChild(el('option', { value: q.id, text: q.nome })); });
+          qSel.value = item && item.quadro_id ? item.quadro_id : '';
+        });
         data.value = item ? String(item.data).slice(0, 10) : hoje();
         if (item) itens.value = (item.itens || []).map(function (x) { return x.t; }).join('\n');
         var salvar = el('button', { type: 'submit', class: 'portal-btn', text: item ? 'Salvar alterações' : 'Salvar' });
@@ -670,7 +679,8 @@
         cancelar.addEventListener('click', function () { areaForm.textContent = ''; });
         var form = el('form', { class: 'portal-cartao' }, [
           el('label', { for: 'roData', text: 'Encontro de' }), data,
-          el('label', { for: 'roItens', text: 'O que fazer (um item por linha)' }), itens, msg,
+          el('label', { for: 'roItens', text: 'O que fazer (um item por linha)' }), itens,
+          el('label', { for: 'roQuadro', text: 'Quadro deste encontro' }), qSel, msg,
           el('div', { class: 'portal-acoes' }, [salvar, cancelar])
         ]);
         form.addEventListener('submit', function (ev) {
@@ -683,7 +693,7 @@
           if (!data.value) { P.mensagem(msg, 'Escolha a data.', 'erro'); return; }
           if (!novos.length) { P.mensagem(msg, 'Escreva pelo menos um item.', 'erro'); return; }
           salvar.disabled = true;
-          var campos = { data: data.value, itens: novos };
+          var campos = { data: data.value, itens: novos, quadro_id: qSel.value || null };
           var pedido = item ? P.client.from('aluno_roteiro').update(campos).eq('id', item.id) : P.client.from('aluno_roteiro').insert(Object.assign({ aluno_id: aluno.id }, campos));
           pedido.then(function (r) {
             salvar.disabled = false;
@@ -701,6 +711,8 @@
         editar.style.padding = '6px 12px'; editar.style.fontSize = '13px';
         editar.addEventListener('click', function () { abrirForm(i); });
         var apagar = P.botaoApagar('Apagar');
+        var abrirQ = i.quadro_id && window.Quadro ? el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Abrir o quadro' }) : null;
+        if (abrirQ) { abrirQ.style.padding = '6px 12px'; abrirQ.style.fontSize = '13px'; abrirQ.addEventListener('click', function () { window.Quadro.abrir({ id: i.quadro_id }); }); }
         var caixa = el('div', { class: 'portal-item' });
         apagar.addEventListener('click', function () {
           if (!confirm('Apagar este encontro?')) return;
@@ -718,12 +730,12 @@
           });
           linhas.appendChild(el('label', { style: 'display:flex;gap:10px;align-items:flex-start;margin:6px 0;cursor:pointer' }, [cb, texto]));
         });
-        caixa.appendChild(el('div', { class: 'portal-item-linha' }, [el('div', { style: 'flex:1' }, [el('span', { class: 'portal-item-titulo', style: 'color:var(--ocre,#B5852F)', text: P.dataBR(String(i.data).slice(0, 10)) }), linhas]), el('div', { class: 'portal-acoes' }, [editar, apagar])]));
+        caixa.appendChild(el('div', { class: 'portal-item-linha' }, [el('div', { style: 'flex:1' }, [el('span', { class: 'portal-item-titulo', style: 'color:var(--ocre,#B5852F)', text: P.dataBR(String(i.data).slice(0, 10)) }), linhas]), el('div', { class: 'portal-acoes' }, abrirQ ? [abrirQ, editar, apagar] : [editar, apagar])]));
         return caixa;
       }
       function carregar() {
         lista.textContent = '';
-        P.client.from('aluno_roteiro').select('id,data,itens').eq('aluno_id', aluno.id).order('data', { ascending: true }).then(function (r) {
+        P.client.from('aluno_roteiro').select('id,data,itens,quadro_id').eq('aluno_id', aluno.id).order('data', { ascending: true }).then(function (r) {
           if (r.error) { lista.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar.' })); return; }
           encontros = r.data;
           if (!encontros.length) { lista.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhum encontro ainda.' })); return; }

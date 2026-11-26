@@ -11,3 +11,4 @@ drop policy if exists "admin roteiro" on public.aluno_roteiro;
 create policy "admin roteiro" on public.aluno_roteiro for all to authenticated using (public.sou_admin()) with check (public.sou_admin());
 grant select, insert, update, delete on public.aluno_roteiro to authenticated;
 grant all on public.aluno_roteiro to service_role;
+alter table public.aluno_roteiro add column if not exists quadro_id text;
