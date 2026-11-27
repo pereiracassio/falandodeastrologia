@@ -82,12 +82,12 @@ async function criarPasta(token, nome, paiId) {
   if (!resp.ok) throw new Error('Drive não criou a pasta (' + resp.status + ')');
   return (await resp.json()).id;
 }
-/* dá acesso de leitura ao e-mail (sem aviso do Drive) */
+/* dá acesso de editor ao e-mail (sem aviso do Drive) */
 async function compartilhar(token, arquivoId, email) {
   const resp = await fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(arquivoId) + '/permissions?sendNotificationEmail=false&supportsAllDrives=true', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'user', role: 'reader', emailAddress: email })
+    body: JSON.stringify({ type: 'user', role: 'writer', emailAddress: email })
   });
   return resp.ok;
 }
