@@ -68,6 +68,15 @@ Deno.serve(async (req) => {
   const json = (corpo: unknown, status: number) => new Response(JSON.stringify(corpo), { status, headers: { ...cors, "Content-Type": "application/json" } });
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   try {
+    // ?acao=conferir : diz só se os dois segredos estão certos (nada de dado, ninguém precisa de login para isso)
+    if (new URL(req.url).searchParams.get("acao") === "conferir") {
+      if (!CLIENT_ID || !CLIENT_SECRET) return json({ ok: false, erro: "faltam os segredos GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET" }, 200);
+      const l = await supa("/rest/v1/drive_conexao?id=eq.1&select=refresh_token_cifrado");
+      if (!l || !l[0]) return json({ ok: false, erro: "o Drive está desconectado" }, 200);
+      try { await decifrar(l[0].refresh_token_cifrado); } catch (_) { return json({ ok: false, erro: "o GOOGLE_CLIENT_SECRET não é o da conexão do Drive: tente outro" }, 200); }
+      try { await tokenDoDrive(); } catch (e) { return json({ ok: false, erro: "o segredo certo, mas o GOOGLE_CLIENT_ID não combina com ele: " + (e as Error).message }, 200); }
+      return json({ ok: true, mensagem: "os dois segredos estão certos" }, 200);
+    }
     const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
     const id = new URL(req.url).searchParams.get("id") || "";
     if (!jwt) return json({ erro: "sem login" }, 401);
