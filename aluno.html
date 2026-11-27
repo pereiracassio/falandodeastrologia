@@ -456,8 +456,7 @@
           var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
           var aFazer = pend; /* o passo feito não sai do lugar: só fica cinza com risco */
           var grupos = [], porDia = {};
-          var atrasados = aFazer.filter(function (x) { return dataDe(x) && dataDe(x) < hoje; }); if (atrasados.length) grupos.push(['Atrasados', atrasados]);
-          aFazer.filter(function (x) { return dataDe(x) && dataDe(x) >= hoje; }).forEach(function (x) { if (!porDia[dataDe(x)]) { porDia[dataDe(x)] = []; grupos.push([rotuloDiaT(dataDe(x)), porDia[dataDe(x)]]); } porDia[dataDe(x)].push(x); });
+          aFazer.filter(function (x) { return dataDe(x); }).forEach(function (x) { if (!porDia[dataDe(x)]) { porDia[dataDe(x)] = []; grupos.push([rotuloDiaT(dataDe(x)), porDia[dataDe(x)]]); } porDia[dataDe(x)].push(x); });
           var semData = aFazer.filter(function (x) { return !dataDe(x); }); if (semData.length) grupos.push(['Sem data', semData]);
           grupos.forEach(function (g) {
             if (!g[1].length) return;
