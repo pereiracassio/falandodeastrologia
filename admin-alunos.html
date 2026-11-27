@@ -393,7 +393,7 @@
         cb.checked = (ehMaterial || ehAtividade) ? minhaParte(x) : (!!x.feito || !!x.link); cb.disabled = !!leitura || ehMaterial || ehAtividade || !!x.link; /* material: o aluno marca ("li"); atividade: anda sozinha com o envio e a correção */
         cb.addEventListener('change', function () {
           x.feito = cb.checked; x.feito_em = x.feito ? new Date().toISOString() : null;
-          if (barrasDe[x.trilha_id]) barrasDe[x.trilha_id](); if (cartoes[x.trilha_id]) cartoes[x.trilha_id].organizar(); /* marcou: o passo vai para Feitos (desmarcou: volta), sem refazer nada */
+          if (barrasDe[x.trilha_id]) barrasDe[x.trilha_id](); if (linhaEl && linhaEl.__pintar) linhaEl.__pintar(); /* marcou: o passo fica no mesmo lugar, só ganha o risco */
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
         var tituloSp = el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (minhaParte(x) ? 'text-decoration:line-through;opacity:.6' : '') });
@@ -412,9 +412,9 @@
         if (!leitura) {
           /* os botões nunca encolhem nem quebram: a linha rola para o lado quando não cabem todos */
           var acoes = el('div', { class: 'acoes-passo', style: 'display:flex;gap:18px;align-items:center;margin-top:6px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;padding-bottom:6px;scrollbar-width:none' });
-          /* passo com data se ordena sozinho pela data; as setas só valem entre passos sem data. Trocar muda a ordem e MOVE as linhas, sem refazer nada */
+          /* a ordem do caminho é a que você arruma com as setas, com ou sem data. Trocar muda a ordem e MOVE as linhas, sem refazer nada */
           var troca = function (dir) {
-            var g = linhaEl.__grupo || [], k = g.indexOf(x), com = g[k + dir]; if (!com || x.data || com.data) return;
+            var g = linhaEl.__grupo || [], k = g.indexOf(x), com = g[k + dir]; if (!com) return;
             var oa = x.ordem; x.ordem = com.ordem; com.ordem = oa;
             Promise.all([P.client.from('aluno_trilha_passos').update({ ordem: x.ordem }).eq('id', x.id), P.client.from('aluno_trilha_passos').update({ ordem: com.ordem }).eq('id', com.id)]).then(function (rs) { if (rs.some(function (r) { return r.error; })) alert('Não foi possível trocar de lugar.'); });
             if (cartoes[x.trilha_id]) cartoes[x.trilha_id].organizar();
@@ -423,7 +423,7 @@
           acoes.appendChild(cima); acoes.appendChild(baixo);
           linhaPassoSetas = function () {
             var g = linhaEl.__grupo || [], k = g.indexOf(x), ant = g[k - 1], pro = g[k + 1];
-            var d1 = !!x.data || k <= 0 || !ant || !!ant.data, d2 = !!x.data || k < 0 || k === g.length - 1 || !pro || !!pro.data;
+            var d1 = k <= 0 || !ant, d2 = k < 0 || k === g.length - 1 || !pro;
             cima.disabled = d1; cima.style.opacity = d1 ? '.2' : '.6'; baixo.disabled = d2; baixo.style.opacity = d2 ? '.2' : '.6';
           };
           var areaLigar = el('div');
@@ -526,34 +526,17 @@
         desenharBarras(); barrasDe[t.id] = desenharBarras;
         c.appendChild(P.linhaDatas([campoDataTrilha('Início', t, 'data_inicio', true), campoDataTrilha('Data final prevista (opcional)', t, 'data_fim')]));
         var corpo = el('div', {}); c.appendChild(corpo);
-        /* igual ao To do: Atrasados, um bloco por DIA, Sem data e Feitos. As linhas dos passos são as MESMAS de sempre: aqui elas só mudam de lugar */
+        /* a trilha é um CAMINHO: os passos ficam sempre na mesma ordem e no mesmo lugar. O que já foi feito só fica cinza com risco em cima. As linhas são as MESMAS de sempre */
         function organizar() {
-          var m = meus(t), feitos = m.filter(minhaParte).sort(function (a, b) { var da = dataDe(a), db = dataDe(b); if (da && db) return da < db ? -1 : da > db ? 1 : (a.ordem || 0) - (b.ordem || 0); if (da) return -1; if (db) return 1; return (a.ordem || 0) - (b.ordem || 0); }), pend = m.filter(function (x) { return !minhaParte(x); }).sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
-          if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
-          if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
-        });
-        var soma = m.reduce(function (a, x) { return a + pontos(x); }, 0);
-        var pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
-        var hojeT = new Date().toLocaleDateString('sv-SE'), amanhaT = (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString('sv-SE'); })();
-        var MESES_T = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], SEM_T = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-        var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hojeT ? 'Hoje' : iso === amanhaT ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
-        var gruposT = [], porDiaT = {}, atrasT = pend.filter(function (x) { return x.data && x.data < hojeT; }), semT = pend.filter(function (x) { return !x.data; });
-        if (atrasT.length) gruposT.push(['Atrasados', atrasT]);
-        pend.filter(function (x) { return x.data && x.data >= hojeT; }).forEach(function (x) { if (!porDiaT[x.data]) { porDiaT[x.data] = []; gruposT.push([rotuloDiaT(x.data), porDiaT[x.data]]); } porDiaT[x.data].push(x); });
-        if (semT.length) gruposT.push(['Sem data', semT]);
-        if (feitos.length) gruposT.push(['Feitos', feitos]);
-        corpo.textContent = ''; /* só as faixas vazias; as linhas dos passos são as mesmas e voltam já em seguida, cada uma no seu grupo */
-        var linhasOrg = [];
-        gruposT.forEach(function (g) {
-          corpo.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' }));
+          var m = meus(t).slice().sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); });
+          corpo.textContent = ''; /* só a faixa vazia; as linhas dos passos são as mesmas e voltam já em seguida, cada uma no seu lugar */
           var cx = el('div', {});
-          g[1].forEach(function (x, k) {
-            var l = linhasDe[x.id] || linhaPasso(x, false); l.__grupo = g[1];
-            l.style.borderTop = k === 0 ? '0' : '1px solid var(--azul-egipcio-claro,#1F5FA3)'; cx.appendChild(l); linhasOrg.push(l);
+          m.forEach(function (x, k) {
+            var l = linhasDe[x.id] || linhaPasso(x, false); l.__grupo = m;
+            l.style.borderTop = k === 0 ? '0' : '1px solid var(--azul-egipcio-claro,#1F5FA3)'; cx.appendChild(l);
           });
           corpo.appendChild(cx);
-        });
-        linhasOrg.forEach(function (l) { if (l.__pintar) l.__pintar(); if (l.__ajustaSetas) l.__ajustaSetas(); });
+          m.forEach(function (x) { var l = linhasDe[x.id]; if (l && l.__pintar) l.__pintar(); if (l && l.__ajustaSetas) l.__ajustaSetas(); });
         }
         var campo = el('input', { type: 'text', placeholder: 'Novo passo', style: 'flex:1;min-width:0' });
         var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
