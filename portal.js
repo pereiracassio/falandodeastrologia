@@ -1214,17 +1214,23 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
      Enquanto a pessoa mexe numa data (até 8 s depois de tocar nela, ou 2,5 s depois da última mudança), qualquer rolagem que NÃO veio de um gesto dela (roda, dedo, teclado) volta para
      onde a tela estava. Rolagem de verdade da pessoa nunca é contrariada. */
   (function datasNaoRolam() {
-    var ativo = null, gestoEm = 0;
+    var ativo = null, gestoEm = 0, relogio = null, h = document.documentElement;
     var ehData = function (t) { return !!t && t.tagName === 'INPUT' && t.type === 'date'; };
+    /* enquanto a data está sendo mexida a rolagem do navegador é instantânea (nada de deslizar para lá e voltar) e qualquer rolagem que não veio de um gesto volta na hora */
+    var liberar = function () { if (!ativo) return; h.style.scrollBehavior = ativo.sb; ativo = null; clearInterval(relogio); relogio = null; };
+    var armar = function (renovaY) {
+      if (!ativo) { ativo = { y: window.scrollY, ate: Date.now() + 8000, sb: h.style.scrollBehavior }; h.style.scrollBehavior = 'auto'; relogio = setInterval(function () { if (ativo && Date.now() > ativo.ate) liberar(); }, 400); }
+      else { ativo.ate = Date.now() + 8000; if (renovaY) ativo.y = window.scrollY; }
+    };
     ['wheel', 'touchmove', 'keydown'].forEach(function (n) { document.addEventListener(n, function () { gestoEm = Date.now(); }, { capture: true, passive: true }); });
-    ['pointerdown', 'touchstart'].forEach(function (n) { document.addEventListener(n, function (ev) { if (ehData(ev.target)) ativo = { y: window.scrollY, ate: Date.now() + 8000 }; }, true); });
-    document.addEventListener('focusin', function (ev) { if (ehData(ev.target) && !ativo) ativo = { y: window.scrollY, ate: Date.now() + 8000 }; }, true);
+    ['pointerdown', 'touchstart'].forEach(function (n) { document.addEventListener(n, function (ev) { if (ehData(ev.target)) armar(true); }, true); });
+    document.addEventListener('focusin', function (ev) { if (ehData(ev.target)) armar(false); }, true);
     ['change', 'input'].forEach(function (n) { document.addEventListener(n, function (ev) { if (ativo && ehData(ev.target)) ativo.ate = Date.now() + 2500; }, true); });
     window.addEventListener('scroll', function () {
       if (!ativo) return;
-      if (Date.now() > ativo.ate) { ativo = null; return; }
+      if (Date.now() > ativo.ate) { liberar(); return; }
       if (Date.now() - gestoEm < 250) { ativo.y = window.scrollY; return; } /* a pessoa está rolando: vale o que ela fez */
-      if (Math.abs(window.scrollY - ativo.y) > 30) { var h = document.documentElement, ant = h.style.scrollBehavior; h.style.scrollBehavior = 'auto'; window.scrollTo(0, ativo.y); h.style.scrollBehavior = ant; }
+      if (Math.abs(window.scrollY - ativo.y) > 30) window.scrollTo(0, ativo.y);
     }, { passive: true });
   })();
   function todasDatas(raiz) { [].forEach.call((raiz.querySelectorAll ? raiz.querySelectorAll('input[type=date]:not(.data-caderno-input)') : []), dataCaderno); }
