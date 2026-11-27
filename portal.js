@@ -88,7 +88,7 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     document.addEventListener('visibilitychange', function () { soltar(); if (!document.hidden) setTimeout(soltar, 50); });
     window.addEventListener('pagehide', soltar);
     window.addEventListener('pageshow', function () { setTimeout(soltar, 50); });
-    window.addEventListener('blur', soltar);
+    /* NÃO soltar no blur da janela: o calendário do navegador é uma janela à parte, e ao levar o mouse até ele a página "perde o foco" e o calendário fechava na hora. Sair do app/aba já é coberto por visibilitychange e pagehide. */
   })();
 
   /* cria um elemento: el('p', {class:'x', text:'oi'}, [filhos]) — sempre textContent, nunca innerHTML */
