@@ -186,7 +186,7 @@
 
   /* a apostila é uma folha de sulfite (A4 em pé) com a própria capa do PDF; abre no leitor do site (caneta, marca-texto) e tem um "Baixar" discreto.
      O PDF vem do Drive do administrador por uma função do Supabase (`apostila`), que só entrega a aluno matriculado com o módulo liberado. */
-  var API_APOSTILA = 'https://wqkgsotfwkzjwaowenrb.supabase.co/functions/v1/apostila';
+  var API_APOSTILA = 'https://wqkgsotfwkzjwaowenrb.supabase.co/functions/v1/rapid-function';
   function folhaApostila(mo) {
     var nome = mo.apostila_nome || ('Apostila ' + mo.titulo);
     var url = C.storage.from('site').getPublicUrl('curso-apostila-' + mo.apostila_drive_id + '.jpg').data.publicUrl;
