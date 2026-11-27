@@ -68,7 +68,7 @@
   <script src="atividades.js?v=49"></script>
   <script src="capa-aula.js?v=3"></script>
   <script src="certificado.js?v=2"></script>
-  <script src="curso.js?v=21"></script>
+  <script src="curso.js?v=22"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -86,6 +86,48 @@
     function campo(rotulo, controle) { return [el('label', { text: rotulo }), controle]; }
     function texto(t) { var b = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: t }); if (t.length === 1) b.style.fontSize = '20px'; return b; }
     function msgErro(caixa, e) { P.mensagem(caixa, P.traduzErro((e && e.message) || ''), 'erro'); }
+
+    /* ---------- Drive: o aluno só vê o vídeo e a apostila se o arquivo estiver compartilhado com o e-mail dele (só ver, sem aviso por e-mail) ---------- */
+    function arquivosDoCurso(D) {
+      var ids = [];
+      D.mods.forEach(function (m) { if (m.apostila_drive_id) ids.push(m.apostila_drive_id); });
+      D.aulas.forEach(function (a) { var v = a.video_codigo && window.curso.idDoVideo('drive', a.video_codigo); if (v) ids.push(v); });
+      return ids.filter(function (x, i) { return ids.indexOf(x) === i; });
+    }
+    function compartilharArquivo(fileId, email) { /* devolve null (deu certo) ou o texto do erro */
+      return P.tokenGoogle().then(function (token) {
+        return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(fileId) + '/permissions?sendNotificationEmail=false&supportsAllDrives=true', {
+          method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'reader', type: 'user', emailAddress: email })
+        });
+      }).then(function (r) {
+        if (r.ok) return null;
+        return r.json().then(function (j) { return (j.error && j.error.message) || ('erro ' + r.status); }, function () { return 'erro ' + r.status; });
+      }, function (e) { return (e && e.message) || 'sem conexão'; });
+    }
+    function compartilharLote(pares, aoAndar) { /* pares: [[arquivo, e-mail]]; 3 de cada vez; devolve { ok, erros: [texto] } */
+      var fila = pares.slice(), ok = 0, erros = [], feitos = 0;
+      function um() {
+        var p = fila.shift(); if (!p) return Promise.resolve();
+        return compartilharArquivo(p[0], p[1]).then(function (e) { if (e) erros.push(p[1] + ': ' + e); else ok++; feitos++; if (aoAndar) aoAndar(feitos, pares.length); }).then(um);
+      }
+      return Promise.all([um(), um(), um()]).then(function () { return { ok: ok, erros: erros }; });
+    }
+    function textoDoCompartilhamento(r, total) {
+      if (!r.erros.length) return 'Compartilhado no Drive (' + r.ok + ' de ' + total + ').';
+      var nao = r.erros.some(function (x) { return /not.*google|invalid.*sharing|invalid.*value|cannot.*share/i.test(x); });
+      return 'Compartilhei ' + r.ok + ' de ' + total + '. ' + (nao ? 'Esse e-mail não parece ser de uma conta Google, e o Drive só compartilha com conta Google.' : 'Erro: ' + r.erros[0]);
+    }
+    /* um arquivo novo (vídeo ou apostila) entra no curso: compartilha com quem já está matriculado */
+    function compartilharComMatriculados(moduloId, fileId) {
+      return C.from('curso_modulos').select('curso_id').eq('id', moduloId).maybeSingle().then(function (rm) {
+        if (rm.error || !rm.data) return null;
+        return C.from('curso_matriculas').select('email').eq('curso_id', rm.data.curso_id).then(function (rs) {
+          var emails = (rs.data || []).map(function (x) { return x.email; });
+          if (!emails.length) return null;
+          return compartilharLote(emails.map(function (e) { return [fileId, e]; })).then(function (r) { return textoDoCompartilhamento(r, emails.length); });
+        });
+      });
+    }
     function voltarAcima(fn) { app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(fn)])); P.voltarNoFim(app, fn); }
     function falhou(r, recarregar) { if (r && r.error) { alert('Não foi possível salvar (' + P.traduzErro(r.error.message) + ').'); if (recarregar) recarregar(); return true; } return false; }
     function grupo(t) { return el('p', { class: 'proj-grupo', text: t }); }
@@ -502,12 +544,26 @@
             C.from('curso_matriculas').insert({ curso_id: id, email: e, nome: ra.data ? ra.data.nome : null, modulo_liberado: 1 }).select('id,email,nome,modulo_liberado').single().then(function (r) {
               if (r.error) { msgErro(msgA, r.error); return; }
               mats.push(r.data); email.value = ''; aoMudar();
+              var arqs = arquivosDoCurso(D);
+              if (!arqs.length) return;
+              P.mensagem(msgA, 'Compartilhando os vídeos e apostilas com ' + r.data.email + '...', 'ok');
+              compartilharLote(arqs.map(function (f) { return [f, r.data.email]; })).then(function (rr) { P.mensagem(msgA, textoDoCompartilhamento(rr, arqs.length), rr.erros.length ? 'erro' : 'ok'); });
             });
           });
         });
         caixaA.appendChild(msgA);
         caixaA.appendChild(el('div', { style: 'margin-top:12px' }, campo('Adicionar aluno', email)));
-        caixaA.appendChild(el('div', { class: 'portal-acoes' }, [add]));
+        var compTodos = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Compartilhar vídeos e apostilas com todos os alunos' });
+        compTodos.addEventListener('click', function () {
+          var arqs = arquivosDoCurso(D), pares = [];
+          mats.forEach(function (a) { arqs.forEach(function (f) { pares.push([f, a.email]); }); });
+          if (!pares.length) { P.mensagem(msgA, 'Não há aluno ou arquivo para compartilhar.', 'erro'); return; }
+          compTodos.disabled = true;
+          compartilharLote(pares, function (n, t) { P.mensagem(msgA, 'Compartilhando... ' + n + ' de ' + t, 'ok'); }).then(function (rr) {
+            P.mensagem(msgA, textoDoCompartilhamento(rr, pares.length), rr.erros.length ? 'erro' : 'ok'); compTodos.disabled = false;
+          });
+        });
+        caixaA.appendChild(el('div', { class: 'portal-acoes' }, [add, compTodos]));
         corpo.appendChild(caixaA);
 
         var reabrir = minilink('Reabrir construção', function () {
@@ -827,6 +883,7 @@
                 m.apostila_drive_id = apId; m.apostila_nome = apNome; m.apostila_ok = true; m.data_apostila = dApostila.value || m.data_apostila; aoMudar();
                 P.mensagem(msgAp, 'Lendo o índice...', 'ok');
                 garantirCapaApostila(fid, true).catch(function () { });
+                compartilharComMatriculados(id, fid).then(function (t) { if (t) P.mensagem(msgAp, t, t.indexOf('Compartilhei') === 0 ? 'erro' : 'ok'); });
                 puxarCapitulos(id, fid, aulas()).then(function (n) { if (n === -1) P.mensagem(msgAp, 'Não achei o índice dessa apostila.', 'erro'); else atualizarAulas(); }, function (e) { P.mensagem(msgAp, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); });
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false, 'base_curso');
@@ -963,6 +1020,8 @@
             .then(function (x) {
               if (x.error) { msgErro(msg, x.error); return; }
               a.video_codigo = cod.value.trim() || null; atualizaUpload(); /* com vídeo, o Upload se marca sozinho (e ganha a data de hoje) */
+              var vid = a.video_codigo && window.curso.idDoVideo('drive', a.video_codigo);
+              if (vid) compartilharComMatriculados(a.modulo_id, vid).then(function (t) { if (t) P.mensagem(msg, t, t.indexOf('Compartilhei') === 0 ? 'erro' : 'ok'); });
               if (!aoVivoA) { P.mensagem(msg, 'Salvo.', 'ok'); return; }
               sincronizarAula(id, tit.value.trim(), dataV.value, horaV.value, fimV.value || (horaV.value ? somaMin(horaV.value, 60) : ''), meet.value.trim()).then(function (lk) {
                 if (lk && lk !== meet.value.trim()) { meet.value = lk; C.from('curso_aulas').update({ link_meet: lk }).eq('id', id).then(function () { }); }

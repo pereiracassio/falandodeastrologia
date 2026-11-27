@@ -1,4 +1,4 @@
-/* PDF do Drive do administrador para o aluno e o cliente lerem no leitor do site (itens do aluno, entregas do cliente e apostila do curso liberada).
+/* PDF do Drive do administrador para o aluno e o cliente lerem no leitor do site.
 
    O aluno/cliente não tem acesso ao Drive do administrador pelo site, então o servidor confere o login (token do Supabase), confere que o arquivo
    está numa lista que ELE enxerga (itens do aluno ou entregas do cliente; a regra de acesso do Supabase faz o filtro) e entrega o PDF usando a
@@ -27,16 +27,7 @@ async function ehDele(jwt, id) {
     doSupabase(jwt, '/rest/v1/itens?select=id&limit=1&link=like.' + encodeURIComponent('*' + id + '*')),
     doSupabase(jwt, '/rest/v1/entregas?select=id&limit=1&pdf_link=like.' + encodeURIComponent('*' + id + '*'))
   ]);
-  if (a.length > 0 || b.length > 0) return true;
-  return ehApostilaLiberada(jwt, id);
-}
-/* apostila de um módulo do curso: só de quem está matriculado e já tem o módulo liberado */
-async function ehApostilaLiberada(jwt, id) {
-  const [mods, mats] = await Promise.all([
-    doSupabase(jwt, '/rest/v1/curso_modulos?select=curso_id,ordem&limit=5&apostila_drive_id=eq.' + encodeURIComponent(id)),
-    doSupabase(jwt, '/rest/v1/curso_matriculas?select=curso_id,modulo_liberado&limit=5')
-  ]);
-  return mods.some((m) => mats.some((t) => t.curso_id === m.curso_id && m.ordem <= t.modulo_liberado));
+  return a.length > 0 || b.length > 0;
 }
 const ehPdfCache = new Map();
 async function ehPdf(token, id) {

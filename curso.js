@@ -184,12 +184,25 @@
     if (ult && (ult.aprovado || horasParaRefazer(ult) > 0)) resultado(ult); else formulario();
   }
 
-  var API_PDF = 'https://falandodeastrologia.vercel.app/api/pdf';
-  /* a apostila é uma folha de sulfite (A4 em pé) com a própria capa do PDF; abre no leitor e tem um "baixar" discreto */
-  function folhaApostila(mo) {
+  /* a apostila é uma folha de sulfite (A4 em pé) com a própria capa do PDF. Abre aqui mesmo, no visualizador do Drive (o arquivo está compartilhado só com os alunos matriculados),
+     e tem um "Baixar" discreto, que também vem do Drive. Nada passa por servidor nosso. */
+  function telaApostila(app, mo, nome, voltar) {
+    app.textContent = '';
+    app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:0 0 10px' }, [P.botaoVoltar(voltar)]));
+    app.appendChild(el('h2', { class: 'curso-titulo', text: nome }));
+    var f = el('iframe', { src: 'https://drive.google.com/file/d/' + encodeURIComponent(mo.apostila_drive_id) + '/preview', title: nome, allowfullscreen: '' });
+    f.style.cssText = 'display:block;width:100%;height:80vh;min-height:480px;border:0;background:#fff;margin:0 0 14px';
+    app.appendChild(f);
+    var baixar = P.botaoApagar('Baixar');
+    baixar.addEventListener('click', function () { window.open('https://drive.google.com/uc?export=download&id=' + encodeURIComponent(mo.apostila_drive_id), '_blank', 'noopener'); });
+    app.appendChild(el('div', { style: 'text-align:center;margin:0 0 14px' }, [baixar]));
+    app.appendChild(el('div', { class: 'portal-acoes', style: 'margin:24px 0 8px' }, [P.botaoVoltar(voltar)]));
+    window.scrollTo(0, 0);
+  }
+  function folhaApostila(mo, app, voltar) {
     var nome = mo.apostila_nome || ('Apostila ' + mo.titulo);
     var url = C.storage.from('site').getPublicUrl('curso-apostila-' + mo.apostila_drive_id + '.jpg').data.publicUrl;
-    var abrir = function () { window.Leitor.abrirDoServidor({ nome: nome, id: mo.apostila_drive_id, voltar: function () {} }); };
+    var abrir = function () { telaApostila(app, mo, nome, voltar); };
     var folha = el('div', { role: 'button', tabindex: '0', 'aria-label': 'Abrir ' + nome, style: 'aspect-ratio:210/297;background:#fff;border:1px solid #2B1D12;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center' });
     var img = el('img', { src: url, alt: nome, style: 'width:100%;height:100%;object-fit:cover;display:block' });
     img.addEventListener('error', function () { folha.textContent = ''; folha.appendChild(el('span', { class: 'proj-titulo', style: 'padding:14px;color:#1A1410', text: nome })); });
@@ -197,15 +210,7 @@
     folha.addEventListener('click', abrir);
     folha.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
     var baixar = P.botaoApagar('Baixar');
-    baixar.addEventListener('click', function () {
-      baixar.disabled = true;
-      C.auth.getSession().then(function (r) {
-        var sessao = r.data && r.data.session; if (!sessao) throw new Error('sem login');
-        return fetch(API_PDF + '?id=' + encodeURIComponent(mo.apostila_drive_id), { headers: { Authorization: 'Bearer ' + sessao.access_token } });
-      }).then(function (r) { if (!r.ok) throw new Error('servidor'); return r.blob(); }).then(function (b) {
-        var a = el('a', { href: URL.createObjectURL(b), download: nome + '.pdf' }); document.body.appendChild(a); a.click(); a.remove();
-      }).catch(function () { alert('Não consegui baixar agora.'); }).then(function () { baixar.disabled = false; });
-    });
+    baixar.addEventListener('click', function () { window.open('https://drive.google.com/uc?export=download&id=' + encodeURIComponent(mo.apostila_drive_id), '_blank', 'noopener'); });
     return el('div', { style: 'width:190px;flex:none' }, [folha, el('div', { style: 'text-align:center;margin-top:6px' }, [baixar])]);
   }
 
@@ -262,7 +267,7 @@
         if (!aberto) {
           grade.appendChild(cartaoCapa({ romano: romano, nomeModulo: mo.titulo, titulo: '' }, null, '', true));
         } else {
-          if (mo.apostila_drive_id) linha.appendChild(folhaApostila(mo));
+          if (mo.apostila_drive_id) linha.appendChild(folhaApostila(mo, app, voltarParaAba));
           aulas.filter(function (a) { return a.modulo_id === mo.id; }).forEach(function (a) {
             var vivo = a.tipo === 'ao_vivo';
             var num = vivo ? 'aula ao vivo ' + (++vivoNoCurso) : ++gravadasNoModulo;
