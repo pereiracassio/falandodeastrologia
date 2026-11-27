@@ -421,7 +421,7 @@
         if (!trilhas.length) raiz.appendChild(el('p', { class: 'portal-vazio', text: 'Nenhuma trilha ainda.' }));
         ativas.forEach(function (t) {
           var m = meus(t), soma = m.reduce(function (a, x) { return a + pontos(x); }, 0), pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
-          var pend = m.filter(function (x) { return pontos(x) < 1; }).sort(function (a, b) {
+          var pend = m.slice().sort(function (a, b) {
             if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
             if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
           }), feitos = m.filter(function (x) { return pontos(x) >= 1; });
@@ -441,16 +441,15 @@
           c.addEventListener('click', alternarT);
           c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); alternarT(); } });
           pintarT();
-          /* igual ao To do dele: Atrasados, depois um bloco por DIA (Hoje, 5 de novembro...), depois Sem data e Feitos */
+          /* igual ao To do dele: Atrasados, depois um bloco por DIA (Hoje, 5 de novembro...) e Sem data */
           var hoje = new Date().toLocaleDateString('sv-SE'), amanha = (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString('sv-SE'); })();
           var MESES_T = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], SEM_T = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
           var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
-          var aFazer = pend.filter(function (x) { return !parteFeita(x); }), cumpridos = m.filter(parteFeita).sort(function (a, b) { var da = dataDe(a), db = dataDe(b); if (da && db) return da < db ? -1 : da > db ? 1 : (a.ordem || 0) - (b.ordem || 0); if (da) return -1; if (db) return 1; return (a.ordem || 0) - (b.ordem || 0); });
+          var aFazer = pend; /* o passo feito não sai do lugar: só fica cinza com risco */
           var grupos = [], porDia = {};
           var atrasados = aFazer.filter(function (x) { return x.data && x.data < hoje; }); if (atrasados.length) grupos.push(['Atrasados', atrasados]);
           aFazer.filter(function (x) { return x.data && x.data >= hoje; }).forEach(function (x) { if (!porDia[x.data]) { porDia[x.data] = []; grupos.push([rotuloDiaT(x.data), porDia[x.data]]); } porDia[x.data].push(x); });
           var semData = aFazer.filter(function (x) { return !x.data; }); if (semData.length) grupos.push(['Sem data', semData]);
-          if (cumpridos.length) grupos.push(['Feitos', cumpridos]);
           grupos.forEach(function (g) {
             if (!g[1].length) return;
             corpo.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' }));
