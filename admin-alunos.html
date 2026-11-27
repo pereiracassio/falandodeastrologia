@@ -403,7 +403,7 @@
           if (barrasDe[x.trilha_id]) barrasDe[x.trilha_id](); if (linhaEl && linhaEl.__pintar) linhaEl.__pintar(); /* marcou: o passo fica no mesmo lugar, só ganha o risco */
           P.client.from('aluno_trilha_passos').update({ feito: x.feito, feito_em: x.feito ? new Date().toISOString() : null }).eq('id', x.id).then(function (r) { if (r.error) { alert('Não foi possível salvar.'); carregar(); } });
         });
-        var tituloSp = el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (pontos(x) >= 1 ? 'text-decoration:line-through;opacity:.6' : '') });
+        var tituloSp = el('span', { class: 'proj-titulo', text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (minhaParte(x) ? 'text-decoration:line-through;opacity:.6' : '') });
         var texto = [tituloSp];
         if (ehMaterial) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: x.lido_em ? 'Material · o aluno já leu' : x.item_id ? 'Material · ' + tituloDoItem(x.item_id) + ' · disponível para o aluno' : 'Material · em preparação' }));
         if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
@@ -504,7 +504,7 @@
           acoes.appendChild(ap); texto.push(acoes); texto.push(areaLigar);
         }
         linhaEl = el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb]));
-        linhaEl.__pintar = function () { var parte = pontos(x) >= 1; tituloSp.style.textDecoration = parte ? 'line-through' : ''; tituloSp.style.opacity = parte ? '.6' : ''; }; /* o risco do título acompanha o que já foi feito */
+        linhaEl.__pintar = function () { var parte = minhaParte(x); tituloSp.style.textDecoration = parte ? 'line-through' : ''; tituloSp.style.opacity = parte ? '.6' : ''; }; /* o risco do título acompanha o que já foi feito */
         linhaEl.__refazer = refazer; linhaEl.__ajustaSetas = function () { if (linhaPassoSetas) linhaPassoSetas(); }; if (!leitura) linhasDe[x.id] = linhaEl;
         return linhaEl; /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
       }
