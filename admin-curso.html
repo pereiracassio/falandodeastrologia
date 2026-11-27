@@ -161,8 +161,8 @@
     function contModulo(D, m) {
       var et = etapasDe(D.curso), as = aulasDoModulo(D, m.id).filter(function (a) { return a.tipo !== 'ao_vivo'; }), ps = D.passos.filter(function (p) { return p.modulo_id === m.id; });
       var intro = m.ordem === 0; /* a Introdução é só a aula ao vivo: sem apostila nem aulas gravadas para construir */
-      var t = (intro ? 0 : 2) + as.length * et.length + ps.length;
-      var f = (!intro && m.apostila_ok ? 1 : 0) + (!intro && as.length ? 1 : 0) + as.reduce(function (n, a) { return n + et.filter(function (k) { return etapaFeita(a, k); }).length; }, 0) + ps.filter(function (p) { return p.feito; }).length;
+      var t = (intro ? 0 : 3) + as.length * et.length + ps.length; /* +1 = a avaliação do módulo, o último passo */
+      var f = (!intro && m.apostila_ok ? 1 : 0) + (!intro && as.length ? 1 : 0) + (!intro && D.nAv && D.nAv[m.id] > 0 ? 1 : 0) + as.reduce(function (n, a) { return n + et.filter(function (k) { return etapaFeita(a, k); }).length; }, 0) + ps.filter(function (p) { return p.feito; }).length;
       return { t: t, f: f };
     }
     function contCurso(D) {
@@ -180,9 +180,15 @@
         var erro = rs[0].error || rs[1].error || rs[2].error;
         if (erro) throw erro;
         if (!rs[0].data) throw { message: 'Curso não encontrado.' };
-        var mods = rs[1].data || [], D = { curso: rs[0].data, mods: mods, aulas: [], passos: rs[2].data || [] };
+        var mods = rs[1].data || [], D = { curso: rs[0].data, mods: mods, aulas: [], passos: rs[2].data || [], nAv: {} };
         if (!mods.length) return D;
-        return C.from('curso_aulas').select('*').in('modulo_id', mods.map(function (m) { return m.id; })).order('ordem').then(function (ra) { if (ra.error) throw ra.error; D.aulas = ra.data || []; return D; });
+        var ids = mods.map(function (m) { return m.id; });
+        return Promise.all([C.from('curso_aulas').select('*').in('modulo_id', ids).order('ordem'), C.from('curso_av_perguntas').select('modulo_id').in('modulo_id', ids)]).then(function (ra) {
+          if (ra[0].error) throw ra[0].error;
+          D.aulas = ra[0].data || [];
+          (ra[1].data || []).forEach(function (q) { D.nAv[q.modulo_id] = (D.nAv[q.modulo_id] || 0) + 1; });
+          return D;
+        });
       });
     }
 
@@ -689,13 +695,13 @@
     }
 
     /* ---------- avaliação do módulo: perguntas de marcar (mesmo formulário das atividades da mentoria); o gabarito é só do administrador ---------- */
-    function cartaoAvaliacao(moduloId) {
+    function cartaoAvaliacao(moduloId, aoContar) {
       var AT = window.atividades;
       var cartao = el('div', { class: 'portal-cartao' }, [el('h2', { text: 'Avaliação do módulo' })]);
       var lista = el('div'), msg = el('p', { class: 'portal-msg' });
       var vazio = el('p', { class: 'prod-vazio', text: 'Nenhuma pergunta ainda.' });
       var ordemMax = 0;
-      function renumerar() { [].forEach.call(lista.children, function (no, i) { no.querySelector('.av-num').textContent = (i + 1) + '. '; }); vazio.style.display = lista.children.length ? 'none' : ''; }
+      function renumerar() { [].forEach.call(lista.children, function (no, i) { no.querySelector('.av-num').textContent = (i + 1) + '. '; }); vazio.style.display = lista.children.length ? 'none' : ''; if (aoContar) aoContar(lista.children.length); }
       function linha(p, certa) {
         var no = el('div', { style: 'margin:0 0 10px' });
         var num = el('span', { class: 'av-num' }), tit = el('span', { class: 'portal-item-titulo', text: p.enunciado });
@@ -948,7 +954,7 @@
           C.from('curso_aulas').insert({ modulo_id: id, ordem: ordem, titulo: t }).select().single().then(function (r) { if (r.error) msgErro(msgN, r.error); else abrirAula(r.data.id); });
         });
         if (!intro) { caixaA.appendChild(msgN); caixaA.appendChild(el('div', { class: 'portal-acoes' }, [nova])); corpo.appendChild(caixaA); }
-        if (!intro) corpo.appendChild(cartaoAvaliacao(id));
+        if (!intro) corpo.appendChild(cartaoAvaliacao(id, function (n) { D.nAv[id] = n; aoMudar(); }));
         if (apId && !intro) garantirCapaApostila(apId, false).catch(function () { });
         if (apId && !intro && !aulas().some(function (x) { return x.tipo !== 'ao_vivo'; }) && window.__puxado !== id) { window.__puxado = id; puxarCapitulos(id, apId, aulas()).then(function (n) { if (n > 0) atualizarAulas(); else if (n === -1) P.mensagem(msgN, 'Não achei o índice dessa apostila.', 'erro'); }, function (e) { P.mensagem(msgN, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); }); }
 
