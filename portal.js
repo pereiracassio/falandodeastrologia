@@ -1723,8 +1723,15 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
     ['scrollTo', 'scrollBy'].forEach(function (n) { var o = window[n]; window[n] = function () { anota(n + '(' + Array.prototype.slice.call(arguments).map(function (a) { return typeof a === 'object' ? JSON.stringify(a) : a; }).join(',') + ') por ' + pilha()); return o.apply(this, arguments); }; });
     var si = Element.prototype.scrollIntoView; Element.prototype.scrollIntoView = function () { anota('scrollIntoView em ' + quem(this) + ' por ' + pilha()); return si.apply(this, arguments); };
     var fo = HTMLElement.prototype.focus; HTMLElement.prototype.focus = function () { anota('focus() em ' + quem(this) + ' por ' + pilha()); return fo.apply(this, arguments); };
-    var ultimoY = window.scrollY;
-    window.addEventListener('scroll', function () { var y = Math.round(window.scrollY); if (Math.abs(y - ultimoY) > 40) anota('ROLOU de ' + Math.round(ultimoY) + ' para ' + y); ultimoY = y; }, { passive: true });
+    var ultimoY = window.scrollY, ultimoGesto = 0, qualGesto = '';
+    ['wheel', 'touchstart', 'touchmove', 'keydown', 'pointermove', 'pointerdown'].forEach(function (n) { document.addEventListener(n, function (ev) { ultimoGesto = Date.now(); qualGesto = n + (ev.key ? ':' + ev.key : ''); }, { capture: true, passive: true }); });
+    ['hashchange', 'popstate'].forEach(function (n) { window.addEventListener(n, function () { anota('evento ' + n + ' → ' + location.hash); }); });
+    if (window.visualViewport) window.visualViewport.addEventListener('scroll', function () { anota('visualViewport rolou: topo ' + Math.round(window.visualViewport.pageTop) + ' esquerda ' + Math.round(window.visualViewport.pageLeft)); });
+    window.addEventListener('scroll', function () {
+      var y = Math.round(window.scrollY);
+      if (Math.abs(y - ultimoY) > 40) { var a = document.activeElement, r = a && a.getBoundingClientRect ? Math.round(a.getBoundingClientRect().top + window.scrollY) : -1; anota('ROLOU de ' + Math.round(ultimoY) + ' para ' + y + ' | último gesto seu: ' + (ultimoGesto ? (Date.now() - ultimoGesto) + 'ms atrás (' + qualGesto + ')' : 'nenhum') + ' | foco em ' + quem(a) + ' na altura ' + r + ' | altura da página ' + document.documentElement.scrollHeight); }
+      ultimoY = y;
+    }, { passive: true });
     ['pointerdown', 'pointerup', 'click', 'focusin', 'focusout', 'change', 'input', 'blur', 'resize'].forEach(function (n) { (n === 'blur' || n === 'resize' ? window : document).addEventListener(n, function (ev) { anota('evento ' + n + ' em ' + quem(ev.target)); }, true); });
     if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { anota('visualViewport mudou ' + Math.round(window.visualViewport.height)); });
     var app = document.getElementById('app');
