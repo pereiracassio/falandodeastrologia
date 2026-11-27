@@ -634,3 +634,6 @@ O iframe do Drive (`/preview`) mostra "Você precisa ter acesso" a quem não est
 - **Nunca** responder "o texto não diz isso" como se isso encerrasse a conversa, nem recusar uma leitura porque falta a frase exata na fonte. A fonte orienta; não limita.
 - Quando algo for hipótese ou leitura do Claude (e não regra das fontes), dizer isso numa frase curta, SEM barrar a leitura. Sugerir como testar na vida dele (outras datas) é bem-vindo.
 - **Vale TAMBÉM para as apostilas e os estudos, sem exceção.** O texto da fonte é o ponto de partida: na apostila a gente interpreta em cima dele e EXPLICA para o aluno, em linguagem clara, do jeito que o astrólogo faz na aula. Nunca despejar a informação crua como está no livro (o aluno não entende nada) nem se recusar a explicar porque "não está no texto".
+
+## NÚMEROS: SEMPRE em algarismo arábico, nunca romano (27/11/2026) — bronca dele, vale para TODA conversa
+Ele não lê algarismo romano e tem que "calcular na cabeça". **Sempre escrever 4, 7, 10 (nunca IV, VII, X).** Em referência de livro: "Livro 4, capítulo 7" (ou "4.7"), nunca "IV.7". Vale para capítulos, livros, séculos e tudo mais. Exceção: nome que já é assim (o módulo III da capa das aulas do curso é desenho aprovado dele, não mexer).
