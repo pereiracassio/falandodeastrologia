@@ -348,7 +348,7 @@
       Promise.all([
         P.client.from('aluno_trilhas').select('id,nome,ordem,data_fim,criado_em,data_inicio,concluida_em').eq('aluno_id', aluno.id).order('ordem').order('criado_em'),
         P.client.from('aluno_trilha_passos').select('id,trilha_id,titulo,feito,feito_em,ordem,tipo,item_id,atividade_id,lido_em,data,link').order('ordem').order('criado_em'),
-        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,corrigida_em,antiga,devolvida_em,rascunho,data_inicio').eq('aluno_id', aluno.id)
+        P.client.from('atividades').select('id,titulo,descricao,criado_em,enviada_em,data_atividade,data_limite,corrigida_em,antiga,devolvida_em,rascunho,data_inicio').eq('aluno_id', aluno.id)
       ]).then(function (rs) {
         raiz.textContent = '';
         if (rs[0].error || rs[1].error) { raiz.appendChild(el('p', { class: 'portal-msg erro', text: 'Não foi possível carregar a trilha agora.' })); return; }
@@ -364,7 +364,7 @@
         var ativs = ((rs[2] && rs[2].data) || []).filter(function (a) { return !a.rascunho && !(a.data_inicio && a.data_inicio > hojeT); });
         var meus = function (t) { return passos.filter(function (x) { return x.trilha_id === t.id; }); };
         var ativDe = function (x) { return x.atividade_id ? ativs.filter(function (a) { return a.id === x.atividade_id; })[0] : null; };
-        var dataDe = function (x) { if (x.data) return String(x.data).slice(0, 10); var i = x.item_id ? (itens || []).filter(function (y) { return y.id === x.item_id; })[0] : null; return i && i.data ? String(i.data).slice(0, 10) : ''; };
+        var dataDe = function (x) { if (x.data) return String(x.data).slice(0, 10); if (x.tipo === 'atividade') { var ad = ativDe(x); if (ad && ad.data_limite) return String(ad.data_limite).slice(0, 10); } var i = x.item_id ? (itens || []).filter(function (y) { return y.id === x.item_id; })[0] : null; return i && i.data ? String(i.data).slice(0, 10) : ''; };
         var itemDe = function (x) { return x.item_id ? (itens || []).filter(function (i) { return i.id === x.item_id; })[0] : null; };
         /* atividade devolvida para refazer: o passo conta como "do dia em que foi devolvida" */
         passos.forEach(function (x) { var a = x.tipo === 'atividade' ? ativDe(x) : null; if (a && a.devolvida_em && !a.enviada_em) { x.devolvidaEm = new Date(a.devolvida_em).toLocaleDateString('sv-SE'); x.data = x.devolvidaEm; } });
@@ -382,11 +382,20 @@
           return !!x.feito;
         };
         var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
+        /* o dia em que o passo foi feito: o que o próprio passo marcou, a leitura do material, a atividade enviada ou corrigida */
+        var feitaEm = function (x) {
+          if (!parteFeita(x)) return '';
+          var d = x.tipo === 'material' ? x.lido_em : x.tipo === 'gravacao' ? (itemDe(x) && itemDe(x).data) : x.tipo === 'atividade' ? (function () { var a = ativDe(x); return a && (a.corrigida_em || a.enviada_em); })() : x.feito_em;
+          return d ? String(d).slice(0, 10) : '';
+        };
         function linha(x) {
           var feito = pontos(x) >= 1, it = itemDe(x), at = ativDe(x);
           var texto = [el('span', { text: x.titulo, style: 'display:block;font-size:17px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;' + (feito ? 'text-decoration:line-through;opacity:.6' : '') })];
           var hojeISO = new Date().toLocaleDateString('sv-SE'), abrirLinha = null;
-          if (x.data && !parteFeita(x) && (x.data < hojeISO || x.devolvidaEm)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (x.data < hojeISO ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')), text: x.devolvidaEm ? 'devolvida para refazer em ' + P.dataBR(x.devolvidaEm) : (x.data < hojeISO ? 'atrasado · ' : '') + 'até ' + P.dataBR(x.data) }));
+          var prazoX = dataDe(x), feitaX = feitaEm(x), atrasadoX = !!prazoX && !parteFeita(x) && prazoX < hojeISO;
+          var partesData = []; if (prazoX) partesData.push((atrasadoX ? 'atrasado · ' : '') + 'até ' + P.dataBR(prazoX)); if (feitaX) partesData.push('feito em ' + P.dataBR(feitaX));
+          if (x.devolvidaEm && !parteFeita(x)) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + FdaTema.cor('azul-egipcio-escuro'), text: 'devolvida para refazer em ' + P.dataBR(x.devolvidaEm) }));
+          else if (partesData.length) texto.push(el('span', { class: 'portal-item-data', style: 'color:' + (atrasadoX ? FdaTema.cor('terracota') : FdaTema.cor('azul-egipcio-escuro')), text: partesData.join(' · ') }));
           if (x.tipo === 'material') {
             if (!it) texto.push(el('span', { class: 'portal-item-data rotulo-fixo', text: 'em preparação' }));
             else {
@@ -422,8 +431,8 @@
         ativas.forEach(function (t) {
           var m = meus(t), soma = m.reduce(function (a, x) { return a + pontos(x); }, 0), pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
           var pend = m.slice().sort(function (a, b) {
-            if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
-            if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
+            if (dataDe(a) && dataDe(b)) return dataDe(a) < dataDe(b) ? -1 : dataDe(a) > dataDe(b) ? 1 : (a.ordem || 0) - (b.ordem || 0);
+            if (dataDe(a)) return -1; if (dataDe(b)) return 1; return (a.ordem || 0) - (b.ordem || 0);
           }), feitos = m.filter(function (x) { return pontos(x) >= 1; });
           /* sanfona: nome e barras sempre à vista; ao tocar, abrem/fecham os passos (barra ocre do lado) */
           var cartao = el('div', { style: 'margin-bottom:22px;padding-bottom:20px;border-bottom:2px solid var(--azul-egipcio-claro,#1F5FA3)' });
@@ -447,9 +456,9 @@
           var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
           var aFazer = pend; /* o passo feito não sai do lugar: só fica cinza com risco */
           var grupos = [], porDia = {};
-          var atrasados = aFazer.filter(function (x) { return x.data && x.data < hoje; }); if (atrasados.length) grupos.push(['Atrasados', atrasados]);
-          aFazer.filter(function (x) { return x.data && x.data >= hoje; }).forEach(function (x) { if (!porDia[x.data]) { porDia[x.data] = []; grupos.push([rotuloDiaT(x.data), porDia[x.data]]); } porDia[x.data].push(x); });
-          var semData = aFazer.filter(function (x) { return !x.data; }); if (semData.length) grupos.push(['Sem data', semData]);
+          var atrasados = aFazer.filter(function (x) { return dataDe(x) && dataDe(x) < hoje; }); if (atrasados.length) grupos.push(['Atrasados', atrasados]);
+          aFazer.filter(function (x) { return dataDe(x) && dataDe(x) >= hoje; }).forEach(function (x) { if (!porDia[dataDe(x)]) { porDia[dataDe(x)] = []; grupos.push([rotuloDiaT(dataDe(x)), porDia[dataDe(x)]]); } porDia[dataDe(x)].push(x); });
+          var semData = aFazer.filter(function (x) { return !dataDe(x); }); if (semData.length) grupos.push(['Sem data', semData]);
           grupos.forEach(function (g) {
             if (!g[1].length) return;
             corpo.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' }));

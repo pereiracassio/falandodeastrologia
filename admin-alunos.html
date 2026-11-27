@@ -285,7 +285,7 @@
         /* atividades do aluno e o que cada uma já andou (disponível, enviada, corrigida) */
         /* a coluna somente_leitura pode não existir neste banco: se o pedido falhar por causa dela, pede de novo sem ela (era isso que deixava a lista vazia) */
         var pedirAtividades = function (colunas) { return P.client.from('atividades').select(colunas).eq('aluno_id', aluno.id).order('criado_em'); };
-        pedirAtividades('id,titulo,enviada_em,corrigida_em,antiga,somente_leitura,data_atividade').then(function (r1) { return r1.error ? pedirAtividades('id,titulo,enviada_em,corrigida_em,antiga,data_atividade') : r1; }).then(function (ra) {
+        pedirAtividades('id,titulo,enviada_em,corrigida_em,antiga,somente_leitura,data_atividade,data_limite').then(function (r1) { return r1.error ? pedirAtividades('id,titulo,enviada_em,corrigida_em,antiga,data_atividade,data_limite') : r1; }).then(function (ra) {
           ativsAluno = (ra && ra.data) || [];
           /* a data de conclusão se marca sozinha quando todos os passos ficam prontos (a última data conhecida, ou hoje) e sai se a trilha for reaberta; dá para ajustar à mão */
           trilhas.forEach(function (t) {
@@ -322,13 +322,20 @@
       /* a parte DELE: o que cabe ao astrólogo já foi feito (material ou gravação ligados, atividade criada e, se o aluno enviou, já corrigida).
          O que falta o aluno fazer (ler, responder) não pesa na lista dele; a barra e o que o aluno vê continuam pelos pontos. */
       /* data do passo para ordenar: a dele; se não tiver, a do material/gravação ligado */
-      var dataDe = function (x) { if (x.data) return String(x.data).slice(0, 10); var i = x.item_id ? itensAluno.filter(function (y) { return y.id === x.item_id; })[0] : null; return i && i.data ? String(i.data).slice(0, 10) : ''; };
+      var dataDe = function (x) { if (x.data) return String(x.data).slice(0, 10); if (x.tipo === 'atividade') { var ad = ativDoPasso(x); if (ad && ad.data_limite) return String(ad.data_limite).slice(0, 10); } var i = x.item_id ? itensAluno.filter(function (y) { return y.id === x.item_id; })[0] : null; return i && i.data ? String(i.data).slice(0, 10) : ''; };
       var minhaParte = function (x) {
         if (x.tipo === 'material' || x.tipo === 'gravacao') return !!(x.item_id && tituloDoItem(x.item_id)) || pontos(x) >= 1;
         if (x.tipo === 'atividade') { var a = ativDoPasso(x); return !!a && (!!(a.antiga || a.somente_leitura) || !a.enviada_em || !!a.corrigida_em); }
         return !!x.feito || !!x.link; /* passo com link (ex.: dos fatos da vida) já passado: a parte dele acabou, o resto é do aluno */
       };
       var completa = function (t) { var m = meus(t); return m.length > 0 && m.every(function (x) { return pontos(x) >= 1; }); };
+      /* o dia em que o passo foi feito: o que o passo marcou, a leitura do material, a atividade enviada ou corrigida */
+      var feitaEm = function (x) {
+        var d = '';
+        if (x.tipo === 'material') d = x.lido_em; else if (x.tipo === 'gravacao') { var i = x.item_id ? itensAluno.filter(function (y) { return y.id === x.item_id; })[0] : null; d = i && i.data; }
+        else if (x.tipo === 'atividade') { var a = ativDoPasso(x); d = a && (a.corrigida_em || a.enviada_em); } else d = x.feito ? x.feito_em : '';
+        return d ? String(d).slice(0, 10) : '';
+      };
       var inicioDe = function (t) { return t.data_inicio || new Date(t.criado_em).toLocaleDateString('sv-SE'); };
       /* campo de data da trilha: grava sozinho, e só redesenha quando perde o foco (para não fechar o calendário) */
       function campoDataTrilha(rotuloTxt, t, coluna, comPadrao) {
@@ -402,7 +409,11 @@
         if (x.tipo === 'gravacao') texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: x.item_id && tituloDoItem(x.item_id) ? 'Gravação do encontro · ' + tituloDoItem(x.item_id) : 'Gravação · em preparação' }));
         if (x.tipo === 'atividade') { var at = ativDoPasso(x); texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: !at ? 'Atividade · em preparação' : 'Atividade · ' + at.titulo + ' · ' + (at.antiga || at.somente_leitura ? 'já feita' : !at.enviada_em ? 'disponível para o aluno' : at.corrigida_em ? 'corrigida' : 'enviada para correção') })); }
         if (x.link) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--ocre,#B5852F)', text: 'Link dos fatos · o aluno vê o botão Preencher os fatos' }));
-        if (leitura) { if (x.data) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--azul-egipcio-escuro,#1034A6)', text: 'até ' + P.dataBR(x.data) })); }
+        /* a data sempre à vista: o prazo (o do passo, o da atividade ou o do material) e o dia em que foi feito */
+        var prazoX = dataDe(x), feitaX = feitaEm(x), partesData = [];
+        if (prazoX && (leitura || !x.data)) partesData.push('até ' + P.dataBR(prazoX)); if (feitaX) partesData.push('feito em ' + P.dataBR(feitaX));
+        if (partesData.length) texto.push(el('span', { class: 'portal-item-data', style: 'color:var(--azul-egipcio-escuro,#1034A6)', text: partesData.join(' · ') }));
+        if (leitura) { /* só leitura: a data já está acima */ }
         else { /* data de conclusão do passo: grava sozinha; o aluno também vê, e o passo entra no To Do da Agenda */
           var dataP = el('input', { type: 'date' }); dataP.value = x.data || '';
           /* só grava (a tela não é redesenhada, senão o calendário fecha e tudo muda de lugar); o passo vai para o grupo da nova data na próxima vez que a aba abrir */
@@ -529,17 +540,17 @@
         /* Atrasados, um bloco por DIA e Sem data. O passo feito NÃO sai do lugar: só fica cinza com risco. As linhas dos passos são as MESMAS de sempre */
         function organizar() {
           var m = meus(t), feitos = m.filter(minhaParte).sort(function (a, b) { var da = dataDe(a), db = dataDe(b); if (da && db) return da < db ? -1 : da > db ? 1 : (a.ordem || 0) - (b.ordem || 0); if (da) return -1; if (db) return 1; return (a.ordem || 0) - (b.ordem || 0); }), pend = m.slice().sort(function (a, b) { /* com data primeiro (por data); depois os sem data, na ordem dele */
-          if (a.data && b.data) return a.data < b.data ? -1 : a.data > b.data ? 1 : (a.ordem || 0) - (b.ordem || 0);
-          if (a.data) return -1; if (b.data) return 1; return (a.ordem || 0) - (b.ordem || 0);
+          if (dataDe(a) && dataDe(b)) return dataDe(a) < dataDe(b) ? -1 : dataDe(a) > dataDe(b) ? 1 : (a.ordem || 0) - (b.ordem || 0);
+          if (dataDe(a)) return -1; if (dataDe(b)) return 1; return (a.ordem || 0) - (b.ordem || 0);
         });
         var soma = m.reduce(function (a, x) { return a + pontos(x); }, 0);
         var pct = m.length ? Math.floor(soma * 100 / m.length) : 0;
         var hojeT = new Date().toLocaleDateString('sv-SE'), amanhaT = (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString('sv-SE'); })();
         var MESES_T = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], SEM_T = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hojeT ? 'Hoje' : iso === amanhaT ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
-        var gruposT = [], porDiaT = {}, atrasT = pend.filter(function (x) { return x.data && x.data < hojeT; }), semT = pend.filter(function (x) { return !x.data; });
+        var gruposT = [], porDiaT = {}, atrasT = pend.filter(function (x) { return dataDe(x) && dataDe(x) < hojeT; }), semT = pend.filter(function (x) { return !dataDe(x); });
         if (atrasT.length) gruposT.push(['Atrasados', atrasT]);
-        pend.filter(function (x) { return x.data && x.data >= hojeT; }).forEach(function (x) { if (!porDiaT[x.data]) { porDiaT[x.data] = []; gruposT.push([rotuloDiaT(x.data), porDiaT[x.data]]); } porDiaT[x.data].push(x); });
+        pend.filter(function (x) { return dataDe(x) && dataDe(x) >= hojeT; }).forEach(function (x) { if (!porDiaT[dataDe(x)]) { porDiaT[dataDe(x)] = []; gruposT.push([rotuloDiaT(dataDe(x)), porDiaT[dataDe(x)]]); } porDiaT[dataDe(x)].push(x); });
         if (semT.length) gruposT.push(['Sem data', semT]);
         corpo.textContent = ''; /* só as faixas vazias; as linhas dos passos são as mesmas e voltam já em seguida, cada uma no seu grupo */
         var linhasOrg = [];
