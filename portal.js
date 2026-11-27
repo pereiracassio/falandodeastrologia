@@ -1210,6 +1210,23 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       if (t.value && t.value !== a.antes) ['input', 'change'].forEach(function (n) { var e = new Event(n, { bubbles: true }); e.fdaHoje = true; t.dispatchEvent(e); });
     }, true);
   })();
+  /* A TELA NÃO CORRE QUANDO SE MEXE NUMA DATA: o Safari do iPad rola a página sozinho (até o fim dela) ao abrir/fechar o calendário de um campo de data, e isso também fecha o calendário.
+     Enquanto a pessoa mexe numa data (até 8 s depois de tocar nela, ou 2,5 s depois da última mudança), qualquer rolagem que NÃO veio de um gesto dela (roda, dedo, teclado) volta para
+     onde a tela estava. Rolagem de verdade da pessoa nunca é contrariada. */
+  (function datasNaoRolam() {
+    var ativo = null, gestoEm = 0;
+    var ehData = function (t) { return !!t && t.tagName === 'INPUT' && t.type === 'date'; };
+    ['wheel', 'touchmove', 'keydown'].forEach(function (n) { document.addEventListener(n, function () { gestoEm = Date.now(); }, { capture: true, passive: true }); });
+    ['pointerdown', 'touchstart'].forEach(function (n) { document.addEventListener(n, function (ev) { if (ehData(ev.target)) ativo = { y: window.scrollY, ate: Date.now() + 8000 }; }, true); });
+    document.addEventListener('focusin', function (ev) { if (ehData(ev.target) && !ativo) ativo = { y: window.scrollY, ate: Date.now() + 8000 }; }, true);
+    ['change', 'input'].forEach(function (n) { document.addEventListener(n, function (ev) { if (ativo && ehData(ev.target)) ativo.ate = Date.now() + 2500; }, true); });
+    window.addEventListener('scroll', function () {
+      if (!ativo) return;
+      if (Date.now() > ativo.ate) { ativo = null; return; }
+      if (Date.now() - gestoEm < 250) { ativo.y = window.scrollY; return; } /* a pessoa está rolando: vale o que ela fez */
+      if (Math.abs(window.scrollY - ativo.y) > 30) { var h = document.documentElement, ant = h.style.scrollBehavior; h.style.scrollBehavior = 'auto'; window.scrollTo(0, ativo.y); h.style.scrollBehavior = ant; }
+    }, { passive: true });
+  })();
   function todasDatas(raiz) { [].forEach.call((raiz.querySelectorAll ? raiz.querySelectorAll('input[type=date]:not(.data-caderno-input)') : []), dataCaderno); }
   function ligarDatas() {
     todasDatas(document);
