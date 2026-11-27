@@ -470,7 +470,7 @@
           return C.auth.getSession().then(function (r) {
             var sessao = r.data && r.data.session;
             if (!sessao) throw new Error('sem login');
-            return fetch(API_PDF + '?id=' + encodeURIComponent(o.id), { headers: { Authorization: 'Bearer ' + sessao.access_token } });
+            return fetch((o.api || API_PDF) + '?id=' + encodeURIComponent(o.id), { headers: { Authorization: 'Bearer ' + sessao.access_token } });
           }).then(function (r) {
             if (!r.ok) throw new Error(r.status === 404 ? 'sumiu' : 'servidor');
             return baixarComProgresso(r, progresso);

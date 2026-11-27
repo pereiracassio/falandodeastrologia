@@ -68,7 +68,7 @@
   <script src="atividades.js?v=49"></script>
   <script src="capa-aula.js?v=3"></script>
   <script src="certificado.js?v=2"></script>
-  <script src="curso.js?v=22"></script>
+  <script src="curso.js?v=23"></script>
   <script src="menu.js?v=69" defer></script>
   <script>
   (function () {
@@ -90,7 +90,6 @@
     /* ---------- Drive: o aluno só vê o vídeo e a apostila se o arquivo estiver compartilhado com o e-mail dele (só ver, sem aviso por e-mail) ---------- */
     function arquivosDoCurso(D) {
       var ids = [];
-      D.mods.forEach(function (m) { if (m.apostila_drive_id) ids.push(m.apostila_drive_id); });
       D.aulas.forEach(function (a) { var v = a.video_codigo && window.curso.idDoVideo('drive', a.video_codigo); if (v) ids.push(v); });
       return ids.filter(function (x, i) { return ids.indexOf(x) === i; });
     }
@@ -546,14 +545,14 @@
               mats.push(r.data); email.value = ''; aoMudar();
               var arqs = arquivosDoCurso(D);
               if (!arqs.length) return;
-              P.mensagem(msgA, 'Compartilhando os vídeos e apostilas com ' + r.data.email + '...', 'ok');
+              P.mensagem(msgA, 'Compartilhando os vídeos com ' + r.data.email + '...', 'ok');
               compartilharLote(arqs.map(function (f) { return [f, r.data.email]; })).then(function (rr) { P.mensagem(msgA, textoDoCompartilhamento(rr, arqs.length), rr.erros.length ? 'erro' : 'ok'); });
             });
           });
         });
         caixaA.appendChild(msgA);
         caixaA.appendChild(el('div', { style: 'margin-top:12px' }, campo('Adicionar aluno', email)));
-        var compTodos = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Compartilhar vídeos e apostilas com todos os alunos' });
+        var compTodos = el('button', { type: 'button', class: 'portal-btn portal-btn-sec', text: 'Compartilhar os vídeos com todos os alunos' });
         compTodos.addEventListener('click', function () {
           var arqs = arquivosDoCurso(D), pares = [];
           mats.forEach(function (a) { arqs.forEach(function (f) { pares.push([f, a.email]); }); });
@@ -883,7 +882,6 @@
                 m.apostila_drive_id = apId; m.apostila_nome = apNome; m.apostila_ok = true; m.data_apostila = dApostila.value || m.data_apostila; aoMudar();
                 P.mensagem(msgAp, 'Lendo o índice...', 'ok');
                 garantirCapaApostila(fid, true).catch(function () { });
-                compartilharComMatriculados(id, fid).then(function (t) { if (t) P.mensagem(msgAp, t, t.indexOf('Compartilhei') === 0 ? 'erro' : 'ok'); });
                 puxarCapitulos(id, fid, aulas()).then(function (n) { if (n === -1) P.mensagem(msgAp, 'Não achei o índice dessa apostila.', 'erro'); else atualizarAulas(); }, function (e) { P.mensagem(msgAp, 'Não consegui ler a apostila: ' + P.traduzErro((e && e.message) || ''), 'erro'); });
               }).catch(function () { P.mensagem(msgAp, 'Não consegui ler esse arquivo no Drive.', 'erro'); });
           }, function (t) { P.mensagem(msgAp, t, 'erro'); }, false, 'base_curso');
