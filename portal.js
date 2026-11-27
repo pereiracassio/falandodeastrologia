@@ -1711,9 +1711,13 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
   /* DEPURAR (só com ?depurar=1 no endereço; sem isso não faz nada): grava o que rola ou muda a tela e quem mandou, e um botão "copiar relatório" no canto de baixo.
      Serve para achar a causa de a tela correr sozinha no iPad, onde não dá para reproduzir daqui. */
   (function depurar() {
-    if (!/[?&]depurar=1/.test(location.search)) return;
+    /* o aviso fica guardado enquanto a aba estiver aberta (a página recarrega ao navegar e perdia o ?depurar=1); ?depurar=0 desliga */
+    try { if (/[?&]depurar=1/.test(location.search)) sessionStorage.setItem('fda_depurar', '1'); if (/[?&]depurar=0/.test(location.search)) { sessionStorage.removeItem('fda_depurar'); sessionStorage.removeItem('fda_depurar_linhas'); } } catch (e) { /* sem armazenamento */ }
+    var ligado = false; try { ligado = sessionStorage.getItem('fda_depurar') === '1'; } catch (e) { ligado = /[?&]depurar=1/.test(location.search); }
+    if (!ligado) return;
     var linhas = [], t0 = Date.now();
-    var anota = function (txt) { linhas.push(((Date.now() - t0) / 1000).toFixed(2) + 's ' + txt); if (linhas.length > 400) linhas.shift(); };
+    try { linhas = JSON.parse(sessionStorage.getItem('fda_depurar_linhas') || '[]'); } catch (e) { linhas = []; }
+    var anota = function (txt) { linhas.push(((Date.now() - t0) / 1000).toFixed(2) + 's ' + txt); if (linhas.length > 400) linhas.shift(); try { sessionStorage.setItem('fda_depurar_linhas', JSON.stringify(linhas)); } catch (e) { /* cheio */ } };
     var quem = function (n) { return n ? (n.tagName || '?') + (n.id ? '#' + n.id : '') + (n.className && typeof n.className === 'string' ? '.' + n.className.trim().split(/\s+/).slice(0, 2).join('.') : '') + (n.type ? '[' + n.type + ']' : '') : 'null'; };
     var pilha = function () { return String(new Error().stack || '').split('\n').slice(2, 5).map(function (l) { return l.trim().replace(/https?:\/\/[^/]+\//, ''); }).join(' < '); };
     ['scrollTo', 'scrollBy'].forEach(function (n) { var o = window[n]; window[n] = function () { anota(n + '(' + Array.prototype.slice.call(arguments).map(function (a) { return typeof a === 'object' ? JSON.stringify(a) : a; }).join(',') + ') por ' + pilha()); return o.apply(this, arguments); }; });
