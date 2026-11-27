@@ -1708,6 +1708,32 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       });
     }).observe(app, { childList: true, subtree: true });
   })();
+  /* DEPURAR (só com ?depurar=1 no endereço; sem isso não faz nada): grava o que rola ou muda a tela e quem mandou, e um botão "copiar relatório" no canto de baixo.
+     Serve para achar a causa de a tela correr sozinha no iPad, onde não dá para reproduzir daqui. */
+  (function depurar() {
+    if (!/[?&]depurar=1/.test(location.search)) return;
+    var linhas = [], t0 = Date.now();
+    var anota = function (txt) { linhas.push(((Date.now() - t0) / 1000).toFixed(2) + 's ' + txt); if (linhas.length > 400) linhas.shift(); };
+    var quem = function (n) { return n ? (n.tagName || '?') + (n.id ? '#' + n.id : '') + (n.className && typeof n.className === 'string' ? '.' + n.className.trim().split(/\s+/).slice(0, 2).join('.') : '') + (n.type ? '[' + n.type + ']' : '') : 'null'; };
+    var pilha = function () { return String(new Error().stack || '').split('\n').slice(2, 5).map(function (l) { return l.trim().replace(/https?:\/\/[^/]+\//, ''); }).join(' < '); };
+    ['scrollTo', 'scrollBy'].forEach(function (n) { var o = window[n]; window[n] = function () { anota(n + '(' + Array.prototype.slice.call(arguments).map(function (a) { return typeof a === 'object' ? JSON.stringify(a) : a; }).join(',') + ') por ' + pilha()); return o.apply(this, arguments); }; });
+    var si = Element.prototype.scrollIntoView; Element.prototype.scrollIntoView = function () { anota('scrollIntoView em ' + quem(this) + ' por ' + pilha()); return si.apply(this, arguments); };
+    var fo = HTMLElement.prototype.focus; HTMLElement.prototype.focus = function () { anota('focus() em ' + quem(this) + ' por ' + pilha()); return fo.apply(this, arguments); };
+    var ultimoY = window.scrollY;
+    window.addEventListener('scroll', function () { var y = Math.round(window.scrollY); if (Math.abs(y - ultimoY) > 40) anota('ROLOU de ' + Math.round(ultimoY) + ' para ' + y); ultimoY = y; }, { passive: true });
+    ['pointerdown', 'pointerup', 'click', 'focusin', 'focusout', 'change', 'input', 'blur', 'resize'].forEach(function (n) { (n === 'blur' || n === 'resize' ? window : document).addEventListener(n, function (ev) { anota('evento ' + n + ' em ' + quem(ev.target)); }, true); });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { anota('visualViewport mudou ' + Math.round(window.visualViewport.height)); });
+    var app = document.getElementById('app');
+    if (app && window.MutationObserver) new MutationObserver(function (ms) { var add = 0, rem = 0; ms.forEach(function (m) { add += m.addedNodes.length; rem += m.removedNodes.length; }); anota('TELA MEXEU: ' + add + ' entraram, ' + rem + ' saíram'); }).observe(app, { childList: true, subtree: true });
+    var botao = document.createElement('button'); botao.type = 'button'; botao.textContent = 'copiar relatório';
+    botao.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:999999;padding:8px 12px;font-size:14px;background:#fff;color:#000;border:2px solid #000;border-radius:0';
+    botao.addEventListener('click', function () {
+      var txt = linhas.join('\n'); anota('— relatório copiado —');
+      (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { botao.textContent = 'copiado'; }, function () { var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); botao.textContent = 'copiado'; } catch (e) { botao.textContent = 'não copiou'; } ta.remove(); });
+    });
+    var pronto = function () { document.body.appendChild(botao); anota('depuração ligada em ' + location.pathname); };
+    if (document.body) pronto(); else document.addEventListener('DOMContentLoaded', pronto);
+  })();
   /* ACENTO SOLTO (07/11/2026): texto copiado de Pages/Notas ou ditado no iPad às vezes chega com o acento separado da letra (I + ´). A Architects Daughter não tem o acento solto,
      então o Safari o desenha com outra fonte (um rabisco em cima da letra). Aqui, para o site todo: juntar letra e acento (NFC) ao digitar/colar/sair do campo
      e em todo texto que aparece na tela (inclusive o que já estava salvo assim). */
