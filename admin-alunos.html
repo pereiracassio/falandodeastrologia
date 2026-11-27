@@ -425,11 +425,10 @@
               /* o passo vai para o lugar certo da ordem por data, mas só DEPOIS que o calendário fecha (redesenhar com ele aberto o fecha no meio da escolha) */
               var irParaOLugar = function () {
                 if (!cartoes[x.trilha_id]) return;
-                /* a tela acompanha o passo: ele fica no MESMO lugar da tela e o resto se arruma em volta, para você não se perder */
-                var antes = linhasDe[x.id] ? linhasDe[x.id].getBoundingClientRect().top : null;
+                /* a TELA fica exatamente como estava (mesma rolagem); o passo vai para o lugar dele e some da frente, o resto se arruma */
+                var y = window.pageYOffset;
                 cartoes[x.trilha_id].organizar();
-                var depois = linhasDe[x.id] ? linhasDe[x.id].getBoundingClientRect().top : null;
-                if (antes !== null && depois !== null && Math.abs(depois - antes) > 1) { var h = document.documentElement, ant = h.style.scrollBehavior; h.style.scrollBehavior = 'auto'; window.scrollBy(0, depois - antes); h.style.scrollBehavior = ant; }
+                if (Math.abs(window.pageYOffset - y) > 0) { var h = document.documentElement, ant = h.style.scrollBehavior; h.style.scrollBehavior = 'auto'; window.scrollTo(0, y); h.style.scrollBehavior = ant; }
               };
               if (document.activeElement === dataP) dataP.addEventListener('blur', irParaOLugar, { once: true }); else irParaOLugar();
             });
