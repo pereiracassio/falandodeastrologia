@@ -1,13 +1,12 @@
 // Apostila do curso para o aluno ler no visualizador do site, no próprio Supabase (Edge Function), sem Vercel.
 // GET ?id=ARQUIVO_DO_DRIVE   (Authorization: Bearer <login do aluno>)  ->  o PDF, repassado do Drive do administrador. Nada é guardado.
 // Só entrega se o login é de um aluno matriculado num curso que tem esse arquivo como apostila de um módulo JÁ LIBERADO para ele.
-// Segredos da função (Edge Functions -> Secrets): GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET (os mesmos da conexão do Drive; o segredo também abre o token guardado).
+// Segredo da função (Edge Functions -> Secrets): GOOGLE_SERVICE_ACCOUNT_JSON (o arquivo da conta de serviço do Google). As apostilas precisam estar compartilhadas com o e-mail dessa conta (só ver).
 // SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY o próprio Supabase já põe. "Verify JWT" fica DESLIGADO (a função confere o login sozinha).
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const CHAVE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
-const CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
+const CONTA_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "";
 const ANON = "sb_publishable_p9Un5Po0_3kriGmSwOXIFQ_K8BCMLtt"; // a mesma chave pública que o site já usa
 const ORIGENS = ["https://falandodeastrologia.com.br", "https://www.falandodeastrologia.com.br"];
 const ID_OK = /^[\w-]{10,}$/;
@@ -18,24 +17,33 @@ async function supa(caminho: string) {
   return resp.json();
 }
 
-// o token do Drive fica cifrado em drive_conexao (AES-256-GCM, chave = sha256 de 'falandodeastrologia-drive|' + segredo do cliente Google)
-async function decifrar(base64: string) {
-  const buf = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  const chaveBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("falandodeastrologia-drive|" + CLIENT_SECRET));
-  const chave = await crypto.subtle.importKey("raw", chaveBytes, "AES-GCM", false, ["decrypt"]);
-  const cifrado = new Uint8Array(buf.length - 12);
-  cifrado.set(buf.subarray(28), 0); cifrado.set(buf.subarray(12, 28), buf.length - 28); // o WebCrypto espera o texto cifrado seguido da etiqueta
-  const claro = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.subarray(0, 12), tagLength: 128 }, chave, cifrado);
-  return new TextDecoder().decode(claro);
+// conta de serviço do Google: assina um pedido (JWT RS256) com a chave privada e troca por uma chave de acesso de 1 hora
+function lerConta(): { client_email: string; private_key: string } {
+  let o: any = null;
+  try { o = JSON.parse(CONTA_JSON); } catch (_) { /* colado com quebras de linha: lê na marra */ }
+  if (!o || !o.client_email || !o.private_key) {
+    const e = /"client_email"\s*:\s*"([^"]+)"/.exec(CONTA_JSON);
+    const k = /"private_key"\s*:\s*"([\s\S]*?-----END PRIVATE KEY-----(?:\\n|\n)?)"/.exec(CONTA_JSON);
+    if (e && k) o = { client_email: e[1], private_key: k[1] };
+  }
+  if (!o || !o.client_email || !o.private_key) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON ausente ou mal colado");
+  return { client_email: o.client_email, private_key: String(o.private_key).replace(/\\n/g, "\n") };
+}
+const b64url = (buf: ArrayBuffer | Uint8Array) => btoa(String.fromCharCode(...new Uint8Array(buf as ArrayBuffer))).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+async function assinarJwt(conta: { client_email: string; private_key: string }) {
+  const pem = conta.private_key.replace(/-----(BEGIN|END) PRIVATE KEY-----/g, "").replace(/\s+/g, "");
+  const chave = await crypto.subtle.importKey("pkcs8", Uint8Array.from(atob(pem), (c) => c.charCodeAt(0)), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  const enc = new TextEncoder(), agora = Math.floor(Date.now() / 1000);
+  const corpo = b64url(enc.encode(JSON.stringify({ alg: "RS256", typ: "JWT" }))) + "." +
+    b64url(enc.encode(JSON.stringify({ iss: conta.client_email, scope: "https://www.googleapis.com/auth/drive.readonly", aud: "https://oauth2.googleapis.com/token", iat: agora, exp: agora + 3600 })));
+  return corpo + "." + b64url(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", chave, enc.encode(corpo)));
 }
 let tokenEmMemoria: { valor: string; expira: number } | null = null;
 async function tokenDoDrive() {
   if (tokenEmMemoria && tokenEmMemoria.expira - 60000 > Date.now()) return tokenEmMemoria.valor;
-  const l = await supa("/rest/v1/drive_conexao?id=eq.1&select=refresh_token_cifrado");
-  if (!l || !l[0]) throw new Error("drive desconectado");
   const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: "refresh_token", refresh_token: await decifrar(l[0].refresh_token_cifrado) }),
+    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: await assinarJwt(lerConta()) }),
   });
   const d = await resp.json();
   if (!resp.ok) throw new Error("google: " + (d.error_description || d.error || resp.status));
@@ -70,18 +78,15 @@ Deno.serve(async (req) => {
   try {
     // ?acao=conferir : diz só se os dois segredos estão certos (nada de dado, ninguém precisa de login para isso)
     if (new URL(req.url).searchParams.get("acao") === "conferir") {
-      if (!CLIENT_ID || !CLIENT_SECRET) return json({ ok: false, erro: "faltam os segredos GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET" }, 200);
-      const l = await supa("/rest/v1/drive_conexao?id=eq.1&select=refresh_token_cifrado");
-      if (!l || !l[0]) return json({ ok: false, erro: "o Drive está desconectado" }, 200);
-      try { await decifrar(l[0].refresh_token_cifrado); } catch (_) { return json({ ok: false, erro: "o GOOGLE_CLIENT_SECRET não é o da conexão do Drive: tente outro" }, 200); }
-      try { await tokenDoDrive(); } catch (e) { return json({ ok: false, erro: "o segredo certo, mas o GOOGLE_CLIENT_ID não combina com ele: " + (e as Error).message }, 200); }
-      return json({ ok: true, mensagem: "os dois segredos estão certos" }, 200);
+      if (!CONTA_JSON) return json({ ok: false, erro: "falta o segredo GOOGLE_SERVICE_ACCOUNT_JSON" }, 200);
+      try { await tokenDoDrive(); } catch (e) { return json({ ok: false, erro: (e as Error).message }, 200); }
+      return json({ ok: true, mensagem: "a conta de serviço está certa" }, 200);
     }
     const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
     const id = new URL(req.url).searchParams.get("id") || "";
     if (!jwt) return json({ erro: "sem login" }, 401);
     if (!ID_OK.test(id)) return json({ erro: "arquivo inválido" }, 400);
-    if (!CLIENT_ID || !CLIENT_SECRET) return json({ erro: "faltam os segredos GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET na função" }, 500);
+    if (!CONTA_JSON) return json({ erro: "falta o segredo GOOGLE_SERVICE_ACCOUNT_JSON na função" }, 500);
     const email = await emailDoLogin(jwt);
     if (!email) return json({ erro: "sem login" }, 401);
     if (!(await podeVer(email, id))) return json({ erro: "sem acesso" }, 403);
