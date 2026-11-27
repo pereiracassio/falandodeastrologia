@@ -1,4 +1,4 @@
-/* PDF do Drive do administrador para o aluno e o cliente lerem no leitor do site.
+/* PDF do Drive do administrador para o aluno e o cliente lerem no leitor do site (itens do aluno, entregas do cliente e apostila do curso liberada).
 
    O aluno/cliente não tem acesso ao Drive do administrador pelo site, então o servidor confere o login (token do Supabase), confere que o arquivo
    está numa lista que ELE enxerga (itens do aluno ou entregas do cliente; a regra de acesso do Supabase faz o filtro) e entrega o PDF usando a
