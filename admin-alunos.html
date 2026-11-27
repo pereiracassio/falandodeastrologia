@@ -391,6 +391,15 @@
           }, Promise.resolve()).then(function () { if (naoAchou.length) alert('Importei, mas não achei para ligar:\n' + naoAchou.join('\n')); carregar(); }, function (e) { alert('Não foi possível importar: ' + P.traduzErro(e.message)); carregar(); });
         });
       }
+      /* com o mouse, o campo perde o foco no instante em que o botão é APERTADO; mexer na tela nesse meio-tempo faz o toque se perder (a trilha não fechava). Então espera o toque terminar. */
+      var ponteiroBaixo = false;
+      document.addEventListener('pointerdown', function () { ponteiroBaixo = true; }, true);
+      ['pointerup', 'pointercancel'].forEach(function (n) { document.addEventListener(n, function () { ponteiroBaixo = false; }, true); });
+      function depoisDoToque(fn) {
+        if (!ponteiroBaixo) { fn(); return; }
+        var h = function () { document.removeEventListener('pointerup', h, true); document.removeEventListener('pointercancel', h, true); setTimeout(fn, 0); };
+        document.addEventListener('pointerup', h, true); document.addEventListener('pointercancel', h, true);
+      }
       function linhaPasso(x, leitura) {
         var linhaEl = null, linhaPassoSetas = null;
         /* quando muda o que a linha mostra (ligar, tirar a ligação, editar), só ESTA linha é trocada, no mesmo lugar; a tela e a rolagem não mexem */
@@ -430,7 +439,7 @@
                 cartoes[x.trilha_id].organizar();
                 if (Math.abs(window.pageYOffset - y) > 0) { var h = document.documentElement, ant = h.style.scrollBehavior; h.style.scrollBehavior = 'auto'; window.scrollTo(0, y); h.style.scrollBehavior = ant; }
               };
-              if (document.activeElement === dataP) dataP.addEventListener('blur', irParaOLugar, { once: true }); else irParaOLugar();
+              if (document.activeElement === dataP) dataP.addEventListener('blur', function () { depoisDoToque(irParaOLugar); }, { once: true }); else irParaOLugar();
             });
           });
           texto.push(P.colunaData(dataP, 'Até quando (opcional)'));
