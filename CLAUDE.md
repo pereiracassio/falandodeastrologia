@@ -1,3 +1,6 @@
+# REGRA MAIS IMPORTANTE: NUNCA USAR VERCEL SEM ELE AUTORIZAR ANTES (27/11/2026) — ordem dele, vale acima de qualquer outra
+**Ele odeia a Vercel e não quer nada dela.** Em 24/11 eu pus a apostila do curso para passar pela Vercel (`api/pdf.js`) sem avisar; a Vercel cancelou a publicação, a apostila parou de funcionar e ele só descobriu pelo aluno de teste. **Proibido criar ou mudar qualquer coisa em `api/` (Vercel) sem PERGUNTAR a ele ANTES e ele dizer sim.** Só em ÚLTIMO caso, depois de esgotar as outras saídas (navegador falando direto com o Supabase, função/gatilho no banco, Edge Function do Supabase, **API do Google chamada direto do navegador do administrador**, como o compartilhamento do Drive), e **dizendo a ele com todas as letras: "isto precisa da Vercel, porque ..., posso?"**. Se a pergunta não foi feita, não existe autorização. Vale para `api/*.js`, `vercel.json` e qualquer outra coisa que rode na Vercel.
+
 # Notas para trabalhar neste repositório (site Falando de Astrologia)
 
 ## Papiro: nunca uma área mais clara ou mais escura que o resto (11/10/2026)
