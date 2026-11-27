@@ -447,7 +447,9 @@
           var abertas = window.__trilhasAbertasAluno = window.__trilhasAbertasAluno || [];
           function pintarT() { var ab = abertas.indexOf(t.id) >= 0; corpo.style.display = ab ? '' : 'none'; sinalT.textContent = ab ? '−' : '+'; c.setAttribute('aria-expanded', ab ? 'true' : 'false'); }
           function alternarT() { var i = abertas.indexOf(t.id); if (i >= 0) abertas.splice(i, 1); else abertas.push(t.id); pintarT(); }
-          c.addEventListener('click', alternarT);
+          var ultimoToque = 0, aoToque = function () { var agora = Date.now(); if (agora - ultimoToque < 350) return; ultimoToque = agora; alternarT(); };
+          c.addEventListener('click', aoToque);
+          c.addEventListener('pointerup', function (ev) { if (ev.pointerType === 'mouse' && ev.button === 0) aoToque(); }); /* com o cursor, vale a soltura do botão */
           c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); alternarT(); } });
           pintarT();
           /* igual ao To do dele: Atrasados, depois um bloco por DIA (Hoje, 5 de novembro...) e Sem data */

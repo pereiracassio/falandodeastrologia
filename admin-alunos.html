@@ -392,6 +392,7 @@
         });
       }
       /* com o mouse, o campo perde o foco no instante em que o botão é APERTADO; mexer na tela nesse meio-tempo faz o toque se perder (a trilha não fechava). Então espera o toque terminar. */
+      document.documentElement.style.overflowAnchor = 'none'; /* a tela não se ajusta sozinha quando uma linha sai de cima: a rolagem fica onde estava */
       var ponteiroBaixo = false;
       document.addEventListener('pointerdown', function () { ponteiroBaixo = true; }, true);
       ['pointerup', 'pointercancel'].forEach(function (n) { document.addEventListener(n, function () { ponteiroBaixo = false; }, true); });
@@ -431,15 +432,15 @@
             P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) {
               if (r.error) { alert('Não foi possível salvar a data.'); return; }
               x.data = dataP.value || null;
-              /* o passo vai para o lugar certo da ordem por data, mas só DEPOIS que o calendário fecha (redesenhar com ele aberto o fecha no meio da escolha) */
-              var irParaOLugar = function () {
-                if (!cartoes[x.trilha_id]) return;
-                /* a TELA fica exatamente como estava (mesma rolagem); o passo vai para o lugar dele e some da frente, o resto se arruma */
-                var y = window.pageYOffset;
-                cartoes[x.trilha_id].organizar();
-                if (Math.abs(window.pageYOffset - y) > 0) { var h = document.documentElement, ant = h.style.scrollBehavior; h.style.scrollBehavior = 'auto'; window.scrollTo(0, y); h.style.scrollBehavior = ant; }
+              /* o passo vai para o lugar certo da ordem por data, mas NUNCA com o calendário aberto (mexer na linha dele o fecha): só quando você toca em qualquer outro lugar (ou sai do campo) */
+              if (x.__moverPendente) return; x.__moverPendente = true;
+              var disparar = function () {
+                dataP.removeEventListener('blur', disparar); document.removeEventListener('pointerdown', foraDoCampo, true);
+                x.__moverPendente = false;
+                depoisDoToque(function () { if (cartoes[x.trilha_id]) cartoes[x.trilha_id].acomodar(x); }); /* só esta linha anda; a tela não é refeita */
               };
-              if (document.activeElement === dataP) dataP.addEventListener('blur', function () { depoisDoToque(irParaOLugar); }, { once: true }); else irParaOLugar();
+              var foraDoCampo = function (ev) { if (!dataP.parentNode || !dataP.parentNode.contains(ev.target)) disparar(); };
+              dataP.addEventListener('blur', disparar); document.addEventListener('pointerdown', foraDoCampo, true);
             });
           });
           texto.push(P.colunaData(dataP, 'Até quando (opcional)'));
@@ -529,7 +530,7 @@
         }
         linhaEl = el('div', { style: 'display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--azul-egipcio-claro,#1F5FA3)' }, [el('div', { style: 'flex:1;min-width:0' }, texto)].concat(ehMaterial || ehAtividade ? [] : [cb]));
         linhaEl.__pintar = function () { var parte = minhaParte(x); tituloSp.style.textDecoration = parte ? 'line-through' : ''; tituloSp.style.opacity = parte ? '.6' : ''; }; /* o risco do título acompanha o que já foi feito */
-        linhaEl.__refazer = refazer; linhaEl.__ajustaSetas = function () { if (linhaPassoSetas) linhaPassoSetas(); }; if (!leitura) linhasDe[x.id] = linhaEl;
+        linhaEl.__passo = x; linhaEl.__refazer = refazer; linhaEl.__ajustaSetas = function () { if (linhaPassoSetas) linhaPassoSetas(); }; if (!leitura) linhasDe[x.id] = linhaEl;
         return linhaEl; /* caixinha só no passo comum, do lado DIREITO como no To do: material, atividade e gravação andam sozinhos */
       }
       function listaDePassos(alvo, lista, leitura, grande) {
@@ -574,13 +575,13 @@
         var rotuloDiaT = function (iso) { var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hojeT ? 'Hoje' : iso === amanhaT ? 'Amanhã' : SEM_T[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + MESES_T[+q[1] - 1]; };
         /* um bloco por DIA, em ordem cronológica (os que já passaram também): quem está atrasado é o passo NÃO feito, e isso vem escrito na linha dele, sem tirar ninguém do lugar */
         var gruposT = [], porDiaT = {}, semT = pend.filter(function (x) { return !dataDe(x); });
-        pend.filter(function (x) { return dataDe(x); }).forEach(function (x) { if (!porDiaT[dataDe(x)]) { porDiaT[dataDe(x)] = []; gruposT.push([rotuloDiaT(dataDe(x)), porDiaT[dataDe(x)]]); } porDiaT[dataDe(x)].push(x); });
-        if (semT.length) gruposT.push(['Sem data', semT]);
+        pend.filter(function (x) { return dataDe(x); }).forEach(function (x) { if (!porDiaT[dataDe(x)]) { porDiaT[dataDe(x)] = []; gruposT.push([rotuloDiaT(dataDe(x)), porDiaT[dataDe(x)], dataDe(x)]); } porDiaT[dataDe(x)].push(x); });
+        if (semT.length) gruposT.push(['Sem data', semT, 'zzz']);
         corpo.textContent = ''; /* só as faixas vazias; as linhas dos passos são as mesmas e voltam já em seguida, cada uma no seu grupo */
         var linhasOrg = [];
         gruposT.forEach(function (g) {
-          corpo.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' }));
-          var cx = el('div', {});
+          corpo.appendChild(el('div', { text: g[0], class: 'rotulo-grupo', 'data-gl': g[2], style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' }));
+          var cx = el('div', {}); cx.setAttribute('data-gb', g[2]);
           g[1].forEach(function (x, k) {
             var l = linhasDe[x.id] || linhaPasso(x, false); l.__grupo = g[1];
             l.style.borderTop = k === 0 ? '0' : '1px solid var(--azul-egipcio-claro,#1F5FA3)'; cx.appendChild(l); linhasOrg.push(l);
@@ -588,6 +589,31 @@
           corpo.appendChild(cx);
         });
         linhasOrg.forEach(function (l) { if (l.__pintar) l.__pintar(); if (l.__ajustaSetas) l.__ajustaSetas(); });
+        }
+        /* muda UM passo de lugar (quando a data dele muda): só essa linha anda; o resto da tela não é refeito nem se mexe */
+        function rotuloDia(iso) {
+          var hoje = new Date().toLocaleDateString('sv-SE'), d0 = new Date(); d0.setDate(d0.getDate() + 1); var amanha = d0.toLocaleDateString('sv-SE');
+          var M = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], S = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+          var q = iso.split('-'), d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])); return (iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : S[d.getUTCDay()]) + ', ' + (+q[2]) + ' de ' + M[+q[1] - 1];
+        }
+        function acomodar(x) {
+          var l = linhasDe[x.id]; if (!l || !l.parentNode) { organizar(); return; }
+          var caixaVelha = l.parentNode, rotuloVelho = caixaVelha.previousSibling, iso = dataDe(x), chave = iso || 'zzz';
+          var LINHA = '1px solid var(--azul-egipcio-claro,#1F5FA3)';
+          var refrescar = function (cx) { var ls = [].slice.call(cx.children), arr = ls.map(function (q) { return q.__passo; }); ls.forEach(function (q, k) { q.__grupo = arr; q.style.borderTop = k === 0 ? '0' : LINHA; if (q.__ajustaSetas) q.__ajustaSetas(); }); };
+          l.remove();
+          if (!caixaVelha.children.length) { if (rotuloVelho) rotuloVelho.remove(); caixaVelha.remove(); } else refrescar(caixaVelha);
+          var caixas = [].slice.call(corpo.children).filter(function (n) { return n.getAttribute && n.getAttribute('data-gb'); });
+          var caixa = caixas.filter(function (n) { return n.getAttribute('data-gb') === chave; })[0];
+          if (!caixa) {
+            var rot = el('div', { text: iso ? rotuloDia(iso) : 'Sem data', class: 'rotulo-grupo', 'data-gl': chave, style: 'font-weight:700;color:var(--terracota,#A03E25);padding:6px 0;border-bottom:1px solid var(--azul-egipcio-claro,#1F5FA3);margin-top:14px' });
+            caixa = el('div', {}); caixa.setAttribute('data-gb', chave);
+            var depois = caixas.filter(function (n) { return n.getAttribute('data-gb') > chave; })[0], ancora = depois ? depois.previousSibling : null;
+            if (ancora) { corpo.insertBefore(rot, ancora); corpo.insertBefore(caixa, ancora); } else { corpo.appendChild(rot); corpo.appendChild(caixa); }
+          }
+          var apos = [].slice.call(caixa.children).filter(function (q) { return (q.__passo.ordem || 0) > (x.ordem || 0); })[0];
+          if (apos) caixa.insertBefore(l, apos); else caixa.appendChild(l);
+          refrescar(caixa); if (l.__pintar) l.__pintar();
         }
         var campo = el('input', { type: 'text', placeholder: 'Novo passo', style: 'flex:1;min-width:0' });
         var add = el('button', { type: 'button', class: 'portal-btn', text: 'Adicionar passo' });
@@ -615,11 +641,13 @@
         c.appendChild(el('div', { style: 'margin-top:14px' }, [apagarT]));
         function pintarT() { var ab = trilhasAbertas.indexOf(t.id) >= 0; c.style.display = ab ? '' : 'none'; sinalT.textContent = ab ? '−' : '+'; cabeca.setAttribute('aria-expanded', ab ? 'true' : 'false'); }
         function alternarT() { var i = trilhasAbertas.indexOf(t.id); if (i >= 0) trilhasAbertas.splice(i, 1); else trilhasAbertas.push(t.id); pintarT(); }
-        cabeca.addEventListener('click', alternarT);
+        var ultimoToque = 0, aoToque = function () { var agora = Date.now(); if (agora - ultimoToque < 350) return; ultimoToque = agora; alternarT(); };
+        cabeca.addEventListener('click', aoToque);
+        cabeca.addEventListener('pointerup', function (ev) { if (ev.pointerType === 'mouse' && ev.button === 0) aoToque(); }); /* com o cursor, vale a soltura do botão (o clique do cursor não chegava) */
         cabeca.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); alternarT(); } });
         pintarT();
         cartao.appendChild(cabeca); cartao.appendChild(c);
-        cartao.organizar = organizar; cartoes[t.id] = cartao; organizar();
+        cartao.organizar = organizar; cartao.acomodar = acomodar; cartoes[t.id] = cartao; organizar();
         return cartao;
       }
       /* A estrutura da aba é montada UMA vez. Trilha nova entra no fim da lista; trilha reaberta ou concluída troca de lista; o resto não se mexe. */
