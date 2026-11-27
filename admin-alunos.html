@@ -423,7 +423,14 @@
               if (r.error) { alert('Não foi possível salvar a data.'); return; }
               x.data = dataP.value || null;
               /* o passo vai para o lugar certo da ordem por data, mas só DEPOIS que o calendário fecha (redesenhar com ele aberto o fecha no meio da escolha) */
-              var irParaOLugar = function () { if (cartoes[x.trilha_id]) { cartoes[x.trilha_id].organizar(); } };
+              var irParaOLugar = function () {
+                if (!cartoes[x.trilha_id]) return;
+                /* a tela acompanha o passo: ele fica no MESMO lugar da tela e o resto se arruma em volta, para você não se perder */
+                var antes = linhasDe[x.id] ? linhasDe[x.id].getBoundingClientRect().top : null;
+                cartoes[x.trilha_id].organizar();
+                var depois = linhasDe[x.id] ? linhasDe[x.id].getBoundingClientRect().top : null;
+                if (antes !== null && depois !== null && Math.abs(depois - antes) > 1) { var h = document.documentElement, ant = h.style.scrollBehavior; h.style.scrollBehavior = 'auto'; window.scrollBy(0, depois - antes); h.style.scrollBehavior = ant; }
+              };
               if (document.activeElement === dataP) dataP.addEventListener('blur', irParaOLugar, { once: true }); else irParaOLugar();
             });
           });
