@@ -326,12 +326,12 @@ if (!window.FdaTema) window.FdaTema = { cor: function (n) { return { 'azul-egipc
       else if (aoErrar && !/popup_closed|access_denied|cancel/i.test(String(e.message))) aoErrar('Não foi possível entrar no Google Drive. Tente de novo.');
     });
   }
-  /* dá acesso de leitura ao e-mail da pessoa (o Drive não manda aviso; o aviso é do site) */
+  /* dá acesso de editor ao e-mail da pessoa (o Drive não manda aviso; o aviso é do site) */
   function compartilharNoDrive(arquivoId, token, email) {
     return fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(arquivoId) + '/permissions?sendNotificationEmail=false', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'user', role: 'reader', emailAddress: email })
+      body: JSON.stringify({ type: 'user', role: 'writer', emailAddress: email })
     }).then(function (r) { if (!r.ok) throw new Error('permissao'); });
   }
   /* botão "Escolher do Drive": preenche o campo de link e, se vier o e-mail, já compartilha o arquivo com a pessoa.
