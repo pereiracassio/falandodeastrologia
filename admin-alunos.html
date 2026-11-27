@@ -417,8 +417,16 @@
         if (leitura) { /* só leitura: a data já está acima */ }
         else { /* data de conclusão do passo: grava sozinha; o aluno também vê, e o passo entra no To Do da Agenda */
           var dataP = el('input', { type: 'date' }); dataP.value = x.data || '';
-          /* só grava (a tela não é redesenhada, senão o calendário fecha e tudo muda de lugar); o passo vai para o grupo da nova data na próxima vez que a aba abrir */
-          dataP.addEventListener('change', function () { P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) { if (r.error) alert('Não foi possível salvar a data.'); else x.data = dataP.value || null; }); });
+          /* grava ao escolher; a tela só se reorganiza quando o calendário já fechou */
+          dataP.addEventListener('change', function () {
+            P.client.from('aluno_trilha_passos').update({ data: dataP.value || null }).eq('id', x.id).then(function (r) {
+              if (r.error) { alert('Não foi possível salvar a data.'); return; }
+              x.data = dataP.value || null;
+              /* o passo vai para o lugar certo da ordem por data, mas só DEPOIS que o calendário fecha (redesenhar com ele aberto o fecha no meio da escolha) */
+              var irParaOLugar = function () { if (cartoes[x.trilha_id]) { cartoes[x.trilha_id].organizar(); } };
+              if (document.activeElement === dataP) dataP.addEventListener('blur', irParaOLugar, { once: true }); else irParaOLugar();
+            });
+          });
           texto.push(P.colunaData(dataP, 'Até quando (opcional)'));
         }
         if (!leitura) {
